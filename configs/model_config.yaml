@@ -1,0 +1,44 @@
+# ============================================================
+# DeepSentinel — VAE-With-DSAA Model Configuration
+# R26-IT-121 | IT22109194 | Wijesinghe L P D B
+# ============================================================
+
+dataset:
+  source: kaggle/ealaxi/paysim1
+  transaction_types: [TRANSFER, CASH_OUT, PAYMENT]
+  features: 8
+  feature_names:
+    - F1_log_amount
+    - F2_amount_balance_ratio
+    - F3_balance_consistency
+    - F4_balance_change_ratio
+    - F5_dest_balance_ratio
+    - F6_hour
+    - F7_day
+    - F8_is_large
+
+vae:
+  input_dim: 8
+  hidden_1: 32
+  hidden_2: 16
+  latent_dim: 8
+  activation: relu
+  output_activation: sigmoid
+
+training:
+  epochs: 50
+  batch_size: 256
+  learning_rate: 0.001
+  beta_anneal_epochs: 10
+  free_bits_lambda: 0.1
+  train_val_split: 0.8
+
+anomaly_scoring:
+  alpha: 0.5
+  threshold_tune_split: 0.3
+
+google_drive:
+  base: /content/drive/MyDrive/DeepSentinel
+  output: /content/drive/MyDrive/DeepSentinel/DeepSentinel_Output
+  eda: /content/drive/MyDrive/DeepSentinel/DeepSentinel_EDA
+  results: /content/drive/MyDrive/DeepSentinel/DeepSentinel_Results
