@@ -1,75 +1,62 @@
-# VAE-With-DSAA
+# R26-IT-121
 
-**DeepSentinel — Behavioral Fraud Detection via Stratified VAE with Dual-Signal Anomaly Attribution**
+**DeepSentinel — AI-Powered Financial Fraud Detection Platform**
 
-Research ID: R26-IT-121
+---
+
+## Member 2 — VAE-With-DSAA
+
+**Behavioral Fraud Detection via Stratified VAE with Dual-Signal Anomaly Attribution**
+
 Author: Wijesinghe L P D B (IT22109194)
 Institution: SLIIT
 
----
+### Overview
 
-## Overview
+Stratified Variational Autoencoder (VAE) with Dual-Signal Anomaly Attribution (DSAA) for unsupervised behavioral fraud detection on the PaySim dataset. Produces a behavioral risk score, 16-dimensional anomaly fingerprint, and fraud typology for each transaction. Outputs feed into the DeepSentinel fusion engine (Member 4).
 
-This repository contains Member 2's component of the DeepSentinel platform — a Stratified Variational Autoencoder (VAE) with Dual-Signal Anomaly Attribution (DSAA) for unsupervised behavioral fraud detection on the PaySim dataset.
+### Project Status
 
-The component produces:
-- A behavioral risk score per transaction
-- A 16-dimensional anomaly fingerprint (per-feature reconstruction error + per-latent KL divergence)
-- A predicted fraud typology via DBSCAN clustering of fingerprints
-
-These outputs feed into Member 4's fusion engine and RAG-LLM explanation module.
-
----
-
-## Project Status
-
-🚧 **Work in progress** — research is ongoing.
+🚧 Work in progress
 
 | Stage | Status |
 |---|---|
-| Feature Engineering (F1–F8) | Done |
+| Feature Engineering | Done |
 | EDA | Done |
 | Global VAE Baseline (Config A) | Done |
-| Stratified VAE (Configs B/C/D) | First run done — under improvement |
+| Stratified VAE (Configs B/C/D) | In progress |
 | Hyperparameter Tuning | Pending |
 | DSAA Framework | Pending |
 | Ablation Study | Pending |
 | FastAPI Integration | Pending |
 
----
-
-## Folder Structure
+### Folder Structure
 
 ```
 VAE-With-DSAA/
 ├── configs/              # YAML hyperparameter config
 ├── data/                 # raw + processed data (gitignored)
 ├── models/               # trained model artifacts (gitignored)
-├── notebooks/            # main research notebooks (run in Colab)
+├── notebooks/            # research notebooks (run in Google Colab)
 │   ├── 01_Feature_Engineering.ipynb
 │   ├── 02_EDA.ipynb
 │   ├── 03_Global_VAE_Baseline.ipynb
 │   └── 04_Stratified_VAE.ipynb
-├── results/              # metrics, plots (gitignored)
-├── requirements.txt
-└── README.md
+├── results/              # metrics and plots (gitignored)
+└── requirements.txt
 ```
 
----
+### How to Run
 
-## How to Run
-
-Notebooks are designed for Google Colab with mounted Drive.
+Notebooks are designed for Google Colab with mounted Google Drive.
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Open notebooks in Colab and run cells in order (01 → 02 → 03 → 04).
+Run notebooks in order: 01 → 02 → 03 → 04.
 
----
-
-## Dataset
+### Dataset
 
 PaySim mobile money simulation — 6.3M transactions, 8,213 fraud cases.
 Source: `kaggle/ealaxi/paysim1`
