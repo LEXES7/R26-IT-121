@@ -19,6 +19,7 @@ data/processed/*
 # Saved models and results (too large — stored in Google Drive)
 results/*
 models/*
+DeepSentinel-VAE-Results/
 !results/.gitkeep
 !models/.gitkeep
 *.keras
