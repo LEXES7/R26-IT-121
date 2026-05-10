@@ -1,0 +1,47 @@
+# TS-TCN model configuration
+# Used by src/models/ts_tcn.py and notebooks 03/04
+
+window:
+  size: 32              # W — number of preceding transactions
+  features: 10          # F — F1 through F10
+
+tcn:
+  blocks: 4
+  filters_per_block: 96
+  kernel_size: 3
+  dilations: [1, 2, 4, 8]
+  dropout: 0.2
+  activation: relu
+  padding: causal
+
+attention:
+  d_k: 32               # key/query/value projection dimension
+  num_heads: 1          # single-head per proposal §3.6
+
+head:
+  dense_units: 64
+  dropout: 0.3
+  output_activation: sigmoid
+
+training:
+  loss: binary_focal_crossentropy
+  loss_gamma: 2.0
+  optimizer: adam
+  learning_rate: 0.001
+  batch_size: 256
+  epochs: 30
+  early_stopping:
+    monitor: val_recall
+    mode: max
+    patience: 5
+    restore_best_weights: true
+  reduce_lr_on_plateau:
+    monitor: val_loss
+    factor: 0.5
+    patience: 3
+    min_lr: 1e-6
+
+data:
+  split_step: 595         # train: step <= 595, test: step > 595
+  shuffle_buffer: 50000
+  seed: 42
