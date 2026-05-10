@@ -1,0 +1,26 @@
+# Ablation study configurations (proposal Table 6)
+# A1 = primary, A2/A3/A4 = ablated variants
+
+A1_primary:
+  window_size: 32
+  attention: true
+  filters: 96
+  description: "Primary model — proposal spec"
+
+A2_no_attention:
+  window_size: 32
+  attention: false       # remove fraud_attention layer
+  filters: 96
+  description: "No attention — tests N3 contribution"
+
+A3_window_16:
+  window_size: 16
+  attention: true
+  filters: 96
+  description: "W=16 — tests window-size sensitivity"
+
+A4_window_64:
+  window_size: 64
+  attention: true
+  filters: 96
+  description: "W=64 — tests longer context"

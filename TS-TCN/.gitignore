@@ -1,0 +1,63 @@
+# ─── Datasets (too large, hosted on Drive) ─────────────────────────────
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/windows/*
+!data/windows/.gitkeep
+
+# ─── Generated artefacts (regenerable from notebooks) ──────────────────
+outputs/**/*
+!outputs/**/.gitkeep
+
+# ─── Large model & data files ──────────────────────────────────────────
+*.keras
+*.h5
+*.pb
+*.tfrecord
+*.tfrecord-*
+*.parquet
+*.npy
+*.pkl
+*.joblib
+
+# ─── Python ────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.installed.cfg
+*.egg
+build/
+dist/
+
+# ─── Virtual environments ──────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ─── Jupyter ───────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_meta
+
+# ─── IDEs ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── OS ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Secrets ───────────────────────────────────────────────────────────
+.env
+.env.local
+*.key
+*.pem
+secrets/
