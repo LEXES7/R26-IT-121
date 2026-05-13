@@ -35,18 +35,18 @@ Three orthogonal deep-learning detectors analyse the same transaction stream thr
 
 The full pipeline is validated on the **PaySim** mobile-money simulator (6,362,620 synthetic transactions · 8,213 labelled frauds · 0.13% fraud rate), which contains no PII and requires no ethical review.
 
-> **Research alignment:** UN SDG 16, Target 16.4 (reduction of illicit financial flows) &nbsp;·&nbsp; SLIIT Centre of Excellence for AI (CoEAI).
+> **Research alignment:** UN SDG 16, Target 16.4 — reduction of illicit financial flows.
 
 ---
 
 ## 👥 Team
 
-| | Member | Student ID | Component | Folder |
-|:-:|---|---|---|---|
-| **M1** | Ewaduge S.B. | `IT22217936` | Edge-Enhanced GraphSAGE — *relational topology* | [`GraphSage/`](./GraphSage) |
-| **M2** | Wijesinghe L.P.D.B. | `IT22109194` | Stratified VAE with DSAA — *behavioural anomaly* | [`VAE-With-DSAA/`](./VAE-With-DSAA) |
-| **M3** | Pathirana P.K.V. | `IT22237972` | TS-TCN with `fraud_attention` — *temporal sequence* | [`TS-TCN/`](./TS-TCN) |
-| **M4** | Vidanaarachchi T.M. | `IT22192882` | Fusion Engine + RAG-LLM Forensic Reporter | [`Fusion_Engine`](https://github.com/R26-IT-121/Fusion_Engine) ↗ |
+| | Member | Component | Folder |
+|:-:|---|---|---|
+| **M1** | Ewaduge S.B. | Edge-Enhanced GraphSAGE — *relational topology* | [`GraphSage/`](./GraphSage) |
+| **M2** | Wijesinghe L.P.D.B. | Stratified VAE with DSAA — *behavioural anomaly* | [`VAE-With-DSAA/`](./VAE-With-DSAA) |
+| **M3** | Pathirana P.K.V. | TS-TCN with `fraud_attention` — *temporal sequence* | [`TS-TCN/`](./TS-TCN) |
+| **M4** | Vidanaarachchi T.M. | Fusion Engine + RAG-LLM Forensic Reporter | [`Fusion_Engine`](https://github.com/R26-IT-121/Fusion_Engine) ↗ |
 
 The shared cross-component key is the PaySim column **`nameOrig`**. The canonical train/test split is fixed at **step 595** to preserve strict temporal ordering across all four components.
 
@@ -307,7 +307,6 @@ The four authors acknowledge:
 
 - **Mrs. Anjalie Gamage** for her supervision, technical insight, and continuous feedback.
 - The **Department of Information Technology, SLIIT** for providing the institutional and computational facilities.
-- The **SLIIT Centre of Excellence for AI (CoEAI)** for research alignment and academic support.
 - The creators of the **PaySim** dataset for a research-grade, ethically clean financial simulator.
 
 ---
