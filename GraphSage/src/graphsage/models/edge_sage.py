@@ -46,6 +46,7 @@ class EdgeEnhancedGraphSAGE(nn.Module):
         hidden_dim: int = 64,
         edge_mlp_hidden: int = 32,
         dropout: float = 0.3,
+        prior_pi: float | None = None,
     ):
         super().__init__()
         self.conv1 = EdgeEnhancedSAGEConv(
@@ -62,6 +63,17 @@ class EdgeEnhancedGraphSAGE(nn.Module):
         )
         self.classifier = nn.Linear(hidden_dim, 1)
         self.dropout = dropout
+
+        # Focal-Loss prior initialisation (Lin et al. 2017, §4.1). When training
+        # with Focal Loss on a severely imbalanced target (PaySim ≈ 0.25% mules),
+        # zero-init produces sigmoid(0)=0.5 initial predictions, generating huge
+        # gradients on the rare class that can land the optimiser in an inverted
+        # basin (AUROC < 0.5). Setting bias = -log((1-π)/π) makes initial
+        # predictions match the class prior and stabilises training.
+        if prior_pi is not None:
+            import math
+            with torch.no_grad():
+                self.classifier.bias.fill_(-math.log((1.0 - prior_pi) / prior_pi))
 
     def forward(
         self,
