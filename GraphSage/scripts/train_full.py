@@ -149,6 +149,7 @@ def main() -> None:
     # ---- Training loop ----
     history = []
     best_val_f1 = 0.0
+    best_val_auroc = 0.0
     best_state = None
     best_epoch = -1
     epochs_no_improve = 0
@@ -202,7 +203,10 @@ def main() -> None:
             f"R {val_m['recall']:.4f} | AUROC {val_m['auroc']:.4f} | {elapsed:.1f}s"
         )
 
-        if val_m["f1"] > best_val_f1:
+        # Early-stop on AUROC: F1@0.5 is unreliable under severe imbalance +
+        # Focal Loss with prior init (scores stay low, ordering is what counts).
+        if val_m["auroc"] > best_val_auroc:
+            best_val_auroc = val_m["auroc"]
             best_val_f1 = val_m["f1"]
             best_epoch = epoch
             best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
@@ -211,8 +215,8 @@ def main() -> None:
             epochs_no_improve += 1
             if epochs_no_improve >= patience:
                 print(
-                    f"  Early stopping: no val F1 improvement for {patience} epochs. "
-                    f"Best F1={best_val_f1:.4f} at epoch {best_epoch}."
+                    f"  Early stopping: no val AUROC improvement for {patience} epochs. "
+                    f"Best AUROC={best_val_auroc:.4f} (F1={best_val_f1:.4f}) at epoch {best_epoch}."
                 )
                 break
 
