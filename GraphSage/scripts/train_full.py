@@ -103,15 +103,12 @@ def main() -> None:
     # ---- Build model + loss + sampler + optimizer ----
     in_dim = int(data.x.shape[1])
     edge_dim = int(data.edge_attr.shape[1])
-    train_pi = float(data.y[data.train_mask].float().mean().item())
-    train_pi = max(min(train_pi, 0.5), 1e-4)
     model = EdgeEnhancedGraphSAGE(
         in_dim=in_dim,
         edge_dim=edge_dim,
         hidden_dim=hidden_dim,
         edge_mlp_hidden=edge_mlp_hidden,
         dropout=dropout,
-        prior_pi=train_pi,
     )
     n_params = sum(p.numel() for p in model.parameters())
     print(f"\nModel: EdgeEnhancedGraphSAGE ({n_params:,} params)")
@@ -149,7 +146,6 @@ def main() -> None:
     # ---- Training loop ----
     history = []
     best_val_f1 = 0.0
-    best_val_auroc = 0.0
     best_state = None
     best_epoch = -1
     epochs_no_improve = 0
@@ -203,10 +199,7 @@ def main() -> None:
             f"R {val_m['recall']:.4f} | AUROC {val_m['auroc']:.4f} | {elapsed:.1f}s"
         )
 
-        # Early-stop on AUROC: F1@0.5 is unreliable under severe imbalance +
-        # Focal Loss with prior init (scores stay low, ordering is what counts).
-        if val_m["auroc"] > best_val_auroc:
-            best_val_auroc = val_m["auroc"]
+        if val_m["f1"] > best_val_f1:
             best_val_f1 = val_m["f1"]
             best_epoch = epoch
             best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
@@ -215,8 +208,8 @@ def main() -> None:
             epochs_no_improve += 1
             if epochs_no_improve >= patience:
                 print(
-                    f"  Early stopping: no val AUROC improvement for {patience} epochs. "
-                    f"Best AUROC={best_val_auroc:.4f} (F1={best_val_f1:.4f}) at epoch {best_epoch}."
+                    f"  Early stopping: no val F1 improvement for {patience} epochs. "
+                    f"Best F1={best_val_f1:.4f} at epoch {best_epoch}."
                 )
                 break
 
