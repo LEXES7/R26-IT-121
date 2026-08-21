@@ -1,5 +1,14 @@
 # Research Study Guide — Edge-Enhanced GraphSAGE
 
+> [!WARNING]
+> **Superseded metrics.** The F1/AUROC figures in this document come from the original
+> evaluation, which computed node features and mule labels over the whole timeline and
+> therefore leaked future information. Under the leakage-free temporal protocol the same
+> system scores **F1 0.281 (baseline) to 0.406 (best)** — roughly 0.20 F1 lower.
+> Do not quote numbers from this file. The current results, with 5-seed significance
+> testing, are in [system_walkthrough.md](system_walkthrough.md) Section 13.
+
+
 **Your project, in plain English.**
 
 This document is for YOU to read and understand. Not for the panel. By the time you finish it, you should be able to explain your entire research to a friend over coffee.
