@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Home from './pages/Home'
 import Analyzer from './pages/Analyzer'
+import Settings from './pages/Settings'
 import About from './pages/About'
 import FAQ from './pages/FAQ'
 
@@ -14,6 +15,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/analyzer" element={<Analyzer />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/about" element={<About />} />
             <Route path="/faq" element={<FAQ />} />
           </Routes>
