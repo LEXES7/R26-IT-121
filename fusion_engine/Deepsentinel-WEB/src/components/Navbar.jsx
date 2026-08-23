@@ -30,7 +30,6 @@ export default function Navbar() {
         { to: '/', label: 'Overview' },
         { to: '/analyzer', label: 'Analyzer' },
         { to: '/batch', label: 'Batch upload' },
-        { to: '/assistant', label: 'Assistant' },
         { to: '/about', label: 'Architecture' },
       ]
     : [

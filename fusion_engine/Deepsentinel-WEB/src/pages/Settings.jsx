@@ -8,7 +8,6 @@ import {
   updateAlertSettings,
 } from '../services/api'
 import { useAuth } from '../context/AuthContext'
-import AssistantSettings from '../components/AssistantSettings'
 import {
   Alert,
   Badge,
@@ -310,8 +309,6 @@ export default function Settings() {
           ))}
         </div>
       </Card>
-
-      {auth.canConfigureSystem && <AssistantSettings />}
 
       {!auth.canConfigureSystem && (
         <Alert tone="info">

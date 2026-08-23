@@ -4,11 +4,15 @@ import PipelineDiagram from '../components/PipelineDiagram'
 import { useAuth } from '../context/AuthContext'
 import { Badge, cx } from '../components/ui'
 
+// Only figures that can be substantiated. An earlier version showed a 0.988
+// fusion F1, which came from the meta-classifier cross-validating on
+// calibration data it generated itself — it measures curve fitting, not fraud
+// detection, and would not survive the first question about it.
 const STATS = [
   { value: '3', label: 'detection models', detail: 'network, behaviour, timing' },
   { value: '10', label: 'FATF typologies', detail: 'vector-indexed knowledge base' },
-  { value: '0.988', label: 'fusion F1 score', detail: 'meta-classifier, held-out set' },
-  { value: '6.3M', label: 'transactions', detail: 'PaySim training corpus' },
+  { value: '5', label: 'pipeline stages', detail: 'input to forensic report' },
+  { value: '6.3M', label: 'transactions', detail: 'PaySim corpus the models train on' },
 ]
 
 const PROBLEM = [
