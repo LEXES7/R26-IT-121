@@ -259,3 +259,33 @@ export function analyzeBatch(file, { onEvent, onDone, onError, alertThreshold = 
 
 export const emailTemplateUrl = (classification = 'HIGH') =>
   `${BASE_URL}/email-template/preview?classification=${classification}`
+
+// ── Project assistant ────────────────────────────────────────────────────────
+// Grounded Q&A over the project's own documentation. Answers carry `sources`,
+// so every claim can be traced back to a file in the repository.
+
+export const askAssistant = (question, history = []) =>
+  client.post('/api/chat', { question, history }).then((r) => r.data)
+
+export const getAssistantSuggestions = () =>
+  client.get('/api/chat/suggestions').then((r) => r.data.suggestions)
+
+export const getAssistantHealth = () =>
+  client.get('/api/chat/health').then((r) => r.data)
+
+// ── Operator assistant (Professional package) ────────────────────────────────
+// Tool-using agent over the live platform. Gated: `capabilities` reports
+// whether this deployment and this user's package include it, so the UI can
+// present an upsell instead of a dead feature.
+
+export const getAssistantCapabilities = () =>
+  client.get('/api/assistant/capabilities').then((r) => r.data)
+
+export const askOperatorAssistant = (question, history = []) =>
+  client.post('/api/assistant', { question, history }).then((r) => r.data)
+
+export const getAssistantSettings = () =>
+  client.get('/api/assistant/settings').then((r) => r.data)
+
+export const updateAssistantSettings = (changes) =>
+  client.patch('/api/assistant/settings', changes).then((r) => r.data)

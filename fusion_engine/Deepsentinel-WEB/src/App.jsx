@@ -4,9 +4,11 @@ import ErrorBoundary from './components/ErrorBoundary'
 import ProtectedRoute from './components/ProtectedRoute'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
+import ChatBot from './components/ChatBot'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import Analyzer from './pages/Analyzer'
+import Assistant from './pages/Assistant'
 import BatchAnalysis from './pages/BatchAnalysis'
 import Settings from './pages/Settings'
 import Users from './pages/Users'
@@ -46,6 +48,8 @@ function Shell() {
             {/* Any signed-in user */}
             <Route path="/analyzer" element={<ProtectedRoute><Analyzer /></ProtectedRoute>} />
             <Route path="/batch" element={<ProtectedRoute><BatchAnalysis /></ProtectedRoute>} />
+            {/* Entitlement is enforced server-side; the page renders an upsell when not licensed. */}
+            <Route path="/assistant" element={<ProtectedRoute><Assistant /></ProtectedRoute>} />
             <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
 
             {/* Capability-gated */}
@@ -80,6 +84,9 @@ function Shell() {
       </main>
 
       <Footer />
+
+      {/* Available on every page — reviewers read the showcase without signing in. */}
+      <ChatBot />
     </div>
   )
 }

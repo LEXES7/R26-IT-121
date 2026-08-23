@@ -163,6 +163,28 @@ app.add_middleware(
 )
 
 
+# ── Project assistant ─────────────────────────────────────────────────────────
+# Grounded Q&A over the project's own documentation (see chatbot/README.md).
+# Optional: a failure to import must not take the API down, so it is guarded.
+try:
+    from chatbot import router as chatbot_router
+
+    app.include_router(chatbot_router)
+    logger.info("Project assistant mounted at /api/chat")
+except Exception as exc:  # noqa: BLE001
+    logger.warning(f"Project assistant unavailable: {exc}")
+
+# Operator assistant — tool-using agent over the live platform. Gated: disabled
+# by default, admin-enabled, entitled roles only (see assistant/entitlement.py).
+try:
+    from assistant import router as assistant_router
+
+    app.include_router(assistant_router)
+    logger.info("Operator assistant mounted at /api/assistant")
+except Exception as exc:  # noqa: BLE001
+    logger.warning(f"Operator assistant unavailable: {exc}")
+
+
 # ── Pydantic schemas ──────────────────────────────────────────────────────────
 
 class TransactionData(BaseModel):
