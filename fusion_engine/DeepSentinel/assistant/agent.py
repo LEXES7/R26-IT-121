@@ -213,12 +213,15 @@ class Agent:
         q = question.lower()
         accounts = re.findall(r"\bC\d{3,}\b", question)
 
-        if any(w in q for w in ("status", "health", "running", "up")):
+        if any(w in q for w in ("status", "health", "running", "reachable",
+                                "online", "offline", "down", "available",
+                                "models up", "system")):
             name = "get_system_status"
             args: dict = {}
         elif any(w in q for w in ("ring", "network", "subgraph", "mule", "involved")):
             name, args = "get_fraud_ring", {}
-        elif any(w in q for w in ("history", "before", "previously", "past", "seen")):
+        elif any(w in q for w in ("history", "before", "previously", "past",
+                                  "seen", "recent", "flagged")):
             name, args = "search_analysis_history", {}
         elif accounts:
             name, args = "search_analysis_history", {"account": accounts[0]}
