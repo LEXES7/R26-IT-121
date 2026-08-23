@@ -1,207 +1,269 @@
 import { Link } from 'react-router-dom'
 import NetworkBackground from '../components/NetworkBackground'
-
-const FEATURES = [
-  {
-    icon: '🕸️',
-    title: 'Graph Neural Network',
-    desc: 'Edge-Enhanced GraphSAGE maps transaction topology to detect mule rings, hub-and-spoke networks, and coordinated laundering chains.',
-    tag: 'Network Topology',
-    color: 'blue',
-  },
-  {
-    icon: '📊',
-    title: 'Behavioral VAE',
-    desc: 'Stratified Variational Autoencoder flags transactions that deviate from an account\'s established behavioral baseline in real time.',
-    tag: 'Anomaly Detection',
-    color: 'purple',
-  },
-  {
-    icon: '⏱️',
-    title: 'Temporal CNN',
-    desc: 'System-Context Temporal CNN detects mechanically regular, high-frequency transfer patterns that reveal automated fraud scripts.',
-    tag: 'Timing Analysis',
-    color: 'cyan',
-  },
-  {
-    icon: '⚖️',
-    title: 'Ensemble Fusion',
-    desc: 'Logistic Regression meta-classifier fuses the three scores into a unified Fraud Confidence Score with graceful degradation for missing models.',
-    tag: 'Meta-Classifier · F1 0.988',
-    color: 'green',
-  },
-  {
-    icon: '🔍',
-    title: 'FATF RAG Retrieval',
-    desc: 'The fused risk profile semantically queries a ChromaDB vector store of 10 FATF typologies. The best match becomes the LLM\'s factual anchor.',
-    tag: 'ChromaDB · Cosine Similarity',
-    color: 'amber',
-  },
-  {
-    icon: '📋',
-    title: 'Forensic Report',
-    desc: 'Chain-of-Evidence prompting constrains Gemini to cite only retrieved FATF definitions and actual model scores — zero hallucination.',
-    tag: 'Gemini 2.0 Flash',
-    color: 'red',
-  },
-]
-
-const COLOR = {
-  blue:   { border: 'border-blue-500/20',   bg: 'bg-blue-500/8',   text: 'text-blue-400' },
-  purple: { border: 'border-purple-500/20', bg: 'bg-purple-500/8', text: 'text-purple-400' },
-  cyan:   { border: 'border-cyan-500/20',   bg: 'bg-cyan-500/8',   text: 'text-cyan-400' },
-  green:  { border: 'border-green-500/20',  bg: 'bg-green-500/8',  text: 'text-green-400' },
-  amber:  { border: 'border-amber-500/20',  bg: 'bg-amber-500/8',  text: 'text-amber-400' },
-  red:    { border: 'border-red-500/20',    bg: 'bg-red-500/8',    text: 'text-red-400' },
-}
+import PipelineDiagram from '../components/PipelineDiagram'
+import { useAuth } from '../context/AuthContext'
+import { Badge, cx } from '../components/ui'
 
 const STATS = [
-  { n: '3',    label: 'AI Detection Models' },
-  { n: '10',   label: 'FATF Typologies' },
-  { n: '0.988',label: 'Classifier F1 Score' },
-  { n: '427',  label: 'Papers — Gap Confirmed' },
+  { value: '3', label: 'detection models', detail: 'network, behaviour, timing' },
+  { value: '10', label: 'FATF typologies', detail: 'vector-indexed knowledge base' },
+  { value: '0.988', label: 'fusion F1 score', detail: 'meta-classifier, held-out set' },
+  { value: '6.3M', label: 'transactions', detail: 'PaySim training corpus' },
 ]
 
+const PROBLEM = [
+  {
+    icon: '⚫',
+    title: 'The model says fraud. It cannot say why.',
+    body: 'A neural network returns a probability. An investigator building a case needs reasoning, and a regulator needs an audit trail. A score alone satisfies neither.',
+  },
+  {
+    icon: '✍️',
+    title: 'A language model will happily invent the why.',
+    body: 'Ask an unconstrained LLM to explain a fraud score and it produces fluent, confident narrative — including details that were never in the data. In a compliance filing that is worse than no explanation.',
+  },
+  {
+    icon: '🔗',
+    title: 'Neither problem is solved by the other alone.',
+    body: 'DeepSentinel grounds every sentence of the narrative in a retrieved FATF typology and the actual model outputs, so each claim traces back to evidence.',
+  },
+]
+
+const TEAM = [
+  {
+    member: 'Member 1',
+    name: 'Wijesinghe',
+    component: 'Stratified VAE with Dual-Signal Anomaly Attribution',
+    modality: 'Behaviour',
+    color: 'behavioral',
+    status: 'Delivered',
+  },
+  {
+    member: 'Member 2',
+    name: 'Ewaduge',
+    component: 'Edge-Enhanced GraphSAGE',
+    modality: 'Network',
+    color: 'graph',
+    status: 'Delivered',
+  },
+  {
+    member: 'Member 3',
+    name: 'Pathirana',
+    component: 'System-Context Temporal CNN',
+    modality: 'Timing',
+    color: 'temporal',
+    status: 'Delivered',
+  },
+  {
+    member: 'Member 4',
+    name: 'Vidanaarachchi',
+    component: 'Fusion engine, RAG retrieval and forensic reporting',
+    modality: 'Fusion',
+    color: 'fusion',
+    status: 'Delivered',
+  },
+]
+
+const MODALITY_STYLE = {
+  graph: 'text-modality-graph border-modality-graph/30 bg-modality-graph/10',
+  behavioral: 'text-modality-behavioral border-modality-behavioral/30 bg-modality-behavioral/10',
+  temporal: 'text-modality-temporal border-modality-temporal/30 bg-modality-temporal/10',
+  fusion: 'text-green-400 border-green-500/30 bg-green-500/10',
+}
+
 export default function Home() {
+  const { isAuthenticated } = useAuth()
+
   return (
     <div className="overflow-x-hidden">
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section className="relative flex min-h-[80vh] items-center justify-center px-4 py-24 sm:px-6">
+        <NetworkBackground opacity={0.32} />
 
-      {/* ── HERO ── */}
-      <section className="relative min-h-[92vh] flex items-center justify-center px-6 py-28">
-        <NetworkBackground opacity={0.38} />
-
-        {/* Gradient overlays for depth */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#06091a] via-transparent to-[#06091a]" />
-          <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#06091a] to-transparent" />
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-b from-sentinel-950 via-transparent to-sentinel-950" />
         </div>
 
-        <div className="relative z-10 max-w-4xl mx-auto text-center space-y-8">
-
-          <div className="inline-flex items-center gap-2.5 bg-white/[0.05] border border-white/10 text-slate-300 text-xs px-5 py-2 rounded-full font-medium tracking-wide backdrop-blur-sm">
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-sm shadow-green-400/50" />
-            Live · AI-Powered Financial Crime Detection
+        <div className="relative z-10 mx-auto max-w-4xl space-y-7 text-center">
+          <div className="inline-flex items-center gap-2.5 rounded-full border border-subtle bg-surface-raised px-4 py-1.5 text-xs font-medium tracking-wide text-slate-300 backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400 shadow-sm shadow-green-400/50" />
+            SLIIT Research Project · R26-IT-121
           </div>
 
-          <h1 className="text-5xl sm:text-7xl font-bold tracking-tight leading-[1.1]">
-            <span className="text-white">Detect Fraud.</span>
+          <h1 className="text-4xl font-bold leading-[1.1] tracking-tight sm:text-6xl">
+            <span className="text-white">Detect the fraud.</span>
             <br />
-            <span style={{ background: 'linear-gradient(135deg, #60a5fa, #34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Prove It in Court.
+            <span className="bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+              Then prove it.
             </span>
           </h1>
 
-          <p className="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed font-light">
-            DeepSentinel combines three deep learning models with a RAG-grounded LLM to generate{' '}
-            <span className="text-white font-normal">legally admissible forensic reports</span>{' '}
-            — solving the AI black-box problem in AML compliance.
+          <p className="mx-auto max-w-2xl text-base font-light leading-relaxed text-slate-400 sm:text-lg">
+            Three deep learning models examine a transaction from different angles.
+            A retrieval layer grounds the explanation in FATF typology. What comes
+            out is not a score — it is a{' '}
+            <span className="font-normal text-white">forensic report an investigator can act on</span>.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
-              to="/analyzer"
-              className="group flex items-center gap-2 text-white font-semibold px-8 py-3.5 rounded-xl text-sm transition-all"
-              style={{ background: 'linear-gradient(135deg, #2563eb, #0891b2)', boxShadow: '0 4px 24px rgba(37,99,235,0.35)' }}
+              to={isAuthenticated ? '/analyzer' : '/login'}
+              className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all hover:from-blue-500 hover:to-cyan-500"
             >
-              Open Analyzer
-              <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
+              {isAuthenticated ? 'Open the analyzer' : 'Sign in to run it'}
+              <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
             </Link>
-            <Link
-              to="/faq"
-              className="border border-white/10 hover:border-white/20 text-slate-400 hover:text-white font-medium px-7 py-3.5 rounded-xl transition-all text-sm backdrop-blur-sm"
+            <a
+              href="#pipeline"
+              className="rounded-xl border border-subtle px-6 py-3.5 text-sm font-medium text-slate-400 backdrop-blur-sm transition-all hover:border-strong hover:text-white"
             >
-              How it works
-            </Link>
+              See how it works
+            </a>
           </div>
 
-          {/* Stats */}
-          <div className="flex flex-wrap justify-center gap-10 pt-6">
-            {STATS.map(s => (
+          <dl className="flex flex-wrap justify-center gap-x-10 gap-y-6 pt-6">
+            {STATS.map((s) => (
               <div key={s.label} className="text-center">
-                <p className="text-3xl sm:text-4xl font-bold font-mono" style={{ background: 'linear-gradient(135deg, #60a5fa, #34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                  {s.n}
+                <dd className="bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text font-mono text-3xl font-bold text-transparent sm:text-4xl">
+                  {s.value}
+                </dd>
+                <dt className="mt-1 text-xs font-medium text-slate-400">{s.label}</dt>
+                <p className="mx-auto mt-0.5 max-w-[9rem] text-[10px] leading-tight text-slate-600">
+                  {s.detail}
                 </p>
-                <p className="text-xs text-slate-500 mt-1.5 max-w-[110px] leading-tight mx-auto">{s.label}</p>
               </div>
             ))}
-          </div>
+          </dl>
         </div>
-
-        {/* Bottom fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#06091a] to-transparent pointer-events-none" />
       </section>
 
-      {/* ── PIPELINE BADGE ── */}
-      <section className="max-w-5xl mx-auto px-6 py-4">
-        <div className="flex items-center justify-center gap-3 text-xs text-slate-600 flex-wrap">
-          {['Transaction Input', '→', 'GNN · VAE · TCN', '→', 'Ensemble Fusion', '→', 'FATF RAG', '→', 'LLM Report', '→', 'Investigator Dashboard'].map((s, i) => (
-            <span key={i} className={s === '→' ? 'text-slate-800' : 'font-mono text-slate-500'}>{s}</span>
+      {/* ── The problem ──────────────────────────────────────────────────── */}
+      <section className="mx-auto max-w-5xl space-y-8 px-4 py-20 sm:px-6">
+        <div className="space-y-3 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">
+            The problem
+          </p>
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">
+            Fraud detection has an explanation problem
+          </h2>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          {PROBLEM.map((p) => (
+            <div key={p.title} className="rounded-2xl border border-subtle bg-surface p-5">
+              <div className="text-xl">{p.icon}</div>
+              <h3 className="mt-3 text-sm font-semibold leading-snug text-white">{p.title}</h3>
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">{p.body}</p>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* ── 6 CAPABILITIES ── */}
-      <section className="max-w-5xl mx-auto px-6 py-20 space-y-10">
-        <div className="text-center space-y-3">
-          <p className="text-xs font-semibold text-blue-400 uppercase tracking-[0.2em]">Platform Capabilities</p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white">Six layers. One report.</h2>
-          <p className="text-slate-500 max-w-xl mx-auto text-sm leading-relaxed">
-            Each component solves a distinct problem. Together they bridge the gap between
-            black-box AI detection and legally traceable forensic evidence.
+      {/* ── Pipeline ─────────────────────────────────────────────────────── */}
+      <section id="pipeline" className="mx-auto max-w-6xl space-y-8 px-4 py-16 sm:px-6">
+        <div className="space-y-3 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">
+            How it works
+          </p>
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">
+            Follow one transaction through the system
+          </h2>
+          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-slate-500">
+            Select any stage to see what happens there. The same worked example
+            carries through all five, so you can watch a raw record become
+            evidence.
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {FEATURES.map(f => {
-            const c = COLOR[f.color]
-            return (
-              <div
-                key={f.title}
-                className={`group relative rounded-2xl border ${c.border} p-5 space-y-3 transition-all duration-300 hover:scale-[1.02]`}
-                style={{ background: 'rgba(255,255,255,0.02)' }}
-              >
-                <div className={`inline-flex items-center gap-1.5 text-[10px] font-mono border ${c.border} ${c.bg} ${c.text} px-2.5 py-1 rounded-lg`}>
-                  {f.tag}
-                </div>
-                <div className="text-2xl">{f.icon}</div>
-                <h3 className="font-semibold text-white text-sm">{f.title}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">{f.desc}</p>
-              </div>
-            )
-          })}
-        </div>
+        <PipelineDiagram />
       </section>
 
-      {/* ── NOVELTY STATEMENT ── */}
-      <section className="max-w-5xl mx-auto px-6 py-8">
-        <div
-          className="relative rounded-3xl border border-white/[0.07] p-10 overflow-hidden text-center space-y-6"
-          style={{ background: 'rgba(255,255,255,0.02)' }}
-        >
-          <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.08) 0%, transparent 70%)' }} />
-          <div className="relative space-y-3 max-w-2xl mx-auto">
-            <p className="text-xs font-semibold text-blue-400 uppercase tracking-[0.2em]">Research Contribution</p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white leading-snug">
-              "Forensic-ready LLM architectures with traceable outputs" — identified as a critical open research gap by three independent 2025–2026 surveys.
-            </h2>
-            <p className="text-slate-400 text-sm leading-relaxed">
-              No existing system combines a multi-modal deep learning fraud ensemble with a RAG layer that grounds LLM forensic narratives in a structured typology knowledge base. DeepSentinel is the first.
-            </p>
-          </div>
-          <div className="flex flex-wrap justify-center gap-3">
-            <Link
-              to="/analyzer"
-              className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-7 py-3 rounded-xl text-sm transition-all shadow-lg shadow-blue-600/20"
+      {/* ── Team ─────────────────────────────────────────────────────────── */}
+      <section className="mx-auto max-w-5xl space-y-8 px-4 py-16 sm:px-6">
+        <div className="space-y-3 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">
+            The team
+          </p>
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">
+            Four components, four researchers
+          </h2>
+          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-slate-500">
+            Each member owns one component end to end — model, evaluation and a
+            deployable API. The fusion engine consumes all three through a common
+            adapter layer.
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {TEAM.map((t) => (
+            <div
+              key={t.member}
+              className="flex items-start gap-4 rounded-2xl border border-subtle bg-surface p-5"
             >
-              Try the Live Demo →
-            </Link>
-            <Link to="/faq" className="border border-white/10 hover:border-white/20 text-slate-400 hover:text-white px-6 py-3 rounded-xl text-sm transition-all">
-              Read the FAQ
-            </Link>
-          </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={cx(
+                      'rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+                      MODALITY_STYLE[t.color],
+                    )}
+                  >
+                    {t.modality}
+                  </span>
+                  <span className="text-[10px] text-slate-600">{t.member}</span>
+                </div>
+                <p className="mt-2 font-semibold text-white">{t.name}</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">{t.component}</p>
+              </div>
+              <Badge tone="low" className="shrink-0">
+                {t.status}
+              </Badge>
+            </div>
+          ))}
         </div>
       </section>
 
+      {/* ── Research contribution ────────────────────────────────────────── */}
+      <section className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
+        <div className="relative overflow-hidden rounded-3xl border border-subtle bg-surface p-8 text-center sm:p-12">
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.08) 0%, transparent 70%)',
+            }}
+          />
+          <div className="relative mx-auto max-w-2xl space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">
+              Research contribution
+            </p>
+            <h2 className="text-xl font-bold leading-snug text-white sm:text-2xl">
+              Forensic-ready LLM architectures with traceable outputs were named
+              an open research gap by three independent 2025–2026 surveys.
+            </h2>
+            <p className="text-sm leading-relaxed text-slate-400">
+              No prior system pairs a multi-modal fraud ensemble with a retrieval
+              layer that anchors the generated narrative in a structured typology
+              knowledge base. That pairing is what makes the output traceable, and
+              it is what this project contributes.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3 pt-2">
+              <Link
+                to={isAuthenticated ? '/analyzer' : '/login'}
+                className="rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-colors hover:bg-blue-500"
+              >
+                {isAuthenticated ? 'Run the analyzer' : 'Sign in to run it'}
+              </Link>
+              <Link
+                to="/about"
+                className="rounded-xl border border-subtle px-6 py-3 text-sm text-slate-400 transition-all hover:border-strong hover:text-white"
+              >
+                Read the architecture
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

@@ -1,5 +1,19 @@
-# Environment — never commit secrets
+# Configuration — never commit secrets.
+# config.example.ini is the committed template; config.ini holds real keys.
+config.ini
 .env
+
+# User database — contains password hashes, never commit
+users.json
+
+# Local SQLite database
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Runtime configuration written by the app
+settings.json
 
 # Python bytecode
 __pycache__/
@@ -32,3 +46,6 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Disposable test database
+tests/_test.db
