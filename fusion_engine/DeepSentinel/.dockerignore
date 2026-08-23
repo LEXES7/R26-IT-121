@@ -1,0 +1,63 @@
+# Git
+.git
+.gitignore
+
+# Configuration & secrets — never bake into an image.
+# config.example.ini ships; real secrets arrive as env vars at runtime.
+config.ini
+.env
+.env.local
+.env*.local
+users.json
+settings.json
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.pytest_cache/
+*.egg-info/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (if any frontend in backend)
+node_modules
+dist
+build
+
+# Database/Cache
+chroma_store
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Documentation
+README.md
+QUICKSTART.md
+EMAIL_SETUP.md
+PRODUCTION_CHECKLIST.md
+INTEGRATION_GRAPHSAGE.md

@@ -38,3 +38,30 @@ __pycache__/
 # OS files
 .DS_Store
 Thumbs.db
+
+# ============================================================
+# fusion_engine/ — Member 4 | IT22192882 | Vidanaarachchi
+# ============================================================
+# The rules above assume a notebook-first workflow, where .py and .json files
+# are generated artefacts rather than source. That is correct for the model
+# folders, but the fusion engine is a Python application and a React app: its
+# .py, .json and .csv files ARE the source. Committed without these negations,
+# the entire backend/ tree was silently absent from the repository.
+#
+# Scoped to fusion_engine/ so every other folder behaves exactly as before.
+
+!fusion_engine/**/*.py
+!fusion_engine/**/*.json
+!fusion_engine/**/*.csv
+
+# Secrets and local state stay excluded — these must never be committed.
+# Listed after the negations above so they take precedence.
+fusion_engine/**/config.ini
+fusion_engine/**/.env
+fusion_engine/**/users.json
+fusion_engine/**/settings.json
+fusion_engine/**/*.db
+fusion_engine/**/node_modules/
+fusion_engine/**/dist/
+fusion_engine/**/chroma_store/
+fusion_engine/**/models/
