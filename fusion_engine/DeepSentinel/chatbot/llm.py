@@ -74,7 +74,24 @@ class _OllamaBackend:
 
 
 def _dedicated_key() -> str:
-    return (os.getenv(CHATBOT_KEY_ENV) or "").strip()
+    """
+    The chatbot's own API key, if one is set.
+
+    Environment first, then config.ini. Everything else on this project is
+    configured through config.ini, so requiring an environment variable for
+    this one value would be an odd exception — and a separate key genuinely
+    matters here, since chatbot traffic would otherwise consume the same daily
+    quota the forensic reports depend on.
+
+    Falls back to the shared key when neither is set.
+    """
+    from_env = (os.getenv(CHATBOT_KEY_ENV) or "").strip()
+    if from_env:
+        return from_env
+    try:
+        return str(config.get("secrets", "chatbot_gemini_api_key") or "").strip()
+    except KeyError:
+        return ""
 
 
 def _fallback_backend():
