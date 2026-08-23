@@ -43,13 +43,12 @@ class SettingsPatch(BaseModel):
 
 def _llm():
     """Shared LLM backend; None when unconfigured so the agent can degrade."""
-    try:
-        from backend.llm.forensic_reporter import create_llm_backend
+    from chatbot.llm import get_llm_backend
 
-        return create_llm_backend()
-    except Exception as exc:                           # noqa: BLE001
-        logger.info(f"Assistant running without an LLM: {exc}")
-        return None
+    backend, error = get_llm_backend()
+    if backend is None and error:
+        logger.info(f"Assistant running without an LLM: {error}")
+    return backend
 
 
 @router.get("/capabilities")

@@ -23,17 +23,26 @@ from pathlib import Path
 from chatbot.knowledge import build_corpus
 from chatbot.retriever import Retriever
 
-# Reuse the fusion engine's LLM layer rather than opening a second one. That
-# factory already reads the project's config, supports Gemini and Ollama, and
-# is what the forensic reporter uses — so the assistant inherits local
-# (free, offline) inference for nothing and there is one place to configure a
-# model. Import is optional so the assistant still runs standalone.
-try:
-    from backend.llm.forensic_reporter import create_llm_backend
-except Exception:                                     # noqa: BLE001
-    create_llm_backend = None
+from chatbot.llm import get_llm_backend
 
 MIN_SCORE = 1.0   # below this the corpus has nothing useful to say
+
+# Conversational openers deserve a reply, not a "not in the documentation"
+# rejection — the corpus genuinely has nothing to say about "hi", but treating
+# a greeting as a failed lookup makes the assistant feel broken.
+GREETINGS = {
+    "hi", "hey", "hello", "yo", "sup", "hiya", "howdy",
+    "good morning", "good afternoon", "good evening",
+}
+THANKS = {"thanks", "thank you", "thx", "ty", "cheers", "nice", "great", "cool"}
+
+GREETING_REPLY = (
+    "Hello. Ask me anything about DeepSentinel — the architecture, the "
+    "GraphSAGE results and how they were measured, the API contract, or the "
+    "dataset. I answer from the project's documentation and cite where each "
+    "answer came from."
+)
+THANKS_REPLY = "Happy to help. Ask me anything else about the project."
 
 SYSTEM_PROMPT = """\
 You are the DeepSentinel project assistant. DeepSentinel is an undergraduate \
@@ -98,13 +107,9 @@ class ChatService:
         }
 
     def _llm(self):
-        """Lazily build the shared LLM backend; degrade to extractive on failure."""
-        if self._model is not None or self._model_error or create_llm_backend is None:
-            return self._model
-        try:
-            self._model = create_llm_backend()
-        except Exception as exc:                      # noqa: BLE001 - degrade, don't crash
-            self._model_error = f"{type(exc).__name__}: {exc}"
+        """Lazily build the LLM backend; degrade to extractive on failure."""
+        if self._model is None and not self._model_error:
+            self._model, self._model_error = get_llm_backend()
         return self._model
 
     # -- main entry point ----------------------------------------------
@@ -112,6 +117,13 @@ class ChatService:
         question = (question or "").strip()
         if not question:
             return Answer("Ask me something about the project.", [], False, False)
+
+        # Small talk short-circuits retrieval.
+        normalised = question.lower().strip(" .!?,")
+        if normalised in GREETINGS:
+            return Answer(GREETING_REPLY, [], False, True)
+        if normalised in THANKS:
+            return Answer(THANKS_REPLY, [], False, True)
 
         hits = self.retriever.search(question, top_k=self.top_k)
         hits = [(c, s) for c, s in hits if s >= MIN_SCORE]
@@ -154,7 +166,10 @@ class ChatService:
 
     @staticmethod
     def _extractive(hits) -> str:
-        parts = ["From the project documentation:\n"]
+        parts = [
+            "_No language model is configured, so I am quoting the most "
+            "relevant documentation directly rather than summarising it._\n"
+        ]
         for chunk, _ in hits[:3]:
             body = " ".join(chunk.text.split())
             parts.append(f"**{chunk.citation}**\n{textwrap.shorten(body, 700, placeholder=' …')}")
