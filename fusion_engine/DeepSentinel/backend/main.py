@@ -194,6 +194,16 @@ try:
 except Exception as exc:  # noqa: BLE001
     logger.warning(f"Enquiry intake unavailable: {exc}")
 
+# Always-on transaction monitoring: the graph model screens everything and
+# escalates only what looks structurally suspicious.
+try:
+    from monitor import router as monitor_router
+
+    app.include_router(monitor_router)
+    logger.info("Monitor mounted at /api/monitor")
+except Exception as exc:  # noqa: BLE001
+    logger.warning(f"Monitor unavailable: {exc}")
+
 
 # ── Pydantic schemas ──────────────────────────────────────────────────────────
 

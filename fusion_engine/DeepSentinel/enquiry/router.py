@@ -138,9 +138,13 @@ async def submit(e: Enquiry, request: Request) -> dict:
 
         provider, _ = _provider()
         if provider:
-            recipients = [r for r in str(
-                config.get("email", "sender_email")
-            ).split(",") if r.strip()]
+            # The team's own inbox: the authenticated SMTP mailbox, which is
+            # guaranteed to exist. sender_email is a display From and may be a
+            # placeholder domain that bounces.
+            from backend.email_service import _provider as _prov
+
+            _, cfg = _prov()
+            recipients = [cfg.get("username")] if cfg.get("username") else []
             delivered = _send_plain(
                 subject=f"DeepSentinel enquiry — {e.organisation}",
                 body=body,
