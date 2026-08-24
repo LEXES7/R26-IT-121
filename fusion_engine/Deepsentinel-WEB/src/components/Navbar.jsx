@@ -31,6 +31,7 @@ export default function Navbar() {
     ? [
         { to: '/', label: 'Overview' },
         { to: '/components/network', label: 'Components' },
+        { to: '/monitor', label: 'Live monitor' },
         { to: '/analyzer', label: 'Analyzer' },
         { to: '/batch', label: 'Batch upload' },
         { to: '/assistant', label: 'Assistant' },

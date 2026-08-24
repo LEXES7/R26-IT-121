@@ -295,3 +295,77 @@ export const updateAssistantSettings = (changes) =>
 
 export const submitEnquiry = (enquiry) =>
   client.post('/api/enquiry', enquiry).then((r) => r.data)
+
+// ── Live monitor ─────────────────────────────────────────────────────────────
+
+export const getMonitorState = () =>
+  client.get('/api/monitor/state').then((r) => r.data)
+
+export const startMonitor = (interval) =>
+  client.post('/api/monitor/start', null, { params: { interval } }).then((r) => r.data)
+
+export const stopMonitor = () => client.post('/api/monitor/stop').then((r) => r.data)
+
+export const pauseMonitor = () => client.post('/api/monitor/pause').then((r) => r.data)
+
+export const resumeMonitor = () => client.post('/api/monitor/resume').then((r) => r.data)
+
+export const restartMonitor = (interval) =>
+  client.post('/api/monitor/restart', null, { params: { interval } }).then((r) => r.data)
+
+/** Loop state plus each detector's own runtime — "is the platform working". */
+export const getMonitorRuntime = () =>
+  client.get('/api/monitor/runtime').then((r) => r.data)
+
+/**
+ * Subscribe to the monitor's event stream.
+ *
+ * EventSource cannot send an Authorization header, so this uses fetch with a
+ * reader and parses the SSE framing by hand — the same approach the batch
+ * upload already takes. Returns an abort function.
+ */
+export function streamMonitor({ onEvent, onError } = {}) {
+  const controller = new AbortController()
+
+  ;(async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/monitor/stream`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+        signal: controller.signal,
+      })
+      if (!res.ok || !res.body) throw new Error(`Stream failed (${res.status})`)
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+
+        // SSE frames are separated by a blank line.
+        const frames = buffer.split('\n\n')
+        buffer = frames.pop() ?? ''
+        for (const frame of frames) {
+          let name = 'message'
+          const data = []
+          for (const line of frame.split('\n')) {
+            if (line.startsWith('event:')) name = line.slice(6).trim()
+            else if (line.startsWith('data:')) data.push(line.slice(5).trim())
+          }
+          if (!data.length) continue
+          try {
+            onEvent?.(name, JSON.parse(data.join('\n')))
+          } catch {
+            /* skip an unparseable frame rather than dropping the stream */
+          }
+        }
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') onError?.(err.message)
+    }
+  })()
+
+  return () => controller.abort()
+}

@@ -11,6 +11,7 @@ import ChatBot from './components/ChatBot'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import Analyzer from './pages/Analyzer'
+import Monitor from './pages/Monitor'
 import Assistant from './pages/Assistant'
 import BatchAnalysis from './pages/BatchAnalysis'
 import Settings from './pages/Settings'
@@ -64,6 +65,7 @@ function Shell() {
             />
 
             {/* Any signed-in user */}
+            <Route path="/monitor" element={<ProtectedRoute><Monitor /></ProtectedRoute>} />
             <Route path="/analyzer" element={<ProtectedRoute><Analyzer /></ProtectedRoute>} />
             <Route path="/batch" element={<ProtectedRoute><BatchAnalysis /></ProtectedRoute>} />
             {/* Entitlement is enforced server-side; the page renders an upsell when not licensed. */}

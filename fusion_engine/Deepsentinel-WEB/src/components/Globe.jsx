@@ -22,6 +22,11 @@ const POINTS = 420
 const ARCS = 9
 const FLAGGED = 3          // arcs drawn in the alert colour
 const TILT = -0.38         // radians; matches the template's axial lean
+const TILT_MIN = -1.1      // clamp so the globe never flips past its poles
+const TILT_MAX = 0.5
+const DRAG_SPEED = 0.006   // radians per pixel
+const FRICTION = 0.94      // per-frame decay of flung velocity
+const IDLE_RESUME_MS = 2200
 
 /* The wireframe is drawn in ink, which must invert with the theme — white
    lines on a pale canvas are invisible. Read at draw time rather than module
@@ -61,14 +66,14 @@ function buildScene() {
 }
 
 /** Rotate around Y (spin) then X (tilt), and project to 2D. */
-function project(theta, phi, spin, radius) {
+function project(theta, phi, spin, radius, tilt = TILT) {
   const t = theta + spin
   const x = Math.sin(phi) * Math.cos(t)
   const y = Math.cos(phi)
   const z = Math.sin(phi) * Math.sin(t)
 
-  const yt = y * Math.cos(TILT) - z * Math.sin(TILT)
-  const zt = y * Math.sin(TILT) + z * Math.cos(TILT)
+  const yt = y * Math.cos(tilt) - z * Math.sin(tilt)
+  const zt = y * Math.sin(tilt) + z * Math.cos(tilt)
 
   return { x: x * radius, y: yt * radius, z: zt, depth: (zt + 1) / 2 }
 }
@@ -90,8 +95,18 @@ export default function Globe({ className = '' }) {
     let radius = 0
     let raf = 0
     let spin = reduced ? 0.6 : 0
+    let tilt = TILT
     let visible = true
     let last = performance.now()
+
+    // Pointer interaction state. Pointer events cover mouse, touch and pen in
+    // one path, so there is no separate touch branch to keep in sync.
+    let dragging = false
+    let pointerId = null
+    let lastX = 0
+    let lastY = 0
+    let velocity = 0          // radians/frame, imparted by a fling
+    let releasedAt = 0
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -115,7 +130,7 @@ export default function Globe({ className = '' }) {
         const phi = (i / LAT_LINES) * Math.PI
         ctx.beginPath()
         for (let s = 0; s <= 64; s++) {
-          const p = project((s / 64) * Math.PI * 2, phi, spin, radius)
+          const p = project((s / 64) * Math.PI * 2, phi, spin, radius, tilt)
           if (s === 0) ctx.moveTo(p.x, p.y)
           else ctx.lineTo(p.x, p.y)
         }
@@ -132,7 +147,7 @@ export default function Globe({ className = '' }) {
         ctx.beginPath()
         let started = false
         for (let s = 0; s <= 48; s++) {
-          const p = project(theta, (s / 48) * Math.PI, spin, radius)
+          const p = project(theta, (s / 48) * Math.PI, spin, radius, tilt)
           if (p.z < -0.05) { started = false; continue }
           if (!started) { ctx.moveTo(p.x, p.y); started = true } else ctx.lineTo(p.x, p.y)
         }
@@ -150,7 +165,7 @@ export default function Globe({ className = '' }) {
 
       // ── Account points ─────────────────────────────────────────────────
       for (const pt of scene.points) {
-        const p = project(pt.theta, pt.phi, spin, radius)
+        const p = project(pt.theta, pt.phi, spin, radius, tilt)
         if (p.z < 0) continue                     // hidden behind the sphere
         const alpha = 0.18 + p.depth * 0.62
         ctx.beginPath()
@@ -163,8 +178,8 @@ export default function Globe({ className = '' }) {
       for (const arc of scene.arcs) {
         const a = scene.points[arc.a]
         const b = scene.points[arc.b]
-        const pa = project(a.theta, a.phi, spin, radius)
-        const pb = project(b.theta, b.phi, spin, radius)
+        const pa = project(a.theta, a.phi, spin, radius, tilt)
+        const pb = project(b.theta, b.phi, spin, radius, tilt)
         if (pa.z < 0 && pb.z < 0) continue
 
         // Lift the control point off the surface so the arc reads as flight.
@@ -202,18 +217,75 @@ export default function Globe({ className = '' }) {
       const dt = Math.min((now - last) / 1000, 0.05)
       last = now
       if (visible) {
-        spin += dt * 0.12
+        if (dragging) {
+          // Hand controls it entirely; no drift fighting the finger.
+        } else if (Math.abs(velocity) > 0.0004) {
+          // Carry the fling, then let it die out.
+          spin += velocity
+          velocity *= FRICTION
+        } else if (!reduced && now - releasedAt > IDLE_RESUME_MS) {
+          // Idle long enough — drift back to the ambient spin.
+          spin += dt * 0.12
+        }
         draw()
       }
       raf = requestAnimationFrame(frame)
     }
 
+    // ── Pointer interaction ────────────────────────────────────────────
+    const onPointerDown = (e) => {
+      dragging = true
+      pointerId = e.pointerId
+      lastX = e.clientX
+      lastY = e.clientY
+      velocity = 0
+      canvas.setPointerCapture?.(e.pointerId)
+      canvas.style.cursor = 'grabbing'
+    }
+
+    const onPointerMove = (e) => {
+      if (!dragging || e.pointerId !== pointerId) return
+      const dx = e.clientX - lastX
+      const dy = e.clientY - lastY
+      lastX = e.clientX
+      lastY = e.clientY
+
+      spin += dx * DRAG_SPEED
+      velocity = dx * DRAG_SPEED          // last sample becomes the fling
+      tilt = Math.max(TILT_MIN, Math.min(TILT_MAX, tilt + dy * DRAG_SPEED * 0.6))
+      if (!visible) draw()                // keep up even if rAF is paused
+    }
+
+    const endDrag = (e) => {
+      if (!dragging || (e && e.pointerId !== pointerId)) return
+      dragging = false
+      pointerId = null
+      releasedAt = performance.now()
+      canvas.style.cursor = 'grab'
+    }
+
+    canvas.style.cursor = 'grab'
+    // `pan-y` is the important half: a vertical swipe still scrolls the page,
+    // so the globe cannot trap a reader on a phone. Only horizontal intent
+    // reaches us.
+    canvas.style.touchAction = 'pan-y'
+    canvas.addEventListener('pointerdown', onPointerDown)
+    canvas.addEventListener('pointermove', onPointerMove)
+    canvas.addEventListener('pointerup', endDrag)
+    canvas.addEventListener('pointercancel', endDrag)
+    canvas.addEventListener('pointerleave', endDrag)
+
     resize()
     draw()
 
+    // The loop runs in both motion modes — reduced motion suppresses the
+    // ambient drift, not the reader's own input.
+    raf = requestAnimationFrame(frame)
+
+    // Pause drawing entirely when scrolled away, so the globe costs nothing
+    // on the rest of the page.
     let observer
-    if (!reduced) {
-      raf = requestAnimationFrame(frame)
+    {
       observer = new IntersectionObserver(
         ([entry]) => { visible = entry.isIntersecting },
         { threshold: 0 },
@@ -228,6 +300,11 @@ export default function Globe({ className = '' }) {
       cancelAnimationFrame(raf)
       observer?.disconnect()
       window.removeEventListener('resize', onResize)
+      canvas.removeEventListener('pointerdown', onPointerDown)
+      canvas.removeEventListener('pointermove', onPointerMove)
+      canvas.removeEventListener('pointerup', endDrag)
+      canvas.removeEventListener('pointercancel', endDrag)
+      canvas.removeEventListener('pointerleave', endDrag)
     }
   }, [])
 
