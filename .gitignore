@@ -3,11 +3,12 @@
 # R26-IT-121 | IT22109194 | Wijesinghe L P D B
 # ============================================================
 
-# Redundant .py versions (notebooks are the source of truth)
-*.py
-# ...except GraphSage, which is a Python package, not notebook exports.
-# Without this every new module added there is silently never committed.
-!GraphSage/**/*.py
+# Redundant .py versions (notebooks are the source of truth for VAE-With-DSAA).
+# Scoped to that component on purpose: as a repo-wide rule this silently
+# dropped every NEW .py added anywhere, while edits to already-tracked files
+# kept working — so the breakage was invisible. GraphSage and fusion_engine
+# are Python packages, not notebook exports.
+VAE-With-DSAA/**/*.py
 
 # PDF files (proposal, spec docs — too large, not code)
 *.pdf
