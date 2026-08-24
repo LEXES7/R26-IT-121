@@ -4,8 +4,8 @@ export default function AblationComparison({ baselineReport, groundedReport }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
-        <h3 className="text-sm font-bold text-white">Novelty Proof — RAG Ablation Study</h3>
-        <span className="text-xs bg-purple-900/40 border border-purple-700/50 text-purple-300 px-2 py-0.5 rounded-full">
+        <h3 className="text-sm font-bold text-slate-200">Novelty Proof — RAG Ablation Study</h3>
+        <span className="text-xs bg-modality-graph/15 border border-modality-graph/30 text-modality-graph px-2 py-0.5 rounded-full">
           Academic Contribution
         </span>
       </div>

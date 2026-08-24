@@ -104,7 +104,7 @@ export default function ChatBot() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Open the project assistant"
-        className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/25 transition hover:scale-105 hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-sentinel-950"
+        className="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent-500 text-white shadow-lg shadow-accent-500/25 transition hover:scale-105 hover:bg-accent-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-sentinel-950"
       >
         <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
@@ -114,17 +114,17 @@ export default function ChatBot() {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex h-[min(34rem,80vh)] w-[min(26rem,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-2xl border border-subtle bg-sentinel-900 shadow-2xl">
+    <div className="fixed bottom-5 right-5 z-40 flex h-[min(34rem,80vh)] w-[min(26rem,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-2xl border border-subtle bg-sentinel-900 shadow-2xl ring-1 ring-black/5">
       <header className="flex items-center justify-between border-b border-subtle px-4 py-3">
         <div>
-          <p className="text-sm font-semibold text-white">Project assistant</p>
+          <p className="text-sm font-semibold text-slate-200">Project assistant</p>
           <p className="text-xs text-slate-400">Answers from the project documentation</p>
         </div>
         <button
           type="button"
           onClick={() => setOpen(false)}
           aria-label="Close the assistant"
-          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-surface-raised hover:text-white"
+          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-surface-raised hover:text-slate-200"
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 6 6 18M6 6l12 12" />
@@ -158,7 +158,7 @@ export default function ChatBot() {
                 key={s}
                 type="button"
                 onClick={() => send(s)}
-                className="block w-full rounded-lg border border-subtle bg-surface px-3 py-2 text-left text-xs text-slate-300 transition hover:border-strong hover:bg-surface-hover hover:text-white"
+                className="block w-full rounded-lg border border-subtle bg-surface px-3 py-2 text-left text-xs text-slate-300 transition hover:border-accent-500/40 hover:bg-surface-hover hover:text-slate-200"
               >
                 {s}
               </button>
@@ -186,12 +186,12 @@ export default function ChatBot() {
             }
           }}
           placeholder="Ask about the project…"
-          className="max-h-28 flex-1 resize-none rounded-lg border border-subtle bg-sentinel-800 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-strong focus:outline-none"
+          className="max-h-28 flex-1 resize-none rounded-lg border border-subtle bg-surface px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:border-accent-500/50 focus:outline-none"
         />
         <button
           type="submit"
           disabled={busy || !input.trim()}
-          className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition enabled:hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-accent-500 px-3 py-2 text-sm font-semibold text-white transition enabled:hover:bg-accent-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Send
         </button>
@@ -208,8 +208,8 @@ function Message({ message }) {
         className={cx(
           'max-w-[85%] rounded-xl px-3 py-2 text-sm leading-relaxed',
           isUser
-            ? 'bg-blue-600/20 text-white'
-            : 'border border-subtle bg-surface-raised text-slate-200',
+            ? 'bg-accent-500/15 text-slate-200'
+            : 'border border-subtle bg-surface-raised text-slate-300',
         )}
       >
         <p className="whitespace-pre-wrap">{message.content}</p>

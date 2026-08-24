@@ -274,7 +274,7 @@ export default function Users() {
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate font-medium text-white">{u.full_name}</p>
+                      <p className="truncate font-medium text-slate-200">{u.full_name}</p>
                       {isSelf && <Badge>You</Badge>}
                       {!u.enabled && <Badge tone="critical">Disabled</Badge>}
                     </div>

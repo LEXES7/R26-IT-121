@@ -39,7 +39,7 @@ export default function ProtectedRoute({ capability, children }) {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-subtle bg-surface text-2xl">
             🔒
           </div>
-          <h1 className="text-lg font-semibold text-white">Access restricted</h1>
+          <h1 className="text-lg font-semibold text-slate-200">Access restricted</h1>
           <p className="mt-2 text-sm text-slate-500">
             Your role does not have access to this page. Contact an administrator
             if you believe you should.

@@ -25,7 +25,7 @@ export default class ErrorBoundary extends Component {
     return (
       <div className="mx-auto max-w-lg px-4 py-24">
         <Card className="p-8">
-          <h1 className="text-lg font-semibold text-white">Something went wrong</h1>
+          <h1 className="text-lg font-semibold text-slate-200">Something went wrong</h1>
           <p className="mt-2 text-sm text-slate-500">
             This section failed to render. The rest of the application is unaffected.
           </p>

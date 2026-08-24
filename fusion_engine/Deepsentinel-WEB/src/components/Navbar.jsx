@@ -1,3 +1,5 @@
+import Logo from './Logo'
+import ThemeToggle from './ThemeToggle'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ROLE_LABELS, useAuth } from '../context/AuthContext'
@@ -28,6 +30,7 @@ export default function Navbar() {
   const primary = auth.isAuthenticated
     ? [
         { to: '/', label: 'Overview' },
+        { to: '/components/network', label: 'Components' },
         { to: '/analyzer', label: 'Analyzer' },
         { to: '/batch', label: 'Batch upload' },
         { to: '/assistant', label: 'Assistant' },
@@ -35,6 +38,7 @@ export default function Navbar() {
       ]
     : [
         { to: '/', label: 'Overview' },
+        { to: '/components/network', label: 'Components' },
         { to: '/about', label: 'Architecture' },
         { to: '/faq', label: 'FAQ' },
       ]
@@ -95,17 +99,11 @@ export default function Navbar() {
   return (
     <nav
       ref={navRef}
-      className="sticky top-0 z-50 border-b border-subtle"
-      style={{ background: 'rgba(6,9,26,0.85)', backdropFilter: 'blur(16px)' }}
+      className="sticky top-0 z-50 border-b border-subtle bg-sentinel-950/85 backdrop-blur-xl"
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
-        <Link to="/" className="flex shrink-0 items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 text-sm font-bold text-white shadow-lg shadow-blue-500/30">
-            DS
-          </div>
-          <span className="hidden text-base font-semibold tracking-tight text-white sm:block">
-            Deep<span className="text-blue-400">Sentinel</span>
-          </span>
+        <Link to="/" className="shrink-0" aria-label="DeepSentinel home">
+          <Logo />
         </Link>
 
         {/* Desktop navigation */}
@@ -118,8 +116,8 @@ export default function Navbar() {
               className={cx(
                 'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 pathname === l.to
-                  ? 'bg-surface-overlay text-white'
-                  : 'text-slate-400 hover:bg-surface-raised hover:text-slate-100',
+                  ? 'bg-surface-overlay text-slate-200'
+                  : 'text-slate-400 hover:bg-surface-raised hover:text-slate-200',
               )}
             >
               {l.label}
@@ -135,8 +133,8 @@ export default function Navbar() {
                 className={cx(
                   'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                   isAdminSectionActive || openMenu === 'admin'
-                    ? 'bg-surface-overlay text-white'
-                    : 'text-slate-400 hover:bg-surface-raised hover:text-slate-100',
+                    ? 'bg-surface-overlay text-slate-200'
+                    : 'text-slate-400 hover:bg-surface-raised hover:text-slate-200',
                 )}
               >
                 Administration
@@ -153,8 +151,8 @@ export default function Navbar() {
               {openMenu === 'admin' && (
                 <div
                   role="menu"
-                  className="absolute left-0 mt-2 w-64 animate-slide-up overflow-hidden rounded-xl border border-subtle shadow-2xl"
-                  style={{ background: 'rgba(15,23,42,0.98)', backdropFilter: 'blur(16px)' }}
+                  className="absolute left-0 mt-2 w-64 animate-slide-up overflow-hidden rounded-xl border border-subtle bg-sentinel-800/98 shadow-2xl"
+                  style={{ backdropFilter: 'blur(16px)' }}
                 >
                   <div className="p-1.5">
                     {adminLinks.map((l) => (
@@ -212,10 +210,10 @@ export default function Navbar() {
                 <div
                   role="menu"
                   className="absolute right-0 mt-2 w-64 animate-slide-up overflow-hidden rounded-xl border border-subtle shadow-2xl"
-                  style={{ background: 'rgba(15,23,42,0.98)', backdropFilter: 'blur(16px)' }}
+                  style={{ backdropFilter: 'blur(16px)' }}
                 >
                   <div className="border-b border-subtle p-4">
-                    <p className="truncate text-sm font-medium text-white">
+                    <p className="truncate text-sm font-medium text-slate-200">
                       {auth.user?.full_name}
                     </p>
                     <p className="mt-0.5 truncate text-xs text-slate-500">{auth.user?.email}</p>
@@ -227,7 +225,7 @@ export default function Navbar() {
                     <Link
                       to="/account"
                       role="menuitem"
-                      className="block rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-surface-raised hover:text-white"
+                      className="block rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-surface-raised hover:text-slate-200"
                     >
                       Account &amp; password
                     </Link>
@@ -243,16 +241,26 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-            <Link
-              to="/login"
-              className="hidden rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-colors hover:bg-blue-500 lg:block"
-            >
-              Sign in
-            </Link>
+            <div className="hidden items-center gap-2 lg:flex">
+              <Link
+                to="/signup"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:text-slate-200"
+              >
+                Talk to us
+              </Link>
+              <Link
+                to="/login"
+                className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-400"
+              >
+                Sign in
+              </Link>
+            </div>
           )}
 
+          <ThemeToggle className="hidden lg:inline-flex" />
+
           <button
-            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-surface-raised hover:text-white lg:hidden"
+            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-surface-raised hover:text-slate-200 lg:hidden"
             onClick={() => setMobileOpen((v) => !v)}
             aria-expanded={mobileOpen}
             aria-label="Toggle navigation"
@@ -265,9 +273,8 @@ export default function Navbar() {
       {/* Mobile */}
       {mobileOpen && (
         <div
-          className="max-h-[calc(100vh-4rem)] space-y-1 overflow-y-auto border-t border-subtle px-4 py-3 lg:hidden"
-          style={{ background: 'rgba(6,9,26,0.98)' }}
-        >
+          className="max-h-[calc(100vh-4rem)] space-y-1 overflow-y-auto border-t border-subtle bg-sentinel-950 px-4 py-3 lg:hidden"
+                  >
           {primary.map((l) => (
             <Link
               key={l.to}
@@ -275,8 +282,8 @@ export default function Navbar() {
               className={cx(
                 'block rounded-xl px-4 py-2.5 text-sm font-medium transition-colors',
                 pathname === l.to
-                  ? 'bg-surface-overlay text-white'
-                  : 'text-slate-400 hover:bg-surface-raised hover:text-white',
+                  ? 'bg-surface-overlay text-slate-200'
+                  : 'text-slate-400 hover:bg-surface-raised hover:text-slate-200',
               )}
             >
               {l.label}
@@ -302,7 +309,7 @@ export default function Navbar() {
                   <span
                     className={cx(
                       'block text-sm font-medium',
-                      pathname === l.to ? 'text-white' : 'text-slate-400',
+                      pathname === l.to ? 'text-slate-200' : 'text-slate-400',
                     )}
                   >
                     {l.label}
@@ -317,7 +324,7 @@ export default function Navbar() {
             {auth.isAuthenticated ? (
               <>
                 <div className="px-4 py-2">
-                  <p className="truncate text-sm text-white">{auth.user?.full_name}</p>
+                  <p className="truncate text-sm text-slate-200">{auth.user?.full_name}</p>
                   <p className="truncate text-xs text-slate-600">{auth.user?.email}</p>
                   <Badge tone={ROLE_TONE[auth.role]} className="mt-1.5">
                     {ROLE_LABELS[auth.role] ?? auth.role}
@@ -325,7 +332,7 @@ export default function Navbar() {
                 </div>
                 <Link
                   to="/account"
-                  className="block rounded-xl px-4 py-2.5 text-sm text-slate-400 hover:bg-surface-raised hover:text-white"
+                  className="block rounded-xl px-4 py-2.5 text-sm text-slate-400 hover:bg-surface-raised hover:text-slate-200"
                 >
                   Account &amp; password
                 </Link>
@@ -337,13 +344,26 @@ export default function Navbar() {
                 </button>
               </>
             ) : (
-              <Link
-                to="/login"
-                className="block rounded-xl bg-blue-600 px-4 py-2.5 text-center text-sm font-semibold text-white"
-              >
-                Sign in
-              </Link>
+              <>
+                <Link
+                  to="/signup"
+                  className="block rounded-xl border border-subtle px-4 py-2.5 text-center text-sm font-medium text-slate-300"
+                >
+                  Talk to us
+                </Link>
+                <Link
+                  to="/login"
+                  className="block rounded-xl bg-accent-500 px-4 py-2.5 text-center text-sm font-semibold text-white"
+                >
+                  Sign in
+                </Link>
+              </>
             )}
+
+            <div className="mt-2 flex items-center justify-between rounded-xl border border-subtle px-4 py-2.5">
+              <span className="text-sm text-slate-400">Appearance</span>
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       )}

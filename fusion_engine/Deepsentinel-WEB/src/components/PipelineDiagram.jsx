@@ -67,7 +67,7 @@ const ORDER = ['input', 'models', 'fusion', 'retrieval', 'report']
 
 const ACCENTS = {
   slate: { text: 'text-slate-300', dot: 'bg-slate-500', border: 'border-slate-500/30', ring: 'ring-slate-500/30' },
-  blue: { text: 'text-blue-300', dot: 'bg-blue-500', border: 'border-blue-500/30', ring: 'ring-blue-500/30' },
+  blue: { text: 'text-accent-400', dot: 'bg-blue-500', border: 'border-accent-500/30', ring: 'ring-blue-500/30' },
   green: { text: 'text-green-300', dot: 'bg-green-500', border: 'border-green-500/30', ring: 'ring-green-500/30' },
   amber: { text: 'text-amber-300', dot: 'bg-amber-500', border: 'border-amber-500/30', ring: 'ring-amber-500/30' },
   red: { text: 'text-red-300', dot: 'bg-red-500', border: 'border-red-500/30', ring: 'ring-red-500/30' },
@@ -121,7 +121,6 @@ const DEMO_MODELS = [
   {
     key: 'graph',
     model: 'Edge-Enhanced GraphSAGE',
-    owner: 'Ewaduge',
     modality: 'Network',
     detects: 'Who pays whom. Finds mule rings, hub-and-spoke funnels and layering chains.',
     signal: 'HUB_AND_SPOKE — 3 senders converging on one sink account',
@@ -130,7 +129,6 @@ const DEMO_MODELS = [
   {
     key: 'behavioral',
     model: 'Stratified VAE + DSAA',
-    owner: 'Wijesinghe',
     modality: 'Behaviour',
     detects: 'Whether this account is acting like itself, against a learned per-account baseline.',
     signal: 'Reconstruction error 4.2σ above baseline',
@@ -139,7 +137,6 @@ const DEMO_MODELS = [
   {
     key: 'temporal',
     model: 'System-Context TCN',
-    owner: 'Pathirana',
     modality: 'Timing',
     detects: 'Rhythm. Mechanically regular transfers betray a script rather than a person.',
     detectsShort: 'Rhythm',
@@ -222,7 +219,7 @@ export default function PipelineDiagram({ stages, running, live = false }) {
                 <p
                   className={cx(
                     'mt-2 text-xs font-semibold leading-tight',
-                    isSelected ? 'text-white' : 'text-slate-400',
+                    isSelected ? 'text-slate-200' : 'text-slate-400',
                   )}
                 >
                   {meta.title}
@@ -238,7 +235,7 @@ export default function PipelineDiagram({ stages, running, live = false }) {
                 <span
                   className={cx(
                     'hidden shrink-0 text-sm transition-colors sm:block',
-                    isDone ? 'text-slate-500' : 'text-slate-800',
+                    isDone ? 'text-slate-500' : 'text-slate-300',
                   )}
                   aria-hidden="true"
                 >
@@ -256,7 +253,7 @@ export default function PipelineDiagram({ stages, running, live = false }) {
           <span className={cx('mt-1.5 h-2 w-2 shrink-0 rounded-full', accent.dot)} />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-base font-semibold text-white">{current.title}</h3>
+              <h3 className="text-base font-semibold text-slate-200">{current.title}</h3>
               {state?.durationMs != null && (
                 <span className="rounded border border-subtle bg-surface-raised px-1.5 py-0.5 font-mono text-[10px] text-slate-500">
                   {formatDuration(state.durationMs)}
@@ -302,7 +299,7 @@ export default function PipelineDiagram({ stages, running, live = false }) {
 function StageMark({ running, done, error, skipped, step, accentText }) {
   if (running) {
     return (
-      <svg className="h-3.5 w-3.5 animate-spin text-blue-400" viewBox="0 0 24 24" fill="none">
+      <svg className="h-3.5 w-3.5 animate-spin text-accent-500" viewBox="0 0 24 24" fill="none">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
       </svg>
@@ -325,7 +322,6 @@ function ModelsPanel({ data }) {
           available: live.available,
           signal: live.signal ?? null,
           model: live.model ?? d.model,
-          owner: live.owner ?? d.owner,
           modality: live.modality ?? d.modality,
           isLive: true,
         }
@@ -352,10 +348,10 @@ function ModelsPanel({ data }) {
               >
                 {m.modality}
               </span>
-              <span className="text-[10px] text-slate-600">{m.owner}</span>
+              <span className="text-[10px] text-slate-600"></span>
             </div>
 
-            <p className="mt-2 text-sm font-semibold text-white">{m.model}</p>
+            <p className="mt-2 text-sm font-semibold text-slate-200">{m.model}</p>
 
             {m.available === false ? (
               <p className="mt-2 text-xs leading-relaxed text-slate-500">
@@ -365,7 +361,7 @@ function ModelsPanel({ data }) {
             ) : (
               <>
                 <div className="mt-3 flex items-baseline gap-2">
-                  <span className="font-mono text-2xl font-bold text-white">
+                  <span className="font-mono text-2xl font-bold text-slate-200">
                     {m.score != null ? m.score.toFixed(3) : '—'}
                   </span>
                   <span className="text-[10px] text-slate-600">risk score</span>

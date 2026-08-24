@@ -4,8 +4,12 @@ const PADDING = 16
 
 function Box({ x, y, label, sublabel, color = 'blue', small = false }) {
   const colors = {
-    blue:   { fill: '#1e3a5f', stroke: '#3b82f6', text: '#93c5fd' },
-    purple: { fill: '#2d1b4e', stroke: '#a855f7', text: '#c4b5fd' },
+    /* Hex rather than tokens: this is an SVG diagram, and the boxes need a
+       fill/stroke/label triad that stays legible on both grounds. */
+    blue:      { fill: '#0d3b37', stroke: '#0f9b8e', text: '#5eead4' },
+    graphTint: { fill: '#0d3b37', stroke: '#0f9b8e', text: '#5eead4' },
+    rose:      { fill: '#3d1020', stroke: '#dc2649', text: '#fda4af' },
+    amber:     { fill: '#3a2606', stroke: '#c2740a', text: '#fcd34d' },
     green:  { fill: '#14352a', stroke: '#22c55e', text: '#86efac' },
     orange: { fill: '#3d1f0a', stroke: '#f97316', text: '#fdba74' },
     slate:  { fill: '#1e293b', stroke: '#475569', text: '#94a3b8' },
@@ -95,7 +99,7 @@ export default function ArchitectureDiagram() {
         <Box x={colInput} y={rowMid} label="Transaction" sublabel="PaySim / Real" color="slate" />
 
         {/* Upstream models */}
-        <Box x={colModels} y={rowTop}  label="GNN / GraphSAGE" sublabel="Member 2 · graph" color="purple" />
+        <Box x={colModels} y={rowTop}  label="GNN / GraphSAGE" sublabel="Network topology" color="graphTint" />
         <Box x={colModels} y={rowMid}  label="VAE / DSAA"       sublabel="Member 1 · behavioral" color="orange" />
         <Box x={colModels} y={rowBot}  label="TCN / TSCFD"      sublabel="Member 3 · temporal" color="blue" />
 
@@ -109,9 +113,9 @@ export default function ArchitectureDiagram() {
         <text x={colFusion + NODE_W / 2} y={rowMid + NODE_H + 10} textAnchor="middle" fill="#22c55e" fontSize={9} fontFamily="monospace">Fraud Confidence Score</text>
 
         {/* Arrows: models → fusion */}
-        <Arrow x1={colModels + NODE_W} y1={rowTop + NODE_H / 2}  x2={colFusion} y2={rowMid} color="#a855f7" />
+        <Arrow x1={colModels + NODE_W} y1={rowTop + NODE_H / 2}  x2={colFusion} y2={rowMid} color="var(--tw-modality-graph, #0f9b8e)" />
         <Arrow x1={colModels + NODE_W} y1={rowMid + NODE_H / 2}  x2={colFusion} y2={rowMid + NODE_H / 2} color="#f97316" />
-        <Arrow x1={colModels + NODE_W} y1={rowBot + NODE_H / 2}  x2={colFusion} y2={rowMid + NODE_H} color="#3b82f6" />
+        <Arrow x1={colModels + NODE_W} y1={rowBot + NODE_H / 2}  x2={colFusion} y2={rowMid + NODE_H} color="#0f9b8e" />
 
         {/* RAG */}
         <Box x={colRAG} y={rowTop}   label="ChromaDB" sublabel="FATF Typologies" color="slate" small />
@@ -125,7 +129,7 @@ export default function ArchitectureDiagram() {
         <Box x={colLLM - 10} y={rowMid - 10} label="Gemini / Llama3" sublabel="forensic reporter" color="red" small />
 
         {/* Arrow: RAG → LLM */}
-        <Arrow x1={colRAG + 120} y1={rowMid} x2={colLLM - 10} y2={rowMid} color="#3b82f6" />
+        <Arrow x1={colRAG + 120} y1={rowMid} x2={colLLM - 10} y2={rowMid} color="#0f9b8e" />
 
         {/* Dashboard */}
         <Box x={W - NODE_W - PADDING} y={rowTop}  label="Gauge Charts"    sublabel="per-modality" color="blue" small />
@@ -141,7 +145,6 @@ export default function ArchitectureDiagram() {
         <rect x={colFusion - 4} y={22} width={W - colFusion + 4 - PADDING + 6} height={H - 32}
           fill="none" stroke="#1e3a5f" strokeWidth={1} strokeDasharray="6 3" rx={6} />
         <text x={colFusion + 4} y={H - 8} fill="#1e40af" fontSize={9} fontFamily="system-ui">
-          Member 4 — IT22192882 (Fusion + Explainability)
         </text>
       </svg>
     </div>

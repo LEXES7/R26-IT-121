@@ -71,7 +71,7 @@ export default function Analyzer() {
                   className={cx(
                     'flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
                     mode === value
-                      ? 'bg-surface-overlay text-white'
+                      ? 'bg-surface-overlay text-slate-200'
                       : 'text-slate-500 hover:text-slate-300',
                   )}
                 >
@@ -92,7 +92,7 @@ export default function Analyzer() {
                         className={cx(
                           'rounded-xl border p-3 text-left transition-all',
                           scenario === s.value
-                            ? 'border-blue-500/40 bg-blue-500/10 ring-1 ring-blue-500/30'
+                            ? 'border-blue-500/40 bg-accent-500/10 ring-1 ring-blue-500/30'
                             : 'border-subtle bg-surface hover:border-strong',
                         )}
                       >
@@ -100,7 +100,7 @@ export default function Analyzer() {
                         <p
                           className={cx(
                             'text-xs font-semibold',
-                            scenario === s.value ? 'text-blue-300' : 'text-slate-300',
+                            scenario === s.value ? 'text-accent-400' : 'text-slate-300',
                           )}
                         >
                           {s.label}
@@ -142,7 +142,7 @@ export default function Analyzer() {
                 className="mt-0.5 h-4 w-4 shrink-0"
               />
               <span>
-                <span className="block text-sm font-medium text-white">
+                <span className="block text-sm font-medium text-slate-200">
                   Ablation comparison
                 </span>
                 <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">
@@ -186,7 +186,7 @@ export default function Analyzer() {
           {result && <ResultSummary result={result} />}
 
           {result?.baseline_report && (
-            <Card className="border-purple-500/20 p-5" >
+            <Card className="border-modality-graph/25 p-5" >
               <AblationComparison
                 baselineReport={result.baseline_report}
                 groundedReport={result.forensic_report}
@@ -220,7 +220,7 @@ function ResultSummary({ result }) {
         <div className="flex items-center gap-6">
           <div className="text-right">
             <p className="text-xs text-slate-500">FATF match</p>
-            <p className="mt-0.5 max-w-[14rem] truncate text-sm font-medium text-white">
+            <p className="mt-0.5 max-w-[14rem] truncate text-sm font-medium text-slate-200">
               {result.retrieval.typology_name}
             </p>
             <p className="mt-0.5 font-mono text-xs text-slate-500">

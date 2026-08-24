@@ -146,7 +146,7 @@ export default function BatchAnalysis() {
           <div className="text-3xl">{file ? '📄' : '📂'}</div>
           {file ? (
             <>
-              <p className="mt-3 font-medium text-white">{file.name}</p>
+              <p className="mt-3 font-medium text-slate-200">{file.name}</p>
               <p className="mt-1 text-xs text-slate-500">
                 {(file.size / 1024).toFixed(0)} KB · click to choose a different file
               </p>
@@ -221,7 +221,7 @@ export default function BatchAnalysis() {
         <Card className="p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium text-white">{meta.filename}</p>
+              <p className="text-sm font-medium text-slate-200">{meta.filename}</p>
               <p className="mt-0.5 text-xs text-slate-500">
                 {meta.rows.toLocaleString()} transactions
                 {meta.has_labels
@@ -236,7 +236,7 @@ export default function BatchAnalysis() {
 
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-raised">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-200"
+              className="h-full rounded-full bg-gradient-to-r from-accent-500 to-accent-500 transition-all duration-200"
               style={{ width: `${progressPct}%` }}
             />
           </div>
@@ -360,7 +360,7 @@ export default function BatchAnalysis() {
                     className={cx(
                       'rounded-lg px-2.5 py-1 text-xs font-medium transition-colors',
                       filter === value
-                        ? 'bg-surface-overlay text-white'
+                        ? 'bg-surface-overlay text-slate-200'
                         : 'text-slate-500 hover:bg-surface-raised hover:text-slate-300',
                     )}
                   >
@@ -375,7 +375,7 @@ export default function BatchAnalysis() {
           ) : (
             <div className="max-h-[32rem] overflow-auto">
               <table className="w-full min-w-[720px] text-sm">
-                <thead className="sticky top-0 z-10" style={{ background: 'rgba(10,15,30,0.98)' }}>
+                <thead className="sticky top-0 z-10 bg-sentinel-900">
                   <tr className="border-b border-subtle text-left">
                     {['Row', 'From → To', 'Type', 'Amount', 'Score', 'Verdict'].map((h) => (
                       <th
@@ -521,7 +521,7 @@ function Metric({ label, value, hint, emphasis }) {
   return (
     <div className={cx('rounded-xl border p-4', emphasis ? 'border-strong bg-surface-raised' : 'border-subtle bg-surface')}>
       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
-      <p className="mt-1.5 font-mono text-2xl font-bold text-white">{value}</p>
+      <p className="mt-1.5 font-mono text-2xl font-bold text-slate-200">{value}</p>
       <p className="mt-0.5 text-[10px] text-slate-600">{hint}</p>
     </div>
   )
@@ -547,7 +547,7 @@ function Confusion({ label, value, tone, hint }) {
 function Stat({ label, value, tone }) {
   return (
     <div>
-      <p className={cx('font-mono text-2xl font-bold', tone === 'high' ? 'text-risk-high' : 'text-white')}>
+      <p className={cx('font-mono text-2xl font-bold', tone === 'high' ? 'text-risk-high' : 'text-slate-200')}>
         {value}
       </p>
       <p className="mt-0.5 text-xs capitalize text-slate-500">{label}</p>

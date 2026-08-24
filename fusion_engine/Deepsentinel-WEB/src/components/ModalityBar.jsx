@@ -21,7 +21,7 @@ export default function ModalityBar({ label, score, available, icon }) {
           {score != null ? (score * 100).toFixed(1) + '%' : '—'}
         </span>
       </div>
-      <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden">
+      <div className="h-2.5 bg-sentinel-800 rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-700 ${barColor(pct / 100)}`}
           style={{ width: available ? `${pct}%` : '0%' }}
