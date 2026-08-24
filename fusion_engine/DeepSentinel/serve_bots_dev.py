@@ -65,6 +65,10 @@ from chatbot import router as chatbot_router  # noqa: E402
 app.include_router(chatbot_router)
 app.include_router(assistant_router)
 
+from enquiry import router as enquiry_router  # noqa: E402
+
+app.include_router(enquiry_router)
+
 
 # The real app defines auth inline in backend/main.py rather than as a router,
 # so the two endpoints the web client needs to sign in are re-declared here

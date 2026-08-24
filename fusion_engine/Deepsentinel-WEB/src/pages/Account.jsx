@@ -80,7 +80,7 @@ export default function Account() {
           ].map(([label, value]) => (
             <div key={label} className="flex justify-between gap-4 border-b border-subtle pb-3">
               <dt className="text-sm text-slate-500">{label}</dt>
-              <dd className="truncate text-sm text-white">{value}</dd>
+              <dd className="truncate text-sm text-slate-200">{value}</dd>
             </div>
           ))}
           <div className="flex items-start justify-between gap-4">

@@ -242,7 +242,7 @@ export default function Settings() {
                   className="flex flex-wrap items-center gap-3 rounded-xl border border-subtle bg-surface p-3.5"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-white">{m.name}</p>
+                    <p className="truncate text-sm font-medium text-slate-200">{m.name}</p>
                     <p className="truncate text-xs text-slate-500">
                       {m.email} · {m.role}
                     </p>

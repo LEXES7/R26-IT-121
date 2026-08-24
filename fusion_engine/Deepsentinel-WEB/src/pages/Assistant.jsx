@@ -146,7 +146,7 @@ export default function Assistant() {
                   key={e}
                   type="button"
                   onClick={() => send(e)}
-                  className="block w-full rounded-lg border border-subtle bg-surface px-3 py-2 text-left text-sm text-slate-300 transition hover:border-strong hover:bg-surface-hover hover:text-white"
+                  className="block w-full rounded-lg border border-subtle bg-surface px-3 py-2 text-left text-sm text-slate-300 transition hover:border-strong hover:bg-surface-hover hover:text-slate-200"
                 >
                   {e}
                 </button>
@@ -185,12 +185,12 @@ export default function Assistant() {
               }
             }}
             placeholder="Ask about a transaction, account or system state…"
-            className="max-h-32 flex-1 resize-none rounded-lg border border-subtle bg-sentinel-800 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-strong focus:outline-none"
+            className="max-h-32 flex-1 resize-none rounded-lg border border-subtle bg-sentinel-800 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-strong focus:outline-none"
           />
           <button
             type="submit"
             disabled={busy || !input.trim()}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition enabled:hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-semibold text-slate-200 transition enabled:hover:bg-accent-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Ask
           </button>
@@ -207,7 +207,7 @@ function Turn({ message }) {
       <div
         className={cx(
           'max-w-[88%] rounded-xl px-4 py-3 text-sm leading-relaxed',
-          isUser ? 'bg-blue-600/20 text-white' : 'border border-subtle bg-surface-raised text-slate-200',
+          isUser ? 'bg-accent-500/20 text-slate-200' : 'border border-subtle bg-surface-raised text-slate-200',
         )}
       >
         <p className="whitespace-pre-wrap">{message.content}</p>

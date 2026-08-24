@@ -289,3 +289,9 @@ export const getAssistantSettings = () =>
 
 export const updateAssistantSettings = (changes) =>
   client.patch('/api/assistant/settings', changes).then((r) => r.data)
+
+// ── Commercial enquiry ───────────────────────────────────────────────────────
+// Public: creates no account and grants no access, it only reaches the team.
+
+export const submitEnquiry = (enquiry) =>
+  client.post('/api/enquiry', enquiry).then((r) => r.data)

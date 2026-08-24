@@ -1,3 +1,5 @@
+import Logo from './Logo'
+import FooterScene from './FooterScene'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { cx } from './ui'
@@ -56,22 +58,42 @@ export default function Footer() {
   ].filter((c) => (c.links?.length ?? c.items?.length ?? c.external?.length) > 0)
 
   return (
-    <footer className="mt-20 border-t border-subtle">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+    <footer className="relative mt-20 overflow-hidden border-t border-subtle">
+      {/* Scenery sits behind and below the columns, bleeding to both edges. */}
+      <FooterScene className="pointer-events-none absolute inset-x-0 bottom-0 h-56 w-full" />
+
+      <div className="relative mx-auto max-w-7xl px-4 pb-40 pt-12 sm:px-6">
         <div className="grid gap-10 lg:grid-cols-[1.4fr_repeat(4,1fr)]">
           {/* Identity */}
           <div className="space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 text-xs font-bold text-white">
-                DS
-              </div>
-              <span className="font-semibold text-white">DeepSentinel</span>
+              <Logo />
             </div>
             <p className="max-w-xs text-xs leading-relaxed text-slate-500">
               A multi-modal AI platform for explainable financial fraud detection.
               Combines graph, behavioural and temporal models with retrieval-grounded
               forensic reporting.
             </p>
+            <a
+              href="mailto:hello@deepsentinel.io"
+              className="inline-block text-sm text-slate-400 transition-colors hover:text-accent-500"
+            >
+              hello@deepsentinel.io
+            </a>
+
+            <div>
+              <Link
+                to="/signup"
+                className="inline-flex items-center gap-2 rounded-full border border-subtle bg-surface px-4 py-2 text-xs font-medium text-slate-300 transition-colors hover:border-accent-500/40 hover:text-slate-200"
+              >
+                <span
+                  aria-hidden
+                  className="h-1.5 w-1.5 rounded-full bg-accent-500"
+                />
+                Talk to our team
+              </Link>
+            </div>
+
             <div className="flex flex-wrap gap-1.5 pt-1">
               {['FastAPI', 'PostgreSQL', 'ChromaDB', 'PyTorch', 'React'].map((t) => (
                 <span
@@ -133,11 +155,6 @@ export default function Footer() {
               detail: 'Final Year Research Project 2026',
             },
             {
-              label: 'Project',
-              value: 'R26-IT-121',
-              detail: 'Multi-modal explainable fraud detection',
-            },
-            {
               label: 'Alignment',
               value: 'UN SDG 16 · SDG 9',
               detail: 'Strong institutions · Industry and innovation',
@@ -159,7 +176,7 @@ export default function Footer() {
             'text-[11px] text-slate-700 sm:flex-row',
           )}
         >
-          <p>© 2026 DeepSentinel · SLIIT · Research prototype</p>
+          <p>© 2026 DeepSentinel · Research prototype</p>
           <p className="text-center sm:text-right">
             Evaluated on the PaySim synthetic dataset. Not certified for production
             financial decisioning.

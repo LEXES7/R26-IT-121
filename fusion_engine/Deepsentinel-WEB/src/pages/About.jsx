@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import { ArrowLink, Display, Eyebrow } from '../components/Editorial'
+import Reveal from '../components/Reveal'
 
 const COMPONENTS = [
   {
@@ -7,7 +9,7 @@ const COMPONENTS = [
     model: 'Edge-Enhanced GraphSAGE',
     tagline: 'Detects mule rings and hub-and-spoke laundering networks by mapping transaction topology as a graph.',
     tech: ['PyTorch Geometric', 'NetworkX', 'Python'],
-    color: 'purple',
+    color: 'graphTint',
   },
   {
     icon: '📊',
@@ -30,15 +32,15 @@ const COMPONENTS = [
     component: 'Ensemble Fusion + RAG Forensics',
     model: 'LR Meta-Classifier · ChromaDB · Gemini',
     tagline: 'Fuses all signals into a unified Fraud Confidence Score, then retrieves FATF typologies to anchor a Chain-of-Evidence LLM report.',
-    tech: ['scikit-learn', 'ChromaDB', 'Gemini 2.0 Flash', 'FastAPI', 'React'],
+    tech: ['scikit-learn', 'ChromaDB', 'Gemini (flash-latest)', 'FastAPI', 'React'],
     color: 'green',
   },
 ]
 
 const ACCENT = {
-  purple: { border: 'border-purple-500/20', bg: 'bg-purple-500/8', text: 'text-purple-400' },
+  graphTint: { border: 'border-modality-graph/25', bg: 'bg-modality-graph/10', text: 'text-modality-graph' },
   orange: { border: 'border-orange-500/20', bg: 'bg-orange-500/8', text: 'text-orange-400' },
-  blue:   { border: 'border-blue-500/20',   bg: 'bg-blue-500/8',   text: 'text-blue-400' },
+  blue:   { border: 'border-accent-500/25',   bg: 'bg-blue-500/8',   text: 'text-accent-500' },
   green:  { border: 'border-green-500/20',  bg: 'bg-green-500/8',  text: 'text-green-400' },
 }
 
@@ -46,10 +48,26 @@ const TECH_STACK = [
   { layer: 'API Layer',      items: ['FastAPI', 'uvicorn', 'httpx', 'Pydantic'] },
   { layer: 'ML / Fusion',   items: ['scikit-learn', 'NumPy', 'joblib'] },
   { layer: 'RAG / Vector',  items: ['ChromaDB', 'sentence-transformers', 'all-MiniLM-L6-v2'] },
-  { layer: 'LLM',           items: ['Gemini 2.0 Flash', 'Chain-of-Evidence Prompting'] },
+  { layer: 'LLM',           items: ['Gemini (flash-latest)', 'Chain-of-Evidence Prompting'] },
   { layer: 'Frontend',      items: ['React 19', 'Vite 5', 'Tailwind CSS 3', 'Axios'] },
   { layer: 'Infrastructure',items: ['Railway (backend)', 'Vercel (frontend)', 'GitHub'] },
 ]
+
+/* What each detector can and cannot see. A comparison grid makes the case for
+   fusion far faster than three paragraphs: no single row has every tick. */
+const CAPABILITY = {
+  columns: ['Network', 'Behaviour', 'Timing'],
+  rows: [
+    ['Mule rings and collection funnels', true, false, false],
+    ['Money split across many accounts', true, false, true],
+    ['Account acting unlike itself', false, true, false],
+    ['Sudden escalation in value', false, true, false],
+    ['Machine-paced transfer rhythm', false, false, true],
+    ['Off-hours or burst activity', false, false, true],
+    ['Works on a first-seen account', false, true, true],
+    ['Explains itself with evidence', true, true, true],
+  ],
+}
 
 const PIPELINE = [
   { step: '01', label: 'Transaction Input',   desc: 'Raw transaction data — amount, counterparties, timing — enters the pipeline.' },
@@ -61,149 +79,156 @@ const PIPELINE = [
 
 export default function About() {
   return (
-    <div className="max-w-5xl mx-auto px-6 py-16 space-y-20">
-
-      {/* ── HERO ── */}
-      <section className="space-y-5 text-center max-w-3xl mx-auto">
-        <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs px-4 py-1.5 rounded-full font-medium tracking-wide">
-          Research Architecture · 2026
+    <div className="pb-24">
+      {/* ── Hero ───────────────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden border-b border-subtle">
+        <div aria-hidden className="pointer-events-none absolute inset-0 grid-bg" />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -left-40 -top-32 h-[28rem] w-[28rem] rounded-full bg-accent-500/10 blur-[130px]"
+        />
+        <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6">
+          <Reveal className="max-w-2xl">
+            <Eyebrow>Architecture</Eyebrow>
+            <Display lead="Three detectors," accent="one defensible verdict" className="mt-4" />
+            <p className="mt-6 text-base leading-relaxed text-slate-400">
+              No single model sees fraud whole. The network layer reads structure,
+              the behavioural layer reads deviation, the temporal layer reads
+              rhythm — and a meta-classifier decides what to believe when they
+              disagree.
+            </p>
+          </Reveal>
         </div>
-        <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight">
-          How DeepSentinel Works
-        </h1>
-        <p className="text-slate-400 text-lg leading-relaxed">
-          Four specialized components — graph topology, behavioral modeling, temporal analysis,
-          and RAG-grounded forensics — operating as a single unified pipeline.
-        </p>
       </section>
 
-      {/* ── PIPELINE STEPS ── */}
-      <section className="space-y-6">
-        <div className="text-center space-y-2">
-          <p className="text-xs font-semibold text-blue-400 uppercase tracking-[0.2em]">Detection Pipeline</p>
-          <h2 className="text-2xl font-bold text-white">Five stages from input to report</h2>
-        </div>
-        <div className="space-y-3">
-          {PIPELINE.map((s) => (
-            <div
-              key={s.step}
-              className="flex items-start gap-5 rounded-2xl border border-white/[0.06] p-5 transition-colors hover:bg-white/[0.02]"
-              style={{ background: 'rgba(255,255,255,0.015)' }}
-            >
-              <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center font-mono text-xs text-blue-400 font-semibold">
-                {s.step}
+      {/* ── Pipeline ───────────────────────────────────────────────────── */}
+      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+        <Reveal className="max-w-2xl">
+          <Eyebrow>The pipeline</Eyebrow>
+          <Display lead="Five stages," accent="input to report" className="mt-4" />
+        </Reveal>
+
+        <div className="mt-12 space-y-px overflow-hidden rounded-2xl border border-subtle bg-white/[0.06]">
+          {PIPELINE.map((p, i) => (
+            <Reveal key={p.step} delay={i * 80}>
+              <div className="group flex gap-5 bg-sentinel-950 p-6 transition-colors hover:bg-surface">
+                <span className="shrink-0 font-mono text-sm font-bold text-accent-500">
+                  {p.step}
+                </span>
+                <div>
+                  <p className="font-semibold text-slate-200">{p.label}</p>
+                  <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500">
+                    {p.desc}
+                  </p>
+                </div>
               </div>
-              <div className="space-y-0.5">
-                <p className="text-sm font-semibold text-white">{s.label}</p>
-                <p className="text-xs text-slate-500 leading-relaxed">{s.desc}</p>
-              </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>
 
-      {/* ── 4 COMPONENT CARDS ── */}
-      <section className="space-y-6">
-        <div className="text-center space-y-2">
-          <p className="text-xs font-semibold text-blue-400 uppercase tracking-[0.2em]">System Components</p>
-          <h2 className="text-2xl font-bold text-white">Four specialized models</h2>
-        </div>
-        <div className="grid sm:grid-cols-2 gap-4">
-          {COMPONENTS.map((c) => {
-            const a = ACCENT[c.color]
-            return (
-              <div
-                key={c.component}
-                className={`rounded-2xl border ${a.border} p-6 space-y-4 transition-all duration-300 hover:scale-[1.01]`}
-                style={{ background: 'rgba(255,255,255,0.02)' }}
-              >
-                <div className="flex items-start gap-4">
-                  <div className={`w-11 h-11 rounded-xl ${a.bg} border ${a.border} flex items-center justify-center text-xl flex-shrink-0`}>
-                    {c.icon}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-white text-sm">{c.component}</p>
-                    <p className={`text-xs font-mono mt-0.5 ${a.text}`}>{c.model}</p>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-500 leading-relaxed">{c.tagline}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {c.tech.map(t => (
-                    <span key={t} className="text-xs bg-white/[0.04] border border-white/[0.08] text-slate-400 px-2 py-0.5 rounded-md">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </section>
+      {/* ── Capability matrix ──────────────────────────────────────────── */}
+      <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
+        <Reveal className="max-w-2xl">
+          <Eyebrow>Why three</Eyebrow>
+          <Display lead="No single model" accent="sees all of it" className="mt-4" />
+          <p className="mt-5 text-sm leading-relaxed text-slate-500">
+            Each column has blind spots the others cover. That is the entire
+            argument for fusion, and it is why a missing detector abstains
+            rather than voting zero.
+          </p>
+        </Reveal>
 
-      {/* ── TECH STACK ── */}
-      <section className="space-y-6">
-        <div className="text-center space-y-2">
-          <p className="text-xs font-semibold text-blue-400 uppercase tracking-[0.2em]">Technology Stack</p>
-          <h2 className="text-2xl font-bold text-white">Built on production-grade tooling</h2>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {TECH_STACK.map((layer) => (
-            <div
-              key={layer.layer}
-              className="rounded-xl border border-white/[0.06] p-4 space-y-3"
-              style={{ background: 'rgba(255,255,255,0.015)' }}
-            >
-              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{layer.layer}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {layer.items.map(item => (
-                  <span key={item} className="text-xs bg-white/[0.04] border border-white/[0.07] text-slate-400 px-2 py-0.5 rounded-md">
-                    {item}
-                  </span>
+        <Reveal delay={120} className="mt-10 overflow-x-auto">
+          <table className="w-full min-w-[34rem] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-subtle">
+                <th className="py-3 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  Signal
+                </th>
+                {CAPABILITY.columns.map((c) => (
+                  <th
+                    key={c}
+                    className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-400"
+                  >
+                    {c}
+                  </th>
                 ))}
+              </tr>
+            </thead>
+            <tbody>
+              {CAPABILITY.rows.map(([label, ...cells]) => (
+                <tr key={label} className="border-b border-subtle/60 last:border-0">
+                  <td className="py-3 pr-4 text-slate-300">{label}</td>
+                  {cells.map((on, i) => (
+                    <td key={i} className="px-3 py-3 text-center">
+                      {on ? (
+                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-accent-500/15 text-accent-500">
+                          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="m5 13 4 4L19 7" />
+                          </svg>
+                        </span>
+                      ) : (
+                        <span className="text-slate-700" aria-label="no">—</span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Reveal>
+      </section>
+
+      {/* ── Stack ──────────────────────────────────────────────────────── */}
+      <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
+        <Reveal className="max-w-2xl">
+          <Eyebrow>Built with</Eyebrow>
+          <Display lead="The stack" accent="end to end" className="mt-4" />
+        </Reveal>
+
+        <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {TECH_STACK.map((t, i) => (
+            <Reveal key={t.layer} delay={i * 70}>
+              <div className="h-full rounded-2xl border border-subtle bg-surface p-5 transition-colors hover:border-accent-500/40">
+                <p className="text-xs font-semibold uppercase tracking-wider text-accent-500">
+                  {t.layer}
+                </p>
+                <ul className="mt-3 space-y-1.5">
+                  {t.items.map((item) => (
+                    <li key={item} className="font-mono text-xs text-slate-400">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>
 
-      {/* ── NOVELTY STATEMENT ── */}
-      <section
-        className="relative rounded-3xl border border-white/[0.07] p-10 overflow-hidden space-y-6"
-        style={{ background: 'rgba(255,255,255,0.02)' }}
-      >
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.07) 0%, transparent 70%)' }} />
-        <div className="relative space-y-4 max-w-2xl">
-          <p className="text-xs font-semibold text-blue-400 uppercase tracking-[0.2em]">Research Contribution</p>
-          <h2 className="text-xl sm:text-2xl font-bold text-white leading-snug">
-            The first system to combine multi-modal deep learning fraud detection with FATF-grounded LLM forensic narratives.
-          </h2>
-          <div className="grid sm:grid-cols-2 gap-5 text-sm text-slate-400 leading-relaxed">
-            <p>
-              A <span className="text-slate-200">427-paper ScienceDirect 2025 survey</span> confirmed no existing system pairs a multi-modal fraud ensemble with a RAG layer that grounds LLM outputs in a structured typology knowledge base.
-            </p>
-            <p>
-              This gap has been independently confirmed in three peer-reviewed surveys (ScienceDirect 2025, arXiv April 2025, ScienceDirect January 2026), establishing defensible academic novelty.
-            </p>
+      {/* ── Components CTA ─────────────────────────────────────────────── */}
+      <section className="mx-auto max-w-6xl px-4 sm:px-6">
+        <Reveal>
+          <div className="relative overflow-hidden rounded-2xl border border-subtle bg-surface p-8 sm:p-10">
+            <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-24 h-48 bg-accent-500/10 blur-3xl" />
+            <div className="relative sm:flex sm:items-center sm:justify-between sm:gap-8">
+              <div className="max-w-lg">
+                <p className="text-xl font-semibold text-slate-200">
+                  Each component, in depth
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                  What it detects, how it was evaluated, and what it hands to the
+                  fusion engine.
+                </p>
+              </div>
+              <Link to="/components/network" className="mt-5 inline-block sm:mt-0">
+                <ArrowLink>Explore components</ArrowLink>
+              </Link>
+            </div>
           </div>
-        </div>
-        <div className="relative flex flex-wrap gap-3">
-          <Link
-            to="/analyzer"
-            className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-2.5 rounded-xl transition-all text-sm shadow-lg shadow-blue-600/20"
-          >
-            Try the Live Demo →
-          </Link>
-          <a
-            href="https://deepsent-api-production.up.railway.app/docs"
-            target="_blank"
-            rel="noreferrer"
-            className="border border-white/10 hover:border-white/20 text-slate-400 hover:text-white px-6 py-2.5 rounded-xl transition-all text-sm"
-          >
-            API Documentation ↗
-          </a>
-        </div>
+        </Reveal>
       </section>
-
     </div>
   )
 }

@@ -6,6 +6,99 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme tokens ────────────────────────────────────────────────────────────
+   Both themes are defined here as raw RGB triples, and Tailwind maps its
+   colour names onto them. That means existing classes like `text-slate-400`
+   or `bg-surface` adapt automatically — no component needs a `dark:` variant,
+   and there is exactly one place to tune either palette.
+
+   The neutral ramp INVERTS between themes: slate-200 is near-white on dark and
+   near-black on light, so "more contrast" always means the same direction. */
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --sentinel-950: 6 9 26;
+  --sentinel-900: 10 15 30;
+  --sentinel-800: 15 23 42;
+  --sentinel-700: 30 41 59;
+  --sentinel-600: 51 65 85;
+
+  --slate-200: 226 232 240;
+  --slate-300: 203 213 225;
+  --slate-400: 148 163 184;
+  --slate-500: 120 133 153;
+  --slate-600: 100 116 139;
+  --slate-700: 71 85 105;
+
+  --surface: 255 255 255 / 0.02;
+  --surface-raised: 255 255 255 / 0.04;
+  --surface-overlay: 255 255 255 / 0.06;
+  --surface-hover: 255 255 255 / 0.08;
+
+  --border-subtle: 255 255 255 / 0.07;
+  --border-strong: 255 255 255 / 0.14;
+
+  --grid-line: 255 255 255 / 0.022;
+
+  /* Validated on this surface: adjacent-pair CVD ΔE 10.0 (deutan),
+     normal-vision floor 21.5, all three inside the dark lightness band. */
+  --accent-400: 45 212 191;
+  --accent-500: 15 155 142;
+  --accent-600: 13 118 110;
+
+  --modality-graph: 15 155 142;        /* network  — teal  */
+  --modality-behavioral: 220 38 73;    /* behaviour — rose */
+  --modality-temporal: 194 116 10;     /* timing   — amber */
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+
+  /* Warm off-whites rather than pure #fff: a paper-like ground is easier to
+     read against for long stretches and keeps the accent from vibrating. */
+  --sentinel-950: 250 250 249;
+  --sentinel-900: 245 245 244;
+  --sentinel-800: 238 238 236;
+  --sentinel-700: 225 225 222;
+  --sentinel-600: 200 200 196;
+
+  --slate-200: 15 23 42;
+  --slate-300: 30 41 59;
+  --slate-400: 71 85 105;
+  --slate-500: 90 103 122;
+  --slate-600: 110 122 140;
+  --slate-700: 148 163 184;
+
+  --surface: 15 23 42 / 0.025;
+  --surface-raised: 15 23 42 / 0.045;
+  --surface-overlay: 15 23 42 / 0.06;
+  --surface-hover: 15 23 42 / 0.075;
+
+  --border-subtle: 15 23 42 / 0.10;
+  --border-strong: 15 23 42 / 0.20;
+
+  --grid-line: 15 23 42 / 0.035;
+
+  /* Re-stepped for the paper ground, not flipped: darker teal to clear the
+     chroma floor, deeper warms to hold 3:1 contrast. */
+  --accent-400: 0 153 140;
+  --accent-500: 0 133 122;
+  --accent-600: 0 110 101;
+
+  --modality-graph: 0 153 140;
+  --modality-behavioral: 190 18 60;
+  --modality-temporal: 164 90 6;
+}
+
+/* Theme changes should feel like a light coming on, not a jump cut — but only
+   on the surfaces, never on transforms, or pinned sections judder. */
+html.theme-transition,
+html.theme-transition * {
+  transition: background-color 220ms ease, border-color 220ms ease,
+    color 220ms ease, fill 220ms ease;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -83,4 +176,13 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Faint isometric grid. Gives large dark sections depth without competing
+   with content — visible enough to read as texture, never as pattern. */
+.grid-bg {
+  background-image:
+    linear-gradient(rgb(var(--grid-line)) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--grid-line)) 1px, transparent 1px);
+  background-size: 56px 56px;
 }

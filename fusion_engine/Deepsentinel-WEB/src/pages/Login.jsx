@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Alert, Button, Card, Field, Input } from '../components/ui'
+import { Alert, Button, Field, Input } from '../components/ui'
+import AuthLayout from '../components/AuthLayout'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -35,71 +36,57 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12">
-      <div className="w-full max-w-sm animate-fade-in">
-        <div className="mb-8 text-center">
-          <div className="mb-4 flex items-center justify-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-lg font-bold text-white shadow-lg shadow-blue-500/30">
-              DS
-            </div>
-            <span className="text-2xl font-bold text-white">
-              Deep<span className="text-blue-400">Sentinel</span>
-            </span>
-          </div>
-          <p className="text-sm text-slate-500">Multi-modal AI fraud detection</p>
-        </div>
+    <AuthLayout
+      title="Sign in"
+      subtitle="Access the analyzer, batch runs and the operator assistant."
+      footer={
+        <>
+          No account?{' '}
+          <Link to="/signup" className="font-medium text-accent-500 hover:text-accent-400">
+            Request access
+          </Link>
+          {' · '}
+          <Link to="/" className="hover:text-slate-300">
+            Back to overview
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        {error && (
+          <Alert tone="danger" onDismiss={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
 
-        <Card className="p-7">
-          <h1 className="text-lg font-semibold text-white">Sign in</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Use the credentials issued by your administrator.
-          </p>
+        <Field label="Username" htmlFor="username">
+          <Input
+            id="username"
+            name="username"
+            autoComplete="username"
+            autoFocus
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="analyst"
+          />
+        </Field>
 
-          {error && (
-            <Alert tone="error" className="mt-5" onDismiss={() => setError(null)}>
-              {error}
-            </Alert>
-          )}
+        <Field label="Password" htmlFor="password">
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+          />
+        </Field>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <Field label="Username" htmlFor="username">
-              <Input
-                id="username"
-                name="username"
-                autoComplete="username"
-                autoFocus
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="your.username"
-                error={Boolean(error)}
-              />
-            </Field>
-
-            <Field label="Password" htmlFor="password">
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                error={Boolean(error)}
-              />
-            </Field>
-
-            <Button type="submit" loading={loading} className="w-full" size="lg">
-              {loading ? 'Signing in…' : 'Sign in'}
-            </Button>
-          </form>
-        </Card>
-
-        <p className="mt-6 text-center text-[11px] leading-relaxed text-slate-700">
-          Accounts are created by an administrator.
-          <br />
-          Repeated failed attempts will temporarily lock the account.
-        </p>
-      </div>
-    </div>
+        <Button type="submit" loading={loading} className="w-full" size="lg">
+          {loading ? 'Signing in…' : 'Sign in'}
+        </Button>
+      </form>
+    </AuthLayout>
   )
 }

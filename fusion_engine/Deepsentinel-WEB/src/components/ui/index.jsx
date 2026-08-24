@@ -15,13 +15,13 @@ const cx = (...parts) => parts.filter(Boolean).join(' ')
 
 const BUTTON_VARIANTS = {
   primary:
-    'bg-blue-600 text-white hover:bg-blue-500 focus-visible:ring-blue-400 shadow-lg shadow-blue-600/20',
+    'bg-accent-500 text-white hover:bg-accent-400 focus-visible:ring-blue-400 shadow-lg shadow-accent-500/20',
   secondary:
     'bg-surface-raised text-slate-200 border border-subtle hover:bg-surface-hover hover:border-strong focus-visible:ring-slate-400',
   danger:
     'bg-red-600/90 text-white hover:bg-red-500 focus-visible:ring-red-400',
   ghost:
-    'text-slate-400 hover:text-white hover:bg-surface-raised focus-visible:ring-slate-500',
+    'text-slate-400 hover:text-slate-200 hover:bg-surface-raised focus-visible:ring-slate-500',
 }
 
 const BUTTON_SIZES = {
@@ -81,7 +81,7 @@ export function CardHeader({ title, description, action, className }) {
   return (
     <div className={cx('flex items-start justify-between gap-4 flex-wrap', className)}>
       <div className="min-w-0">
-        <h2 className="text-base font-semibold text-white">{title}</h2>
+        <h2 className="text-base font-semibold text-slate-200">{title}</h2>
         {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
       </div>
       {action}
@@ -100,7 +100,7 @@ export function SectionLabel({ children, className }) {
 // ── Form controls ────────────────────────────────────────────────────────────
 
 const FIELD_BASE =
-  'w-full rounded-lg bg-surface-raised px-3.5 py-2.5 text-sm text-white placeholder-slate-600 ' +
+  'w-full rounded-lg bg-surface-raised px-3.5 py-2.5 text-sm text-slate-200 placeholder-slate-600 ' +
   'border transition-colors focus:outline-none focus:ring-1 disabled:opacity-50'
 
 export const Input = forwardRef(function Input({ error, className, ...props }, ref) {
@@ -165,7 +165,7 @@ export function Toggle({ checked, onChange, label, description, disabled }) {
       )}
     >
       <span className="min-w-0">
-        <span className="block text-sm font-medium text-white">{label}</span>
+        <span className="block text-sm font-medium text-slate-200">{label}</span>
         {description && <span className="mt-0.5 block text-xs text-slate-500">{description}</span>}
       </span>
       <button
@@ -178,7 +178,7 @@ export function Toggle({ checked, onChange, label, description, disabled }) {
         className={cx(
           'relative h-6 w-11 shrink-0 rounded-full transition-colors',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-sentinel-950',
-          checked ? 'bg-blue-600' : 'bg-slate-700',
+          checked ? 'bg-accent-500' : 'bg-slate-700',
         )}
       >
         <span
@@ -198,7 +198,7 @@ const ALERT_TONES = {
   success: 'border-green-500/25 bg-green-500/10 text-green-300',
   error: 'border-red-500/25 bg-red-500/10 text-red-300',
   warning: 'border-amber-500/25 bg-amber-500/10 text-amber-300',
-  info: 'border-blue-500/25 bg-blue-500/10 text-blue-300',
+  info: 'border-blue-500/25 bg-accent-500/10 text-accent-400',
 }
 
 export function Alert({ tone = 'info', title, children, onDismiss, className }) {
@@ -276,7 +276,7 @@ export function PageHeader({ title, description, action }) {
   return (
     <div className="flex items-start justify-between gap-4 flex-wrap">
       <div className="min-w-0">
-        <h1 className="text-2xl font-bold text-white sm:text-3xl">{title}</h1>
+        <h1 className="text-2xl font-bold text-slate-200 sm:text-3xl">{title}</h1>
         {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
       </div>
       {action}

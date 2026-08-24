@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { ArrowLink, Display, Eyebrow } from '../components/Editorial'
+import Reveal from '../components/Reveal'
+import { cx } from '../components/ui'
 
 const FAQS = [
   {
@@ -19,7 +22,7 @@ const FAQS = [
       },
       {
         q: 'Is this a production system?',
-        a: 'DeepSentinel is a research platform built for SLIIT Final Year Research Project 2026. The Fusion Engine, RAG retrieval, and LLM reporting are fully functional and deployed. The upstream deep learning models (GNN, VAE, TCN) are currently simulated via scenario-based mock scores while the other team members finalize their components.',
+        a: 'DeepSentinel is a research platform for multi-modal, explainable fraud detection. The Fusion Engine, RAG retrieval, and LLM reporting are fully functional and deployed. The upstream deep learning models (GNN, VAE, TCN) are currently simulated via scenario-based mock scores while the other team members finalize their components.',
       },
     ],
   },
@@ -74,13 +77,13 @@ const FAQS = [
 function AccordionItem({ q, a }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className={`border rounded-xl overflow-hidden transition-colors ${open ? 'border-blue-500/30 bg-blue-500/5' : 'border-white/7 bg-white/[0.02]'}`}>
+    <div className={`border rounded-xl overflow-hidden transition-colors ${open ? 'border-accent-500/30 bg-blue-500/5' : 'border-white/7 bg-white/[0.02]'}`}>
       <button
         onClick={() => setOpen(v => !v)}
         className="w-full flex items-center justify-between px-5 py-4 text-left gap-4"
       >
-        <span className={`font-medium text-sm ${open ? 'text-white' : 'text-slate-300'}`}>{q}</span>
-        <span className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center text-xs transition-all ${open ? 'border-blue-500/50 text-blue-400 rotate-45' : 'border-white/15 text-slate-500'}`}>
+        <span className={`font-medium text-sm ${open ? 'text-slate-200' : 'text-slate-300'}`}>{q}</span>
+        <span className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center text-xs transition-all ${open ? 'border-blue-500/50 text-accent-500 rotate-45' : 'border-white/15 text-slate-500'}`}>
           +
         </span>
       </button>
@@ -94,52 +97,143 @@ function AccordionItem({ q, a }) {
 }
 
 export default function FAQ() {
+  const [query, setQuery] = useState('')
+  const [active, setActive] = useState('All')
+
+  const categories = ['All', ...FAQS.map((s) => s.category)]
+
+  // Filter across both question and answer: people search for a word they
+  // half-remember from the answer at least as often as from the title.
+  const needle = query.trim().toLowerCase()
+  const sections = FAQS.map((section) => ({
+    ...section,
+    items: section.items.filter(
+      (i) =>
+        (active === 'All' || active === section.category) &&
+        (!needle ||
+          i.q.toLowerCase().includes(needle) ||
+          i.a.toLowerCase().includes(needle)),
+    ),
+  })).filter((s) => s.items.length > 0)
+
+  const total = sections.reduce((n, s) => n + s.items.length, 0)
+
   return (
-    <div className="max-w-3xl mx-auto px-6 py-16 space-y-16">
+    <div className="pb-24">
+      {/* ── Header ─────────────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden border-b border-subtle">
+        <div aria-hidden className="pointer-events-none absolute inset-0 grid-bg" />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-accent-500/10 blur-[120px]"
+        />
+        <div className="relative mx-auto max-w-4xl px-4 py-20 sm:px-6">
+          <Reveal>
+            <Eyebrow>Frequently asked</Eyebrow>
+            <Display lead="Everything you need" accent="to know" className="mt-4" />
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-400">
+              How the platform works, what the research actually shows, and how to
+              read what the analyzer gives you back.
+            </p>
+          </Reveal>
 
-      {/* Header */}
-      <div className="space-y-4">
-        <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs px-4 py-1.5 rounded-full font-medium">
-          Frequently Asked Questions
-        </div>
-        <h1 className="text-4xl font-bold text-white">Everything you need to know</h1>
-        <p className="text-slate-400 text-lg leading-relaxed">
-          Questions about the platform, the research, and how to use the Analyzer.
-          Can't find your answer?{' '}
-          <Link to="/about" className="text-blue-400 hover:text-blue-300 transition-colors">
-            Reach out to the team →
-          </Link>
-        </p>
-      </div>
+          {/* Search */}
+          <Reveal delay={120} className="mt-8">
+            <div className="relative max-w-md">
+              <svg
+                viewBox="0 0 24 24" aria-hidden
+                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600"
+                fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-3.5-3.5" />
+              </svg>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search the answers…"
+                aria-label="Search questions"
+                className="w-full rounded-xl border border-subtle bg-surface py-3 pl-10 pr-4 text-sm text-slate-200 placeholder:text-slate-600 focus:border-strong focus:outline-none"
+              />
+            </div>
+          </Reveal>
 
-      {/* FAQ sections */}
-      {FAQS.map(section => (
-        <section key={section.category} className="space-y-4">
-          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-widest">
-            {section.category}
-          </h2>
-          <div className="space-y-2">
-            {section.items.map(item => (
-              <AccordionItem key={item.q} q={item.q} a={item.a} />
+          {/* Category filter */}
+          <Reveal delay={180} className="mt-4 flex flex-wrap gap-2">
+            {categories.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setActive(c)}
+                className={cx(
+                  'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
+                  active === c
+                    ? 'border-accent-500/50 bg-accent-500/10 text-accent-500'
+                    : 'border-subtle text-slate-500 hover:border-strong hover:text-slate-300',
+                )}
+              >
+                {c}
+              </button>
             ))}
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── Answers ────────────────────────────────────────────────────── */}
+      <div className="mx-auto max-w-4xl px-4 sm:px-6">
+        {total === 0 ? (
+          <p className="py-20 text-center text-sm text-slate-500">
+            Nothing matches “{query}”. Try a broader word, or ask the assistant —
+            it reads the project documentation directly.
+          </p>
+        ) : (
+          sections.map((section, si) => (
+            <section key={section.category} className="pt-14">
+              <Reveal>
+                <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                  {section.category}
+                </h2>
+              </Reveal>
+              <div className="mt-4 space-y-2">
+                {section.items.map((item, i) => (
+                  <Reveal key={item.q} delay={Math.min(i, 4) * 70}>
+                    <AccordionItem q={item.q} a={item.a} />
+                  </Reveal>
+                ))}
+              </div>
+            </section>
+          ))
+        )}
+
+        {/* ── CTA ──────────────────────────────────────────────────────── */}
+        <Reveal className="mt-20">
+          <div className="relative overflow-hidden rounded-2xl border border-subtle bg-surface p-8 text-center sm:p-10">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 -top-24 h-48 bg-accent-500/10 blur-3xl"
+            />
+            <div className="relative">
+              <p className="text-xl font-semibold text-slate-200">Still have a question?</p>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+                The project assistant answers from the documentation itself and
+                cites where each answer came from — or run a real transaction
+                through the analyzer.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                <Link
+                  to="/analyzer"
+                  className="rounded-xl bg-white px-6 py-3 text-sm font-semibold text-sentinel-950 transition hover:bg-slate-200"
+                >
+                  Open the analyzer
+                </Link>
+                <Link to="/components/network">
+                  <ArrowLink>Read the components</ArrowLink>
+                </Link>
+              </div>
+            </div>
           </div>
-        </section>
-      ))}
-
-      {/* Bottom CTA */}
-      <div className="card p-8 text-center space-y-4">
-        <p className="text-white font-semibold text-lg">Ready to see it live?</p>
-        <p className="text-slate-400 text-sm">
-          Run any fraud scenario through the full pipeline — Fusion, RAG retrieval, and LLM forensic report.
-        </p>
-        <Link
-          to="/analyzer"
-          className="inline-block bg-blue-600 hover:bg-blue-500 text-white font-semibold px-7 py-3 rounded-xl transition-all text-sm shadow-lg shadow-blue-600/20"
-        >
-          Open Transaction Analyzer →
-        </Link>
+        </Reveal>
       </div>
-
     </div>
   )
 }

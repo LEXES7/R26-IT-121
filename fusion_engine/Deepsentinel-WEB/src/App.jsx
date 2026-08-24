@@ -1,5 +1,8 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { destroySmoothScroll, initSmoothScroll } from './lib/motion'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import ProtectedRoute from './components/ProtectedRoute'
 import Navbar from './components/Navbar'
@@ -16,6 +19,8 @@ import AuditLog from './pages/AuditLog'
 import Account from './pages/Account'
 import About from './pages/About'
 import FAQ from './pages/FAQ'
+import ComponentDetail from './pages/ComponentDetail'
+import RequestAccess from './pages/RequestAccess'
 
 /**
  * Route access.
@@ -29,6 +34,14 @@ import FAQ from './pages/FAQ'
 function Shell() {
   const { isAuthenticated } = useAuth()
 
+  // Lenis drives GSAP's ticker so pinned sections scrub smoothly. Skipped
+  // entirely under prefers-reduced-motion — hijacking the wheel is exactly
+  // what that setting asks us not to do.
+  useEffect(() => {
+    initSmoothScroll()
+    return destroySmoothScroll
+  }, [])
+
   return (
     <div className="flex min-h-screen flex-col bg-sentinel-950">
       <Navbar />
@@ -40,6 +53,11 @@ function Shell() {
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/faq" element={<FAQ />} />
+            <Route path="/components/:slug" element={<ComponentDetail />} />
+            <Route
+              path="/signup"
+              element={isAuthenticated ? <Navigate to="/analyzer" replace /> : <RequestAccess />}
+            />
             <Route
               path="/login"
               element={isAuthenticated ? <Navigate to="/analyzer" replace /> : <Login />}
@@ -94,9 +112,11 @@ function Shell() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Shell />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <Shell />
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   )
 }

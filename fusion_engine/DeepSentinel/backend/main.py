@@ -184,6 +184,16 @@ try:
 except Exception as exc:  # noqa: BLE001
     logger.warning(f"Operator assistant unavailable: {exc}")
 
+# Commercial enquiries. Public and unauthenticated — it creates nothing and
+# grants nothing, it only routes a message to the team.
+try:
+    from enquiry import router as enquiry_router
+
+    app.include_router(enquiry_router)
+    logger.info("Enquiry intake mounted at /api/enquiry")
+except Exception as exc:  # noqa: BLE001
+    logger.warning(f"Enquiry intake unavailable: {exc}")
+
 
 # ── Pydantic schemas ──────────────────────────────────────────────────────────
 

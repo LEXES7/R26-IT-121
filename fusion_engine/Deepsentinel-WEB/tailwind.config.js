@@ -13,21 +13,47 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Base canvas, darkest to lightest
-        sentinel: {
-          950: '#06091a',
-          900: '#0a0f1e',
-          800: '#0f172a',
-          700: '#1e293b',
-          600: '#334155',
+        // Editorial accent. A single saturated blue carries emphasis in
+        // headings, tags and links, against an otherwise achromatic page —
+        // so colour always means "look here" rather than decoration.
+        // Teal, not blue. Every dashboard is blue; teal reads as considered
+        // rather than default, and it stays clear of the risk ramp's red /
+        // orange / yellow / green so an accent is never mistaken for a
+        // severity. Steps differ per theme so contrast holds on both grounds.
+        accent: {
+          400: 'rgb(var(--accent-400) / <alpha-value>)',
+          500: 'rgb(var(--accent-500) / <alpha-value>)',
+          600: 'rgb(var(--accent-600) / <alpha-value>)',
         },
 
-        // Elevation. Layered translucent white over the canvas.
+        // Canvas layers. Values come from CSS variables so the whole app
+        // re-themes without a single `dark:` variant in a component.
+        sentinel: {
+          950: 'rgb(var(--sentinel-950) / <alpha-value>)',
+          900: 'rgb(var(--sentinel-900) / <alpha-value>)',
+          800: 'rgb(var(--sentinel-800) / <alpha-value>)',
+          700: 'rgb(var(--sentinel-700) / <alpha-value>)',
+          600: 'rgb(var(--sentinel-600) / <alpha-value>)',
+        },
+
+        // Text ramp. Inverted between themes, so a given step always means
+        // the same amount of emphasis.
+        slate: {
+          200: 'rgb(var(--slate-200) / <alpha-value>)',
+          300: 'rgb(var(--slate-300) / <alpha-value>)',
+          400: 'rgb(var(--slate-400) / <alpha-value>)',
+          500: 'rgb(var(--slate-500) / <alpha-value>)',
+          600: 'rgb(var(--slate-600) / <alpha-value>)',
+          700: 'rgb(var(--slate-700) / <alpha-value>)',
+        },
+
+        // Elevation. Translucent ink over the canvas — white on dark, near
+        // black on light.
         surface: {
-          DEFAULT: 'rgba(255,255,255,0.02)',
-          raised: 'rgba(255,255,255,0.04)',
-          overlay: 'rgba(255,255,255,0.06)',
-          hover: 'rgba(255,255,255,0.08)',
+          DEFAULT: 'rgb(var(--surface))',
+          raised: 'rgb(var(--surface-raised))',
+          overlay: 'rgb(var(--surface-overlay))',
+          hover: 'rgb(var(--surface-hover))',
         },
 
         // Risk classification. These carry meaning — one hue per severity,
@@ -42,22 +68,22 @@ export default {
 
         // Per-modality identity, so a colour always means the same model
         modality: {
-          graph: '#a855f7',      // GraphSAGE — network/relational
-          behavioral: '#3b82f6', // VAE/DSAA — behavioural
-          temporal: '#06b6d4',   // TCN/TSCFD — temporal
+          graph: 'rgb(var(--modality-graph) / <alpha-value>)',
+          behavioral: 'rgb(var(--modality-behavioral) / <alpha-value>)',
+          temporal: 'rgb(var(--modality-temporal) / <alpha-value>)',
         },
 
         // Role identity in the user table and badges
         role: {
-          admin: '#a855f7',
-          manager: '#3b82f6',
+          admin: 'rgb(var(--modality-graph) / <alpha-value>)',
+          manager: 'rgb(var(--modality-behavioral) / <alpha-value>)',
           analyst: '#64748b',
         },
       },
 
       borderColor: {
-        subtle: 'rgba(255,255,255,0.07)',
-        strong: 'rgba(255,255,255,0.14)',
+        subtle: 'rgb(var(--border-subtle))',
+        strong: 'rgb(var(--border-strong))',
       },
 
       fontFamily: {
