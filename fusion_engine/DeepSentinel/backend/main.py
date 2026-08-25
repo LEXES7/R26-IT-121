@@ -295,6 +295,10 @@ class AnalyzeResponse(BaseModel):
     # the pattern, and per-edge attention weights. The evidence behind the score.
     graph_evidence: Optional[dict] = None
     temporal_signal: Optional[str] = None
+    # The peak-attention predecessor from the 32-transaction window, plus
+    # step burstiness — the evidence behind the temporal score, mirroring
+    # graph_evidence above. Populated when transaction data provided.
+    temporal_evidence: Optional[dict] = None
 
 
 # ── Upstream callers ──────────────────────────────────────────────────────────
