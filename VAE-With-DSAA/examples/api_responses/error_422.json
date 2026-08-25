@@ -1,0 +1,6 @@
+{
+  "transaction_id": "DEMO_007",
+  "error": "BadRequest",
+  "message": "Field 'step': Input should be greater than or equal to 1",
+  "fallback_score": null
+}

@@ -1,0 +1,157 @@
+{
+  "note": "Curated transactions covering every response branch. The first five are REAL rows from the held-out test partition, recovered to their raw PaySim fields, so the typologies and risk levels shown are the ones the evaluated model actually produces - not values invented for a demo. `expect` records what each should return; `ground_truth_fraud` is the held-out label.",
+  "service": "POST http://localhost:8001/api/v1/behavioral/classify",
+  "transactions": [
+    {
+      "label": "TRANSFER flagged CRITICAL - large-value transfer, a true fraud row",
+      "expect": {
+        "stratum": "TRANSFER",
+        "risk_level": "CRITICAL",
+        "typology": "LARGE_VALUE_TRANSFER",
+        "ground_truth_fraud": true
+      },
+      "tx": {
+        "step": 601,
+        "amount": 3020973.75,
+        "oldbalanceOrg": 3020973.83,
+        "newbalanceOrig": 0.08,
+        "type": "TRANSFER",
+        "nameOrig": "C1000018683",
+        "nameDest": "C2000034697",
+        "oldbalanceDest": 0.0,
+        "newbalanceDest": 0.0,
+        "isFlaggedFraud": 0,
+        "transaction_id": "DEMO_001",
+        "composite_id": "C1000018683_601"
+      }
+    },
+    {
+      "label": "TRANSFER flagged HIGH - amount-magnitude typology, high fit confidence",
+      "expect": {
+        "stratum": "TRANSFER",
+        "risk_level": "HIGH",
+        "typology": "AMOUNT_MAGNITUDE_OUTLIER",
+        "ground_truth_fraud": true
+      },
+      "tx": {
+        "step": 604,
+        "amount": 385207.06,
+        "oldbalanceOrg": 385207.07,
+        "newbalanceOrig": 0.01,
+        "type": "TRANSFER",
+        "nameOrig": "C1000018781",
+        "nameDest": "C2000034879",
+        "oldbalanceDest": 0.0,
+        "newbalanceDest": 0.0,
+        "isFlaggedFraud": 0,
+        "transaction_id": "DEMO_002",
+        "composite_id": "C1000018781_604"
+      }
+    },
+    {
+      "label": "CASH_OUT flagged CRITICAL - off-pattern timing, a true fraud row",
+      "expect": {
+        "stratum": "CASH_OUT",
+        "risk_level": "CRITICAL",
+        "typology": "OFF_PATTERN_TIMING",
+        "ground_truth_fraud": true
+      },
+      "tx": {
+        "step": 601,
+        "amount": 897875.25,
+        "oldbalanceOrg": 897875.27,
+        "newbalanceOrig": 0.02,
+        "type": "CASH_OUT",
+        "nameOrig": "C1000105364",
+        "nameDest": "C2000195676",
+        "oldbalanceDest": 0.0,
+        "newbalanceDest": 0.0,
+        "isFlaggedFraud": 0,
+        "transaction_id": "DEMO_003",
+        "composite_id": "C1000105364_601"
+      }
+    },
+    {
+      "label": "CASH_OUT flagged MEDIUM - origin account drain; a genuine FALSE POSITIVE, shown deliberately",
+      "expect": {
+        "stratum": "CASH_OUT",
+        "risk_level": "MEDIUM",
+        "typology": "ORIGIN_ACCOUNT_DRAIN",
+        "ground_truth_fraud": false
+      },
+      "tx": {
+        "step": 613,
+        "amount": 459343.03,
+        "oldbalanceOrg": 600250.24,
+        "newbalanceOrig": 140907.21,
+        "type": "CASH_OUT",
+        "nameOrig": "C1000061579",
+        "nameDest": "C2000114361",
+        "oldbalanceDest": 0.0,
+        "newbalanceDest": 0.0,
+        "isFlaggedFraud": 0,
+        "transaction_id": "DEMO_004",
+        "composite_id": "C1000061579_613"
+      }
+    },
+    {
+      "label": "PAYMENT - false-positive control stratum, expected clear",
+      "expect": {
+        "stratum": "PAYMENT",
+        "risk_level": "LOW",
+        "typology": "UNASSIGNED",
+        "ground_truth_fraud": false
+      },
+      "tx": {
+        "step": 618,
+        "type": "PAYMENT",
+        "amount": 8057.76,
+        "nameOrig": "C1666544295",
+        "nameDest": "M1979787155",
+        "oldbalanceOrg": 30626.01,
+        "newbalanceOrig": 22568.25,
+        "oldbalanceDest": 0.0,
+        "newbalanceDest": 0.0,
+        "isFlaggedFraud": 0,
+        "transaction_id": "DEMO_005",
+        "composite_id": "C1666544295_618"
+      }
+    },
+    {
+      "label": "CASH_IN - no stratum model of its own, routes to the pooled GLOBAL model",
+      "expect": {
+        "stratum": "GLOBAL"
+      },
+      "tx": {
+        "transaction_id": "DEMO_006",
+        "composite_id": "C900100200_612",
+        "step": 612,
+        "type": "CASH_IN",
+        "amount": 48213.66,
+        "nameOrig": "C900100200",
+        "nameDest": "C700800900",
+        "oldbalanceOrg": 12480.11,
+        "newbalanceOrig": 60693.77,
+        "oldbalanceDest": 193044.2,
+        "newbalanceDest": 144830.54,
+        "isFlaggedFraud": 0
+      }
+    },
+    {
+      "label": "invalid request - exercises the 422 branch",
+      "expect": {
+        "http_status": 422
+      },
+      "tx": {
+        "transaction_id": "DEMO_007",
+        "step": 0,
+        "type": "TRANSFER",
+        "amount": -5.0,
+        "oldbalanceOrg": 0.0,
+        "newbalanceOrig": 0.0,
+        "oldbalanceDest": 0.0,
+        "newbalanceDest": 0.0
+      }
+    }
+  ]
+}
