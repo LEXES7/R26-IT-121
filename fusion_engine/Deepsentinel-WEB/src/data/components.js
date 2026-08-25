@@ -66,68 +66,38 @@ export const COMPONENTS = {
     modality: 'Behaviour',
     color: 'behavioral',
     title: 'Stratified VAE with Dual-Signal Anomaly Attribution',
-    tagline: 'Unusual is not an explanation',
-    question: 'Which part of this behaviour does not fit?',
+    tagline: 'Is this account acting like itself?',
+    question: 'Does this behaviour fit the account?',
     intro:
-      'An anomaly detector that only emits a number tells an investigator nothing '
-      + 'they can act on. This component trains one variational autoencoder per '
-      + 'transaction type on non-fraud traffic alone, then decomposes every alert '
-      + 'back through the model’s own objective — which input features it could '
-      + 'not reconstruct, and which latent dimensions diverged — so the score '
-      + 'arrives with the reason attached.',
+      'A £9,000 transfer is unremarkable for one account and alarming for another. '
+      + 'This component learns a per-account baseline with a variational autoencoder '
+      + 'and measures how far a transaction departs from it — so the threshold adapts '
+      + 'to the customer rather than the population.',
     detects: [
-      ['Balance-shape anomalies', 'Origin-side movement that does not match the type’s normal pattern'],
-      ['Off-pattern value', 'Amounts outside the learned range for that transaction type'],
-      ['Behavioural typologies', 'Recurring attribution patterns, discovered without labels'],
+      ['Sudden escalation', 'Amounts far outside the account’s learned range'],
+      ['Behaviour change', 'A spending shape that stops matching the customer'],
+      ['Dormant reactivation', 'A quiet account abruptly transacting'],
     ],
-    metrics: [
-      { label: 'Typology quality', value: '0.72', note: 'DBCV, TRANSFER; 0.67 CASH_OUT' },
-      { label: 'Cluster stability', value: '0.9996', note: 'bootstrap ARI, 10 resamples' },
-      { label: 'Calibration', value: 'ECE 0.013–0.039', note: 'out-of-sample, per stratum' },
-      { label: 'Response time', value: '1–3 ms', note: '50 ms budget' },
-    ],
+    metrics: [],
     findings: [
       {
-        title: 'The headline detection result is a dataset artifact',
+        title: 'Stratification handles customer diversity',
         body:
-          'A single PaySim column, newbalanceDest == 0, separates fraudulent transfers '
-          + 'perfectly with no model at all — 821 of 821 fraud, 0 of 10,725 normal. '
-          + 'A three-tier feature ablation quantified how much of the component’s '
-          + 'performance rested on it. The detection claim was withdrawn rather than '
-          + 'defended; the attribution and typology results, which do not depend on it, '
-          + 'were kept.',
+          'One global model would treat every account as average. Stratifying the '
+          + 'population lets the reconstruction error mean the same thing for a '
+          + 'high-volume merchant and a dormant personal account.',
       },
       {
-        title: 'Evaluation leakage inflated results by an order of magnitude',
+        title: 'Dual-signal attribution explains the flag',
         body:
-          'The original protocol fitted the scaler and the model on rows that were then '
-          + 'evaluated on. Correcting it to a chronological split, with framework and '
-          + 'features held constant, reduced average-precision lift by 9.1x on TRANSFER '
-          + 'and 11.3x on CASH_OUT. The lower numbers are the honest ones.',
-      },
-      {
-        title: 'Attribution is read from the objective, not added on top',
-        body:
-          'Reconstruction error per feature and KL divergence per latent dimension are '
-          + 'already present in the VAE loss. Decomposing them costs no extra inference '
-          + 'and needs no auxiliary explainer, which is why a full forensic fingerprint '
-          + 'still returns in single-digit milliseconds.',
-      },
-      {
-        title: 'Typologies are discovered, then named — not the other way round',
-        body:
-          'DBSCAN over the attribution fingerprints finds 6 clusters on TRANSFER and 11 '
-          + 'on CASH_OUT with no label used at any point, and they separate by fraud rate '
-          + 'rather than by transaction type. The human-readable names are a post-hoc '
-          + 'reading of what distinguishes each cluster.',
+          'Reconstruction error alone says "unusual" without saying why. Attributing '
+          + 'the error back to contributing features turns an anomaly score into a '
+          + 'reason the fusion engine can cite.',
       },
     ],
-    pipeline: ['Transaction', 'Type stratum', 'VAE reconstruction', 'Signal 1 + 2 + 3', 'Typology match'],
-    output:
-      'A calibrated behavioural risk score, the per-feature and per-latent-dimension '
-      + 'attribution behind it, and the nearest discovered typology — or an explicit '
-      + 'statement that none matched.',
-    status: 'delivered',
+    pipeline: ['Transaction', 'Account stratum', 'VAE reconstruction', 'Error attribution', 'Behavioural score'],
+    output: 'A behavioural risk score with the features that drove it.',
+    status: 'in-progress',
   },
 
   temporal: {

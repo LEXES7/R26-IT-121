@@ -294,11 +294,6 @@ class AnalyzeResponse(BaseModel):
     # Novelty 3's forensic subgraph: which accounts are implicated, the sink,
     # the pattern, and per-edge attention weights. The evidence behind the score.
     graph_evidence: Optional[dict] = None
-    # The behavioural detector's equivalent, and a different shape by nature:
-    # a decomposition rather than a structure. Which stratum model answered, how
-    # the three score terms combined, the per-feature and per-latent-dimension
-    # attribution shares, and the discovered typology the fingerprint matched.
-    behavioral_evidence: Optional[dict] = None
     temporal_signal: Optional[str] = None
 
 

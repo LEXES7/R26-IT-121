@@ -73,39 +73,19 @@ async def call_behavioral_api(
 
         typology_hint = data.get("fraud_typology", {}).get("typology_label")
 
-        diagnostics = data.get("vae_diagnostics", {}) or {}
-
         return UpstreamResponse(
             score=score,
             available=True,
             fraud_signal_summary=fraud_signal_summary,
             typology_hint=typology_hint,
             extra={
-                # Unchanged — the two headline strings and the score.
                 "anomaly_fingerprint": {
                     "dominant_reconstruction_signal": dominant_reconstruction,
                     "dominant_kl_signal": dominant_kl,
                 },
-                "vae_diagnostics": diagnostics,
+                "vae_diagnostics": data.get("vae_diagnostics", {}),
                 "transaction_type": data.get("transaction_type"),
-                "combined_anomaly_score": diagnostics.get("combined_anomaly_score"),
-
-                # Full forensic payload for the evidence panel. This detector's
-                # evidence is a decomposition rather than a structure: which
-                # stratum model answered, how the three score terms combined,
-                # the per-feature and per-latent-dimension attribution shares,
-                # and which discovered typology the fingerprint matched. Kept
-                # under one key so nothing above changes shape.
-                "evidence": {
-                    "risk_level": data.get("risk_level"),
-                    "transaction_type": data.get("transaction_type"),
-                    "feature_set": data.get("feature_set"),
-                    "model_version": data.get("model_version"),
-                    "vae_diagnostics": diagnostics,
-                    "fingerprint": anomaly_fp,
-                    "fraud_typology": data.get("fraud_typology", {}) or {},
-                    "metadata": data.get("metadata", {}) or {},
-                },
+                "combined_anomaly_score": data.get("vae_diagnostics", {}).get("combined_anomaly_score"),
             },
         )
     except Exception as e:
