@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { getToken } from '../services/api'
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8090'
 
 export const STAGE_IDS = ['input', 'models', 'fusion', 'retrieval', 'report']
 
