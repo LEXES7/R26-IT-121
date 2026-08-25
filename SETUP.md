@@ -16,7 +16,7 @@ For how the system works, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 | Service | Port | Path | Command |
 |---|---|---|---|
-| GraphSAGE detector | 8000 | `GraphSage/` | `uvicorn graphsage.api.app:app --port 8000` |
+| GraphSAGE detector | 8002 | `GraphSage/` | `uvicorn graphsage.api.app:app --port 8002` |
 | Fusion backend | 8090 | `fusion_engine/DeepSentinel/` | `uvicorn backend.main:app --port 8090` |
 | Web app | 5173 | `fusion_engine/Deepsentinel-WEB/` | `npm run dev` |
 
@@ -42,7 +42,7 @@ Two lines are enough for local development, and they matter more than they look:
 
 ```bash
 DATABASE_URL=sqlite+aiosqlite:///./deepsentinel.db
-GRAPH_API_BASE=http://127.0.0.1:8000
+GRAPH_API_BASE=http://127.0.0.1:8002
 ```
 
 **Why `DATABASE_URL` matters.** `config.ini` points at a shared Neon Postgres
@@ -91,9 +91,9 @@ override any value here.
 
 ```ini
 [upstream]
-graph_api_base = http://127.0.0.1:8000
-behavioral_api_base =
-temporal_api_base =
+behavioral_api_base = http://localhost:8001   ; Member 2 — VAE/DSAA
+graph_api_base      = http://localhost:8002   ; Member 1 — GraphSAGE
+temporal_api_base   = http://localhost:8003   ; Member 3 — TS-TCN
 timeout_ms = 5000
 ```
 
@@ -194,7 +194,7 @@ cd ../Deepsentinel-WEB && npm install
 ```bash
 # 1 — GraphSAGE
 cd GraphSage && source .venv/bin/activate
-python -m uvicorn graphsage.api.app:app --host 127.0.0.1 --port 8000
+python -m uvicorn graphsage.api.app:app --host 127.0.0.1 --port 8002
 
 # 2 — backend  (note the env sourcing)
 cd fusion_engine/DeepSentinel
@@ -211,7 +211,7 @@ and builds the FATF vector store — roughly 30 seconds. Cached afterwards.
 ### Verify
 
 ```bash
-curl http://127.0.0.1:8000/health          # stage, threshold, risk bands
+curl http://127.0.0.1:8002/health          # stage, threshold, risk bands
 curl http://127.0.0.1:8090/health          # expect 41 routes on /openapi.json
 open http://127.0.0.1:5173
 ```
@@ -252,15 +252,20 @@ paste their contents into any file that will be.
 
 ## 8. Ports
 
-| Port | Service |
-|---|---|
-| 8000 | GraphSAGE |
-| 8090 | Fusion backend |
-| 5173 | Web (dev) |
-| 8001 | Reserved — TS-TCN temporal, when it exists |
+| Port | Service | Owner |
+|---|---|---|
+| 8001 | Behavioural detector (VAE + DSAA) | Member 2 |
+| 8002 | GraphSAGE relational detector | Member 1 |
+| 8003 | Temporal detector (TS-TCN) | Member 3 |
+| 8090 | Fusion engine backend | Member 4 |
+| 5173 | Web app (dev server) | — |
 
-> **On the port choice.** `QUICKSTART.md` documents the backend on 8000 and
-> `INTEGRATION_GRAPHSAGE.md` documents GraphSAGE on 8000 — they collide. The
-> graph service's port is fixed by its API contract and its Docker setup, so the
-> backend takes 8090. The web app's defaults were still pointing at 8000, which
-> aimed it at the graph service; that is now corrected.
+This is the assignment in `config.ini`, and the one the TS-TCN contract already
+names (`Host: localhost:8003`). Treat it as authoritative.
+
+> **On the port choice.** Three schemes existed at once: `QUICKSTART.md` put
+> the backend on 8000, `INTEGRATION_GRAPHSAGE.md` put GraphSAGE on 8000, and
+> `config.ini` assigned 8001/8002/8003 to the three detectors. The `config.ini`
+> assignment wins — Member 4 owns it and the TS-TCN contract already names 8003.
+> GraphSAGE's standalone repo still defaults to 8000 for solo use and its Docker
+> image listens on 8000 internally; inside this platform it is published on 8002.

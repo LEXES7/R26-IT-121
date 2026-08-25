@@ -29,7 +29,7 @@ For getting it running, see [SETUP.md](SETUP.md).
                         │              │              │
           ┌─────────────▼──┐  ┌────────▼──────┐  ┌────▼──────────┐
           │ GraphSAGE      │  │ Behavioural   │  │ Temporal      │
-          │ :8000  LIVE    │  │ VAE + DSAA    │  │ TS-TCN        │
+          │ :8002  LIVE    │  │ VAE + DSAA    │  │ TS-TCN        │
           │                │  │ not built     │  │ not implemented│
           └────────────────┘  └───────────────┘  └───────────────┘
 ```
@@ -42,7 +42,7 @@ two can be added with a URL and no code change — see §6.
 ## 2. GraphSAGE — the relational detector
 
 **Repo:** `GraphSage/` (mirrored from a standalone component repo)
-**Runs as:** `uvicorn graphsage.api.app:app --port 8000`
+**Runs as:** `uvicorn graphsage.api.app:app --port 8002`
 
 ### What it does
 
