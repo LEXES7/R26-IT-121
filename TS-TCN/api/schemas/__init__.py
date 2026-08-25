@@ -1,6 +1,18 @@
 """Pydantic schemas for the classify endpoint."""
-from .request import ClassifyRequest, TransactionPayload
-from .response import ClassifyResponse, Attribution
+from .request import ClassifyRequest
+from .response import (
+    ClassifyResponse,
+    CurrentTransactionEvidence,
+    Evidence,
+    TriggeringPredecessor,
+    WarmingUpResponse,
+)
 
-__all__ = ["ClassifyRequest", "TransactionPayload",
-           "ClassifyResponse", "Attribution"]
+__all__ = [
+    "ClassifyRequest",
+    "ClassifyResponse",
+    "CurrentTransactionEvidence",
+    "Evidence",
+    "TriggeringPredecessor",
+    "WarmingUpResponse",
+]

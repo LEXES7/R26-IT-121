@@ -18,7 +18,7 @@ the fusion engine and is available downstream. See docs/api_contract.md.
 """
 from typing import Dict, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CurrentTransactionEvidence(BaseModel):
@@ -46,6 +46,12 @@ class TriggeringPredecessor(BaseModel):
 
 
 class ClassifyResponse(BaseModel):
+    # `model_version` collides with pydantic's own "model_" protected
+    # namespace (model_dump, model_validate, ...) — it's just a field name
+    # here, not an override, so silence the warning rather than rename a
+    # field the adapter/contract doc already documents.
+    model_config = ConfigDict(protected_namespaces=())
+
     composite_id: str
     temporal_risk_score: float = Field(..., ge=0.0, le=1.0)
     risk_level: str = Field(..., description="NORMAL | SUSPICIOUS | CRITICAL")
