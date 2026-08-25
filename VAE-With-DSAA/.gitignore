@@ -1,40 +1,97 @@
 # ============================================================
-# DeepSentinel — VAE-With-DSAA .gitignore
+# DeepSentinel — VAE-With-DSAA
 # R26-IT-121 | IT22109194 | Wijesinghe L P D B
 # ============================================================
+# Rule of thumb: source, configuration, reports and evidence are TRACKED.
+# Data, trained weights and anything large are IGNORED and regenerable —
+# see data/README.md and checkpoints/README.md for the exact commands.
+#
+# Order matters: git applies the LAST matching pattern, so the explicit
+# re-inclusions at the bottom must stay at the bottom.
 
-# Redundant .py versions (notebooks are the source of truth)
-*.py
-
-# PDF files (proposal, spec docs — too large, not code)
-*.pdf
-
-# Data files (too large for GitHub — stored in Google Drive)
-data/raw/*
-data/processed/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
+# ─── Large binary artefacts (regenerable) ──────────────────────────────
 *.csv
-
-# Saved models and results (too large — stored in Google Drive)
-results/*
-models/*
-DeepSentinel-VAE-Results/
-!results/.gitkeep
-!models/.gitkeep
+*.npz
 *.keras
 *.h5
+*.pt
+*.pth
 *.pkl
-*.json
+*.joblib
+*.parquet
+*.npy
 
-# Python cache
+# ─── Data and checkpoint trees ─────────────────────────────────────────
+data/raw/*
+data/processed/*
+checkpoints/*
+models/*
+results/v4/data/
+results/v4/curves/
+
+# ─── Personal / other members' material ────────────────────────────────
+MY CV/
+Research Proposals/
+
+# ─── Python ────────────────────────────────────────────────────────────
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+env/
 
-# Jupyter checkpoints
+# ─── Jupyter / IDE / OS ────────────────────────────────────────────────
 .ipynb_checkpoints/
-
-# OS files
+.vscode/
+.idea/
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# ─── Logs ──────────────────────────────────────────────────────────────
+*.log
+logs/
+wandb/
+
+# ============================================================
+# RE-INCLUSIONS — must remain last
+# ============================================================
+# Keep the directory placeholders and the READMEs that explain how to
+# regenerate everything ignored above.
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/README.md
+!checkpoints/README.md
+!models/.gitkeep
+
+# Source, tests and runnable wrappers are always tracked.
+!src/**/*.py
+!scripts/**/*.py
+!tests/**/*.py
+
+# Reports, evidence and configuration are always tracked. These are small
+# JSON/PNG/Markdown files and they are the reviewable record of the work.
+!reports/**/*.json
+!reports/**/*.md
+!reports/**/*.png
+!configs/*.yaml
+!configs/*.yml
+!docs/**
+!examples/**
+!notebooks/**
+
+# ─── Overrides for the repo-root .gitignore ────────────────────────────
+# The root file carries `VAE-With-DSAA/**/*.py` and a repo-wide `*.json`,
+# written when this component was notebook-only. A deeper .gitignore wins,
+# so these re-inclusions are what keep the dashboard and the demo fixture
+# tracked. Without them `git add` succeeds silently and the files are simply
+# absent from the repository.
+!dashboard/**/*.py
+!data/demo/*.json
+!checkpoints/.gitkeep
