@@ -95,3 +95,12 @@ wandb/
 !dashboard/**/*.py
 !data/demo/*.json
 !checkpoints/.gitkeep
+
+# The v4 bundles are committed, unlike the raw weights `checkpoints/*` was
+# written for: the whole tree is 870 KB of small .pt/.pkl/.json files, and
+# without them nobody can start the service or reproduce the ablation from a
+# clean clone. The directory has to be re-included before the files — git does
+# not descend into an excluded directory, so a pattern matching only the files
+# inside it would never be reached.
+!checkpoints/v4/
+!checkpoints/v4/**
