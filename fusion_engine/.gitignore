@@ -7,18 +7,26 @@ __pycache__/
 env/
 venv/
 ENV/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
+# Scoped to DeepSentinel/ deliberately. These are Python packaging artefacts,
+# but as repo-wide rules `lib/` and `dist/` also matched the React app's
+# src/lib/ — which silently excluded src/lib/motion.js, so main could not build
+# from a clean clone. `git add` reports nothing when a path is ignored, which is
+# why it went unnoticed for two days.
+DeepSentinel/build/
+DeepSentinel/develop-eggs/
+DeepSentinel/dist/
+DeepSentinel/downloads/
+DeepSentinel/eggs/
+DeepSentinel/.eggs/
+DeepSentinel/lib/
+DeepSentinel/lib64/
+DeepSentinel/parts/
+DeepSentinel/sdist/
+DeepSentinel/var/
+DeepSentinel/wheels/
+
+# The web app's own build output still needs ignoring.
+Deepsentinel-WEB/dist/
 *.egg-info/
 .installed.cfg
 *.egg
