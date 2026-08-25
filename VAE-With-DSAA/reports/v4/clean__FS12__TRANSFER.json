@@ -1,0 +1,48 @@
+{
+  "config": "clean|FS12|TRANSFER",
+  "feature_set": "FS12",
+  "n_features": 12,
+  "n_rows": 11546,
+  "n_fraud": 821,
+  "test_fraud_rate": 0.07110687684046423,
+  "auc_pr_average_precision": 1.0,
+  "ap_lift_over_base_rate": 14.063337393422657,
+  "max_possible_ap_lift": 14.063337393422657,
+  "auc_roc": 1.0,
+  "precision_at_500": 1.0,
+  "precision_at_1000": 0.821,
+  "operating_point_f1_optimal": {
+    "threshold": 10.70816786204256,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "f2": 1.0,
+    "tp": 821,
+    "fp": 0,
+    "tn": 10725,
+    "fn": 0,
+    "fpr": 0.0,
+    "flag_rate": 0.07110687684046423
+  },
+  "operating_point_f2_optimal": {
+    "threshold": 10.70816786204256,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "f2": 1.0,
+    "tp": 821,
+    "fp": 0,
+    "tn": 10725,
+    "fn": 0,
+    "fpr": 0.0,
+    "flag_rate": 0.07110687684046423
+  },
+  "train": {
+    "epochs_run": 23,
+    "seconds": 54.41492247581482,
+    "val_recon_loss": 0.15252751218221497,
+    "val_kl_raw": 3.7424394238454335
+  },
+  "threshold_source": "validation partition, F-beta optimal",
+  "bundle": "D:\\Research\\VAE-With-DSAA\\checkpoints\\v4\\clean__FS12__TRANSFER"
+}

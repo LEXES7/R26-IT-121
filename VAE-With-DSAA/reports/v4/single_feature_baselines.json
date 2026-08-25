@@ -1,0 +1,58 @@
+{
+  "TRANSFER|F3_balance_consistency": {
+    "ap": 0.6001552438046821,
+    "lift": 8.440185682057077,
+    "auroc": 0.9704192681050172,
+    "direction": "+",
+    "base_rate": 0.07110687684046423,
+    "model": "none \u2014 single feature used directly as score"
+  },
+  "TRANSFER|F4_balance_change_ratio": {
+    "ap": 0.6995900009533895,
+    "lift": 9.838570220472395,
+    "auroc": 0.9261717900451152,
+    "direction": "-",
+    "base_rate": 0.07110687684046423,
+    "model": "none \u2014 single feature used directly as score"
+  },
+  "TRANSFER|F2_amount_balance_ratio": {
+    "ap": 0.3927648560397732,
+    "lift": 5.523584686766409,
+    "auroc": 0.95039842820598,
+    "direction": "-",
+    "base_rate": 0.07110687684046423,
+    "model": "none \u2014 single feature used directly as score"
+  },
+  "TRANSFER|F3_prevalence": {
+    "fraud_rate_F3_eq_1": 0.9902557730674744,
+    "normal_rate_F3_eq_1": 0.049417249858379364
+  },
+  "CASH_OUT|F3_balance_consistency": {
+    "ap": 0.14564484654958312,
+    "lift": 6.598545325527763,
+    "auroc": 0.9338006872852234,
+    "direction": "+",
+    "base_rate": 0.022072265835036027,
+    "model": "none \u2014 single feature used directly as score"
+  },
+  "CASH_OUT|F4_balance_change_ratio": {
+    "ap": 0.7226727479224883,
+    "lift": 32.74121258431775,
+    "auroc": 0.9545412978054589,
+    "direction": "-",
+    "base_rate": 0.022072265835036027,
+    "model": "none \u2014 single feature used directly as score"
+  },
+  "CASH_OUT|F2_amount_balance_ratio": {
+    "ap": 0.08541998613391602,
+    "lift": 3.87001437787715,
+    "auroc": 0.8651109074090352,
+    "direction": "-",
+    "base_rate": 0.022072265835036027,
+    "model": "none \u2014 single feature used directly as score"
+  },
+  "CASH_OUT|F3_prevalence": {
+    "fraud_rate_F3_eq_1": 1.0,
+    "normal_rate_F3_eq_1": 0.13239862024784088
+  }
+}

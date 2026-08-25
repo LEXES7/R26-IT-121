@@ -1,0 +1,48 @@
+{
+  "config": "clean|FS12|CASH_OUT",
+  "feature_set": "FS12",
+  "n_features": 12,
+  "n_rows": 37196,
+  "n_fraud": 821,
+  "test_fraud_rate": 0.022072265835036027,
+  "auc_pr_average_precision": 0.5765051557262704,
+  "ap_lift_over_base_rate": 26.118983888421866,
+  "max_possible_ap_lift": 45.30572472594397,
+  "auc_roc": 0.911422981779826,
+  "precision_at_500": 0.75,
+  "precision_at_1000": 0.47,
+  "operating_point_f1_optimal": {
+    "threshold": 2.944262437794905,
+    "precision": 0.03003222970993261,
+    "recall": 0.9987819732034104,
+    "f1": 0.058311111111111105,
+    "f2": 0.13403949261148163,
+    "tp": 820,
+    "fp": 26484,
+    "tn": 9891,
+    "fn": 1,
+    "fpr": 0.7280824742268042,
+    "flag_rate": 0.7340574255296268
+  },
+  "operating_point_f2_optimal": {
+    "threshold": 2.460471462969546,
+    "precision": 0.026454855964426115,
+    "recall": 1.0,
+    "f1": 0.05154606812117407,
+    "f2": 0.11961652776968357,
+    "tp": 821,
+    "fp": 30213,
+    "tn": 6162,
+    "fn": 0,
+    "fpr": 0.8305979381443299,
+    "flag_rate": 0.8343370254866115
+  },
+  "train": {
+    "epochs_run": 27,
+    "seconds": 1417.0325453281403,
+    "val_recon_loss": 0.1524488434263087,
+    "val_kl_raw": 4.0555114683003515
+  },
+  "threshold_source": "validation partition, F-beta optimal",
+  "bundle": "D:\\Research\\VAE-With-DSAA\\checkpoints\\v4\\clean__FS12__CASH_OUT"
+}

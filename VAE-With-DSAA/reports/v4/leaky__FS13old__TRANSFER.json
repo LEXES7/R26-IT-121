@@ -1,0 +1,50 @@
+{
+  "config": "leaky|FS13old|TRANSFER",
+  "feature_set": "FS13old",
+  "n_features": 13,
+  "n_rows": 373037,
+  "n_fraud": 2878,
+  "test_fraud_rate": 0.0077150523942665205,
+  "auc_pr_average_precision": 0.9912130958804671,
+  "ap_lift_over_base_rate": 128.47781780679702,
+  "max_possible_ap_lift": 129.61674774148713,
+  "auc_roc": 0.9995730400031445,
+  "precision_at_500": 0.998,
+  "precision_at_1000": 0.993,
+  "operating_point_f1_optimal": {
+    "threshold": 10.904907609291234,
+    "precision": 0.9930410577592206,
+    "recall": 0.9916608756080612,
+    "f1": 0.9923504867872044,
+    "f2": 0.9919366050326707,
+    "tp": 2854,
+    "fp": 20,
+    "tn": 370139,
+    "fn": 24,
+    "fpr": 5.40308353977615e-05,
+    "flag_rate": 0.007704329597332168
+  },
+  "operating_point_f2_optimal": {
+    "threshold": 10.904907609291234,
+    "precision": 0.9930410577592206,
+    "recall": 0.9916608756080612,
+    "f1": 0.9923504867872044,
+    "f2": 0.9919366050326707,
+    "tp": 2854,
+    "fp": 20,
+    "tn": 370139,
+    "fn": 24,
+    "fpr": 5.40308353977615e-05,
+    "flag_rate": 0.007704329597332168
+  },
+  "train": {
+    "epochs_run": 35,
+    "seconds": 89.92134952545166,
+    "val_recon_loss": 0.05826949702185479,
+    "val_kl_raw": 2.635475863410676
+  },
+  "threshold_source": "random 30% of the evaluation scores, F-beta optimal",
+  "protocol_note": "LEAKY CONTROL. Scaler and VAE fitted on all non-fraud rows; the evaluation set contains those same rows; threshold tuned on a random 30% of evaluation scores. Reproduces the v3 protocol deliberately. Scoring is deterministic (posterior mean), unlike the original run.",
+  "deterministic_scoring": true,
+  "bundle": "D:\\Research\\VAE-With-DSAA\\checkpoints\\v4\\leaky__FS13old__TRANSFER"
+}

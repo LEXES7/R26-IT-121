@@ -1,0 +1,117 @@
+{
+  "feature_set": "FS-ORIGIN",
+  "protocol": "clean",
+  "strata": {
+    "TRANSFER": {
+      "stratum": "TRANSFER",
+      "method": "isotonic",
+      "raw_threshold": 1.7285,
+      "calibrated_threshold": 0.208016,
+      "risk_bands": {
+        "medium": 0.104008,
+        "high": 0.208016,
+        "critical": 0.604008
+      },
+      "ece_validation_in_sample": 1e-06,
+      "ece_test_out_of_sample": 0.039187,
+      "n_val_rows": 77443,
+      "n_val_fraud": 1196,
+      "auc_pr_raw": 0.700105,
+      "auc_pr_calibrated": 0.700105,
+      "auc_roc_raw": 0.975928,
+      "auc_roc_calibrated": 0.975928,
+      "flags_raw": 955,
+      "flags_calibrated": 955,
+      "raw_score_range_test": [
+        -0.5596,
+        63.6083
+      ],
+      "calibrated_range_test": [
+        1e-06,
+        1.0
+      ]
+    },
+    "CASH_OUT": {
+      "stratum": "CASH_OUT",
+      "method": "isotonic",
+      "raw_threshold": 3.6729,
+      "calibrated_threshold": 0.310365,
+      "risk_bands": {
+        "medium": 0.155182,
+        "high": 0.310365,
+        "critical": 0.655182
+      },
+      "ece_validation_in_sample": 1e-06,
+      "ece_test_out_of_sample": 0.012612,
+      "n_val_rows": 320756,
+      "n_val_fraud": 1203,
+      "auc_pr_raw": 0.749786,
+      "auc_pr_calibrated": 0.749787,
+      "auc_roc_raw": 0.990657,
+      "auc_roc_calibrated": 0.990657,
+      "flags_raw": 690,
+      "flags_calibrated": 690,
+      "raw_score_range_test": [
+        -0.5939,
+        47.405
+      ],
+      "calibrated_range_test": [
+        0.0,
+        1.0
+      ]
+    },
+    "PAYMENT": {
+      "stratum": "PAYMENT",
+      "method": "threshold_logistic",
+      "raw_threshold": 5.149,
+      "calibrated_threshold": 0.5,
+      "risk_bands": {
+        "medium": 0.25,
+        "high": 0.5,
+        "critical": 0.945012
+      },
+      "ece_validation_in_sample": null,
+      "ece_test_out_of_sample": null,
+      "n_val_rows": 308839,
+      "n_val_fraud": 0,
+      "raw_score_range_test": [
+        -0.793,
+        9.7277
+      ],
+      "calibrated_range_test": [
+        0.000307,
+        0.998038
+      ]
+    },
+    "GLOBAL": {
+      "stratum": "GLOBAL",
+      "method": "isotonic",
+      "raw_threshold": 4.6784,
+      "calibrated_threshold": 0.147984,
+      "risk_bands": {
+        "medium": 0.073992,
+        "high": 0.147984,
+        "critical": 0.317899
+      },
+      "ece_validation_in_sample": 1e-06,
+      "ece_test_out_of_sample": 0.013249,
+      "n_val_rows": 707038,
+      "n_val_fraud": 2399,
+      "auc_pr_raw": 0.607752,
+      "auc_pr_calibrated": 0.607752,
+      "auc_roc_raw": 0.983756,
+      "auc_roc_calibrated": 0.983756,
+      "flags_raw": 541,
+      "flags_calibrated": 541,
+      "raw_score_range_test": [
+        -0.7635,
+        35.8871
+      ],
+      "calibrated_range_test": [
+        0.0,
+        1.0
+      ]
+    }
+  },
+  "note": "Calibration is monotone. Compare auc_pr_raw with auc_pr_calibrated and auc_roc_raw with auc_roc_calibrated: identical values are the evidence that ranking is preserved and only the scale changed."
+}

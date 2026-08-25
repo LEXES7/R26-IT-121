@@ -1,0 +1,236 @@
+{
+  "clean|FS-ORIGIN|B_global_model_pertype_threshold": {
+    "config": "clean|FS-ORIGIN|B_global_model_pertype_threshold",
+    "n_rows": 48742,
+    "n_fraud": 1642,
+    "test_fraud_rate": 0.033687579500225676,
+    "auc_pr_average_precision": 0.7900141048558076,
+    "ap_lift_over_base_rate": 23.451198233180133,
+    "max_possible_ap_lift": 29.684531059683316,
+    "auc_roc": 0.9900336315042242,
+    "precision_at_500": 0.984,
+    "precision_at_1000": 0.805,
+    "operating_point": {
+      "precision": 0.8064171122994652,
+      "recall": 0.4591961023142509,
+      "f1": 0.5851765618936747,
+      "f2": 0.5024656803945089,
+      "tp": 754,
+      "fp": 181,
+      "tn": 46919,
+      "fn": 888,
+      "fpr": 0.0038428874734607217,
+      "flag_rate": 0.019182635099093185
+    },
+    "per_type_thresholds": {
+      "TRANSFER": 2.2552086814043437,
+      "CASH_OUT": 4.399650902941328
+    },
+    "isolates": "thresholding alone \u2014 model held global"
+  },
+  "clean|FS-ORIGIN|C_stratified_model_global_threshold": {
+    "config": "clean|FS-ORIGIN|C_stratified_model_global_threshold",
+    "n_rows": 48742,
+    "n_fraud": 1642,
+    "test_fraud_rate": 0.033687579500225676,
+    "auc_pr_average_precision": 0.6999510829257802,
+    "ap_lift_over_base_rate": 20.777719661369296,
+    "max_possible_ap_lift": 29.684531059683316,
+    "auc_roc": 0.9832343912839967,
+    "precision_at_500": 0.898,
+    "precision_at_1000": 0.744,
+    "operating_point": {
+      "precision": 0.7765237020316027,
+      "recall": 0.4190012180267966,
+      "f1": 0.5443037974683543,
+      "f2": 0.4614971827206869,
+      "tp": 688,
+      "fp": 198,
+      "tn": 46902,
+      "fn": 954,
+      "fpr": 0.004203821656050956,
+      "flag_rate": 0.01817734192277707
+    },
+    "global_threshold": 3.6729203782644677,
+    "isolates": "stratified modelling alone \u2014 threshold held global",
+    "score_comparability": {
+      "assumption": "A single threshold is only meaningful if the per-stratum scores share a scale. Each term is z-normalised using that stratum's own validation statistics, so scores are in standardised units.",
+      "evidence": {
+        "TRANSFER": {
+          "validation_normal_score_quantiles": {
+            "50": -0.24355435290211078,
+            "90": 0.8072699213933117,
+            "99": 3.4588715052812833,
+            "99.9": 4.973966767394872
+          },
+          "mean": -1.1231286750979621e-08,
+          "std": 0.7699447623545952
+        },
+        "CASH_OUT": {
+          "validation_normal_score_quantiles": {
+            "50": -0.27928836025397985,
+            "90": 0.9015386825206289,
+            "99": 2.2999780951689286,
+            "99.9": 6.777100757557441
+          },
+          "mean": -2.0436478331657023e-08,
+          "std": 0.7440114765301803
+        }
+      },
+      "median_gap": 0.035734007351869074,
+      "p99.9_relative_gap": 0.2660627390188666,
+      "verdict": "comparable in standardised units"
+    }
+  },
+  "clean|FS-FULL|B_global_model_pertype_threshold": {
+    "config": "clean|FS-FULL|B_global_model_pertype_threshold",
+    "n_rows": 48742,
+    "n_fraud": 1642,
+    "test_fraud_rate": 0.033687579500225676,
+    "auc_pr_average_precision": 0.7619395166137453,
+    "ap_lift_over_base_rate": 22.61781724652081,
+    "max_possible_ap_lift": 29.684531059683316,
+    "auc_roc": 0.9902550615349206,
+    "precision_at_500": 0.878,
+    "precision_at_1000": 0.766,
+    "operating_point": {
+      "precision": 0.7603363700070077,
+      "recall": 0.6607795371498173,
+      "f1": 0.707070707070707,
+      "f2": 0.6785490931832395,
+      "tp": 1085,
+      "fp": 342,
+      "tn": 46758,
+      "fn": 557,
+      "fpr": 0.007261146496815286,
+      "flag_rate": 0.029276599236797835
+    },
+    "per_type_thresholds": {
+      "TRANSFER": 2.6157123642995908,
+      "CASH_OUT": 4.095311893666985
+    },
+    "isolates": "thresholding alone \u2014 model held global"
+  },
+  "clean|FS-FULL|C_stratified_model_global_threshold": {
+    "config": "clean|FS-FULL|C_stratified_model_global_threshold",
+    "n_rows": 48742,
+    "n_fraud": 1642,
+    "test_fraud_rate": 0.033687579500225676,
+    "auc_pr_average_precision": 0.9111484207835642,
+    "ap_lift_over_base_rate": 27.047013596731112,
+    "max_possible_ap_lift": 29.684531059683316,
+    "auc_roc": 0.9937352045948833,
+    "precision_at_500": 0.998,
+    "precision_at_1000": 0.984,
+    "operating_point": {
+      "precision": 0.9659863945578231,
+      "recall": 0.6918392204628502,
+      "f1": 0.8062455642299503,
+      "f2": 0.7334710743801652,
+      "tp": 1136,
+      "fp": 40,
+      "tn": 47060,
+      "fn": 506,
+      "fpr": 0.0008492569002123143,
+      "flag_rate": 0.024127036231586723
+    },
+    "global_threshold": 4.758554204321315,
+    "isolates": "stratified modelling alone \u2014 threshold held global",
+    "score_comparability": {
+      "assumption": "A single threshold is only meaningful if the per-stratum scores share a scale. Each term is z-normalised using that stratum's own validation statistics, so scores are in standardised units.",
+      "evidence": {
+        "TRANSFER": {
+          "validation_normal_score_quantiles": {
+            "50": -0.27802566065613915,
+            "90": 0.8514965061628607,
+            "99": 2.8746006244850606,
+            "99.9": 4.733029879636681
+          },
+          "mean": 9.968064910516395e-09,
+          "std": 0.7592528343527327
+        },
+        "CASH_OUT": {
+          "validation_normal_score_quantiles": {
+            "50": -0.2686494152271522,
+            "90": 0.8369727294554213,
+            "99": 2.5999866865851704,
+            "99.9": 5.527610596733249
+          },
+          "mean": 4.829572186756381e-08,
+          "std": 0.7643598494868925
+        }
+      },
+      "median_gap": 0.009376245428986962,
+      "p99.9_relative_gap": 0.14374759277836166,
+      "verdict": "comparable in standardised units"
+    }
+  },
+  "clean|FS-F3ONLY|TRANSFER": {
+    "config": "clean|FS-F3ONLY|TRANSFER",
+    "feature_set": "FS-F3ONLY",
+    "n_features": 1,
+    "n_rows": 11546,
+    "n_fraud": 821,
+    "test_fraud_rate": 0.07110687684046423,
+    "auc_pr_average_precision": 0.6001552438046821,
+    "ap_lift_over_base_rate": 8.440185682057077,
+    "max_possible_ap_lift": 14.063337393422657,
+    "auc_roc": 0.9704192681050172,
+    "precision_at_500": 0.574,
+    "precision_at_1000": 0.588,
+    "operating_point_f1_optimal": {
+      "threshold": 4.880696003644043,
+      "precision": 0.6053611317944899,
+      "recall": 0.9902557856272838,
+      "f1": 0.7513863216266173,
+      "f2": 0.8785390101577695,
+      "tp": 813,
+      "fp": 530,
+      "tn": 10195,
+      "fn": 8,
+      "fpr": 0.04941724941724942,
+      "flag_rate": 0.11631733933829898
+    },
+    "train": {
+      "epochs_run": 29,
+      "seconds": 70.58372831344604,
+      "val_recon_loss": 0.001073502356942394,
+      "val_kl_raw": 0.3383553577855118
+    },
+    "architecture_note": "latent_dim 2, not 8. One binary input leaves nothing to compress; 8 dims would be over-parameterisation and the Free Bits floor (0.1 x 8) would dominate the objective. latent_dim 1 would make Signal 2 constant at 1.0 and destroy per-dimension attribution. Hidden widths 32/16 are unchanged from the other bundles."
+  },
+  "clean|FS-F3ONLY|CASH_OUT": {
+    "config": "clean|FS-F3ONLY|CASH_OUT",
+    "feature_set": "FS-F3ONLY",
+    "n_features": 1,
+    "n_rows": 37196,
+    "n_fraud": 821,
+    "test_fraud_rate": 0.022072265835036027,
+    "auc_pr_average_precision": 0.14564484654958312,
+    "ap_lift_over_base_rate": 6.598545325527763,
+    "max_possible_ap_lift": 45.30572472594397,
+    "auc_roc": 0.9338006872852234,
+    "precision_at_500": 0.338,
+    "precision_at_1000": 0.253,
+    "operating_point_f1_optimal": {
+      "threshold": 1.686841868647053,
+      "precision": 0.14564484654958312,
+      "recall": 1.0,
+      "f1": 0.25425828429854447,
+      "f2": 0.46015020737585477,
+      "tp": 821,
+      "fp": 4816,
+      "tn": 31559,
+      "fn": 0,
+      "fpr": 0.13239862542955327,
+      "flag_rate": 0.15154855360791483
+    },
+    "train": {
+      "epochs_run": 29,
+      "seconds": 300.75164246559143,
+      "val_recon_loss": 0.003066570450919661,
+      "val_kl_raw": 0.5681199154677726
+    },
+    "architecture_note": "latent_dim 2, not 8. One binary input leaves nothing to compress; 8 dims would be over-parameterisation and the Free Bits floor (0.1 x 8) would dominate the objective. latent_dim 1 would make Signal 2 constant at 1.0 and destroy per-dimension attribution. Hidden widths 32/16 are unchanged from the other bundles."
+  }
+}

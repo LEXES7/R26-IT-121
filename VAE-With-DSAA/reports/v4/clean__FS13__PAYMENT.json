@@ -1,0 +1,61 @@
+{
+  "config": "clean|FS13|PAYMENT",
+  "feature_set": "FS13",
+  "n_features": 13,
+  "n_rows": 41219,
+  "n_fraud": 0,
+  "test_fraud_rate": 0.0,
+  "auc_pr_average_precision": null,
+  "ap_lift_over_base_rate": null,
+  "max_possible_ap_lift": null,
+  "auc_roc": null,
+  "precision_at_500": 0.0,
+  "precision_at_1000": 0.0,
+  "operating_point_f1_optimal": {
+    "threshold": 3.055289743641104,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "f2": 0.0,
+    "tp": 0,
+    "fp": 30265,
+    "tn": 10954,
+    "fn": 0,
+    "fpr": 0.734248768771683,
+    "flag_rate": 0.734248768771683
+  },
+  "operating_point_f2_optimal": {
+    "threshold": 3.055289743641104,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "f2": 0.0,
+    "tp": 0,
+    "fp": 30265,
+    "tn": 10954,
+    "fn": 0,
+    "fpr": 0.734248768771683,
+    "flag_rate": 0.734248768771683
+  },
+  "train": {
+    "epochs_run": 29,
+    "seconds": 318.04300141334534,
+    "val_recon_loss": 0.1551993369751798,
+    "val_kl_raw": 4.257571301783527
+  },
+  "threshold_source": "validation partition, 0.999 quantile false-alarm budget",
+  "payment_control": {
+    "rule_new_quantile_0.999": {
+      "threshold": 3.055289743641104,
+      "false_positives": 30265,
+      "fp_rate": 0.734248768771683
+    },
+    "rule_old_mean_plus_3std": {
+      "threshold": 2.611262685285979,
+      "false_positives": 33844,
+      "fp_rate": 0.8210776583614353
+    },
+    "test_rows": 41219
+  },
+  "bundle": "D:\\Research\\VAE-With-DSAA\\checkpoints\\v4\\clean__FS13__PAYMENT"
+}

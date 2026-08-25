@@ -1,0 +1,43 @@
+{
+ "subsample_fit_rows": 150000,
+ "subsample_seed": 12345,
+ "scaler_fitted_on": "full fit partition, not the subsample",
+ "betas": [
+  0.01,
+  0.05,
+  0.1,
+  0.25,
+  0.5,
+  1.0
+ ],
+ "free_bits": [
+  0.01,
+  0.05,
+  0.1,
+  0.2
+ ],
+ "seeds": [
+  42,
+  43,
+  44,
+  45,
+  46
+ ],
+ "latent_variants": [
+  4,
+  16
+ ],
+ "latent_seeds": [
+  42,
+  43,
+  44
+ ],
+ "active_definition": {
+  "active_dims": "mean per-dim KL over validation-normal rows > free_bits * (1 + 0.05)",
+  "active_dims_rel2min": "mean per-dim KL > 2.0x the run's own minimum per-dim KL. Self-normalising, so it never references the Free Bits floor and cannot be true by definition.",
+  "kl_max_over_min": "ratio of largest to smallest per-dim KL; 1.0 means every dimension carries the same amount",
+  "note": "the raw per_dim_kl vector is stored for every run, so no count has to be taken on trust. The claim is carried by signal_2_attribution_spread, which is not definitional."
+ },
+ "signal_2_attribution_spread": "std across latent dimensions of the mean Signal-2 share, computed on the test partition",
+ "elapsed_seconds": 5096.1
+}

@@ -1,0 +1,25 @@
+{
+  "config": "clean|FS-ORIGIN|D_ensemble",
+  "feature_set": "FS-ORIGIN",
+  "n_rows": 48742,
+  "n_fraud": 1642,
+  "test_fraud_rate": 0.033687579500225676,
+  "auc_pr_average_precision": 0.6999510829257802,
+  "ap_lift_over_base_rate": 20.777719661369296,
+  "max_possible_ap_lift": 29.684531059683316,
+  "auc_roc": 0.9832343912839967,
+  "precision_at_500": 0.898,
+  "precision_at_1000": 0.744,
+  "operating_point_per_type_thresholds": {
+    "precision": 0.6814589665653495,
+    "recall": 0.6827040194884287,
+    "f1": 0.6820809248554913,
+    "f2": 0.6824546450748813,
+    "tp": 1121,
+    "fp": 524,
+    "tn": 46576,
+    "fn": 521,
+    "fpr": 0.011125265392781317
+  },
+  "note": "Per-stratum F1-optimal thresholds applied, then pooled. Deterministic \u2014 scored from saved bundles."
+}
