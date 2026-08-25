@@ -426,7 +426,10 @@ function StagePanel({ stageId, data, accent }) {
     return (
       <blockquote
         className={cx(
-          'mt-5 rounded-xl border-l-2 bg-surface-raised p-4 text-sm leading-relaxed text-slate-300',
+          // whitespace-pre-line: the report is plain text whose paragraph and
+          // section breaks are newlines. Without this, HTML collapses them all
+          // and a structured case file renders as one run-on line.
+          'mt-5 max-h-96 overflow-y-auto whitespace-pre-line rounded-xl border-l-2 bg-surface-raised p-4 text-sm leading-relaxed text-slate-300',
           accent.border,
         )}
       >

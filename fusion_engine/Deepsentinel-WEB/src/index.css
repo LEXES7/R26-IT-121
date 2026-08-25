@@ -186,3 +186,63 @@ html.theme-transition * {
     linear-gradient(90deg, rgb(var(--grid-line)) 1px, transparent 1px);
   background-size: 56px 56px;
 }
+
+/* ── Print / Save as PDF ──────────────────────────────────────────────────────
+ * "Save as PDF" on the forensic report routes through the browser's own print
+ * pipeline rather than a canvas screenshot library, so the resulting file has
+ * selectable, searchable text and real pagination — which is what attaching a
+ * report to a case file requires.
+ *
+ * Printing is a light-on-white medium regardless of the viewer's theme, so the
+ * tokens are forced rather than inherited.
+ */
+@media print {
+  :root {
+    --surface: 255 255 255;
+    --surface-raised: 255 255 255;
+    --surface-overlay: 255 255 255;
+    --border-subtle: 210 214 220;
+  }
+
+  /* Everything outside the report is page chrome that a case file should not
+     carry: navigation, controls, the pipeline diagram, the ablation panel. */
+  body * {
+    visibility: hidden;
+  }
+  [data-print-region='forensic-report'],
+  [data-print-region='forensic-report'] * {
+    visibility: visible;
+  }
+  [data-print-region='forensic-report'] {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    padding: 0;
+    background: #fff;
+    color: #111;
+  }
+
+  /* Force legible ink: the on-screen palette is tuned for a dark surface. */
+  [data-print-region='forensic-report'] p,
+  [data-print-region='forensic-report'] dd,
+  [data-print-region='forensic-report'] span {
+    color: #1f2933 !important;
+  }
+  [data-print-region='forensic-report'] h3 {
+    color: #0b4f6c !important;
+    break-after: avoid;
+  }
+  [data-print-region='forensic-report'] dt {
+    color: #52606d !important;
+  }
+  [data-print-region='forensic-report'] section {
+    break-inside: avoid;
+  }
+
+  @page {
+    margin: 18mm 16mm;
+  }
+}

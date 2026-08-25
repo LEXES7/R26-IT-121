@@ -154,6 +154,12 @@ export const analyzeTransaction = (transaction, includeBaseline = false) =>
     .post('/analyze', { transaction, include_baseline: includeBaseline })
     .then((r) => r.data)
 
+// One genuine transaction drawn from the graph service — the same source the
+// live monitor screens. Lets the analyzer run the real model on real input
+// instead of a hand-written scenario.
+export const getSampleTransaction = () =>
+  client.get('/analyze/sample-transaction').then((r) => r.data)
+
 export const getHealth = () => client.get('/health').then((r) => r.data)
 
 export const getTypologies = () => client.get('/typologies').then((r) => r.data)

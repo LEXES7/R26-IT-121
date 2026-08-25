@@ -291,6 +291,9 @@ class AnalyzeResponse(BaseModel):
     # Rich upstream signals (populated when transaction data provided)
     behavioral_signal: Optional[str] = None
     graph_signal: Optional[str] = None
+    # Novelty 3's forensic subgraph: which accounts are implicated, the sink,
+    # the pattern, and per-edge attention weights. The evidence behind the score.
+    graph_evidence: Optional[dict] = None
     temporal_signal: Optional[str] = None
 
 
@@ -399,6 +402,40 @@ async def analyze(request: AnalyzeRequest):
                 raise HTTPException(status_code=status, detail=event.message)
 
     raise HTTPException(status_code=500, detail="Pipeline produced no result.")
+
+
+@app.get("/analyze/sample-transaction", tags=["analysis"])
+async def sample_transaction():
+    """One real transaction drawn from the graph service, ready to analyse.
+
+    The analyzer used to offer only hand-written scenarios with simulated
+    scores, which meant the page demonstrated the plumbing rather than the
+    system. These are genuine PaySim records between genuine accounts — the
+    same source the live monitor screens — so a run here exercises the real
+    model on real input.
+    """
+    import httpx
+
+    base = str(config.get("upstream", "graph_api_base")).rstrip("/")
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.get(f"{base}/api/graph/sample-transactions", params={"n": 1})
+            r.raise_for_status()
+            txns = r.json().get("transactions") or []
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(
+            status_code=503,
+            detail=f"Graph service unreachable at {base}: {type(exc).__name__}",
+        )
+
+    if not txns:
+        raise HTTPException(status_code=503, detail="Graph service returned no transactions.")
+
+    txn = txns[0]
+    # Ground truth is for measuring the system, never for showing as a model
+    # output — strip it before it can reach the page.
+    is_fraud = txn.pop("_is_fraud", None)
+    return {"transaction": txn, "ground_truth_is_fraud": is_fraud}
 
 
 @app.post("/analyze/stream", tags=["analysis"])
