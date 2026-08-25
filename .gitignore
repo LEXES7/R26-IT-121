@@ -69,3 +69,9 @@ fusion_engine/**/node_modules/
 fusion_engine/**/dist/
 fusion_engine/**/chroma_store/
 fusion_engine/**/models/
+
+# Personal study and presentation material — kept locally, not committed.
+# Written around the team structure (member labels, teammates' names); prep
+# notes rather than project documentation.
+GraphSage/docs/research_study_guide.*
+GraphSage/docs/presentation_script.*
