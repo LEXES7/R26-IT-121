@@ -340,6 +340,7 @@ async def run_pipeline(
                 graph_signal_summary=graph_signal,
                 temporal_signal_summary=temporal_signal,
             ),
+            classification=classification,
         )
 
         with _Timer() as t:
