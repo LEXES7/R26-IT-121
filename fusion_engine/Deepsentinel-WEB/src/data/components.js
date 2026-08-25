@@ -116,7 +116,12 @@ export const COMPONENTS = {
       ['Mechanical regularity', 'Intervals too even to be human'],
       ['Off-hours patterns', 'Activity inconsistent with the account’s usual clock'],
     ],
-    metrics: [],
+    metrics: [
+      { label: 'Test F1', value: '0.70', note: 'test set' },
+      { label: 'Recall', value: '0.588', note: 'test set' },
+      { label: 'Precision', value: '0.866', note: 'test set' },
+      { label: 'AUC', value: '0.930', note: 'test set' },
+    ],
     findings: [
       {
         title: 'Dilated convolutions see long context cheaply',
