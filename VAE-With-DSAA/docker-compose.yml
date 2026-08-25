@@ -1,0 +1,33 @@
+# Runs the behavioural component on its own. The fusion engine reaches it at
+# http://behavioral:8001 when both are on the deepsentinel network.
+#
+#   docker compose up --build
+#   docker compose run --rm contract-test     # verify the contract
+#
+# For the full DeepSentinel stack, add the other components as services on the
+# same network and point the fusion engine at
+# BEHAVIORAL_API_BASE=http://behavioral:8001
+services:
+  behavioral:
+    build: .
+    image: deepsentinel/behavioral
+    container_name: behavioral
+    ports:
+      - "8001:8001"
+    networks: [deepsentinel]
+    restart: unless-stopped
+
+  # Contract conformance check against the running service. Consumers can run
+  # this in CI to catch a breaking change before it reaches the demo.
+  contract-test:
+    image: deepsentinel/behavioral
+    depends_on:
+      behavioral:
+        condition: service_healthy
+    command: ["python", "scripts/contract_test.py", "--url", "http://behavioral:8001"]
+    networks: [deepsentinel]
+    profiles: [test]
+
+networks:
+  deepsentinel:
+    name: deepsentinel
