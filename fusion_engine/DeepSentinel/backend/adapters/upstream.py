@@ -184,25 +184,22 @@ async def call_temporal_api(
     timeout: float,
 ) -> UpstreamResponse:
     """
-    POST /api/v1/classify — per TS-TCN/docs/api_contract.md (locked).
+    POST /api/v1/classify — per TS-TCN/docs/api_contract.md (authoritative
+    2026-08-25 revision, aligned against this adapter).
 
-    Request:  {"transaction": {9 PaySim fields}}  — nested, not flat.
-    Response: fraud_probability, fraud_label, threshold_used, attribution{...}
+    Request:  flat transaction + composite_id "{nameOrig}_{step}"
+    Response: temporal_risk_score, step_burstiness, triggering_predecessor{...},
+              evidence.current_transaction.fraud_signal_summary
 
-    The service keeps its own deque(maxlen=32) of recent transactions and
-    rebuilds the window itself, so only the current transaction is sent. Until
-    32 have arrived it answers 503 WARMING_UP, which is a normal startup state
-    rather than an outage — it is reported as unavailable, not logged as a
-    failure.
+    The service keeps its own deque(maxlen=32) of predecessor feature vectors
+    and answers 503 WARMING_UP until 32 have arrived — the 33rd call is the
+    first real classification. That is a normal startup state, not an outage,
+    so it is reported as unavailable without logging a failure.
     """
-    # Their schema validates these nine fields and this type pattern; sending
-    # our extra keys (transaction_id, isFlaggedFraud, _is_fraud) risks a 422.
-    FIELDS = (
-        "step", "type", "amount", "nameOrig", "oldbalanceOrg",
-        "newbalanceOrig", "nameDest", "oldbalanceDest", "newbalanceDest",
-    )
     try:
-        payload = {"transaction": {k: transaction[k] for k in FIELDS if k in transaction}}
+        name_orig = transaction.get("nameOrig", "")
+        step = transaction.get("step", 0)
+        payload = {**transaction, "composite_id": f"{name_orig}_{step}"}
 
         resp = await client.post(
             f"{base_url}/api/v1/classify",
@@ -218,24 +215,22 @@ async def call_temporal_api(
         resp.raise_for_status()
         data = resp.json()
 
-        # `temporal_risk_score` is the older name this adapter was written
-        # against; kept as a fallback so either shape works.
-        raw = data.get("fraud_probability", data.get("temporal_risk_score", 0.5))
-        score = _clamp(float(raw))
+        score = _clamp(float(data.get("temporal_risk_score", 0.5)))
 
-        attribution = data.get("attribution") or {}
-        peak_weight = attribution.get("peak_weight")
-        peak_id = attribution.get("peak_transaction_id")
-        peak_position = attribution.get("peak_position")
+        evidence = data.get("evidence", {})
+        current_tx = evidence.get("current_transaction", {})
+        fraud_signal_summary = current_tx.get("fraud_signal_summary")
 
-        fraud_signal_summary = None
-        if peak_weight is not None:
-            parts = [
-                f"Temporal attention peaked at {peak_weight:.1%} on position "
-                f"{peak_position} of the 32-transaction window."
-            ]
-            if peak_id:
-                parts.append(f"Most influential predecessor: {peak_id}.")
+        step_burstiness = data.get("step_burstiness")
+        predecessor = data.get("triggering_predecessor", {})
+        attention_weight = predecessor.get("attention_weight")
+        predecessor_signal = predecessor.get("predecessor_signal")
+
+        # Build a summary when the service did not supply one.
+        if not fraud_signal_summary and step_burstiness is not None:
+            parts = [f"Step burstiness coefficient: {step_burstiness:.4f}."]
+            if predecessor_signal:
+                parts.append(f"Triggering predecessor: {predecessor_signal}.")
             fraud_signal_summary = " ".join(parts)
 
         return UpstreamResponse(
@@ -245,9 +240,12 @@ async def call_temporal_api(
             typology_hint=None,
             extra={
                 "composite_id": data.get("composite_id"),
-                "fraud_label": data.get("fraud_label"),
-                "threshold_used": data.get("threshold_used"),
-                "attribution": attribution,
+                "risk_level": data.get("risk_level"),
+                "step_burstiness": step_burstiness,
+                "triggering_predecessor": predecessor,
+                "attention_weight": attention_weight,
+                "flagging_miss_rate": data.get("flagging_miss_rate"),
+                "detection_method": data.get("detection_method"),
                 "model_version": data.get("model_version"),
                 "inference_time_ms": data.get("inference_time_ms"),
             },
