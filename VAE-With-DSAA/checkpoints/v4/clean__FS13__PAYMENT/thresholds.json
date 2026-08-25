@@ -1,0 +1,19 @@
+{
+  "f1_optimal": 3.055289743641104,
+  "f2_optimal": 3.055289743641104,
+  "selection_set": "validation partition, 0.999 quantile false-alarm budget",
+  "score_weights": {
+    "alpha": 0.5,
+    "beta": 0.3,
+    "gamma": 0.2
+  },
+  "zscore_statistics": {
+    "recon_mean": 0.11719992011785507,
+    "recon_std": 0.11182156205177307,
+    "kl_mean": 4.1891865730285645,
+    "kl_std": 1.5068612098693848,
+    "dens_mean": 0.5754518154501518,
+    "dens_std": 0.3287912473771457
+  },
+  "n_clusters": 8
+}

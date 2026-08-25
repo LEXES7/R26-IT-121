@@ -1,0 +1,58 @@
+{
+  "protocol": "leaky",
+  "feature_set": "FS13old",
+  "stratum": "CASH_OUT",
+  "features": [
+    "F1_log_amount",
+    "F2_amount_balance_ratio",
+    "F3_balance_consistency",
+    "F4_balance_change_ratio",
+    "F5_dest_balance_ratio",
+    "F6_hour",
+    "F7_day",
+    "F8_is_large",
+    "F9_dest_starts_empty",
+    "F10_recipient_emptied",
+    "F11_account_velocity",
+    "F12_round_amount",
+    "F13_zero_dest_history"
+  ],
+  "n_features": 13,
+  "architecture": {
+    "h1": 64,
+    "h2": 32,
+    "latent": 16,
+    "input_dim": 13
+  },
+  "latent_dim": 16,
+  "hyperparameters": {
+    "free_bits": 0.1,
+    "beta_max": 0.05,
+    "anneal_epochs": 10,
+    "optimizer": "Adam",
+    "lr": 0.001,
+    "batch_size": 256
+  },
+  "split": {
+    "strategy": "chronological",
+    "split_step": 595,
+    "step_recovery": "step = F7_day * 720"
+  },
+  "framework": "pytorch 2.13.0+cpu",
+  "git_commit": "4e585bf",
+  "created_utc": "2026-08-25T11:57:53Z",
+  "train_history": {
+    "epochs_run": 30,
+    "seconds": 364.2763457298279,
+    "val_recon_loss": 0.04663363795061133,
+    "val_kl_raw": 3.414539065848229
+  },
+  "f8_variant": "original whole-dataset percentile",
+  "seed": 42,
+  "serving": {
+    "f8_p95_causal": 429648.29750000016,
+    "f8_p95_source": "fit-partition non-fraud amounts",
+    "f6_hour_formula": "(step % 24) / 24",
+    "note": "Constants required to engineer features for a single transaction at serving time. Without f8_p95_causal the F8_is_large feature cannot be reproduced and every served score is wrong."
+  }
+}

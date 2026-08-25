@@ -1,0 +1,19 @@
+{
+  "f1_optimal": 4.67839258989941,
+  "f2_optimal": 3.4343083712180213,
+  "selection_set": "validation partition, F-beta optimal",
+  "score_weights": {
+    "alpha": 0.5,
+    "beta": 0.3,
+    "gamma": 0.2
+  },
+  "zscore_statistics": {
+    "recon_mean": 0.01634417288005352,
+    "recon_std": 0.020392024889588356,
+    "kl_mean": 2.424947738647461,
+    "kl_std": 1.060685396194458,
+    "dens_mean": 0.3244740094089602,
+    "dens_std": 0.3203482925855864
+  },
+  "n_clusters": 8
+}

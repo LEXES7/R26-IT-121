@@ -1,0 +1,67 @@
+{
+  "stratum": "TRANSFER",
+  "feature_set": "FS-ORIGIN",
+  "eps": 0.18,
+  "fingerprint_width": 15,
+  "n_clusters": 6,
+  "n_fitted_rows": 955,
+  "assignment_rule": "nearest medoid within a radius covering 95% of that cluster's members; outside every radius -> UNASSIGNED",
+  "discovery": "unsupervised \u2014 DBSCAN over DSAA fingerprints, no label used at any point",
+  "labelling": "post-hoc interpretation of each cluster's dominant Signal-1 attribution; naming a discovered cluster does not make the discovery supervised",
+  "clusters": [
+    {
+      "cluster_id": 0,
+      "label": "AMOUNT_MAGNITUDE_OUTLIER",
+      "size": 573,
+      "fraud_purity": 0.7644,
+      "radius": 0.743871,
+      "fatf_hint": "FATF-002",
+      "rationale": "transaction amount itself is the dominant deviation \u2014 F1_log_amount carries 24% of this cluster's reconstruction error, +20% against the other typologies"
+    },
+    {
+      "cluster_id": 1,
+      "label": "OFF_PATTERN_TIMING",
+      "size": 74,
+      "fraud_purity": 0.0405,
+      "radius": 0.232306,
+      "fatf_hint": "FATF-007",
+      "rationale": "hour-of-day is the dominant deviation \u2014 F6_hour carries 96% of this cluster's reconstruction error, +42% against the other typologies"
+    },
+    {
+      "cluster_id": 2,
+      "label": "LARGE_VALUE_TRANSFER",
+      "size": 92,
+      "fraud_purity": 1.0,
+      "radius": 0.287017,
+      "fatf_hint": "FATF-002",
+      "rationale": "amount exceeds the stratum's large-transaction threshold \u2014 F8_is_large carries 74% of this cluster's reconstruction error, +66% against the other typologies"
+    },
+    {
+      "cluster_id": 3,
+      "label": "OFF_PATTERN_TIMING",
+      "size": 38,
+      "fraud_purity": 0.0,
+      "radius": 0.138851,
+      "fatf_hint": "FATF-007",
+      "rationale": "hour-of-day is the dominant deviation \u2014 F6_hour carries 95% of this cluster's reconstruction error, +41% against the other typologies"
+    },
+    {
+      "cluster_id": 4,
+      "label": "OFF_PATTERN_TIMING",
+      "size": 113,
+      "fraud_purity": 0.0,
+      "radius": 0.10829,
+      "fatf_hint": "FATF-007",
+      "rationale": "hour-of-day is the dominant deviation \u2014 F6_hour carries 98% of this cluster's reconstruction error, +43% against the other typologies"
+    },
+    {
+      "cluster_id": 5,
+      "label": "ROUND_VALUE_STRUCTURING",
+      "size": 46,
+      "fraud_purity": 1.0,
+      "radius": 0.200289,
+      "fatf_hint": "FATF-001",
+      "rationale": "amount is a round figure, consistent with structuring \u2014 F12_round_amount carries 37% of this cluster's reconstruction error, +37% against the other typologies"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "stratum": "CASH_OUT",
+  "method": "isotonic",
+  "raw_threshold": 3.6729203782644677,
+  "calibrated_threshold": 0.3103649164619109,
+  "risk_bands": {
+    "medium": 0.155182,
+    "high": 0.310365,
+    "critical": 0.655182
+  },
+  "ece_validation_in_sample": 9.130452719773195e-07,
+  "ece_test_out_of_sample": 0.012611690802687679,
+  "n_val_rows": 320756,
+  "n_val_fraud": 1203,
+  "scale": null,
+  "tie_scale": 0.8901749641917313,
+  "fitted_on": "validation partition (disjoint from fit and test)",
+  "monotone": "strict",
+  "note": "Isotonic alone is monotone non-decreasing and ties raw scores together, which perturbs AUC-PR. A tanh tie-break of size 1e-6 restores strict monotonicity, so ranking, AUC-PR, AUC-ROC and the tuned operating point are all preserved exactly. ece_validation_in_sample is near zero by construction and proves nothing; read ece_test_out_of_sample."
+}
