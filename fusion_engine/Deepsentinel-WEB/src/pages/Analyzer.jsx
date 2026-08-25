@@ -5,6 +5,7 @@ import RiskBadge from '../components/RiskBadge'
 import AblationComparison from '../components/AblationComparison'
 import TransactionForm from '../components/TransactionForm'
 import GraphEvidence from '../components/GraphEvidence'
+import TemporalEvidence from '../components/TemporalEvidence'
 import ForensicReport from '../components/ForensicReport'
 import { useAnalysisStream } from '../hooks/useAnalysisStream'
 import { getSampleTransaction } from '../services/api'
@@ -288,6 +289,13 @@ export default function Analyzer() {
           {result && <ResultSummary result={result} />}
           {result && <ModalityPanel result={result} />}
           {result?.graph_evidence && <GraphEvidence evidence={result.graph_evidence} />}
+          {result?.temporal_evidence && (
+            <TemporalEvidence
+              evidence={result.temporal_evidence}
+              score={result.temporal_score}
+              signal={result.temporal_signal}
+            />
+          )}
 
           {(result || running) && (
             <ForensicReport
