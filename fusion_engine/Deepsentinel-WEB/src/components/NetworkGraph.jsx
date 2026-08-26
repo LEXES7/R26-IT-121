@@ -80,7 +80,11 @@ export default function NetworkGraph({ evidence, height = 420 }) {
   const sinkId = evidence?.sink_account
 
   const W = 720
-  const H = height
+  // Shrink to fit a small subgraph. Two accounts in a 420px canvas is mostly
+  // empty space, which reads as something failing to load.
+  const H = nodes.length <= 4 ? Math.min(height, 240)
+          : nodes.length <= 8 ? Math.min(height, 320)
+          : height
   const { pos, centreId } = useMemo(
     () => layout(nodes, edges, sinkId, W, H), [nodes, edges, sinkId, H],
   )
@@ -141,7 +145,7 @@ export default function NetworkGraph({ evidence, height = 420 }) {
         <svg
           viewBox={`0 0 ${W} ${H}`}
           className="w-full min-w-[560px]"
-          style={{ height }}
+          style={{ height: H }}   /* H, not the prop — see the shrink above */
           role="img"
           aria-label={`Network of ${nodes.length} accounts around the flagged transaction`}
         >
