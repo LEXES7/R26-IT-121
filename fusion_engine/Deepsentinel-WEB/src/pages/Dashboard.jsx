@@ -117,13 +117,22 @@ export default function Dashboard() {
     return buckets
   }, [cases])
 
-  // The case worth looking at: highest scoring, and with a graph to show.
-  const featured = useMemo(
-    () => [...cases]
-      .filter((c) => c.graph_evidence?.nodes?.length)
-      .sort((a, b) => (b.fused_score ?? 0) - (a.fused_score ?? 0))[0] ?? null,
-    [cases],
-  )
+  // The case worth looking at.
+  //
+  // Severity leads, but among equally severe cases the one with more network to
+  // show wins: this panel exists to make structure visible, and a two-account
+  // graph has none however high it scored. Ranking purely by score featured a
+  // single edge while a seven-account ring sat unused.
+  const featured = useMemo(() => {
+    const withGraph = cases.filter((c) => (c.graph_evidence?.nodes?.length ?? 0) >= 2)
+    if (!withGraph.length) return null
+    const severity = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 }
+    const rank = (c) =>
+      (severity[c.classification] ?? 0) * 1000
+      + Math.min(c.graph_evidence.nodes.length, 40) * 10
+      + (c.fused_score ?? 0)
+    return [...withGraph].sort((a, b) => rank(b) - rank(a))[0]
+  }, [cases])
 
   const firstName = (user?.full_name || user?.username || '')
     .replace(/\bDeepSentinel\b/i, '').trim().split(' ')[0] || user?.username || 'there'

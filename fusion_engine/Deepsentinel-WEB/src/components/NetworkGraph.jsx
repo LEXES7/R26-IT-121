@@ -132,10 +132,15 @@ export default function NetworkGraph({ evidence, height = 420 }) {
         action={
           <div className="flex items-center gap-2">
             <Badge tone="low">{nodes.length} accounts</Badge>
-            {steps.length > 1 && (
-              <Button size="sm" variant="ghost" onClick={() => setPlaying((p) => !p)}>
-                {playing ? 'Stop' : '▶ Play flow'}
+            {steps.length > 1 ? (
+              <Button size="sm" variant={playing ? 'ghost' : 'secondary'}
+                      onClick={() => setPlaying((p) => !p)}>
+                {playing ? '■ Stop' : `▶ Replay ${steps.length} transfers`}
               </Button>
+            ) : (
+              // Say why there is nothing to play, rather than silently omitting
+              // the control and leaving the reader to wonder.
+              <span className="text-[10px] text-slate-600">single transfer</span>
             )}
           </div>
         }
