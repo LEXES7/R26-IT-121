@@ -1137,6 +1137,122 @@ async def get_analysis_statistics(user: User = Depends(get_current_user)):
     return await analysis_statistics()
 
 
+# ── Packages ─────────────────────────────────────────────────────────────────
+# Which commercial package this deployment is licensed for. Detection, fusion,
+# alerting and monitoring are never gated — see backend/packages.py.
+
+
+@app.get("/packages", tags=["packages"])
+async def get_package(user: User = Depends(get_current_user)):
+    """The licensed package and which features it unlocks."""
+    from backend import packages
+
+    return packages.status()
+
+
+@app.put("/packages", tags=["packages"])
+async def set_package_endpoint(
+    body: dict, user: User = Depends(require_admin)
+):
+    """Change the licensed package. Admin only, and audited."""
+    from backend import packages
+    from backend.auth import audit
+
+    name = body.get("package")
+    if not name:
+        raise HTTPException(422, "Body must contain a 'package' field.")
+
+    previous = packages.current().value
+    pkg = packages.set_package(str(name), actor=user.username)
+    await audit(
+        "package.change",
+        actor=user.username,
+        target=pkg.value,
+        detail=f"{previous} -> {pkg.value}",
+    )
+    return packages.status()
+
+
+# ── Suspicious Activity Report drafting ──────────────────────────────────────
+# The system drafts; a named officer reviews, edits and decides. Nothing here
+# files anything with any authority.
+
+
+@app.get("/analyses/{analysis_id}/sar", tags=["sar"])
+async def get_sar_draft(analysis_id: int, user: User = Depends(get_current_user)):
+    """The latest draft for this alert, or 404 if none has been generated."""
+    from backend import packages, sar
+
+    packages.require("sar_draft")
+    draft = await sar.latest_draft(analysis_id)
+    if draft is None:
+        raise HTTPException(404, "No draft has been generated for this alert yet.")
+    return draft
+
+
+@app.post("/analyses/{analysis_id}/sar", tags=["sar"])
+async def create_sar_draft(analysis_id: int, user: User = Depends(get_current_user)):
+    """Draft a SAR from a stored alert. Audited, because it is a compliance artefact."""
+    from backend import packages, sar
+    from backend.auth import audit
+
+    packages.require("sar_draft")
+    draft = await sar.generate(analysis_id, forensic_reporter, actor=user.username)
+    await audit(
+        "sar.generate",
+        actor=user.username,
+        target=f"analysis:{analysis_id}",
+        detail=f"draft {draft['id']} generated",
+    )
+    return draft
+
+
+@app.patch("/analyses/sar/{draft_id}", tags=["sar"])
+async def revise_sar_draft(
+    draft_id: int, body: dict, user: User = Depends(get_current_user)
+):
+    """Record an officer's edits. The generated text is preserved separately."""
+    from backend import packages, sar
+    from backend.auth import audit
+
+    packages.require("sar_draft")
+    text = body.get("text")
+    if text is None:
+        raise HTTPException(422, "Body must contain a 'text' field.")
+    draft = await sar.revise(draft_id, str(text), actor=user.username)
+    await audit("sar.revise", actor=user.username, target=f"sar:{draft_id}")
+    return draft
+
+
+@app.post("/analyses/sar/{draft_id}/decision", tags=["sar"])
+async def decide_sar_draft(
+    draft_id: int, body: dict, user: User = Depends(get_current_user)
+):
+    """Approve or reject a draft.
+
+    Approval attributes the text to this user. It does not file the report —
+    filing is a separate, deliberate act in the institution's own system.
+    """
+    from backend import packages, sar
+    from backend.auth import audit
+
+    packages.require("sar_draft")
+    if "approve" not in body:
+        raise HTTPException(422, "Body must contain an 'approve' boolean.")
+
+    approve = bool(body["approve"])
+    draft = await sar.decide(
+        draft_id, approve, actor=user.username, note=body.get("note")
+    )
+    await audit(
+        "sar.approve" if approve else "sar.reject",
+        actor=user.username,
+        target=f"sar:{draft_id}",
+        detail=body.get("note"),
+    )
+    return draft
+
+
 @app.get("/audit-log", tags=["users"])
 async def get_audit_log(limit: int = 100, user: User = Depends(require_admin)):
     """Recent security events, newest first. Admin only."""
