@@ -242,7 +242,7 @@ async def call_temporal_api(
         fraud_signal_summary = current_tx.get("fraud_signal_summary")
 
         step_burstiness = data.get("step_burstiness")
-        predecessor = data.get("triggering_predecessor", {})
+        predecessor = data.get("triggering_predecessor") or {}
         attention_weight = predecessor.get("attention_weight")
         predecessor_signal = predecessor.get("predecessor_signal")
 
@@ -259,7 +259,8 @@ async def call_temporal_api(
             fraud_signal_summary=fraud_signal_summary,
             typology_hint=None,
             extra={
-                "composite_id": data.get("composite_id"),
+                "composite_id": data.get("transaction_ref", {}).get("composite_id")
+                or data.get("composite_id"),
                 "risk_level": data.get("risk_level"),
                 "step_burstiness": step_burstiness,
                 "triggering_predecessor": predecessor,
@@ -268,6 +269,20 @@ async def call_temporal_api(
                 "detection_method": data.get("detection_method"),
                 "model_version": data.get("model_version"),
                 "inference_time_ms": data.get("inference_time_ms"),
+
+                # Full forensic payload for the evidence panel — the sequential
+                # analogue of graph's suspicious_subgraph and behavioral's
+                # evidence dict. Current-transaction feature values (not just
+                # the one-line summary) plus the predecessor block, so the
+                # panel can show what fraud_attention actually weighed.
+                "temporal_evidence": {
+                    "risk_level": data.get("risk_level"),
+                    "detection_method": data.get("detection_method"),
+                    "model_version": data.get("model_version"),
+                    "inference_time_ms": data.get("inference_time_ms"),
+                    "current_transaction": current_tx,
+                    "triggering_predecessor": predecessor or None,
+                },
             },
         )
     except Exception as e:

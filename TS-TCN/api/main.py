@@ -1,8 +1,15 @@
-"""FastAPI entrypoint for the TS-TCN classification service (Stage 8 — July).
+"""FastAPI entrypoint for the TS-TCN classification service (Stage 8).
 
-To be filled in during Stage 8. Skeleton only at this point.
+Run from the TS-TCN repo root:
+
+    uvicorn api.main:app --reload --port 8003
+
+Port 8003 is the default TEMPORAL_API_BASE the fusion engine dials
+(DeepSentinel/backend/config.py) — see docs/api_contract.md.
 """
 from fastapi import FastAPI
+
+from . import state
 from .routes import classify
 
 app = FastAPI(
@@ -17,4 +24,10 @@ app.include_router(classify.router, prefix="/api/v1")
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model_version": "ts-tcn-v1.0"}
+    return {
+        "status": "ok",
+        "model_version": state.MODEL_VERSION,
+        "window_size": state.WINDOW_SIZE,
+        "buffer_filled": state.buffer_size(),
+        "warming_up": state.buffer_size() < state.WINDOW_SIZE,
+    }

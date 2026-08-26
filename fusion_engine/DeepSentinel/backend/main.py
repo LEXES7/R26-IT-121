@@ -300,6 +300,12 @@ class AnalyzeResponse(BaseModel):
     # attribution shares, and the discovered typology the fingerprint matched.
     behavioral_evidence: Optional[dict] = None
     temporal_signal: Optional[str] = None
+    # The sequential detector's evidence: the current transaction's F1-F10
+    # feature values plus the fraud_attention-identified triggering
+    # predecessor (its own feature vector and attention weight) — the
+    # temporal analogue of graph_evidence's subgraph and behavioral_evidence's
+    # decomposition.
+    temporal_evidence: Optional[dict] = None
 
 
 # ── Upstream callers ──────────────────────────────────────────────────────────

@@ -1,11 +1,17 @@
 """POST /api/v1/classify — main classification endpoint.
 
-To be filled in during Stage 8.
+Per docs/api_contract.md: classifies the current transaction against the
+system-wide 32-transaction rolling window maintained in api/state.py.
 """
-from fastapi import APIRouter
+import logging
 
+from fastapi import APIRouter, HTTPException
+
+from .. import state
 from ..schemas.request import ClassifyRequest
 from ..schemas.response import ClassifyResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -14,8 +20,20 @@ router = APIRouter()
 def classify(req: ClassifyRequest) -> ClassifyResponse:
     """Classify a single transaction using the system-wide deque buffer.
 
-    The service maintains an internal `deque(maxlen=32)` shared across requests,
-    populated by the FIFO arrival order of transactions. Fewer than 32
-    transactions in the buffer returns 503 WARMING_UP.
+    The service maintains an internal `deque(maxlen=32)` shared across
+    requests, populated by the FIFO arrival order of transactions. Fewer than
+    32 transactions in the buffer returns 503 WARMING_UP — normal for the
+    first 31 requests after a (re)start, not a failure.
     """
-    raise NotImplementedError("Stage 8 — to be implemented in July.")
+    try:
+        result = state.classify(req.model_dump())
+    except state.WarmingUp as e:
+        raise HTTPException(status_code=503, detail=f"WARMING_UP: {e}") from e
+    except state.ModelArtifactsMissing as e:
+        logger.error(f"TS-TCN model artefacts missing: {e}")
+        raise HTTPException(status_code=500, detail=f"INTERNAL_ERROR: {e}") from e
+    except Exception as e:  # noqa: BLE001 — surface as a 500, never a bare 502/tracer
+        logger.exception("TS-TCN inference failed")
+        raise HTTPException(status_code=500, detail=f"INTERNAL_ERROR: {type(e).__name__}: {e}") from e
+
+    return ClassifyResponse(**result)
