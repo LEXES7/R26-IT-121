@@ -101,25 +101,25 @@ export default function Navbar() {
   return (
     <nav
       ref={navRef}
-      className="sticky top-0 z-50 border-b border-subtle bg-sentinel-950/85 backdrop-blur-xl"
+      className="hair-b sticky top-0 z-50 bg-sentinel-950/80 backdrop-blur-xl"
     >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex h-[3.75rem] max-w-[88rem] items-center justify-between gap-6 px-5 sm:px-8">
         <Link to="/" className="shrink-0" aria-label="DeepSentinel home">
           <Logo />
         </Link>
 
         {/* Desktop navigation */}
-        <div className="hidden items-center gap-1 lg:flex">
+        <div className="hidden items-center gap-6 lg:flex">
           {primary.map((l) => (
             <Link
               key={l.to}
               to={l.to}
               aria-current={pathname === l.to ? 'page' : undefined}
               className={cx(
-                'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                'relative py-2 text-[0.8125rem] transition-colors',
                 pathname === l.to
-                  ? 'bg-surface-overlay text-slate-200'
-                  : 'text-slate-400 hover:bg-surface-raised hover:text-slate-200',
+                  ? 'font-medium text-slate-100 after:absolute after:-bottom-[1.3rem] after:left-0 after:h-px after:w-full after:bg-accent-400'
+                  : 'text-slate-500 hover:text-slate-200',
               )}
             >
               {l.label}
