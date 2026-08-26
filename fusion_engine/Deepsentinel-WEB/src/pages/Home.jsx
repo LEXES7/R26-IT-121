@@ -8,11 +8,20 @@ import PipelineDiagram from '../components/PipelineDiagram'
 import { useAuth } from '../context/AuthContext'
 import { Badge, cx } from '../components/ui'
 
+// Every figure here is measured, and labelled with the protocol that produced
+// it.
+//
+// This list previously advertised "0.988 fusion F1 score — meta-classifier,
+// held-out set". That number is the meta-classifier's cross-validation on
+// synthetic data it generated itself; it is a fit diagnostic, not a detection
+// result, and "held-out set" implied an evaluation that never happened. The
+// honest figure is 0.406 under a leakage-free protocol, and it is the one worth
+// defending: 0.41 with no leakage is a stronger claim than 0.99 with it.
 const STATS = [
   { value: '3', label: 'detection models', detail: 'network, behaviour, timing' },
-  { value: '10', label: 'FATF typologies', detail: 'vector-indexed knowledge base' },
-  { value: '0.988', label: 'fusion F1 score', detail: 'meta-classifier, held-out set' },
-  { value: '6.3M', label: 'transactions', detail: 'PaySim training corpus' },
+  { value: '0.406', label: 'relational F1', detail: 'leakage-free, 5 seeds, p=0.045' },
+  { value: '0.024', label: 'calibration error', detail: 'isotonic; 0.80 uncalibrated' },
+  { value: '6.3M', label: 'transactions', detail: 'PaySim, fully synthetic' },
 ]
 
 const PROBLEM = [
@@ -87,15 +96,17 @@ export default function Home() {
           className="pointer-events-none absolute -left-40 top-0 h-[32rem] w-[32rem] rounded-full bg-accent-500/10 blur-[120px]"
         />
 
-        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[1fr_minmax(0,34rem)] lg:gap-6 lg:py-28">
+        <div className="relative mx-auto grid max-w-[88rem] items-center gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_minmax(0,36rem)] lg:gap-10 lg:py-28">
           {/* Left — the argument */}
           <div>
             <Eyebrow>Multi-modal fraud detection</Eyebrow>
 
-            <h1 className="mt-5 text-5xl font-bold leading-[1.02] tracking-tight text-slate-200 sm:text-6xl">
+            {/* Serif, not the bold sans every product page uses. The italic
+                clause is the promise; the roman half is the commodity. */}
+            <h1 className="display mt-5 text-[3.5rem] text-slate-100 sm:text-[4.75rem]">
               Detect the fraud.
               <br />
-              <span className="text-accent-500">Then prove it.</span>
+              <span className="display-italic text-accent-400">Then prove it.</span>
             </h1>
 
             <p className="mt-6 max-w-xl text-base leading-relaxed text-slate-400">
@@ -117,15 +128,17 @@ export default function Home() {
               </a>
             </div>
 
-            {/* Stats: white numerals, accent suffix — the template's device. */}
-            <dl className="mt-14 grid grid-cols-2 gap-x-8 gap-y-7 sm:grid-cols-4">
+            {/* Measured figures, each carrying the protocol that produced it.
+                The detail line is not decoration — a number without its method
+                is a claim, and this page should not make claims. */}
+            <dl className="hair-t mt-14 grid grid-cols-2 gap-x-8 gap-y-7 pt-8 sm:grid-cols-4">
               {STATS.map((s) => (
                 <div key={s.label}>
-                  <dd className="text-4xl font-bold tracking-tight text-slate-200 tabular-nums">
+                  <dd className="numeric text-[2rem] leading-none text-slate-100">
                     {s.value}
                   </dd>
-                  <dt className="mt-1.5 text-xs font-semibold text-accent-500">{s.label}</dt>
-                  <p className="mt-0.5 text-[10px] leading-tight text-slate-600">{s.detail}</p>
+                  <dt className="eyebrow mt-2.5 text-accent-400">{s.label}</dt>
+                  <p className="mt-1 text-[10px] leading-tight text-slate-600">{s.detail}</p>
                 </div>
               ))}
             </dl>
