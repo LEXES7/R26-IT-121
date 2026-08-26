@@ -120,7 +120,7 @@ function Shell() {
   )
 }
 
-export default /** The landing page depends on who is asking. */
+/** The landing page depends on who is asking. */
 function RootPage() {
   const { isAuthenticated, initialising } = useAuth()
   // Render nothing rather than the marketing page while the session is still
@@ -130,7 +130,7 @@ function RootPage() {
 }
 
 
-function App() {
+export default function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
