@@ -14,7 +14,7 @@ import {
 } from "react-native";
 
 import { login, type LoginResponse } from "../api/auth";
-import { NetworkError } from "../api/client";
+import { ApiError, NetworkError } from "../api/client";
 import { API_BASE } from "../config";
 import { accent, bg, mono, radius, risk, space, text } from "../theme/tokens";
 
@@ -22,26 +22,76 @@ type Props = {
   onSignedIn: (session: LoginResponse) => void;
 };
 
+/**
+ * Mirrors `max_failed_logins` in the backend's config.ini.
+ *
+ * Counted here rather than reported by the server on purpose. The server
+ * answers an unknown user and a wrong password identically — and pads the
+ * timing to match — so the endpoint cannot be used to find out which usernames
+ * exist. A "2 attempts remaining" from the server would undo that, because a
+ * username that does not exist has no counter to report.
+ *
+ * Counting locally tells the person nothing they did not already know: these
+ * are their own attempts, on their own device. It is shown the way a banking
+ * app shows it — a plain count, because being locked out with no warning is
+ * the worse failure. The wording says "on this device" because an attempt made
+ * elsewhere counts towards the same lockout and this one cannot see it.
+ */
+const LOCKOUT_AFTER = 5;
+
+/** HTTP 423 Locked — the backend's answer once the account is locked out. */
+const LOCKED = 423;
+
 export default function LoginScreen({ onSignedIn }: Props) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unreachable, setUnreachable] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const [failures, setFailures] = useState(0);
 
   const canSubmit = username.trim().length > 0 && password.length > 0 && !busy;
+  const remaining = Math.max(0, LOCKOUT_AFTER - failures);
+
+  /** A different account is a different counter. */
+  function onUsernameChange(next: string) {
+    if (next.trim() !== username.trim()) {
+      setFailures(0);
+      setLocked(false);
+    }
+    setUsername(next);
+  }
 
   async function submit() {
     if (!canSubmit) return;
     setBusy(true);
     setError(null);
     setUnreachable(false);
+    setLocked(false);
     try {
-      onSignedIn(await login(username.trim(), password));
+      const session = await login(username.trim(), password);
+      setFailures(0);
+      onSignedIn(session);
     } catch (err) {
-      // The two failures need different words. A network problem shown as a
-      // credential problem sends someone hunting for a typo that is not there.
-      setUnreachable(err instanceof NetworkError);
+      // Three failures that need three different answers: a rejected
+      // credential, a locked account, and a backend that was never reached.
+      // Showing the third as the first sends someone hunting for a typo that
+      // is not there — which happened here while the backend was still bound
+      // to 127.0.0.1.
+      if (err instanceof NetworkError) {
+        setUnreachable(true);
+      } else if (err instanceof ApiError && err.status === LOCKED) {
+        setLocked(true);
+        setFailures(LOCKOUT_AFTER);
+      } else if (err instanceof ApiError && err.status === 401) {
+        // A 401 after a lockout means the lockout expired: the backend zeroes
+        // its counter when it locks, so this is attempt one of a fresh five,
+        // not the sixth of the old set.
+        setFailures((n) => (locked ? 1 : n + 1));
+        setLocked(false);
+        setPassword("");
+      }
       setError((err as Error).message);
     } finally {
       setBusy(false);
@@ -69,7 +119,7 @@ export default function LoginScreen({ onSignedIn }: Props) {
             <TextInput
               style={styles.input}
               value={username}
-              onChangeText={setUsername}
+              onChangeText={onUsernameChange}
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="username"
@@ -95,13 +145,38 @@ export default function LoginScreen({ onSignedIn }: Props) {
             />
 
             {error && (
-              <View style={styles.errorBox}>
-                <Text style={styles.errorText}>{error}</Text>
+              <View style={[styles.errorBox, locked && styles.lockedBox]}>
+                <Text style={[styles.errorText, locked && styles.lockedText]}>
+                  {locked ? "Account locked" : error}
+                </Text>
+
+                {locked && <Text style={styles.errorHint}>{error}</Text>}
+
                 {unreachable && (
                   <Text style={styles.errorHint}>
                     This is a connection problem, not a wrong password. The
                     backend is expected at {API_BASE}.
                   </Text>
+                )}
+
+                {/* Shown from the first failure. Being locked out with no
+                    warning is worse than being told the count. */}
+                {!locked && !unreachable && failures > 0 && (
+                  <View style={styles.remainingRow}>
+                    <Text
+                      style={[
+                        styles.remainingCount,
+                        remaining <= 2 && styles.remainingUrgent,
+                      ]}
+                    >
+                      {remaining} {remaining === 1 ? "attempt" : "attempts"}{" "}
+                      remaining
+                    </Text>
+                    <Text style={styles.remainingNote}>
+                      Counted on this device. The account locks for 15 minutes
+                      after {LOCKOUT_AFTER} failed attempts.
+                    </Text>
+                  </View>
                 )}
               </View>
             )}
@@ -184,6 +259,30 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(239, 68, 68, 0.08)",
   },
   errorText: { color: risk.CRITICAL, fontSize: 13, lineHeight: 19 },
+  // A lockout is not the same event as a rejected password: it is temporary,
+  // it has a stated duration, and no amount of retrying will help. Amber, and
+  // a heading of its own, so it is not read as "try again".
+  lockedBox: {
+    borderColor: risk.MEDIUM,
+    backgroundColor: "rgba(234, 179, 8, 0.08)",
+  },
+  lockedText: { color: risk.MEDIUM, fontWeight: "700" },
+
+  remainingRow: {
+    marginTop: space.md,
+    paddingTop: space.md,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(239, 68, 68, 0.25)",
+  },
+  remainingCount: { color: text.primary, fontSize: 14, fontWeight: "700" },
+  // The last two carry the warning, so they carry the lockout's colour.
+  remainingUrgent: { color: risk.MEDIUM },
+  remainingNote: {
+    color: text.secondary,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: space.xs,
+  },
   errorHint: { color: text.secondary, fontSize: 12, lineHeight: 18, marginTop: space.sm },
 
   button: {
