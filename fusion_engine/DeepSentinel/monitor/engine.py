@@ -273,12 +273,19 @@ class MonitorEngine:
         await self._notify_early(txid, payload, graph_score, sg)
 
         scores: dict[str, float | None] = {"graph": graph_score}
+        # The response bodies are kept, not just the scores. A detector answers
+        # with its reasoning attached, and that reasoning is what a reviewer
+        # opens the case for — dropping it here is why it never reached the
+        # case record.
+        bodies: dict[str, dict | None] = {}
         for name, key, base_key in (
             ("behavioural", "behavioral_risk_score", "behavioral_api_base"),
             ("temporal", "temporal_risk_score", "temporal_api_base"),
         ):
             STATE.set_stage(name, "active")
-            scores[name] = await self._call_upstream(client, base_key, key, payload)
+            scores[name], bodies[name] = await self._call_upstream(
+                client, base_key, key, payload
+            )
             STATE.set_stage(name, "idle")
             STATE.publish("model", {
                 "transaction_id": txid, "model": name, "score": scores[name],
@@ -325,7 +332,13 @@ class MonitorEngine:
         # fused and judged not worth an email is still something a reviewer may
         # want to see later; dropping it would make the case table a record of
         # alerts rather than of detections.
+        from backend.adapters.upstream import behavioural_evidence
         from monitor import cases
+
+        # Built through the same function the analyzer's panel is fed from, so
+        # a case opened later shows the decomposition in the shape the panel
+        # already knows how to render.
+        b_body = bodies.get("behavioural")
 
         await cases.record(
             transaction_id=txid,
@@ -336,6 +349,7 @@ class MonitorEngine:
             modalities_used=len(available),
             payload=payload,
             graph_evidence=sg,
+            behavioral_evidence=behavioural_evidence(b_body) if b_body else None,
             alert_sent=(severity != "LOW"),
             label_is_fraud=self._label,
         )
@@ -364,16 +378,29 @@ class MonitorEngine:
         STATE.set_stage("report", "idle")
 
     async def _call_upstream(self, client, base_key: str, score_key: str, payload: dict):
-        """Score one modality. Returns None when the detector cannot answer."""
+        """Score one modality.
+
+        Returns `(score, body)`. The body comes back alongside the score
+        because the detectors answer with their attribution attached and the
+        case record needs it; `(None, None)` when the detector cannot answer.
+
+        A 200 without the score key is a contract violation rather than a
+        measurement, so it falls through to the next path and ultimately
+        counts as unavailable — the same reading the request adapters take.
+        """
         base = str(config.get("upstream", base_key)).rstrip("/")
         for path in ("/api/v1/classify", "/api/v1/behavioral/classify"):
             try:
                 r = await client.post(f"{base}{path}", json=payload, timeout=10.0)
                 if r.status_code == 200:
-                    return float(r.json().get(score_key))
+                    data = r.json()
+                    raw = data.get(score_key)
+                    if raw is None:
+                        continue
+                    return float(raw), data
             except Exception:                           # noqa: BLE001
                 continue
-        return None
+        return None, None
 
     def _severity(self, fused: float) -> str:
         b = self._bands

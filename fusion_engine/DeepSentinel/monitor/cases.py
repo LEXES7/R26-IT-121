@@ -2,8 +2,13 @@
 
 `fraud_cases` is the table a stakeholder reads. For one alert it holds: what
 each model scored and whether it answered at all, the matched typology, the
-structural evidence, how long it took, who was told, and what a human decided
-afterwards.
+graph's structural evidence and the behavioural detector's attribution, how
+long it took, who was told, and what a human decided afterwards.
+
+The evidence columns are the difference between a case a reviewer can act on
+and a row of numbers. A score says a transaction was unusual; the attribution
+says which feature and which latent dimension made it unusual, which is the
+question the reviewer actually has.
 
 Two things are recorded that are easy to leave out and matter later:
 
@@ -94,6 +99,7 @@ async def record(
     modalities_used: int,
     payload: dict | None = None,
     graph_evidence: dict | None = None,
+    behavioral_evidence: dict | None = None,
     typology: dict | None = None,
     forensic_report: str | None = None,
     screening_ms: int | None = None,
@@ -135,7 +141,7 @@ async def record(
                         modalities_used, uncertainty_penalty_applied,
                         typology_id, typology_name, typology_similarity,
                         graph_pattern, sink_account, implicated_accounts,
-                        graph_evidence, forensic_report,
+                        graph_evidence, behavioral_evidence, forensic_report,
                         screening_ms, total_ms,
                         alert_sent, alerted_at, recipients,
                         review_status, label_is_fraud, model_versions
@@ -147,7 +153,7 @@ async def record(
                         :modalities_used, :penalty,
                         :typology_id, :typology_name, :typology_similarity,
                         :graph_pattern, :sink_account, :implicated_accounts,
-                        :graph_evidence, :forensic_report,
+                        :graph_evidence, :behavioral_evidence, :forensic_report,
                         :screening_ms, :total_ms,
                         :alert_sent, :alerted_at, :recipients,
                         'open', :label_is_fraud, :model_versions
@@ -177,6 +183,7 @@ async def record(
                         [n.get("account_id") for n in (sg.get("nodes") or [])][:50]
                     ),
                     "graph_evidence": _js(sg or None),
+                    "behavioral_evidence": _js(behavioral_evidence or None),
                     "forensic_report": forensic_report,
                     "screening_ms": screening_ms,
                     "total_ms": total_ms,
