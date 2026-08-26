@@ -160,6 +160,32 @@ export const analyzeTransaction = (transaction, includeBaseline = false) =>
 export const getSampleTransaction = () =>
   client.get('/analyze/sample-transaction').then((r) => r.data)
 
+// ── Packages ─────────────────────────────────────────────────────────────────
+// Which commercial package this deployment holds, and which features it
+// unlocks. Detection, fusion, alerting and monitoring are never gated.
+
+export const getPackage = () => client.get('/packages').then((r) => r.data)
+
+export const setPackage = (pkg) =>
+  client.put('/packages', { package: pkg }).then((r) => r.data)
+
+// ── Suspicious Activity Report drafts ────────────────────────────────────────
+// The system drafts; a named officer reviews and decides. Nothing files.
+
+export const getSarDraft = (analysisId) =>
+  client.get(`/analyses/${analysisId}/sar`).then((r) => r.data)
+
+export const createSarDraft = (analysisId) =>
+  client.post(`/analyses/${analysisId}/sar`).then((r) => r.data)
+
+export const reviseSarDraft = (draftId, text) =>
+  client.patch(`/analyses/sar/${draftId}`, { text }).then((r) => r.data)
+
+export const decideSarDraft = (draftId, approve, note) =>
+  client
+    .post(`/analyses/sar/${draftId}/decision`, { approve, note })
+    .then((r) => r.data)
+
 export const getHealth = () => client.get('/health').then((r) => r.data)
 
 export const getTypologies = () => client.get('/typologies').then((r) => r.data)

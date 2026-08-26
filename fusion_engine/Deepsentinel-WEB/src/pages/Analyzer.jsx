@@ -7,6 +7,9 @@ import TransactionForm from '../components/TransactionForm'
 import GraphEvidence from '../components/GraphEvidence'
 import BehaviouralEvidence from '../components/BehaviouralEvidence'
 import ForensicReport from '../components/ForensicReport'
+import SarDraft from '../components/SarDraft'
+import Locked from '../components/Locked'
+import { usePackage } from '../hooks/usePackage'
 import { useAnalysisStream } from '../hooks/useAnalysisStream'
 import { getSampleTransaction } from '../services/api'
 import {
@@ -57,6 +60,7 @@ export default function Analyzer() {
   const [pullError, setPullError] = useState(null)
 
   const { stages, result, running, error, run, cancel } = useAnalysisStream()
+  const { has, upsells } = usePackage()
 
   const pull = useCallback(async () => {
     setPulling(true)
@@ -288,18 +292,55 @@ export default function Analyzer() {
 
           {result && <ResultSummary result={result} />}
           {result && <ModalityPanel result={result} />}
-          {result?.graph_evidence && <GraphEvidence evidence={result.graph_evidence} />}
-          {result?.behavioral_evidence && (
-            <BehaviouralEvidence evidence={result.behavioral_evidence} />
+
+          {/* Attribution, the report and SAR drafting are Professional
+              features. The score and classification above never are. */}
+          {(result?.graph_evidence || result?.behavioral_evidence) && (
+            <Locked
+              feature="attribution_panels"
+              has={has}
+              upsells={upsells}
+              title="Detailed attribution is not included in your package"
+            >
+              <>
+                {result?.graph_evidence && (
+                  <GraphEvidence evidence={result.graph_evidence} />
+                )}
+                {result?.behavioral_evidence && (
+                  <BehaviouralEvidence evidence={result.behavioral_evidence} />
+                )}
+              </>
+            </Locked>
           )}
 
           {(result || running) && (
-            <ForensicReport
-              report={result?.forensic_report}
-              loading={running && !result?.forensic_report}
-              durationMs={stages?.report?.durationMs}
-              transactionId={result?.transaction_id}
-            />
+            <Locked
+              feature="forensic_report"
+              has={has}
+              upsells={upsells}
+              title="Forensic reporting is not included in your package"
+            >
+              <ForensicReport
+                report={result?.forensic_report}
+                loading={running && !result?.forensic_report}
+                durationMs={stages?.report?.durationMs}
+                transactionId={result?.transaction_id}
+              />
+            </Locked>
+          )}
+
+          {result?.analysis_id && (
+            <Locked
+              feature="sar_draft"
+              has={has}
+              upsells={upsells}
+              title="Regulatory report drafting is not included in your package"
+            >
+              <SarDraft
+                analysisId={result.analysis_id}
+                classification={result.classification}
+              />
+            </Locked>
           )}
 
           {result?.baseline_report && (

@@ -299,6 +299,9 @@ class AnalyzeResponse(BaseModel):
     # the three score terms combined, the per-feature and per-latent-dimension
     # attribution shares, and the discovered typology the fingerprint matched.
     behavioral_evidence: Optional[dict] = None
+    # Primary key of the persisted record. The UI needs it to draft a SAR
+    # against this exact result rather than re-deriving one from a re-run.
+    analysis_id: Optional[int] = None
     temporal_signal: Optional[str] = None
 
 
@@ -400,11 +403,11 @@ async def analyze(request: AnalyzeRequest):
         if isinstance(event, PipelineResult):
             from backend.settings import record_analysis
 
-            await record_analysis(
+            analysis_id = await record_analysis(
                 event.payload,
                 transaction=request.transaction.model_dump() if request.transaction else None,
             )
-            return AnalyzeResponse(**event.payload)
+            return AnalyzeResponse(**event.payload, analysis_id=analysis_id)
 
         if isinstance(event, StageEvent) and event.status == Status.ERROR:
             # A bad scenario name is the caller's mistake; anything else is ours.
@@ -483,13 +486,13 @@ async def analyze_stream(request: AnalyzeRequest):
                 if isinstance(item, PipelineResult):
                     from backend.settings import record_analysis
 
-                    await record_analysis(
+                    analysis_id = await record_analysis(
                         item.payload,
                         transaction=(
                             request.transaction.model_dump() if request.transaction else None
                         ),
                     )
-                    yield sse("complete", item.payload)
+                    yield sse("complete", {**item.payload, "analysis_id": analysis_id})
                 elif isinstance(item, StageEvent):
                     yield sse("stage", item.to_dict())
         except Exception as e:
