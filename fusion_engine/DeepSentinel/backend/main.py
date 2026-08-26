@@ -1212,6 +1212,178 @@ async def explain_plainly(analysis_id: int, user: User = Depends(get_current_use
     }
 
 
+# ── Cases: review, timeline, sharing ─────────────────────────────────────────
+
+
+# The fraud_cases table is defined by the Query Runner's schema, and the
+# platform reads it over SQL rather than redeclaring an ORM model here. Two
+# declarations of one table drift, and a silently-renamed column is exactly the
+# failure that made every fused score read as zero.
+
+CASE_COLUMNS = (
+    "case_ref, transaction_id, detected_at, classification, fused_score, "
+    "graph_score, behavioral_score, temporal_score, "
+    "graph_available, behavioral_available, temporal_available, "
+    "modalities_used, uncertainty_penalty_applied, "
+    "typology_name, typology_id, graph_pattern, sink_account, "
+    "graph_evidence, forensic_report, screening_ms, total_ms, "
+    "alert_sent, alerted_at, recipients, "
+    "review_status, reviewed_by, reviewed_at, review_note, label_is_fraud"
+)
+_CASE_FIELDS = [c.strip() for c in CASE_COLUMNS.split(",")]
+
+
+def _case_row(row) -> dict:
+    """One case row as the UI consumes it."""
+    import json as _json
+
+    def load(v):
+        if isinstance(v, (dict, list)) or v is None:
+            return v
+        try:
+            return _json.loads(v)
+        except (ValueError, TypeError):
+            return None
+
+    d = dict(zip(_CASE_FIELDS, row))
+    for k in ("detected_at", "alerted_at", "reviewed_at"):
+        d[k] = str(d[k]) if d[k] else None
+    for k in ("graph_evidence", "recipients"):
+        d[k] = load(d[k])
+    for k in ("graph_available", "behavioral_available", "temporal_available",
+              "uncertainty_penalty_applied", "alert_sent"):
+        d[k] = None if d[k] is None else bool(d[k])
+    d["label_is_fraud"] = None if d["label_is_fraud"] is None else bool(d["label_is_fraud"])
+    return d
+
+
+@app.get("/cases", tags=["cases"])
+async def list_cases(
+    limit: int = 50,
+    review_status: Optional[str] = None,
+    classification: Optional[str] = None,
+    user: User = Depends(get_current_user),
+):
+    """Recorded cases, newest first."""
+    from sqlalchemy import text as sql
+
+    from backend.db.session import get_session
+
+    where, params = ["1=1"], {"lim": min(limit, 200)}
+    if review_status:
+        where.append("review_status = :rs")
+        params["rs"] = review_status
+    if classification:
+        where.append("classification = :cl")
+        params["cl"] = classification.upper()
+
+    try:
+        async with get_session() as db:
+            rows = (await db.execute(
+                sql(f"SELECT {CASE_COLUMNS} FROM fraud_cases "
+                    f"WHERE {' AND '.join(where)} "
+                    f"ORDER BY detected_at DESC LIMIT :lim"),
+                params,
+            )).all()
+        return {"cases": [_case_row(r) for r in rows]}
+    except Exception as exc:                                  # noqa: BLE001
+        raise HTTPException(
+            503,
+            f"The fraud_cases table is not available in this database "
+            f"({type(exc).__name__}). Create it with the Query Runner, pointed "
+            f"at the same database as this service.",
+        )
+
+
+@app.get("/cases/{case_ref}", tags=["cases"])
+async def get_case(case_ref: str, user: User = Depends(get_current_user)):
+    """One case in full, with a timeline derived from its own timestamps."""
+    from sqlalchemy import text as sql
+
+    from backend.db.session import get_session
+
+    async with get_session() as db:
+        row = (await db.execute(
+            sql(f"SELECT {CASE_COLUMNS} FROM fraud_cases WHERE case_ref = :r"),
+            {"r": case_ref},
+        )).first()
+    if row is None:
+        raise HTTPException(404, f"No case {case_ref}")
+
+    case = _case_row(row)
+
+    # Derived rather than stored: two sources for one chronology eventually
+    # disagree, and then neither can be trusted.
+    timeline = [{"stage": "Detected", "at": case["detected_at"],
+                 "detail": f"Screened and classified {case['classification']}"}]
+    if case["screening_ms"]:
+        timeline.append({"stage": "Graph screening", "at": case["detected_at"],
+                         "detail": f"{case['screening_ms']} ms"})
+    used = case["modalities_used"] or 0
+    timeline.append({
+        "stage": "Fusion", "at": case["detected_at"],
+        "detail": (f"{used} of 3 detectors contributed"
+                   + (" — uncertainty penalty applied"
+                      if case["uncertainty_penalty_applied"] else "")),
+    })
+    if case["typology_name"]:
+        timeline.append({"stage": "Typology matched", "at": case["detected_at"],
+                         "detail": case["typology_name"]})
+    if case["alert_sent"]:
+        n = len(case["recipients"] or [])
+        timeline.append({"stage": "Alert sent", "at": case["alerted_at"],
+                         "detail": f"{n} recipient(s)" if n else "Notified"})
+    if case["reviewed_at"]:
+        timeline.append({
+            "stage": "Reviewed", "at": case["reviewed_at"],
+            "detail": f"{case['review_status']} by {case['reviewed_by'] or 'unknown'}",
+        })
+
+    return {**case, "timeline": timeline}
+
+
+@app.patch("/cases/{case_ref}/review", tags=["cases"])
+async def review_case(
+    case_ref: str, body: dict, user: User = Depends(get_current_user)
+):
+    """Record an analyst's verdict.
+
+    `confirmed_fraud` and `false_positive` are what a retraining set is built
+    from, so the decision is attributed and audited.
+    """
+    from datetime import datetime, timezone
+
+    from sqlalchemy import text as sql
+
+    from backend.auth import audit
+    from backend.db.session import get_session
+
+    status = str(body.get("review_status") or "").lower()
+    valid = {"open", "investigating", "confirmed_fraud", "false_positive", "closed"}
+    if status not in valid:
+        raise HTTPException(422, f"review_status must be one of: {', '.join(sorted(valid))}")
+
+    async with get_session() as db:
+        result = await db.execute(
+            sql("UPDATE fraud_cases SET review_status = :s, reviewed_by = :by, "
+                "reviewed_at = :at, review_note = COALESCE(:note, review_note) "
+                "WHERE case_ref = :r"),
+            {"s": status, "by": user.username, "at": datetime.now(timezone.utc),
+             "note": (str(body["note"])[:2000] if body.get("note") else None),
+             "r": case_ref},
+        )
+        if (result.rowcount or 0) == 0:
+            raise HTTPException(404, f"No case {case_ref}")
+        row = (await db.execute(
+            sql(f"SELECT {CASE_COLUMNS} FROM fraud_cases WHERE case_ref = :r"),
+            {"r": case_ref},
+        )).first()
+
+    await audit(f"case.{status}", actor=user.username, target=case_ref,
+                detail=body.get("note"))
+    return _case_row(row)
+
+
 # ── Threshold simulation ─────────────────────────────────────────────────────
 # Replays decisions already made at a different threshold. Historical, not
 # predictive — see backend/simulation.py.

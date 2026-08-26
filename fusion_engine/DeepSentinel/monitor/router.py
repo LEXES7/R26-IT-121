@@ -6,7 +6,7 @@ import asyncio
 import json
 import logging
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from monitor.engine import ENGINE
@@ -45,6 +45,50 @@ async def state() -> dict:
     snap["source"] = getattr(ENGINE, "_source", None)
     snap["queue"] = await ingest_queue.depth()
     return snap
+
+
+@router.get("/briefing")
+async def briefing(hours: int = 24) -> dict:
+    """The daily digest, as data and as text."""
+    from monitor import briefing as brief
+
+    data = await brief.gather(hours=hours)
+    return {**data, "text": brief.render_text(data)}
+
+
+@router.post("/briefing/send")
+async def send_briefing(hours: int = 24) -> dict:
+    """Email the digest to the configured risk managers."""
+    import asyncio
+
+    from backend.email_service import _send_plain
+    from backend.settings import get_alert_recipients
+    from monitor import briefing as brief
+
+    recipients = await get_alert_recipients()
+    if not recipients:
+        raise HTTPException(
+            409,
+            "No risk managers are configured. Add recipients under Settings.",
+        )
+
+    data = await brief.gather(hours=hours)
+    body = brief.render_text(data)
+    subject = (
+        f"DeepSentinel briefing — {data.get('total_cases', 0)} case(s), "
+        f"{data.get('open_for_review', 0)} awaiting review"
+    )
+
+    # _send_plain is synchronous and does network I/O, so it goes to a thread
+    # rather than blocking the event loop the monitor runs on.
+    sent = await asyncio.to_thread(_send_plain, subject, body, recipients)
+    if not sent:
+        raise HTTPException(
+            409,
+            "Email is not configured, or SMTP rejected the message. "
+            "Check the SMTP settings and try the test email under Settings.",
+        )
+    return {"sent": True, "recipients": recipients, "subject": subject}
 
 
 @router.post("/start")

@@ -33,6 +33,7 @@ export default function Navbar() {
         { to: '/components/network', label: 'Components' },
         { to: '/monitor', label: 'Live monitor' },
         { to: '/analyzer', label: 'Analyzer' },
+        { to: '/cases', label: 'Cases' },
         { to: '/thresholds', label: 'Thresholds' },
         { to: '/batch', label: 'Batch upload' },
         { to: '/assistant', label: 'Assistant' },

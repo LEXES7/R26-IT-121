@@ -12,6 +12,7 @@ import Login from './pages/Login'
 import Home from './pages/Home'
 import Analyzer from './pages/Analyzer'
 import Thresholds from './pages/Thresholds'
+import Cases from './pages/Cases'
 import Monitor from './pages/Monitor'
 import Assistant from './pages/Assistant'
 import BatchAnalysis from './pages/BatchAnalysis'
@@ -69,6 +70,9 @@ function Shell() {
             <Route path="/monitor" element={<ProtectedRoute><Monitor /></ProtectedRoute>} />
             <Route path="/analyzer" element={<ProtectedRoute><Analyzer /></ProtectedRoute>} />
             <Route path="/thresholds" element={<ProtectedRoute><Thresholds /></ProtectedRoute>} />
+            <Route path="/cases" element={<ProtectedRoute><Cases /></ProtectedRoute>} />
+            {/* Addressable so a case can be sent to a colleague. Still authenticated. */}
+            <Route path="/cases/:caseRef" element={<ProtectedRoute><Cases /></ProtectedRoute>} />
             <Route path="/batch" element={<ProtectedRoute><BatchAnalysis /></ProtectedRoute>} />
             {/* Entitlement is enforced server-side; the page renders an upsell when not licensed. */}
             <Route path="/assistant" element={<ProtectedRoute><Assistant /></ProtectedRoute>} />
