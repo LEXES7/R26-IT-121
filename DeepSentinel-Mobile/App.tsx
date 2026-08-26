@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   BackHandler,
+  Pressable,
   SafeAreaView,
   StatusBar,
   StyleSheet,
@@ -9,30 +10,44 @@ import {
   View,
 } from "react-native";
 
-import type { Analysis } from "./src/api/analyses";
+import type { Analysis, BehaviouralEvidence, GraphEvidence } from "./src/api/analyses";
+import type { AnalyzeResponse, Transaction } from "./src/api/analyze";
 import type { LoginResponse } from "./src/api/auth";
 import { getMe } from "./src/api/auth";
 import { ApiError, setUnauthorisedHandler } from "./src/api/client";
 import * as session from "./src/auth/session";
 import type { Session } from "./src/auth/session";
+import type { Sample } from "./src/data/samples";
 import AlertsScreen from "./src/screens/AlertsScreen";
+import AnalyzeScreen from "./src/screens/AnalyzeScreen";
 import CaseScreen from "./src/screens/CaseScreen";
 import LoginScreen from "./src/screens/LoginScreen";
-import { bg, space, text } from "./src/theme/tokens";
+import { accent, bg, space, text } from "./src/theme/tokens";
 
 /**
- * The gate, and a two-deep stack behind it.
+ * The gate, two tabs, and one screen pushed over them.
  *
- * Navigation is a piece of state rather than a router: there are two screens
- * and one way between them, and a router would be more moving parts than the
- * problem has. It is worth revisiting when the monitor and the analyzer land.
+ * Navigation is state rather than a router: three screens and one way between
+ * them is less structure than a router would impose. Worth revisiting if a
+ * fourth arrives.
  */
-type Screen = { name: "alerts" } | { name: "case"; row: Analysis };
+type Tab = "alerts" | "analyze";
+
+type Detail = {
+  row: Analysis;
+  evidence?: {
+    behavioural?: BehaviouralEvidence | null;
+    graph?: GraphEvidence | null;
+  };
+  available?: { behavioral: boolean; graph: boolean; temporal: boolean };
+  groundTruth?: boolean;
+};
 
 export default function App() {
   const [current, setCurrent] = useState<Session | null>(null);
   const [restoring, setRestoring] = useState(true);
-  const [screen, setScreen] = useState<Screen>({ name: "alerts" });
+  const [tab, setTab] = useState<Tab>("alerts");
+  const [detail, setDetail] = useState<Detail | null>(null);
 
   /**
    * A stored session is checked against the server before it is trusted. A
@@ -67,49 +82,136 @@ export default function App() {
     setUnauthorisedHandler(() => {
       session.clear();
       setCurrent(null);
-      setScreen({ name: "alerts" });
+      setDetail(null);
+      setTab("alerts");
     });
     return () => setUnauthorisedHandler(null);
   }, []);
 
-  // Android's back button should leave a case, not the app.
+  // Android's back button should close a case, not the app.
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (screen.name === "case") {
-        setScreen({ name: "alerts" });
+      if (detail) {
+        setDetail(null);
         return true;
       }
       return false;
     });
     return () => sub.remove();
-  }, [screen]);
+  }, [detail]);
 
   const signIn = useCallback(async (login: LoginResponse) => {
     setCurrent(await session.save(login));
-    setScreen({ name: "alerts" });
+    setTab("alerts");
+    setDetail(null);
   }, []);
 
   const signOut = useCallback(async () => {
     await session.clear();
     setCurrent(null);
-    setScreen({ name: "alerts" });
+    setDetail(null);
+    setTab("alerts");
+  }, []);
+
+  const showResult = useCallback((result: AnalyzeResponse, sample: Sample) => {
+    setDetail({
+      row: toAnalysis(result, sample.transaction),
+      evidence: {
+        behavioural: result.behavioral_evidence,
+        graph: result.graph_evidence,
+      },
+      available: {
+        behavioral: result.behavioral_available,
+        graph: result.graph_available,
+        temporal: result.temporal_available,
+      },
+      groundTruth: sample.isFraud,
+    });
   }, []);
 
   if (restoring) return <Splash />;
   if (!current) return <LoginScreen onSignedIn={signIn} />;
 
-  if (screen.name === "case") {
+  if (detail) {
     return (
-      <CaseScreen row={screen.row} onBack={() => setScreen({ name: "alerts" })} />
+      <CaseScreen
+        row={detail.row}
+        evidence={detail.evidence}
+        available={detail.available}
+        groundTruth={detail.groundTruth}
+        onBack={() => setDetail(null)}
+      />
     );
   }
 
   return (
-    <AlertsScreen
-      session={current}
-      onOpen={(row) => setScreen({ name: "case", row })}
-      onSignOut={signOut}
-    />
+    <View style={styles.shell}>
+      <View style={styles.body}>
+        {tab === "alerts" ? (
+          <AlertsScreen
+            session={current}
+            onOpen={(row) => setDetail({ row })}
+            onSignOut={signOut}
+          />
+        ) : (
+          <AnalyzeScreen onResult={showResult} />
+        )}
+      </View>
+      <View style={styles.tabs}>
+        <TabButton label="Alerts" on={tab === "alerts"} onPress={() => setTab("alerts")} />
+        <TabButton
+          label="Screen"
+          on={tab === "analyze"}
+          onPress={() => setTab("analyze")}
+        />
+      </View>
+    </View>
+  );
+}
+
+/**
+ * A screening result, in the shape the case screen already reads.
+ *
+ * The two paths return different objects for the same thing — the analysis
+ * list a stored summary, `/analyze` a live result — and one screen renders
+ * both rather than existing twice.
+ */
+function toAnalysis(result: AnalyzeResponse, t: Transaction): Analysis {
+  return {
+    transaction_id: result.transaction_id,
+    created_at: new Date().toISOString(),
+    fraud_confidence_score: result.fraud_confidence_score,
+    classification: result.classification,
+    modalities_used: result.modalities_used,
+    graph_score: result.graph_score,
+    behavioral_score: result.behavioral_score,
+    temporal_score: result.temporal_score,
+    typology_name: result.retrieval?.typology_name ?? null,
+    typology_id: result.retrieval?.typology_id ?? null,
+    similarity_score: result.retrieval?.similarity_score ?? null,
+    type: t.type,
+    amount: t.amount,
+    nameOrig: t.nameOrig,
+    nameDest: t.nameDest,
+    alert_sent: false,
+    mock_scenario: result.mock_scenario,
+  };
+}
+
+function TabButton({
+  label,
+  on,
+  onPress,
+}: {
+  label: string;
+  on: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={styles.tab}>
+      <View style={[styles.tabMark, on && styles.tabMarkOn]} />
+      <Text style={[styles.tabText, on && styles.tabTextOn]}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -126,6 +228,27 @@ function Splash() {
 }
 
 const styles = StyleSheet.create({
+  shell: { flex: 1, backgroundColor: bg.canvas },
+  body: { flex: 1 },
+
+  tabs: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: bg.border,
+    backgroundColor: bg.raised,
+    paddingBottom: space.lg,
+  },
+  tab: { flex: 1, alignItems: "center", paddingTop: space.md, gap: space.xs },
+  tabMark: {
+    width: 18,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: "transparent",
+  },
+  tabMarkOn: { backgroundColor: accent.base },
+  tabText: { color: text.muted, fontSize: 12, fontWeight: "600" },
+  tabTextOn: { color: text.primary },
+
   splash: {
     flex: 1,
     backgroundColor: bg.canvas,

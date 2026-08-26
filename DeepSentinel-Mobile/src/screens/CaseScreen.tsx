@@ -24,12 +24,23 @@ import { bg, mono, radius, riskColour, space, text } from "../theme/tokens";
 type Props = {
   row: Analysis;
   onBack: () => void;
-  /** Stored evidence, once the backend serves it. Absent today. */
+  /** Evidence, when the caller has it. The analysis list does not serve it. */
   evidence?: {
     behavioural?: BehaviouralShape | null;
     graph?: GraphShape | null;
     temporal?: TemporalShape | null;
   };
+  /**
+   * Which detectors answered. `/analyze` reports this and the analysis list
+   * does not, so it is optional rather than assumed — a missing flag means
+   * unknown, which is not the same as a detector having been absent.
+   */
+  available?: { behavioral: boolean; graph: boolean; temporal: boolean };
+  /**
+   * The dataset's own label, when the transaction came from the sample set.
+   * Shown beside the score, never fed to a model.
+   */
+  groundTruth?: boolean;
 };
 
 /**
@@ -37,7 +48,25 @@ type Props = {
  * decided, how much of the system stood behind that decision, and then — for
  * whoever wants it — why each detector said what it said.
  */
-export default function CaseScreen({ row, onBack, evidence }: Props) {
+
+/**
+ * Whether a classification and a label point the same way.
+ *
+ * MEDIUM is deliberately not counted as agreement with either. The band exists
+ * for transactions the system will not commit on, and scoring it as a hit or a
+ * miss would report a decision that was not made.
+ */
+function agrees(classification: string, isFraud: boolean): boolean {
+  const c = (classification ?? "").toUpperCase();
+  return isFraud ? c === "CRITICAL" || c === "HIGH" : c === "LOW";
+}
+export default function CaseScreen({
+  row,
+  onBack,
+  evidence,
+  available,
+  groundTruth,
+}: Props) {
   const colour = riskColour(row.classification);
   const used = row.modalities_used ?? 0;
   const penalised = used < 3;
@@ -105,6 +134,31 @@ export default function CaseScreen({ row, onBack, evidence }: Props) {
           )}
         </Card>
 
+        {groundTruth !== undefined && (
+          <Card>
+            <Label>Against the dataset's label</Label>
+            <View style={styles.truthRow}>
+              <Text
+                style={[
+                  styles.truthValue,
+                  { color: groundTruth ? riskColour("CRITICAL") : riskColour("LOW") },
+                ]}
+              >
+                {groundTruth ? "Labelled fraud" : "Labelled normal"}
+              </Text>
+              <Text style={styles.truthCall}>
+                {agrees(row.classification, groundTruth) ? "agrees" : "disagrees"}
+              </Text>
+            </View>
+            <Note>
+              PaySim carries a label for every row. It is held out of screening
+              entirely — the models never see it — and shown here only so a
+              score can be read against it. One transaction is an illustration,
+              not a measurement of accuracy.
+            </Note>
+          </Card>
+        )}
+
         <Card>
           <Label>Model contributions</Label>
           <Note>
@@ -112,18 +166,40 @@ export default function CaseScreen({ row, onBack, evidence }: Props) {
             answer is imputed at 0.5 and excluded from the fused score rather
             than counted as a vote for innocence.
           </Note>
-          {MODALITIES.map(([key, label, tone]) => (
-            <View key={key} style={styles.modalityRow}>
-              <View style={[styles.modalityAccent, { backgroundColor: tone }]} />
-              <Text style={styles.modalityName}>{label}</Text>
-              <Text style={styles.modalityScore}>{score(scores[key])}</Text>
-            </View>
-          ))}
-          <Note>
-            Which of the three answered is not carried in the analysis list, so
-            these cannot be marked individually — only the count above is
-            certain.
-          </Note>
+          {MODALITIES.map(([key, label, tone]) => {
+            const answered = available?.[key];
+            const absent = answered === false;
+            return (
+              <View key={key} style={styles.modalityRow}>
+                <View
+                  style={[
+                    styles.modalityAccent,
+                    { backgroundColor: absent ? bg.borderStrong : tone },
+                  ]}
+                />
+                <View style={styles.modalityText}>
+                  <Text style={[styles.modalityName, absent && styles.absent]}>
+                    {label}
+                  </Text>
+                  {absent && (
+                    <Text style={styles.modalityNote}>
+                      Not deployed · imputed 0.5, excluded
+                    </Text>
+                  )}
+                </View>
+                <Text style={[styles.modalityScore, absent && styles.absent]}>
+                  {absent ? "—" : score(scores[key])}
+                </Text>
+              </View>
+            );
+          })}
+          {!available && (
+            <Note>
+              Which of the three answered is not carried in the analysis list,
+              so these cannot be marked individually — only the count above is
+              certain.
+            </Note>
+          )}
         </Card>
 
         <Section
@@ -224,8 +300,20 @@ const styles = StyleSheet.create({
     marginTop: space.md,
   },
   modalityAccent: { width: 3, height: 18, borderRadius: 2 },
-  modalityName: { color: text.secondary, fontSize: 14, flex: 1 },
+  modalityText: { flex: 1 },
+  modalityName: { color: text.secondary, fontSize: 14 },
+  modalityNote: { color: text.faint, fontSize: 11, marginTop: 2 },
   modalityScore: { ...mono, color: text.primary, fontSize: 15, fontWeight: "600" },
+  absent: { color: text.faint },
+
+  truthRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: space.md,
+    marginTop: space.md,
+  },
+  truthValue: { fontSize: 16, fontWeight: "700", flex: 1 },
+  truthCall: { color: text.muted, fontSize: 12 },
 
   gap: { borderStyle: "dashed" },
 });

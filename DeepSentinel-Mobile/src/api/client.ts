@@ -62,6 +62,13 @@ type Options = {
   /** Skip the Authorization header — only login needs this. */
   anonymous?: boolean;
   signal?: AbortSignal;
+  /**
+   * Override the default deadline. Screening a transaction runs three
+   * detectors and an LLM, which is legitimately slow; the short default exists
+   * for reads, where a long wait means the network is wrong rather than the
+   * work being large.
+   */
+  timeoutMs?: number;
 };
 
 export async function request<T>(path: string, opts: Options = {}): Promise<T> {
@@ -71,12 +78,18 @@ export async function request<T>(path: string, opts: Options = {}): Promise<T> {
     );
   }
 
-  const { method = "GET", body, anonymous = false, signal } = opts;
+  const {
+    method = "GET",
+    body,
+    anonymous = false,
+    signal,
+    timeoutMs = REQUEST_TIMEOUT_MS,
+  } = opts;
 
   // Own timeout, and still honour a caller's cancellation. Without this a
   // request on a phone that has drifted off Wi-Fi hangs until the OS gives up.
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   const abort = () => controller.abort();
   signal?.addEventListener("abort", abort);
 
@@ -96,7 +109,7 @@ export async function request<T>(path: string, opts: Options = {}): Promise<T> {
     const aborted = (err as Error)?.name === "AbortError";
     throw new NetworkError(
       aborted
-        ? `The backend did not answer within ${REQUEST_TIMEOUT_MS / 1000}s.`
+        ? `The backend did not answer within ${timeoutMs / 1000}s.`
         : `Cannot reach the backend at ${API_BASE}.`,
     );
   } finally {
