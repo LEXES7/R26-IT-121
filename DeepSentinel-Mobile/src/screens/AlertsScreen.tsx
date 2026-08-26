@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -79,8 +80,14 @@ export default function AlertsScreen({ session, onOpen, onSignOut }: Props) {
             {rows.length} screened{filter !== "ALL" ? ` · ${filter.toLowerCase()}` : ""}
           </Text>
         </View>
-        <Pressable onPress={onSignOut} hitSlop={12}>
-          <Text style={styles.who}>{session.user.username}</Text>
+        {/* Signing out has to be asked for, not stumbled into: the name in the
+            corner reads as a label, and losing a session to a mistaken tap on
+            it is the kind of thing that happens with a phone in one hand. */}
+        <Pressable onPress={() => confirmSignOut(session.user.username, onSignOut)} hitSlop={12}>
+          <View style={styles.account}>
+            <Text style={styles.who}>{session.user.username}</Text>
+            <Text style={styles.signOutHint}>Sign out</Text>
+          </View>
         </Pressable>
       </View>
 
@@ -131,6 +138,17 @@ export default function AlertsScreen({ session, onOpen, onSignOut }: Props) {
         />
       )}
     </SafeAreaView>
+  );
+}
+
+function confirmSignOut(username: string, onSignOut: () => void) {
+  Alert.alert(
+    "Sign out?",
+    `You are signed in as ${username}. Signing out clears the stored session and you will need your password again.`,
+    [
+      { text: "Cancel", style: "cancel" },
+      { text: "Sign out", style: "destructive", onPress: onSignOut },
+    ],
   );
 }
 
@@ -224,7 +242,9 @@ const styles = StyleSheet.create({
   headerText: { flex: 1 },
   title: { color: text.primary, fontSize: 26, fontWeight: "700", letterSpacing: -0.5 },
   subtitle: { color: text.muted, fontSize: 13, marginTop: 2 },
+  account: { alignItems: "flex-end" },
   who: { color: text.secondary, fontSize: 13 },
+  signOutHint: { color: text.faint, fontSize: 10, marginTop: 1 },
 
   strip: {
     flexDirection: "row",

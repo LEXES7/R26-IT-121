@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  AppState,
   BackHandler,
   Pressable,
   SafeAreaView,
@@ -33,6 +34,19 @@ import { accent, bg, space, text } from "./src/theme/tokens";
  */
 type Tab = "alerts" | "analyze";
 
+/**
+ * How long the app may sit in the background before the session is dropped.
+ *
+ * A fraud tool on an unlocked phone left on a desk is the risk this guards.
+ * Sixty seconds rather than instantly: glancing at a notification and coming
+ * straight back is normal use, and signing someone out for it teaches them to
+ * resent the lock rather than trust it.
+ *
+ * The session is cleared from the keystore, not just from memory — a lock that
+ * a relaunch walks straight past is not a lock.
+ */
+const LOCK_AFTER_MS = 60_000;
+
 type Detail = {
   row: Analysis;
   evidence?: {
@@ -48,6 +62,8 @@ export default function App() {
   const [restoring, setRestoring] = useState(true);
   const [tab, setTab] = useState<Tab>("alerts");
   const [detail, setDetail] = useState<Detail | null>(null);
+  const [lockedOut, setLockedOut] = useState(false);
+  const leftAt = useRef<number | null>(null);
 
   /**
    * A stored session is checked against the server before it is trusted. A
@@ -88,6 +104,32 @@ export default function App() {
     return () => setUnauthorisedHandler(null);
   }, []);
 
+  /**
+   * Drop the session when the app has been away long enough.
+   *
+   * Timed from when it left rather than counted while it is gone: a phone
+   * suspends background timers, so a countdown running in the app would not
+   * finish while the app is the thing that was suspended.
+   */
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next === "active") {
+        const away = leftAt.current ? Date.now() - leftAt.current : 0;
+        leftAt.current = null;
+        if (away > LOCK_AFTER_MS) {
+          session.clear();
+          setCurrent(null);
+          setDetail(null);
+          setTab("alerts");
+          setLockedOut(true);
+        }
+      } else if (next === "background" || next === "inactive") {
+        leftAt.current ??= Date.now();
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
   // Android's back button should close a case, not the app.
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
@@ -104,6 +146,7 @@ export default function App() {
     setCurrent(await session.save(login));
     setTab("alerts");
     setDetail(null);
+    setLockedOut(false);
   }, []);
 
   const signOut = useCallback(async () => {
@@ -130,7 +173,7 @@ export default function App() {
   }, []);
 
   if (restoring) return <Splash />;
-  if (!current) return <LoginScreen onSignedIn={signIn} />;
+  if (!current) return <LoginScreen onSignedIn={signIn} lockedOut={lockedOut} />;
 
   if (detail) {
     return (

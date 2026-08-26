@@ -20,6 +20,12 @@ import { accent, bg, mono, radius, risk, space, text } from "../theme/tokens";
 
 type Props = {
   onSignedIn: (session: LoginResponse) => void;
+  /**
+   * Set when the session was dropped because the app was left in the
+   * background. Worth saying: a login screen that appears with no explanation
+   * reads as something having gone wrong.
+   */
+  lockedOut?: boolean;
 };
 
 /**
@@ -42,7 +48,7 @@ const LOCKOUT_AFTER = 5;
 /** HTTP 423 Locked — the backend's answer once the account is locked out. */
 const LOCKED = 423;
 
-export default function LoginScreen({ onSignedIn }: Props) {
+export default function LoginScreen({ onSignedIn, lockedOut = false }: Props) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -113,6 +119,16 @@ export default function LoginScreen({ onSignedIn }: Props) {
             <Text style={styles.brand}>DeepSentinel</Text>
             <Text style={styles.tagline}>Fraud analyst access</Text>
           </View>
+
+          {lockedOut && (
+            <View style={styles.lockedNotice}>
+              <Text style={styles.lockedNoticeTitle}>Session ended</Text>
+              <Text style={styles.lockedNoticeBody}>
+                The app was in the background, so the session was cleared. Sign
+                in again to continue.
+              </Text>
+            </View>
+          )}
 
           <View style={styles.card}>
             <Text style={styles.label}>Username</Text>
@@ -227,6 +243,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: bg.border,
     padding: space.lg,
+  },
+
+  lockedNotice: {
+    borderWidth: 1,
+    borderColor: bg.borderStrong,
+    backgroundColor: bg.raised,
+    borderRadius: radius.md,
+    padding: space.md,
+  },
+  lockedNoticeTitle: { color: text.primary, fontSize: 13, fontWeight: "700" },
+  lockedNoticeBody: {
+    color: text.secondary,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: space.xs,
   },
 
   label: {

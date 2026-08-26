@@ -172,9 +172,7 @@ export function Fact({
   return (
     <View style={styles.factRow}>
       <Text style={styles.factLabel}>{label}</Text>
-      <Text style={[styles.factValue, monospace && mono]} numberOfLines={1}>
-        {value}
-      </Text>
+      <Text style={[styles.factValue, monospace && mono]}>{value}</Text>
     </View>
   );
 }
@@ -245,14 +243,23 @@ const styles = StyleSheet.create({
     paddingTop: space.lg,
   },
 
+  // Top-aligned, and the value wraps rather than being truncated. A long
+  // typology name used to squeeze the label out of line; a name a reviewer has
+  // to quote is worth two lines.
   factRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: space.md,
     marginTop: space.sm,
   },
-  factLabel: { color: text.muted, fontSize: 12, flex: 1 },
-  factValue: { color: text.secondary, fontSize: 12, flexShrink: 1 },
+  factLabel: { color: text.muted, fontSize: 12, width: 108, lineHeight: 18 },
+  factValue: {
+    color: text.secondary,
+    fontSize: 12,
+    flex: 1,
+    lineHeight: 18,
+    textAlign: "right",
+  },
 
   note: {
     color: text.faint,
