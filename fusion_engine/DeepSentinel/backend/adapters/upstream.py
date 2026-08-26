@@ -31,6 +31,27 @@ def _clamp(v: float) -> float:
     return max(0.0, min(1.0, v))
 
 
+def behavioural_evidence(data: dict) -> dict:
+    """The behavioural detector's forensic decomposition, in one shape.
+
+    Two callers need it and they have to agree: the analyzer renders it live
+    from /analyze, and the monitor stores it on the case a reviewer opens
+    afterwards. Written out twice it would drift, and the drift would surface
+    only as a panel that fills from one path and stays empty from the other.
+    """
+    diagnostics = data.get("vae_diagnostics", {}) or {}
+    return {
+        "risk_level": data.get("risk_level"),
+        "transaction_type": data.get("transaction_type"),
+        "feature_set": data.get("feature_set"),
+        "model_version": data.get("model_version"),
+        "vae_diagnostics": diagnostics,
+        "fingerprint": data.get("anomaly_fingerprint", {}) or {},
+        "fraud_typology": data.get("fraud_typology", {}) or {},
+        "metadata": data.get("metadata", {}) or {},
+    }
+
+
 # ── Member 1: Wijesinghe — VAE/DSAA ──────────────────────────────────────────
 
 async def call_behavioral_api(
@@ -107,16 +128,7 @@ async def call_behavioral_api(
                 # the per-feature and per-latent-dimension attribution shares,
                 # and which discovered typology the fingerprint matched. Kept
                 # under one key so nothing above changes shape.
-                "evidence": {
-                    "risk_level": data.get("risk_level"),
-                    "transaction_type": data.get("transaction_type"),
-                    "feature_set": data.get("feature_set"),
-                    "model_version": data.get("model_version"),
-                    "vae_diagnostics": diagnostics,
-                    "fingerprint": anomaly_fp,
-                    "fraud_typology": data.get("fraud_typology", {}) or {},
-                    "metadata": data.get("metadata", {}) or {},
-                },
+                "evidence": behavioural_evidence(data),
             },
         )
     except Exception as e:
