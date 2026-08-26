@@ -1,0 +1,8 @@
+{
+  "config": "PAYMENT - False-Positive Control",
+  "note": "Zero fraud. FPR shows false alarm rate on clean transactions.",
+  "threshold": 1.8760054267670419,
+  "false_positives": 17669,
+  "total_payment": 1506047,
+  "fpr": 0.011732037579172495
+}

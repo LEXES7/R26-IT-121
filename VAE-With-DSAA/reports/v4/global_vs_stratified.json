@@ -1,0 +1,285 @@
+{
+  "question": "Does a per-type VAE beat the global VAE on its own stratum? Scored per stratum, no pooling, no retraining.",
+  "feature_sets": {
+    "FS-ORIGIN": {
+      "TRANSFER": {
+        "global_model": {
+          "n_rows": 11546,
+          "n_fraud": 821,
+          "test_fraud_rate": 0.07110687684046423,
+          "auc_pr_average_precision": 0.787702652947726,
+          "ap_lift_over_base_rate": 11.077728174097984,
+          "max_possible_ap_lift": 14.063337393422657,
+          "auc_roc": 0.9810731696237178,
+          "precision_at_1000": 0.66,
+          "operating_point_f1_optimal": {
+            "threshold": 2.2552086814043437,
+            "precision": 0.719551282051282,
+            "recall": 0.5468940316686967,
+            "f1": 0.6214532871972318,
+            "f2": 0.5744626407369499,
+            "tp": 449,
+            "fp": 175,
+            "tn": 10550,
+            "fn": 372,
+            "fpr": 0.016317016317016316,
+            "flag_rate": 0.054044690802009354
+          },
+          "score_summary": {
+            "mean": 0.3403219731722943,
+            "std": 2.0030878648544506,
+            "p50": -0.09130050392546687,
+            "p99.9": 31.921178907659932
+          }
+        },
+        "stratified_model": {
+          "n_rows": 11546,
+          "n_fraud": 821,
+          "test_fraud_rate": 0.07110687684046423,
+          "auc_pr_average_precision": 0.7001046335553375,
+          "ap_lift_over_base_rate": 9.845807672387243,
+          "max_possible_ap_lift": 14.063337393422657,
+          "auc_roc": 0.9759280427246324,
+          "precision_at_1000": 0.597,
+          "operating_point_f1_optimal": {
+            "threshold": 1.7284968694801575,
+            "precision": 0.6083769633507854,
+            "recall": 0.707673568818514,
+            "f1": 0.6542792792792792,
+            "f2": 0.685303137532437,
+            "tp": 581,
+            "fp": 374,
+            "tn": 10351,
+            "fn": 240,
+            "fpr": 0.03487179487179487,
+            "flag_rate": 0.08271262774987008
+          },
+          "score_summary": {
+            "mean": 0.6057111546647284,
+            "std": 4.428889261964068,
+            "p50": -0.16908052356838493,
+            "p99.9": 60.10752688636489
+          }
+        },
+        "delta_auc_pr": -0.08759801939238854,
+        "delta_ap_lift": -1.231920501710741,
+        "delta_f1": 0.032825992082047395,
+        "stratification_helps_on_this_stratum": false
+      },
+      "CASH_OUT": {
+        "global_model": {
+          "n_rows": 37196,
+          "n_fraud": 821,
+          "test_fraud_rate": 0.022072265835036027,
+          "auc_pr_average_precision": 0.7989796456044876,
+          "ap_lift_over_base_rate": 36.19835188538919,
+          "max_possible_ap_lift": 45.30572472594397,
+          "auc_roc": 0.9929348418448711,
+          "precision_at_1000": 0.62,
+          "operating_point_f1_optimal": {
+            "threshold": 4.399650902941328,
+            "precision": 0.9807073954983923,
+            "recall": 0.37149817295980514,
+            "f1": 0.5388692579505301,
+            "f2": 0.4242002781641168,
+            "tp": 305,
+            "fp": 6,
+            "tn": 36369,
+            "fn": 516,
+            "fpr": 0.00016494845360824742,
+            "flag_rate": 0.00836111409829014
+          },
+          "score_summary": {
+            "mean": -0.06095858812174306,
+            "std": 1.2068342458781707,
+            "p50": -0.3580612705596129,
+            "p99.9": 8.589081978029014
+          }
+        },
+        "stratified_model": {
+          "n_rows": 37196,
+          "n_fraud": 821,
+          "test_fraud_rate": 0.022072265835036027,
+          "auc_pr_average_precision": 0.7497862009623817,
+          "ap_lift_over_base_rate": 33.96960722411297,
+          "max_possible_ap_lift": 45.30572472594397,
+          "auc_roc": 0.9906571735918397,
+          "precision_at_1000": 0.63,
+          "operating_point_f1_optimal": {
+            "threshold": 3.6729203782644677,
+            "precision": 0.782608695652174,
+            "recall": 0.6577344701583435,
+            "f1": 0.71475843812045,
+            "f2": 0.6794162053346754,
+            "tp": 540,
+            "fp": 150,
+            "tn": 36225,
+            "fn": 281,
+            "fpr": 0.004123711340206186,
+            "flag_rate": 0.018550381761479728
+          },
+          "score_summary": {
+            "mean": 0.22588897423017001,
+            "std": 1.6437100689947446,
+            "p50": -0.1712722454301431,
+            "p99.9": 25.584506844766132
+          }
+        },
+        "delta_auc_pr": -0.049193444642105955,
+        "delta_ap_lift": -2.2287446612762167,
+        "delta_f1": 0.17588918016991995,
+        "stratification_helps_on_this_stratum": false
+      },
+      "_pooled_comparison": {
+        "pooled_A_auc_pr": 0.7900141048558076,
+        "pooled_D_auc_pr": 0.6999510829257802,
+        "pooled_says_stratification_helps": false,
+        "per_stratum_says_stratification_helps": {
+          "TRANSFER": false,
+          "CASH_OUT": false
+        },
+        "pooled_disagrees_with_per_stratum": false
+      }
+    },
+    "FS-FULL": {
+      "TRANSFER": {
+        "global_model": {
+          "n_rows": 11546,
+          "n_fraud": 821,
+          "test_fraud_rate": 0.07110687684046423,
+          "auc_pr_average_precision": 0.823461698502125,
+          "ap_lift_over_base_rate": 11.580619696596267,
+          "max_possible_ap_lift": 14.063337393422657,
+          "auc_roc": 0.9895216760502997,
+          "precision_at_1000": 0.76,
+          "operating_point_f1_optimal": {
+            "threshold": 2.6157123642995908,
+            "precision": 0.7709677419354839,
+            "recall": 0.8733252131546894,
+            "f1": 0.8189605939463164,
+            "f2": 0.850735643094447,
+            "tp": 717,
+            "fp": 213,
+            "tn": 10512,
+            "fn": 104,
+            "fpr": 0.01986013986013986,
+            "flag_rate": 0.08054737571453317
+          },
+          "score_summary": {
+            "mean": 0.36093761450624995,
+            "std": 2.428382943380899,
+            "p50": -0.22451859382969996,
+            "p99.9": 34.110107252974984
+          }
+        },
+        "stratified_model": {
+          "n_rows": 11546,
+          "n_fraud": 821,
+          "test_fraud_rate": 0.07110687684046423,
+          "auc_pr_average_precision": 1.0,
+          "ap_lift_over_base_rate": 14.063337393422657,
+          "max_possible_ap_lift": 14.063337393422657,
+          "auc_roc": 1.0,
+          "precision_at_1000": 0.821,
+          "operating_point_f1_optimal": {
+            "threshold": 18.521886698040266,
+            "precision": 1.0,
+            "recall": 0.9987819732034104,
+            "f1": 0.9993906154783668,
+            "f2": 0.9990253411306043,
+            "tp": 820,
+            "fp": 0,
+            "tn": 10725,
+            "fn": 1,
+            "fpr": 0.0,
+            "flag_rate": 0.07102026675905075
+          },
+          "score_summary": {
+            "mean": 1.7811506209546812,
+            "std": 7.0023787880843855,
+            "p50": -0.18372223361019796,
+            "p99.9": 52.564685400392236
+          }
+        },
+        "delta_auc_pr": 0.17653830149787497,
+        "delta_ap_lift": 2.4827176968263895,
+        "delta_f1": 0.18043002153205046,
+        "stratification_helps_on_this_stratum": true
+      },
+      "CASH_OUT": {
+        "global_model": {
+          "n_rows": 37196,
+          "n_fraud": 821,
+          "test_fraud_rate": 0.022072265835036027,
+          "auc_pr_average_precision": 0.7087975149903456,
+          "ap_lift_over_base_rate": 32.11258510058574,
+          "max_possible_ap_lift": 45.30572472594397,
+          "auc_roc": 0.9881035532060055,
+          "precision_at_1000": 0.61,
+          "operating_point_f1_optimal": {
+            "threshold": 4.095311893666985,
+            "precision": 0.7404426559356136,
+            "recall": 0.4482338611449452,
+            "f1": 0.558421851289833,
+            "f2": 0.4866437450409944,
+            "tp": 368,
+            "fp": 129,
+            "tn": 36246,
+            "fn": 453,
+            "fpr": 0.0035463917525773198,
+            "flag_rate": 0.013361651790515109
+          },
+          "score_summary": {
+            "mean": 0.18693323898507222,
+            "std": 2.3469915552370146,
+            "p50": -0.21148681683855142,
+            "p99.9": 41.97335548011372
+          }
+        },
+        "stratified_model": {
+          "n_rows": 37196,
+          "n_fraud": 821,
+          "test_fraud_rate": 0.022072265835036027,
+          "auc_pr_average_precision": 0.7396953979693889,
+          "ap_lift_over_base_rate": 33.512436081448705,
+          "max_possible_ap_lift": 45.30572472594397,
+          "auc_roc": 0.9867970583187882,
+          "precision_at_1000": 0.598,
+          "operating_point_f1_optimal": {
+            "threshold": 3.899990209865062,
+            "precision": 0.8949579831932774,
+            "recall": 0.5188794153471377,
+            "f1": 0.6569005397070162,
+            "f2": 0.5664893617021277,
+            "tp": 426,
+            "fp": 50,
+            "tn": 36325,
+            "fn": 395,
+            "fpr": 0.0013745704467353953,
+            "flag_rate": 0.012797074954296161
+          },
+          "score_summary": {
+            "mean": 0.22759717901874768,
+            "std": 1.6637318895877407,
+            "p50": -0.15928642481703703,
+            "p99.9": 28.051309931337073
+          }
+        },
+        "delta_auc_pr": 0.03089788297904328,
+        "delta_ap_lift": 1.3998509808629649,
+        "delta_f1": 0.09847868841718321,
+        "stratification_helps_on_this_stratum": true
+      },
+      "_pooled_comparison": {
+        "pooled_A_auc_pr": 0.7619395166137453,
+        "pooled_D_auc_pr": 0.9111484207835642,
+        "pooled_says_stratification_helps": true,
+        "per_stratum_says_stratification_helps": {
+          "TRANSFER": true,
+          "CASH_OUT": true
+        },
+        "pooled_disagrees_with_per_stratum": false
+      }
+    }
+  }
+}

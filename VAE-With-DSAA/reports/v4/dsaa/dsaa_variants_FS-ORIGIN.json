@@ -1,0 +1,3341 @@
+{
+  "feature_set": "FS-ORIGIN",
+  "protocol": "clean",
+  "reference_n_for_size_matching": {
+    "TRANSFER": 955,
+    "CASH_OUT": 690
+  },
+  "note": "Cluster validity indices depend on n. size_matched holds n constant against the FS-ORIGIN flagged count so feature-set effects are not confounded with sample size.",
+  "strata": {
+    "TRANSFER": {
+      "native": {
+        "variant": "native",
+        "selection": "score >= F1-optimal threshold",
+        "threshold": 1.7284968694801575,
+        "n_test_rows": 11546,
+        "n_selected": 955,
+        "selection_rate": 0.08271262774987008,
+        "fraud_among_selected": 581,
+        "precision_of_selected": 0.6083769633507854,
+        "recall_of_selected": 0.707673568818514,
+        "fingerprint_width": 15,
+        "clustering": {
+          "eps": 0.18,
+          "n_clusters": 6,
+          "noise": 19,
+          "noise_frac": 0.019895287958115182,
+          "dbcv": 0.7224432270813637,
+          "silhouette": 0.48118842845722304,
+          "davies_bouldin": 0.5744261618999292,
+          "calinski_harabasz": 431.3976889572947,
+          "n_scored": 936,
+          "bootstrap_stability": {
+            "mean_ari": 0.9995616467826636,
+            "std_ari": 0.0010087694749421085,
+            "min_ari": 0.996591098526063,
+            "n_bootstrap": 10,
+            "subsample_frac": 0.8
+          }
+        },
+        "signal_2_variation": {
+          "per_cluster_dominant": {
+            "0": {
+              "dominant_dim": "dim_0",
+              "share": 0.5812
+            },
+            "1": {
+              "dominant_dim": "dim_3",
+              "share": 0.6553
+            },
+            "2": {
+              "dominant_dim": "dim_0",
+              "share": 0.5249
+            },
+            "3": {
+              "dominant_dim": "dim_2",
+              "share": 0.459
+            },
+            "4": {
+              "dominant_dim": "dim_2",
+              "share": 0.5023
+            },
+            "5": {
+              "dominant_dim": "dim_0",
+              "share": 0.6076
+            }
+          },
+          "n_clusters_scored": 6,
+          "n_distinct_dominant_dims": 3,
+          "collapsed_to_one_dim": false,
+          "verdict": "varies \u2014 3 distinct dominant dims across 6 clusters"
+        },
+        "signal_1_dominance": {
+          "mean_shares": {
+            "F1_log_amount": 0.1672,
+            "F2_amount_balance_ratio": 0.0023,
+            "F3_balance_consistency": 0.0134,
+            "F4_balance_change_ratio": 0.1451,
+            "F6_hour": 0.565,
+            "F8_is_large": 0.0889,
+            "F12_round_amount": 0.018
+          },
+          "top_feature": "F6_hour",
+          "top_share": 0.565,
+          "dominates": true
+        },
+        "mean_signals": {
+          "signal_1": {
+            "F1_log_amount": 0.16721704602241516,
+            "F2_amount_balance_ratio": 0.002338157966732979,
+            "F3_balance_consistency": 0.013438602909445763,
+            "F4_balance_change_ratio": 0.14505887031555176,
+            "F6_hour": 0.5650333762168884,
+            "F8_is_large": 0.08893214166164398,
+            "F12_round_amount": 0.017981387674808502
+          },
+          "signal_1_uniformity_std": 0.18276748061180115,
+          "signal_2": {
+            "dim_0": 0.44161781668663025,
+            "dim_1": 0.03759327158331871,
+            "dim_2": 0.2891761362552643,
+            "dim_3": 0.11439836770296097,
+            "dim_4": 0.029073962941765785,
+            "dim_5": 0.025834660977125168,
+            "dim_6": 0.032722942531108856,
+            "dim_7": 0.029582573100924492
+          },
+          "signal_2_uniformity_std": 0.1464616358280182,
+          "signal_3": {
+            "dim_0": 0.14850372207870755,
+            "dim_1": 0.06735822159845613,
+            "dim_2": 0.15300420700422204,
+            "dim_3": 0.28635175004249214,
+            "dim_4": 0.12542979997339596,
+            "dim_5": 0.1018488302701915,
+            "dim_6": 0.050220908491481,
+            "dim_7": 0.06728256053940325
+          },
+          "signal_3_uniformity_std": 0.07084578247252853
+        },
+        "clusters": [
+          {
+            "cluster": -1,
+            "size": 19,
+            "share_of_rows": 0.019895287958115182,
+            "is_noise": true,
+            "fraud_in_cluster": 2,
+            "precision_in_cluster": 0.10526315789473684,
+            "top_signal_1": [
+              {
+                "name": "F1_log_amount",
+                "share": 0.5071
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.2958
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.1721
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_2",
+                "share": 0.5219
+              },
+              {
+                "name": "dim_3",
+                "share": 0.1409
+              },
+              {
+                "name": "dim_0",
+                "share": 0.0669
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_2",
+                "share": 0.2531
+              },
+              {
+                "name": "dim_0",
+                "share": 0.1479
+              },
+              {
+                "name": "dim_3",
+                "share": 0.1101
+              }
+            ]
+          },
+          {
+            "cluster": 0,
+            "size": 573,
+            "share_of_rows": 0.6,
+            "is_noise": false,
+            "fraud_in_cluster": 438,
+            "precision_in_cluster": 0.7643979057591623,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.52
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.2408
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.2168
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.5812
+              },
+              {
+                "name": "dim_2",
+                "share": 0.2827
+              },
+              {
+                "name": "dim_3",
+                "share": 0.0369
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_3",
+                "share": 0.3208
+              },
+              {
+                "name": "dim_2",
+                "share": 0.2028
+              },
+              {
+                "name": "dim_0",
+                "share": 0.1611
+              }
+            ]
+          },
+          {
+            "cluster": 1,
+            "size": 74,
+            "share_of_rows": 0.0774869109947644,
+            "is_noise": false,
+            "fraud_in_cluster": 3,
+            "precision_in_cluster": 0.04054054054054054,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.9609
+              },
+              {
+                "name": "F2_amount_balance_ratio",
+                "share": 0.0235
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0155
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_3",
+                "share": 0.6553
+              },
+              {
+                "name": "dim_2",
+                "share": 0.1777
+              },
+              {
+                "name": "dim_0",
+                "share": 0.066
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_4",
+                "share": 0.2563
+              },
+              {
+                "name": "dim_7",
+                "share": 0.2478
+              },
+              {
+                "name": "dim_0",
+                "share": 0.2349
+              }
+            ]
+          },
+          {
+            "cluster": 2,
+            "size": 92,
+            "share_of_rows": 0.09633507853403141,
+            "is_noise": false,
+            "fraud_in_cluster": 92,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F8_is_large",
+                "share": 0.7368
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.1285
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.0885
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.5249
+              },
+              {
+                "name": "dim_3",
+                "share": 0.2092
+              },
+              {
+                "name": "dim_2",
+                "share": 0.1404
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_3",
+                "share": 0.57
+              },
+              {
+                "name": "dim_4",
+                "share": 0.1123
+              },
+              {
+                "name": "dim_0",
+                "share": 0.1089
+              }
+            ]
+          },
+          {
+            "cluster": 3,
+            "size": 38,
+            "share_of_rows": 0.039790575916230364,
+            "is_noise": false,
+            "fraud_in_cluster": 0,
+            "precision_in_cluster": 0.0,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.953
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.047
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.0
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_2",
+                "share": 0.459
+              },
+              {
+                "name": "dim_7",
+                "share": 0.138
+              },
+              {
+                "name": "dim_5",
+                "share": 0.1138
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_7",
+                "share": 0.3694
+              },
+              {
+                "name": "dim_5",
+                "share": 0.2124
+              },
+              {
+                "name": "dim_4",
+                "share": 0.1764
+              }
+            ]
+          },
+          {
+            "cluster": 4,
+            "size": 113,
+            "share_of_rows": 0.11832460732984293,
+            "is_noise": false,
+            "fraud_in_cluster": 0,
+            "precision_in_cluster": 0.0,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.9759
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0239
+              },
+              {
+                "name": "F2_amount_balance_ratio",
+                "share": 0.0002
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_2",
+                "share": 0.5023
+              },
+              {
+                "name": "dim_1",
+                "share": 0.1444
+              },
+              {
+                "name": "dim_6",
+                "share": 0.1377
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_1",
+                "share": 0.3876
+              },
+              {
+                "name": "dim_6",
+                "share": 0.3421
+              },
+              {
+                "name": "dim_2",
+                "share": 0.1699
+              }
+            ]
+          },
+          {
+            "cluster": 5,
+            "size": 46,
+            "share_of_rows": 0.048167539267015703,
+            "is_noise": false,
+            "fraud_in_cluster": 46,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F12_round_amount",
+                "share": 0.3727
+              },
+              {
+                "name": "F8_is_large",
+                "share": 0.3725
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.1439
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.6076
+              },
+              {
+                "name": "dim_3",
+                "share": 0.2091
+              },
+              {
+                "name": "dim_2",
+                "share": 0.0864
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_3",
+                "share": 0.5107
+              },
+              {
+                "name": "dim_0",
+                "share": 0.3651
+              },
+              {
+                "name": "dim_5",
+                "share": 0.0396
+              }
+            ]
+          }
+        ],
+        "eps_sweep_top3": [
+          {
+            "eps": 0.18,
+            "n_clusters": 6,
+            "noise": 19,
+            "noise_frac": 0.019895287958115182,
+            "dbcv": 0.7224432270813637,
+            "silhouette": 0.48118842845722304,
+            "davies_bouldin": 0.5744261618999292,
+            "calinski_harabasz": 431.3976889572947,
+            "n_scored": 936
+          },
+          {
+            "eps": 0.16,
+            "n_clusters": 7,
+            "noise": 22,
+            "noise_frac": 0.023036649214659685,
+            "dbcv": 0.7154931121410423,
+            "silhouette": 0.4668339734449532,
+            "davies_bouldin": 0.5465029649973173,
+            "calinski_harabasz": 361.88121748412,
+            "n_scored": 933
+          },
+          {
+            "eps": 0.13999999999999999,
+            "n_clusters": 7,
+            "noise": 36,
+            "noise_frac": 0.03769633507853403,
+            "dbcv": 0.7097966552048214,
+            "silhouette": 0.470187457023019,
+            "davies_bouldin": 0.5463120870998662,
+            "calinski_harabasz": 360.44240943382096,
+            "n_scored": 919
+          }
+        ],
+        "cluster_vs_fraud_agreement": {
+          "applicable": true,
+          "n_selected": 955,
+          "base_rate_fraud_among_selected": 0.6083769633507854,
+          "n_clusters": 6,
+          "noise_fraction": 0.019895287958115182,
+          "noise_excluded": {
+            "adjusted_rand_index": 0.22744836230659812,
+            "adjusted_mutual_information": 0.3272111472187519,
+            "n_scored": 936
+          },
+          "noise_as_cluster": {
+            "adjusted_rand_index": 0.22615069488999856,
+            "adjusted_mutual_information": 0.3191807270095747,
+            "n_scored": 955
+          },
+          "note": "ARI and AMI are base-rate independent, unlike a purity spread in percentage points, so they compare feature sets whose flagged sets differ in fraud prevalence."
+        }
+      },
+      "size_matched": {
+        "variant": "size_matched",
+        "selection": "top-955 by score (matched to FS-ORIGIN flagged count)",
+        "threshold": 1.7284968694801575,
+        "n_test_rows": 11546,
+        "n_selected": 955,
+        "selection_rate": 0.08271262774987008,
+        "fraud_among_selected": 581,
+        "precision_of_selected": 0.6083769633507854,
+        "recall_of_selected": 0.707673568818514,
+        "fingerprint_width": 15,
+        "clustering": {
+          "eps": 0.18,
+          "n_clusters": 6,
+          "noise": 19,
+          "noise_frac": 0.019895287958115182,
+          "dbcv": 0.7224432270813637,
+          "silhouette": 0.48118842845722304,
+          "davies_bouldin": 0.5744261618999292,
+          "calinski_harabasz": 431.3976889572947,
+          "n_scored": 936,
+          "bootstrap_stability": {
+            "mean_ari": 0.9995616467826636,
+            "std_ari": 0.0010087694749421085,
+            "min_ari": 0.996591098526063,
+            "n_bootstrap": 10,
+            "subsample_frac": 0.8
+          }
+        },
+        "signal_2_variation": {
+          "per_cluster_dominant": {
+            "0": {
+              "dominant_dim": "dim_0",
+              "share": 0.5812
+            },
+            "1": {
+              "dominant_dim": "dim_3",
+              "share": 0.6553
+            },
+            "2": {
+              "dominant_dim": "dim_0",
+              "share": 0.5249
+            },
+            "3": {
+              "dominant_dim": "dim_2",
+              "share": 0.459
+            },
+            "4": {
+              "dominant_dim": "dim_2",
+              "share": 0.5023
+            },
+            "5": {
+              "dominant_dim": "dim_0",
+              "share": 0.6076
+            }
+          },
+          "n_clusters_scored": 6,
+          "n_distinct_dominant_dims": 3,
+          "collapsed_to_one_dim": false,
+          "verdict": "varies \u2014 3 distinct dominant dims across 6 clusters"
+        },
+        "signal_1_dominance": {
+          "mean_shares": {
+            "F1_log_amount": 0.1672,
+            "F2_amount_balance_ratio": 0.0023,
+            "F3_balance_consistency": 0.0134,
+            "F4_balance_change_ratio": 0.1451,
+            "F6_hour": 0.565,
+            "F8_is_large": 0.0889,
+            "F12_round_amount": 0.018
+          },
+          "top_feature": "F6_hour",
+          "top_share": 0.565,
+          "dominates": true
+        },
+        "mean_signals": {
+          "signal_1": {
+            "F1_log_amount": 0.16721704602241516,
+            "F2_amount_balance_ratio": 0.002338157966732979,
+            "F3_balance_consistency": 0.013438602909445763,
+            "F4_balance_change_ratio": 0.14505887031555176,
+            "F6_hour": 0.5650333762168884,
+            "F8_is_large": 0.08893214166164398,
+            "F12_round_amount": 0.017981387674808502
+          },
+          "signal_1_uniformity_std": 0.18276748061180115,
+          "signal_2": {
+            "dim_0": 0.44161781668663025,
+            "dim_1": 0.03759327158331871,
+            "dim_2": 0.2891761362552643,
+            "dim_3": 0.11439836770296097,
+            "dim_4": 0.029073962941765785,
+            "dim_5": 0.025834660977125168,
+            "dim_6": 0.032722942531108856,
+            "dim_7": 0.029582573100924492
+          },
+          "signal_2_uniformity_std": 0.1464616358280182,
+          "signal_3": {
+            "dim_0": 0.14850372207870755,
+            "dim_1": 0.06735822159845613,
+            "dim_2": 0.15300420700422204,
+            "dim_3": 0.28635175004249214,
+            "dim_4": 0.12542979997339596,
+            "dim_5": 0.1018488302701915,
+            "dim_6": 0.050220908491481,
+            "dim_7": 0.06728256053940325
+          },
+          "signal_3_uniformity_std": 0.07084578247252853
+        },
+        "clusters": [
+          {
+            "cluster": -1,
+            "size": 19,
+            "share_of_rows": 0.019895287958115182,
+            "is_noise": true,
+            "fraud_in_cluster": 2,
+            "precision_in_cluster": 0.10526315789473684,
+            "top_signal_1": [
+              {
+                "name": "F1_log_amount",
+                "share": 0.5071
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.2958
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.1721
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_2",
+                "share": 0.5219
+              },
+              {
+                "name": "dim_3",
+                "share": 0.1409
+              },
+              {
+                "name": "dim_0",
+                "share": 0.0669
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_2",
+                "share": 0.2531
+              },
+              {
+                "name": "dim_0",
+                "share": 0.1479
+              },
+              {
+                "name": "dim_3",
+                "share": 0.1101
+              }
+            ]
+          },
+          {
+            "cluster": 0,
+            "size": 573,
+            "share_of_rows": 0.6,
+            "is_noise": false,
+            "fraud_in_cluster": 438,
+            "precision_in_cluster": 0.7643979057591623,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.52
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.2408
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.2168
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.5812
+              },
+              {
+                "name": "dim_2",
+                "share": 0.2827
+              },
+              {
+                "name": "dim_3",
+                "share": 0.0369
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_3",
+                "share": 0.3208
+              },
+              {
+                "name": "dim_2",
+                "share": 0.2028
+              },
+              {
+                "name": "dim_0",
+                "share": 0.1611
+              }
+            ]
+          },
+          {
+            "cluster": 1,
+            "size": 74,
+            "share_of_rows": 0.0774869109947644,
+            "is_noise": false,
+            "fraud_in_cluster": 3,
+            "precision_in_cluster": 0.04054054054054054,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.9609
+              },
+              {
+                "name": "F2_amount_balance_ratio",
+                "share": 0.0235
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0155
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_3",
+                "share": 0.6553
+              },
+              {
+                "name": "dim_2",
+                "share": 0.1777
+              },
+              {
+                "name": "dim_0",
+                "share": 0.066
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_4",
+                "share": 0.2563
+              },
+              {
+                "name": "dim_7",
+                "share": 0.2478
+              },
+              {
+                "name": "dim_0",
+                "share": 0.2349
+              }
+            ]
+          },
+          {
+            "cluster": 2,
+            "size": 92,
+            "share_of_rows": 0.09633507853403141,
+            "is_noise": false,
+            "fraud_in_cluster": 92,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F8_is_large",
+                "share": 0.7368
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.1285
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.0885
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.5249
+              },
+              {
+                "name": "dim_3",
+                "share": 0.2092
+              },
+              {
+                "name": "dim_2",
+                "share": 0.1404
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_3",
+                "share": 0.57
+              },
+              {
+                "name": "dim_4",
+                "share": 0.1123
+              },
+              {
+                "name": "dim_0",
+                "share": 0.1089
+              }
+            ]
+          },
+          {
+            "cluster": 3,
+            "size": 38,
+            "share_of_rows": 0.039790575916230364,
+            "is_noise": false,
+            "fraud_in_cluster": 0,
+            "precision_in_cluster": 0.0,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.953
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.047
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.0
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_2",
+                "share": 0.459
+              },
+              {
+                "name": "dim_7",
+                "share": 0.138
+              },
+              {
+                "name": "dim_5",
+                "share": 0.1138
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_7",
+                "share": 0.3694
+              },
+              {
+                "name": "dim_5",
+                "share": 0.2124
+              },
+              {
+                "name": "dim_4",
+                "share": 0.1764
+              }
+            ]
+          },
+          {
+            "cluster": 4,
+            "size": 113,
+            "share_of_rows": 0.11832460732984293,
+            "is_noise": false,
+            "fraud_in_cluster": 0,
+            "precision_in_cluster": 0.0,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.9759
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0239
+              },
+              {
+                "name": "F2_amount_balance_ratio",
+                "share": 0.0002
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_2",
+                "share": 0.5023
+              },
+              {
+                "name": "dim_1",
+                "share": 0.1444
+              },
+              {
+                "name": "dim_6",
+                "share": 0.1377
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_1",
+                "share": 0.3876
+              },
+              {
+                "name": "dim_6",
+                "share": 0.3421
+              },
+              {
+                "name": "dim_2",
+                "share": 0.1699
+              }
+            ]
+          },
+          {
+            "cluster": 5,
+            "size": 46,
+            "share_of_rows": 0.048167539267015703,
+            "is_noise": false,
+            "fraud_in_cluster": 46,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F12_round_amount",
+                "share": 0.3727
+              },
+              {
+                "name": "F8_is_large",
+                "share": 0.3725
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.1439
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.6076
+              },
+              {
+                "name": "dim_3",
+                "share": 0.2091
+              },
+              {
+                "name": "dim_2",
+                "share": 0.0864
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_3",
+                "share": 0.5107
+              },
+              {
+                "name": "dim_0",
+                "share": 0.3651
+              },
+              {
+                "name": "dim_5",
+                "share": 0.0396
+              }
+            ]
+          }
+        ],
+        "eps_sweep_top3": [
+          {
+            "eps": 0.18,
+            "n_clusters": 6,
+            "noise": 19,
+            "noise_frac": 0.019895287958115182,
+            "dbcv": 0.7224432270813637,
+            "silhouette": 0.48118842845722304,
+            "davies_bouldin": 0.5744261618999292,
+            "calinski_harabasz": 431.3976889572947,
+            "n_scored": 936
+          },
+          {
+            "eps": 0.16,
+            "n_clusters": 7,
+            "noise": 22,
+            "noise_frac": 0.023036649214659685,
+            "dbcv": 0.7154931121410423,
+            "silhouette": 0.4668339734449532,
+            "davies_bouldin": 0.5465029649973173,
+            "calinski_harabasz": 361.88121748412,
+            "n_scored": 933
+          },
+          {
+            "eps": 0.13999999999999999,
+            "n_clusters": 7,
+            "noise": 36,
+            "noise_frac": 0.03769633507853403,
+            "dbcv": 0.7097966552048214,
+            "silhouette": 0.470187457023019,
+            "davies_bouldin": 0.5463120870998662,
+            "calinski_harabasz": 360.44240943382096,
+            "n_scored": 919
+          }
+        ],
+        "cluster_vs_fraud_agreement": {
+          "applicable": true,
+          "n_selected": 955,
+          "base_rate_fraud_among_selected": 0.6083769633507854,
+          "n_clusters": 6,
+          "noise_fraction": 0.019895287958115182,
+          "noise_excluded": {
+            "adjusted_rand_index": 0.22744836230659812,
+            "adjusted_mutual_information": 0.3272111472187519,
+            "n_scored": 936
+          },
+          "noise_as_cluster": {
+            "adjusted_rand_index": 0.22615069488999856,
+            "adjusted_mutual_information": 0.3191807270095747,
+            "n_scored": 955
+          },
+          "note": "ARI and AMI are base-rate independent, unlike a purity spread in percentage points, so they compare feature sets whose flagged sets differ in fraud prevalence."
+        }
+      },
+      "oracle": {
+        "variant": "oracle",
+        "selection": "isFraud == 1 \u2014 ORACLE, supervised selection",
+        "threshold": 1.7284968694801575,
+        "n_test_rows": 11546,
+        "n_selected": 821,
+        "selection_rate": 0.07110687684046423,
+        "fraud_among_selected": 821,
+        "precision_of_selected": 1.0,
+        "recall_of_selected": 1.0,
+        "fingerprint_width": 15,
+        "clustering": {
+          "eps": 0.13999999999999999,
+          "n_clusters": 3,
+          "noise": 21,
+          "noise_frac": 0.025578562728380026,
+          "dbcv": 0.8134218985926713,
+          "silhouette": 0.38247453846594737,
+          "davies_bouldin": 0.748844158060923,
+          "calinski_harabasz": 222.5222913445198,
+          "n_scored": 800,
+          "bootstrap_stability": {
+            "mean_ari": 0.5409919800876088,
+            "std_ari": 0.00940931800744292,
+            "min_ari": 0.5292088794191638,
+            "n_bootstrap": 10,
+            "subsample_frac": 0.8
+          }
+        },
+        "signal_2_variation": {
+          "per_cluster_dominant": {
+            "0": {
+              "dominant_dim": "dim_0",
+              "share": 0.5753
+            },
+            "1": {
+              "dominant_dim": "dim_0",
+              "share": 0.5249
+            },
+            "2": {
+              "dominant_dim": "dim_0",
+              "share": 0.6076
+            }
+          },
+          "n_clusters_scored": 3,
+          "n_distinct_dominant_dims": 1,
+          "collapsed_to_one_dim": true,
+          "verdict": "collapsed \u2014 every cluster attributes to the same latent dim"
+        },
+        "signal_1_dominance": {
+          "mean_shares": {
+            "F1_log_amount": 0.2146,
+            "F2_amount_balance_ratio": 0.0012,
+            "F3_balance_consistency": 0.0174,
+            "F4_balance_change_ratio": 0.3385,
+            "F6_hour": 0.304,
+            "F8_is_large": 0.1034,
+            "F12_round_amount": 0.0209
+          },
+          "top_feature": "F4_balance_change_ratio",
+          "top_share": 0.3385,
+          "dominates": false
+        },
+        "mean_signals": {
+          "signal_1": {
+            "F1_log_amount": 0.2146076261997223,
+            "F2_amount_balance_ratio": 0.0012221510987728834,
+            "F3_balance_consistency": 0.017369642853736877,
+            "F4_balance_change_ratio": 0.33846455812454224,
+            "F6_hour": 0.3039902150630951,
+            "F8_is_large": 0.10344275087118149,
+            "F12_round_amount": 0.020902574062347412
+          },
+          "signal_1_uniformity_std": 0.1318051964044571,
+          "signal_2": {
+            "dim_0": 0.5663927793502808,
+            "dim_1": 0.02399742230772972,
+            "dim_2": 0.26549267768859863,
+            "dim_3": 0.06537554413080215,
+            "dim_4": 0.02221030741930008,
+            "dim_5": 0.019887905567884445,
+            "dim_6": 0.01729878969490528,
+            "dim_7": 0.019344108179211617
+          },
+          "signal_2_uniformity_std": 0.18462778627872467,
+          "signal_3": {
+            "dim_0": 0.13503634938402448,
+            "dim_1": 0.027866889383025863,
+            "dim_2": 0.31257292601671005,
+            "dim_3": 0.2673158819951125,
+            "dim_4": 0.11546960240757476,
+            "dim_5": 0.09709124432235432,
+            "dim_6": 0.0065476003546249256,
+            "dim_7": 0.03809950613433326
+          },
+          "signal_3_uniformity_std": 0.10453789759412205
+        },
+        "clusters": [
+          {
+            "cluster": -1,
+            "size": 21,
+            "share_of_rows": 0.025578562728380026,
+            "is_noise": true,
+            "fraud_in_cluster": 21,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.5103
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.2476
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.1465
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.3782
+              },
+              {
+                "name": "dim_2",
+                "share": 0.2677
+              },
+              {
+                "name": "dim_3",
+                "share": 0.2244
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_4",
+                "share": 0.2141
+              },
+              {
+                "name": "dim_5",
+                "share": 0.1846
+              },
+              {
+                "name": "dim_3",
+                "share": 0.1644
+              }
+            ]
+          },
+          {
+            "cluster": 0,
+            "size": 662,
+            "share_of_rows": 0.8063337393422655,
+            "is_noise": false,
+            "fraud_in_cluster": 662,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.3953
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.333
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.2517
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.5753
+              },
+              {
+                "name": "dim_2",
+                "share": 0.2953
+              },
+              {
+                "name": "dim_3",
+                "share": 0.0304
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_2",
+                "share": 0.3817
+              },
+              {
+                "name": "dim_3",
+                "share": 0.2116
+              },
+              {
+                "name": "dim_0",
+                "share": 0.1227
+              }
+            ]
+          },
+          {
+            "cluster": 1,
+            "size": 92,
+            "share_of_rows": 0.1120584652862363,
+            "is_noise": false,
+            "fraud_in_cluster": 92,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F8_is_large",
+                "share": 0.7368
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.1285
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.0885
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.5249
+              },
+              {
+                "name": "dim_3",
+                "share": 0.2092
+              },
+              {
+                "name": "dim_2",
+                "share": 0.1404
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_3",
+                "share": 0.57
+              },
+              {
+                "name": "dim_4",
+                "share": 0.1123
+              },
+              {
+                "name": "dim_0",
+                "share": 0.1089
+              }
+            ]
+          },
+          {
+            "cluster": 2,
+            "size": 46,
+            "share_of_rows": 0.05602923264311815,
+            "is_noise": false,
+            "fraud_in_cluster": 46,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F12_round_amount",
+                "share": 0.3727
+              },
+              {
+                "name": "F8_is_large",
+                "share": 0.3725
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.1439
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.6076
+              },
+              {
+                "name": "dim_3",
+                "share": 0.2091
+              },
+              {
+                "name": "dim_2",
+                "share": 0.0864
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_3",
+                "share": 0.5107
+              },
+              {
+                "name": "dim_0",
+                "share": 0.3651
+              },
+              {
+                "name": "dim_5",
+                "share": 0.0396
+              }
+            ]
+          }
+        ],
+        "eps_sweep_top3": [
+          {
+            "eps": 0.13999999999999999,
+            "n_clusters": 3,
+            "noise": 21,
+            "noise_frac": 0.025578562728380026,
+            "dbcv": 0.8134218985926713,
+            "silhouette": 0.38247453846594737,
+            "davies_bouldin": 0.748844158060923,
+            "calinski_harabasz": 222.5222913445198,
+            "n_scored": 800
+          },
+          {
+            "eps": 0.16,
+            "n_clusters": 3,
+            "noise": 9,
+            "noise_frac": 0.010962241169305725,
+            "dbcv": 0.7813453942090103,
+            "silhouette": 0.3837117162299838,
+            "davies_bouldin": 0.7444651036095266,
+            "calinski_harabasz": 225.17287892606657,
+            "n_scored": 812
+          },
+          {
+            "eps": 0.18,
+            "n_clusters": 3,
+            "noise": 9,
+            "noise_frac": 0.010962241169305725,
+            "dbcv": 0.7813453942090103,
+            "silhouette": 0.3837117162299838,
+            "davies_bouldin": 0.7444651036095266,
+            "calinski_harabasz": 225.17287892606657,
+            "n_scored": 812
+          }
+        ],
+        "cluster_vs_fraud_agreement": {
+          "applicable": false,
+          "reason": "every row in the oracle variant is fraud, so the label vector is constant; ARI and AMI are degenerate and are not reported"
+        }
+      }
+    },
+    "CASH_OUT": {
+      "native": {
+        "variant": "native",
+        "selection": "score >= F1-optimal threshold",
+        "threshold": 3.6729203782644677,
+        "n_test_rows": 37196,
+        "n_selected": 690,
+        "selection_rate": 0.018550381761479728,
+        "fraud_among_selected": 540,
+        "precision_of_selected": 0.782608695652174,
+        "recall_of_selected": 0.6577344701583435,
+        "fingerprint_width": 23,
+        "clustering": {
+          "eps": 0.1,
+          "n_clusters": 11,
+          "noise": 97,
+          "noise_frac": 0.14057971014492754,
+          "dbcv": 0.6698610877100776,
+          "silhouette": 0.5996322846056366,
+          "davies_bouldin": 0.3558219286017251,
+          "calinski_harabasz": 897.6441436469141,
+          "n_scored": 593,
+          "bootstrap_stability": {
+            "mean_ari": 0.923086171909634,
+            "std_ari": 0.014080057747480269,
+            "min_ari": 0.9009090531338163,
+            "n_bootstrap": 10,
+            "subsample_frac": 0.8
+          }
+        },
+        "signal_2_variation": {
+          "per_cluster_dominant": {
+            "0": {
+              "dominant_dim": "dim_0",
+              "share": 0.4445
+            },
+            "1": {
+              "dominant_dim": "dim_6",
+              "share": 0.5931
+            },
+            "2": {
+              "dominant_dim": "dim_4",
+              "share": 0.2034
+            },
+            "3": {
+              "dominant_dim": "dim_0",
+              "share": 0.3881
+            },
+            "4": {
+              "dominant_dim": "dim_0",
+              "share": 0.4692
+            },
+            "5": {
+              "dominant_dim": "dim_0",
+              "share": 0.4491
+            },
+            "6": {
+              "dominant_dim": "dim_0",
+              "share": 0.4532
+            },
+            "7": {
+              "dominant_dim": "dim_0",
+              "share": 0.4427
+            },
+            "8": {
+              "dominant_dim": "dim_0",
+              "share": 0.44
+            },
+            "9": {
+              "dominant_dim": "dim_0",
+              "share": 0.4998
+            },
+            "10": {
+              "dominant_dim": "dim_0",
+              "share": 0.452
+            }
+          },
+          "n_clusters_scored": 11,
+          "n_distinct_dominant_dims": 3,
+          "collapsed_to_one_dim": false,
+          "verdict": "varies \u2014 3 distinct dominant dims across 11 clusters"
+        },
+        "signal_1_dominance": {
+          "mean_shares": {
+            "F1_log_amount": 0.1197,
+            "F2_amount_balance_ratio": 0.0003,
+            "F3_balance_consistency": 0.0129,
+            "F4_balance_change_ratio": 0.118,
+            "F6_hour": 0.7023,
+            "F8_is_large": 0.0014,
+            "F12_round_amount": 0.0455
+          },
+          "top_feature": "F6_hour",
+          "top_share": 0.7023,
+          "dominates": true
+        },
+        "mean_signals": {
+          "signal_1": {
+            "F1_log_amount": 0.11966194212436676,
+            "F2_amount_balance_ratio": 0.00027427400345914066,
+            "F3_balance_consistency": 0.012866747565567493,
+            "F4_balance_change_ratio": 0.11796219646930695,
+            "F6_hour": 0.7022829651832581,
+            "F8_is_large": 0.0014453851617872715,
+            "F12_round_amount": 0.04550633206963539
+          },
+          "signal_1_uniformity_std": 0.23324322700500488,
+          "signal_2": {
+            "dim_0": 0.29932764172554016,
+            "dim_1": 0.01662500575184822,
+            "dim_2": 0.044559162110090256,
+            "dim_3": 0.015779422596096992,
+            "dim_4": 0.043607041239738464,
+            "dim_5": 0.015846960246562958,
+            "dim_6": 0.41510921716690063,
+            "dim_7": 0.015583821572363377,
+            "dim_8": 0.016527459025382996,
+            "dim_9": 0.01721961796283722,
+            "dim_10": 0.017920508980751038,
+            "dim_11": 0.01763618364930153,
+            "dim_12": 0.015361658297479153,
+            "dim_13": 0.01587049290537834,
+            "dim_14": 0.017471371218562126,
+            "dim_15": 0.015554558485746384
+          },
+          "signal_2_uniformity_std": 0.11362109333276749,
+          "signal_3": {
+            "dim_0": 0.057450756165165616,
+            "dim_1": 0.0012305564677750735,
+            "dim_2": 0.17585193358957457,
+            "dim_3": 0.0013618276074960605,
+            "dim_4": 0.18142231517033236,
+            "dim_5": 0.0016670203830242852,
+            "dim_6": 0.3029349587306731,
+            "dim_7": 0.0017001713552481908,
+            "dim_8": 0.001002982092339865,
+            "dim_9": 0.04896506321207616,
+            "dim_10": 0.06793213074641516,
+            "dim_11": 0.05924038485426018,
+            "dim_12": 0.04876525983181075,
+            "dim_13": 0.0014273650197175042,
+            "dim_14": 0.04751738265745951,
+            "dim_15": 0.001529892112722487
+          },
+          "signal_3_uniformity_std": 0.0835090889939234
+        },
+        "clusters": [
+          {
+            "cluster": -1,
+            "size": 97,
+            "share_of_rows": 0.14057971014492754,
+            "is_noise": true,
+            "fraud_in_cluster": 62,
+            "precision_in_cluster": 0.6391752577319587,
+            "top_signal_1": [
+              {
+                "name": "F1_log_amount",
+                "share": 0.5121
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.2639
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.1587
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_6",
+                "share": 0.4082
+              },
+              {
+                "name": "dim_0",
+                "share": 0.3222
+              },
+              {
+                "name": "dim_2",
+                "share": 0.0266
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.4607
+              },
+              {
+                "name": "dim_2",
+                "share": 0.1272
+              },
+              {
+                "name": "dim_4",
+                "share": 0.1195
+              }
+            ]
+          },
+          {
+            "cluster": 0,
+            "size": 267,
+            "share_of_rows": 0.3869565217391304,
+            "is_noise": false,
+            "fraud_in_cluster": 263,
+            "precision_in_cluster": 0.9850187265917603,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.8868
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0652
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.0481
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.4445
+              },
+              {
+                "name": "dim_6",
+                "share": 0.4159
+              },
+              {
+                "name": "dim_10",
+                "share": 0.0136
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.4101
+              },
+              {
+                "name": "dim_10",
+                "share": 0.1126
+              },
+              {
+                "name": "dim_11",
+                "share": 0.1025
+              }
+            ]
+          },
+          {
+            "cluster": 1,
+            "size": 143,
+            "share_of_rows": 0.2072463768115942,
+            "is_noise": false,
+            "fraud_in_cluster": 123,
+            "precision_in_cluster": 0.8601398601398601,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.7767
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.2044
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0176
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_6",
+                "share": 0.5931
+              },
+              {
+                "name": "dim_2",
+                "share": 0.0673
+              },
+              {
+                "name": "dim_4",
+                "share": 0.0634
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_2",
+                "share": 0.4617
+              },
+              {
+                "name": "dim_4",
+                "share": 0.4586
+              },
+              {
+                "name": "dim_6",
+                "share": 0.0613
+              }
+            ]
+          },
+          {
+            "cluster": 2,
+            "size": 73,
+            "share_of_rows": 0.10579710144927536,
+            "is_noise": false,
+            "fraud_in_cluster": 0,
+            "precision_in_cluster": 0.0,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.9901
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0097
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.0002
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_4",
+                "share": 0.2034
+              },
+              {
+                "name": "dim_2",
+                "share": 0.1989
+              },
+              {
+                "name": "dim_6",
+                "share": 0.1097
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_4",
+                "share": 0.4818
+              },
+              {
+                "name": "dim_2",
+                "share": 0.4626
+              },
+              {
+                "name": "dim_6",
+                "share": 0.0444
+              }
+            ]
+          },
+          {
+            "cluster": 3,
+            "size": 10,
+            "share_of_rows": 0.014492753623188406,
+            "is_noise": false,
+            "fraud_in_cluster": 0,
+            "precision_in_cluster": 0.0,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.9922
+              },
+              {
+                "name": "F2_amount_balance_ratio",
+                "share": 0.0053
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.002
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.3881
+              },
+              {
+                "name": "dim_6",
+                "share": 0.2739
+              },
+              {
+                "name": "dim_2",
+                "share": 0.0887
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_4",
+                "share": 0.5102
+              },
+              {
+                "name": "dim_2",
+                "share": 0.483
+              },
+              {
+                "name": "dim_10",
+                "share": 0.0019
+              }
+            ]
+          },
+          {
+            "cluster": 4,
+            "size": 21,
+            "share_of_rows": 0.030434782608695653,
+            "is_noise": false,
+            "fraud_in_cluster": 21,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F12_round_amount",
+                "share": 0.8689
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0462
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.0451
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.4692
+              },
+              {
+                "name": "dim_6",
+                "share": 0.3836
+              },
+              {
+                "name": "dim_10",
+                "share": 0.0191
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.5457
+              },
+              {
+                "name": "dim_10",
+                "share": 0.0834
+              },
+              {
+                "name": "dim_11",
+                "share": 0.0666
+              }
+            ]
+          },
+          {
+            "cluster": 5,
+            "size": 15,
+            "share_of_rows": 0.021739130434782608,
+            "is_noise": false,
+            "fraud_in_cluster": 14,
+            "precision_in_cluster": 0.9333333333333333,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.7272
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.2461
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0267
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.4491
+              },
+              {
+                "name": "dim_6",
+                "share": 0.4185
+              },
+              {
+                "name": "dim_11",
+                "share": 0.0125
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.3621
+              },
+              {
+                "name": "dim_10",
+                "share": 0.1215
+              },
+              {
+                "name": "dim_11",
+                "share": 0.117
+              }
+            ]
+          },
+          {
+            "cluster": 6,
+            "size": 14,
+            "share_of_rows": 0.020289855072463767,
+            "is_noise": false,
+            "fraud_in_cluster": 14,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.3565
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.3504
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.2931
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.4532
+              },
+              {
+                "name": "dim_6",
+                "share": 0.4152
+              },
+              {
+                "name": "dim_11",
+                "share": 0.0129
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.3512
+              },
+              {
+                "name": "dim_10",
+                "share": 0.1248
+              },
+              {
+                "name": "dim_11",
+                "share": 0.1187
+              }
+            ]
+          },
+          {
+            "cluster": 7,
+            "size": 10,
+            "share_of_rows": 0.014492753623188406,
+            "is_noise": false,
+            "fraud_in_cluster": 8,
+            "precision_in_cluster": 0.8,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.5051
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.4703
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0245
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.4427
+              },
+              {
+                "name": "dim_6",
+                "share": 0.4264
+              },
+              {
+                "name": "dim_11",
+                "share": 0.0117
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.3925
+              },
+              {
+                "name": "dim_10",
+                "share": 0.1132
+              },
+              {
+                "name": "dim_11",
+                "share": 0.1115
+              }
+            ]
+          },
+          {
+            "cluster": 8,
+            "size": 12,
+            "share_of_rows": 0.017391304347826087,
+            "is_noise": false,
+            "fraud_in_cluster": 7,
+            "precision_in_cluster": 0.5833333333333334,
+            "top_signal_1": [
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.8562
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.1226
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0212
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.44
+              },
+              {
+                "name": "dim_6",
+                "share": 0.4288
+              },
+              {
+                "name": "dim_9",
+                "share": 0.0116
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.3981
+              },
+              {
+                "name": "dim_11",
+                "share": 0.1095
+              },
+              {
+                "name": "dim_10",
+                "share": 0.1072
+              }
+            ]
+          },
+          {
+            "cluster": 9,
+            "size": 18,
+            "share_of_rows": 0.02608695652173913,
+            "is_noise": false,
+            "fraud_in_cluster": 18,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F12_round_amount",
+                "share": 0.4693
+              },
+              {
+                "name": "F3_balance_consistency",
+                "share": 0.3746
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.0708
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.4998
+              },
+              {
+                "name": "dim_6",
+                "share": 0.3645
+              },
+              {
+                "name": "dim_2",
+                "share": 0.0162
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.2344
+              },
+              {
+                "name": "dim_10",
+                "share": 0.1871
+              },
+              {
+                "name": "dim_12",
+                "share": 0.1333
+              }
+            ]
+          },
+          {
+            "cluster": 10,
+            "size": 10,
+            "share_of_rows": 0.014492753623188406,
+            "is_noise": false,
+            "fraud_in_cluster": 10,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F1_log_amount",
+                "share": 0.5021
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.4302
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.0678
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.452
+              },
+              {
+                "name": "dim_6",
+                "share": 0.4105
+              },
+              {
+                "name": "dim_11",
+                "share": 0.0132
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.811
+              },
+              {
+                "name": "dim_4",
+                "share": 0.0415
+              },
+              {
+                "name": "dim_10",
+                "share": 0.0253
+              }
+            ]
+          }
+        ],
+        "eps_sweep_top3": [
+          {
+            "eps": 0.1,
+            "n_clusters": 11,
+            "noise": 97,
+            "noise_frac": 0.14057971014492754,
+            "dbcv": 0.6698610877100776,
+            "silhouette": 0.5996322846056366,
+            "davies_bouldin": 0.3558219286017251,
+            "calinski_harabasz": 897.6441436469141,
+            "n_scored": 593
+          },
+          {
+            "eps": 0.22,
+            "n_clusters": 7,
+            "noise": 22,
+            "noise_frac": 0.03188405797101449,
+            "dbcv": 0.6004210870305849,
+            "silhouette": 0.5500849277796832,
+            "davies_bouldin": 0.5208004440156677,
+            "calinski_harabasz": 294.85631055962966,
+            "n_scored": 668
+          },
+          {
+            "eps": 0.06,
+            "n_clusters": 9,
+            "noise": 169,
+            "noise_frac": 0.24492753623188407,
+            "dbcv": 0.5954450452713814,
+            "silhouette": 0.5803225187446165,
+            "davies_bouldin": 0.3122635342464766,
+            "calinski_harabasz": 1331.558085719194,
+            "n_scored": 521
+          }
+        ],
+        "cluster_vs_fraud_agreement": {
+          "applicable": true,
+          "n_selected": 690,
+          "base_rate_fraud_among_selected": 0.782608695652174,
+          "n_clusters": 11,
+          "noise_fraction": 0.14057971014492754,
+          "noise_excluded": {
+            "adjusted_rand_index": 0.23055231005595545,
+            "adjusted_mutual_information": 0.3027512585658391,
+            "n_scored": 593
+          },
+          "noise_as_cluster": {
+            "adjusted_rand_index": 0.1798633997038022,
+            "adjusted_mutual_information": 0.24421558513166813,
+            "n_scored": 690
+          },
+          "note": "ARI and AMI are base-rate independent, unlike a purity spread in percentage points, so they compare feature sets whose flagged sets differ in fraud prevalence."
+        }
+      },
+      "size_matched": {
+        "variant": "size_matched",
+        "selection": "top-690 by score (matched to FS-ORIGIN flagged count)",
+        "threshold": 3.6729203782644677,
+        "n_test_rows": 37196,
+        "n_selected": 690,
+        "selection_rate": 0.018550381761479728,
+        "fraud_among_selected": 540,
+        "precision_of_selected": 0.782608695652174,
+        "recall_of_selected": 0.6577344701583435,
+        "fingerprint_width": 23,
+        "clustering": {
+          "eps": 0.1,
+          "n_clusters": 11,
+          "noise": 97,
+          "noise_frac": 0.14057971014492754,
+          "dbcv": 0.6698610877100776,
+          "silhouette": 0.5996322846056366,
+          "davies_bouldin": 0.3558219286017251,
+          "calinski_harabasz": 897.6441436469141,
+          "n_scored": 593,
+          "bootstrap_stability": {
+            "mean_ari": 0.923086171909634,
+            "std_ari": 0.014080057747480269,
+            "min_ari": 0.9009090531338163,
+            "n_bootstrap": 10,
+            "subsample_frac": 0.8
+          }
+        },
+        "signal_2_variation": {
+          "per_cluster_dominant": {
+            "0": {
+              "dominant_dim": "dim_0",
+              "share": 0.4445
+            },
+            "1": {
+              "dominant_dim": "dim_6",
+              "share": 0.5931
+            },
+            "2": {
+              "dominant_dim": "dim_4",
+              "share": 0.2034
+            },
+            "3": {
+              "dominant_dim": "dim_0",
+              "share": 0.3881
+            },
+            "4": {
+              "dominant_dim": "dim_0",
+              "share": 0.4692
+            },
+            "5": {
+              "dominant_dim": "dim_0",
+              "share": 0.4491
+            },
+            "6": {
+              "dominant_dim": "dim_0",
+              "share": 0.4532
+            },
+            "7": {
+              "dominant_dim": "dim_0",
+              "share": 0.4427
+            },
+            "8": {
+              "dominant_dim": "dim_0",
+              "share": 0.44
+            },
+            "9": {
+              "dominant_dim": "dim_0",
+              "share": 0.4998
+            },
+            "10": {
+              "dominant_dim": "dim_0",
+              "share": 0.452
+            }
+          },
+          "n_clusters_scored": 11,
+          "n_distinct_dominant_dims": 3,
+          "collapsed_to_one_dim": false,
+          "verdict": "varies \u2014 3 distinct dominant dims across 11 clusters"
+        },
+        "signal_1_dominance": {
+          "mean_shares": {
+            "F1_log_amount": 0.1197,
+            "F2_amount_balance_ratio": 0.0003,
+            "F3_balance_consistency": 0.0129,
+            "F4_balance_change_ratio": 0.118,
+            "F6_hour": 0.7023,
+            "F8_is_large": 0.0014,
+            "F12_round_amount": 0.0455
+          },
+          "top_feature": "F6_hour",
+          "top_share": 0.7023,
+          "dominates": true
+        },
+        "mean_signals": {
+          "signal_1": {
+            "F1_log_amount": 0.11966194212436676,
+            "F2_amount_balance_ratio": 0.00027427400345914066,
+            "F3_balance_consistency": 0.012866747565567493,
+            "F4_balance_change_ratio": 0.11796219646930695,
+            "F6_hour": 0.7022829651832581,
+            "F8_is_large": 0.0014453851617872715,
+            "F12_round_amount": 0.04550633206963539
+          },
+          "signal_1_uniformity_std": 0.23324322700500488,
+          "signal_2": {
+            "dim_0": 0.29932764172554016,
+            "dim_1": 0.01662500575184822,
+            "dim_2": 0.044559162110090256,
+            "dim_3": 0.015779422596096992,
+            "dim_4": 0.043607041239738464,
+            "dim_5": 0.015846960246562958,
+            "dim_6": 0.41510921716690063,
+            "dim_7": 0.015583821572363377,
+            "dim_8": 0.016527459025382996,
+            "dim_9": 0.01721961796283722,
+            "dim_10": 0.017920508980751038,
+            "dim_11": 0.01763618364930153,
+            "dim_12": 0.015361658297479153,
+            "dim_13": 0.01587049290537834,
+            "dim_14": 0.017471371218562126,
+            "dim_15": 0.015554558485746384
+          },
+          "signal_2_uniformity_std": 0.11362109333276749,
+          "signal_3": {
+            "dim_0": 0.057450756165165616,
+            "dim_1": 0.0012305564677750735,
+            "dim_2": 0.17585193358957457,
+            "dim_3": 0.0013618276074960605,
+            "dim_4": 0.18142231517033236,
+            "dim_5": 0.0016670203830242852,
+            "dim_6": 0.3029349587306731,
+            "dim_7": 0.0017001713552481908,
+            "dim_8": 0.001002982092339865,
+            "dim_9": 0.04896506321207616,
+            "dim_10": 0.06793213074641516,
+            "dim_11": 0.05924038485426018,
+            "dim_12": 0.04876525983181075,
+            "dim_13": 0.0014273650197175042,
+            "dim_14": 0.04751738265745951,
+            "dim_15": 0.001529892112722487
+          },
+          "signal_3_uniformity_std": 0.0835090889939234
+        },
+        "clusters": [
+          {
+            "cluster": -1,
+            "size": 97,
+            "share_of_rows": 0.14057971014492754,
+            "is_noise": true,
+            "fraud_in_cluster": 62,
+            "precision_in_cluster": 0.6391752577319587,
+            "top_signal_1": [
+              {
+                "name": "F1_log_amount",
+                "share": 0.5121
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.2639
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.1587
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_6",
+                "share": 0.4082
+              },
+              {
+                "name": "dim_0",
+                "share": 0.3222
+              },
+              {
+                "name": "dim_2",
+                "share": 0.0266
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.4607
+              },
+              {
+                "name": "dim_2",
+                "share": 0.1272
+              },
+              {
+                "name": "dim_4",
+                "share": 0.1195
+              }
+            ]
+          },
+          {
+            "cluster": 0,
+            "size": 267,
+            "share_of_rows": 0.3869565217391304,
+            "is_noise": false,
+            "fraud_in_cluster": 263,
+            "precision_in_cluster": 0.9850187265917603,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.8868
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0652
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.0481
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.4445
+              },
+              {
+                "name": "dim_6",
+                "share": 0.4159
+              },
+              {
+                "name": "dim_10",
+                "share": 0.0136
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.4101
+              },
+              {
+                "name": "dim_10",
+                "share": 0.1126
+              },
+              {
+                "name": "dim_11",
+                "share": 0.1025
+              }
+            ]
+          },
+          {
+            "cluster": 1,
+            "size": 143,
+            "share_of_rows": 0.2072463768115942,
+            "is_noise": false,
+            "fraud_in_cluster": 123,
+            "precision_in_cluster": 0.8601398601398601,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.7767
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.2044
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0176
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_6",
+                "share": 0.5931
+              },
+              {
+                "name": "dim_2",
+                "share": 0.0673
+              },
+              {
+                "name": "dim_4",
+                "share": 0.0634
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_2",
+                "share": 0.4617
+              },
+              {
+                "name": "dim_4",
+                "share": 0.4586
+              },
+              {
+                "name": "dim_6",
+                "share": 0.0613
+              }
+            ]
+          },
+          {
+            "cluster": 2,
+            "size": 73,
+            "share_of_rows": 0.10579710144927536,
+            "is_noise": false,
+            "fraud_in_cluster": 0,
+            "precision_in_cluster": 0.0,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.9901
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0097
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.0002
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_4",
+                "share": 0.2034
+              },
+              {
+                "name": "dim_2",
+                "share": 0.1989
+              },
+              {
+                "name": "dim_6",
+                "share": 0.1097
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_4",
+                "share": 0.4818
+              },
+              {
+                "name": "dim_2",
+                "share": 0.4626
+              },
+              {
+                "name": "dim_6",
+                "share": 0.0444
+              }
+            ]
+          },
+          {
+            "cluster": 3,
+            "size": 10,
+            "share_of_rows": 0.014492753623188406,
+            "is_noise": false,
+            "fraud_in_cluster": 0,
+            "precision_in_cluster": 0.0,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.9922
+              },
+              {
+                "name": "F2_amount_balance_ratio",
+                "share": 0.0053
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.002
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.3881
+              },
+              {
+                "name": "dim_6",
+                "share": 0.2739
+              },
+              {
+                "name": "dim_2",
+                "share": 0.0887
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_4",
+                "share": 0.5102
+              },
+              {
+                "name": "dim_2",
+                "share": 0.483
+              },
+              {
+                "name": "dim_10",
+                "share": 0.0019
+              }
+            ]
+          },
+          {
+            "cluster": 4,
+            "size": 21,
+            "share_of_rows": 0.030434782608695653,
+            "is_noise": false,
+            "fraud_in_cluster": 21,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F12_round_amount",
+                "share": 0.8689
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0462
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.0451
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.4692
+              },
+              {
+                "name": "dim_6",
+                "share": 0.3836
+              },
+              {
+                "name": "dim_10",
+                "share": 0.0191
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.5457
+              },
+              {
+                "name": "dim_10",
+                "share": 0.0834
+              },
+              {
+                "name": "dim_11",
+                "share": 0.0666
+              }
+            ]
+          },
+          {
+            "cluster": 5,
+            "size": 15,
+            "share_of_rows": 0.021739130434782608,
+            "is_noise": false,
+            "fraud_in_cluster": 14,
+            "precision_in_cluster": 0.9333333333333333,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.7272
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.2461
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0267
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.4491
+              },
+              {
+                "name": "dim_6",
+                "share": 0.4185
+              },
+              {
+                "name": "dim_11",
+                "share": 0.0125
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.3621
+              },
+              {
+                "name": "dim_10",
+                "share": 0.1215
+              },
+              {
+                "name": "dim_11",
+                "share": 0.117
+              }
+            ]
+          },
+          {
+            "cluster": 6,
+            "size": 14,
+            "share_of_rows": 0.020289855072463767,
+            "is_noise": false,
+            "fraud_in_cluster": 14,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.3565
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.3504
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.2931
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.4532
+              },
+              {
+                "name": "dim_6",
+                "share": 0.4152
+              },
+              {
+                "name": "dim_11",
+                "share": 0.0129
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.3512
+              },
+              {
+                "name": "dim_10",
+                "share": 0.1248
+              },
+              {
+                "name": "dim_11",
+                "share": 0.1187
+              }
+            ]
+          },
+          {
+            "cluster": 7,
+            "size": 10,
+            "share_of_rows": 0.014492753623188406,
+            "is_noise": false,
+            "fraud_in_cluster": 8,
+            "precision_in_cluster": 0.8,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.5051
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.4703
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0245
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.4427
+              },
+              {
+                "name": "dim_6",
+                "share": 0.4264
+              },
+              {
+                "name": "dim_11",
+                "share": 0.0117
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.3925
+              },
+              {
+                "name": "dim_10",
+                "share": 0.1132
+              },
+              {
+                "name": "dim_11",
+                "share": 0.1115
+              }
+            ]
+          },
+          {
+            "cluster": 8,
+            "size": 12,
+            "share_of_rows": 0.017391304347826087,
+            "is_noise": false,
+            "fraud_in_cluster": 7,
+            "precision_in_cluster": 0.5833333333333334,
+            "top_signal_1": [
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.8562
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.1226
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0212
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.44
+              },
+              {
+                "name": "dim_6",
+                "share": 0.4288
+              },
+              {
+                "name": "dim_9",
+                "share": 0.0116
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.3981
+              },
+              {
+                "name": "dim_11",
+                "share": 0.1095
+              },
+              {
+                "name": "dim_10",
+                "share": 0.1072
+              }
+            ]
+          },
+          {
+            "cluster": 9,
+            "size": 18,
+            "share_of_rows": 0.02608695652173913,
+            "is_noise": false,
+            "fraud_in_cluster": 18,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F12_round_amount",
+                "share": 0.4693
+              },
+              {
+                "name": "F3_balance_consistency",
+                "share": 0.3746
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.0708
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.4998
+              },
+              {
+                "name": "dim_6",
+                "share": 0.3645
+              },
+              {
+                "name": "dim_2",
+                "share": 0.0162
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.2344
+              },
+              {
+                "name": "dim_10",
+                "share": 0.1871
+              },
+              {
+                "name": "dim_12",
+                "share": 0.1333
+              }
+            ]
+          },
+          {
+            "cluster": 10,
+            "size": 10,
+            "share_of_rows": 0.014492753623188406,
+            "is_noise": false,
+            "fraud_in_cluster": 10,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F1_log_amount",
+                "share": 0.5021
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.4302
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.0678
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.452
+              },
+              {
+                "name": "dim_6",
+                "share": 0.4105
+              },
+              {
+                "name": "dim_11",
+                "share": 0.0132
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.811
+              },
+              {
+                "name": "dim_4",
+                "share": 0.0415
+              },
+              {
+                "name": "dim_10",
+                "share": 0.0253
+              }
+            ]
+          }
+        ],
+        "eps_sweep_top3": [
+          {
+            "eps": 0.1,
+            "n_clusters": 11,
+            "noise": 97,
+            "noise_frac": 0.14057971014492754,
+            "dbcv": 0.6698610877100776,
+            "silhouette": 0.5996322846056366,
+            "davies_bouldin": 0.3558219286017251,
+            "calinski_harabasz": 897.6441436469141,
+            "n_scored": 593
+          },
+          {
+            "eps": 0.22,
+            "n_clusters": 7,
+            "noise": 22,
+            "noise_frac": 0.03188405797101449,
+            "dbcv": 0.6004210870305849,
+            "silhouette": 0.5500849277796832,
+            "davies_bouldin": 0.5208004440156677,
+            "calinski_harabasz": 294.85631055962966,
+            "n_scored": 668
+          },
+          {
+            "eps": 0.06,
+            "n_clusters": 9,
+            "noise": 169,
+            "noise_frac": 0.24492753623188407,
+            "dbcv": 0.5954450452713814,
+            "silhouette": 0.5803225187446165,
+            "davies_bouldin": 0.3122635342464766,
+            "calinski_harabasz": 1331.558085719194,
+            "n_scored": 521
+          }
+        ],
+        "cluster_vs_fraud_agreement": {
+          "applicable": true,
+          "n_selected": 690,
+          "base_rate_fraud_among_selected": 0.782608695652174,
+          "n_clusters": 11,
+          "noise_fraction": 0.14057971014492754,
+          "noise_excluded": {
+            "adjusted_rand_index": 0.23055231005595545,
+            "adjusted_mutual_information": 0.3027512585658391,
+            "n_scored": 593
+          },
+          "noise_as_cluster": {
+            "adjusted_rand_index": 0.1798633997038022,
+            "adjusted_mutual_information": 0.24421558513166813,
+            "n_scored": 690
+          },
+          "note": "ARI and AMI are base-rate independent, unlike a purity spread in percentage points, so they compare feature sets whose flagged sets differ in fraud prevalence."
+        }
+      },
+      "oracle": {
+        "variant": "oracle",
+        "selection": "isFraud == 1 \u2014 ORACLE, supervised selection",
+        "threshold": 3.6729203782644677,
+        "n_test_rows": 37196,
+        "n_selected": 821,
+        "selection_rate": 0.022072265835036027,
+        "fraud_among_selected": 821,
+        "precision_of_selected": 1.0,
+        "recall_of_selected": 1.0,
+        "fingerprint_width": 23,
+        "clustering": {
+          "eps": 0.22,
+          "n_clusters": 3,
+          "noise": 27,
+          "noise_frac": 0.03288672350791717,
+          "dbcv": 0.6756937548683811,
+          "silhouette": 0.5089528782991419,
+          "davies_bouldin": 0.7427119475732905,
+          "calinski_harabasz": 542.8652960615138,
+          "n_scored": 794,
+          "bootstrap_stability": {
+            "mean_ari": 0.9738978875140125,
+            "std_ari": 0.01177642296320005,
+            "min_ari": 0.9463549192903881,
+            "n_bootstrap": 10,
+            "subsample_frac": 0.8
+          }
+        },
+        "signal_2_variation": {
+          "per_cluster_dominant": {
+            "0": {
+              "dominant_dim": "dim_0",
+              "share": 0.4465
+            },
+            "1": {
+              "dominant_dim": "dim_6",
+              "share": 0.6277
+            },
+            "2": {
+              "dominant_dim": "dim_0",
+              "share": 0.4822
+            }
+          },
+          "n_clusters_scored": 3,
+          "n_distinct_dominant_dims": 2,
+          "collapsed_to_one_dim": false,
+          "verdict": "varies \u2014 2 distinct dominant dims across 3 clusters"
+        },
+        "signal_1_dominance": {
+          "mean_shares": {
+            "F1_log_amount": 0.1031,
+            "F2_amount_balance_ratio": 0.0,
+            "F3_balance_consistency": 0.012,
+            "F4_balance_change_ratio": 0.319,
+            "F6_hour": 0.5263,
+            "F8_is_large": 0.0012,
+            "F12_round_amount": 0.0382
+          },
+          "top_feature": "F6_hour",
+          "top_share": 0.5263,
+          "dominates": true
+        },
+        "mean_signals": {
+          "signal_1": {
+            "F1_log_amount": 0.10313570499420166,
+            "F2_amount_balance_ratio": 3.2089747037389316e-06,
+            "F3_balance_consistency": 0.012010559439659119,
+            "F4_balance_change_ratio": 0.31904536485671997,
+            "F6_hour": 0.5263465046882629,
+            "F8_is_large": 0.001213238574564457,
+            "F12_round_amount": 0.03824527561664581
+          },
+          "signal_1_uniformity_std": 0.18830783665180206,
+          "signal_2": {
+            "dim_0": 0.2373298555612564,
+            "dim_1": 0.016478372737765312,
+            "dim_2": 0.022342044860124588,
+            "dim_3": 0.015758728608489037,
+            "dim_4": 0.021781833842396736,
+            "dim_5": 0.015794670209288597,
+            "dim_6": 0.5228257775306702,
+            "dim_7": 0.01553103793412447,
+            "dim_8": 0.016466908156871796,
+            "dim_9": 0.016886094585061073,
+            "dim_10": 0.017810992896556854,
+            "dim_11": 0.017571626231074333,
+            "dim_12": 0.014996995218098164,
+            "dim_13": 0.015677431598305702,
+            "dim_14": 0.017203403636813164,
+            "dim_15": 0.015544370748102665
+          },
+          "signal_2_uniformity_std": 0.1302274465560913,
+          "signal_3": {
+            "dim_0": 0.06792555627311281,
+            "dim_1": 0.0018647133216553387,
+            "dim_2": 0.16687242212075576,
+            "dim_3": 0.0017531147210101496,
+            "dim_4": 0.1716468821527343,
+            "dim_5": 0.002058535223585846,
+            "dim_6": 0.3477505769525917,
+            "dim_7": 0.001687837527998694,
+            "dim_8": 0.0015100769711450064,
+            "dim_9": 0.041241083225483914,
+            "dim_10": 0.06316291620885688,
+            "dim_11": 0.049852913871033876,
+            "dim_12": 0.039556677703854876,
+            "dim_13": 0.0012206735160087217,
+            "dim_14": 0.03981688579910643,
+            "dim_15": 0.0020791344098168613
+          },
+          "signal_3_uniformity_std": 0.09072656088005517
+        },
+        "clusters": [
+          {
+            "cluster": -1,
+            "size": 27,
+            "share_of_rows": 0.03288672350791717,
+            "is_noise": true,
+            "fraud_in_cluster": 27,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F1_log_amount",
+                "share": 0.447
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.4247
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.128
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_6",
+                "share": 0.5761
+              },
+              {
+                "name": "dim_0",
+                "share": 0.2172
+              },
+              {
+                "name": "dim_14",
+                "share": 0.0164
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.4386
+              },
+              {
+                "name": "dim_2",
+                "share": 0.1133
+              },
+              {
+                "name": "dim_4",
+                "share": 0.1078
+              }
+            ]
+          },
+          {
+            "cluster": 0,
+            "size": 344,
+            "share_of_rows": 0.4190012180267966,
+            "is_noise": false,
+            "fraud_in_cluster": 344,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F6_hour",
+                "share": 0.7654
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.1419
+              },
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.0928
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.4465
+              },
+              {
+                "name": "dim_6",
+                "share": 0.4154
+              },
+              {
+                "name": "dim_10",
+                "share": 0.0135
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.4334
+              },
+              {
+                "name": "dim_10",
+                "share": 0.1075
+              },
+              {
+                "name": "dim_11",
+                "share": 0.0986
+              }
+            ]
+          },
+          {
+            "cluster": 1,
+            "size": 404,
+            "share_of_rows": 0.4920828258221681,
+            "is_noise": false,
+            "fraud_in_cluster": 404,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F4_balance_change_ratio",
+                "share": 0.5397
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.4026
+              },
+              {
+                "name": "F1_log_amount",
+                "share": 0.0547
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_6",
+                "share": 0.6277
+              },
+              {
+                "name": "dim_2",
+                "share": 0.0364
+              },
+              {
+                "name": "dim_4",
+                "share": 0.0348
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_4",
+                "share": 0.32
+              },
+              {
+                "name": "dim_2",
+                "share": 0.3197
+              },
+              {
+                "name": "dim_6",
+                "share": 0.2574
+              }
+            ]
+          },
+          {
+            "cluster": 2,
+            "size": 46,
+            "share_of_rows": 0.05602923264311815,
+            "is_noise": false,
+            "fraud_in_cluster": 46,
+            "precision_in_cluster": 1.0,
+            "top_signal_1": [
+              {
+                "name": "F12_round_amount",
+                "share": 0.6826
+              },
+              {
+                "name": "F3_balance_consistency",
+                "share": 0.1887
+              },
+              {
+                "name": "F6_hour",
+                "share": 0.059
+              }
+            ],
+            "top_signal_2": [
+              {
+                "name": "dim_0",
+                "share": 0.4822
+              },
+              {
+                "name": "dim_6",
+                "share": 0.3743
+              },
+              {
+                "name": "dim_10",
+                "share": 0.0169
+              }
+            ],
+            "top_signal_3": [
+              {
+                "name": "dim_6",
+                "share": 0.4477
+              },
+              {
+                "name": "dim_10",
+                "share": 0.1174
+              },
+              {
+                "name": "dim_11",
+                "share": 0.0811
+              }
+            ]
+          }
+        ],
+        "eps_sweep_top3": [
+          {
+            "eps": 0.22,
+            "n_clusters": 3,
+            "noise": 27,
+            "noise_frac": 0.03288672350791717,
+            "dbcv": 0.6756937548683811,
+            "silhouette": 0.5089528782991419,
+            "davies_bouldin": 0.7427119475732905,
+            "calinski_harabasz": 542.8652960615138,
+            "n_scored": 794
+          },
+          {
+            "eps": 0.24,
+            "n_clusters": 3,
+            "noise": 26,
+            "noise_frac": 0.031668696711327646,
+            "dbcv": 0.6750960935203528,
+            "silhouette": 0.508303576043525,
+            "davies_bouldin": 0.7435866397643357,
+            "calinski_harabasz": 542.1938981045433,
+            "n_scored": 795
+          },
+          {
+            "eps": 0.26,
+            "n_clusters": 3,
+            "noise": 12,
+            "noise_frac": 0.014616321559074299,
+            "dbcv": 0.6183606915032094,
+            "silhouette": 0.48555858562552084,
+            "davies_bouldin": 0.7960558389984747,
+            "calinski_harabasz": 478.30531985574754,
+            "n_scored": 809
+          }
+        ],
+        "cluster_vs_fraud_agreement": {
+          "applicable": false,
+          "reason": "every row in the oracle variant is fraud, so the label vector is constant; ARI and AMI are degenerate and are not reported"
+        }
+      }
+    }
+  }
+}

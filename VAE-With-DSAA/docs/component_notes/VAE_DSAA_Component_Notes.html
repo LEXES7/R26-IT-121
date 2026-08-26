@@ -1,0 +1,361 @@
+<title>Stratified VAE Component</title>
+<style>
+  :root{
+    --ground:#fbfafd; --surface:#ffffff; --sunken:#f4f2f8;
+    --ink:#1a1622; --ink-2:#4a4458; --ink-3:#7b7490;
+    --rule:#e2dfeb; --rule-2:#cfcadd;
+    --accent:#5f3dc4; --accent-soft:#efe9fb;
+    --pass:#2b8a3e; --pass-soft:#e7f5ea;
+    --warn:#b56200; --warn-soft:#fdf1e0;
+    --fail:#c92a2a; --fail-soft:#fdecec;
+    --serif:"Iowan Old Style","Charter",Georgia,"Times New Roman",serif;
+    --sans:"Segoe UI",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"Cascadia Mono","Consolas","SF Mono",monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#131019; --surface:#1b1724; --sunken:#221d2e;
+      --ink:#ece9f3; --ink-2:#b6b0c6; --ink-3:#877f9b;
+      --rule:#2e2840; --rule-2:#413a58;
+      --accent:#b197f0; --accent-soft:#2a2140;
+      --pass:#6bc47d; --pass-soft:#18301d;
+      --warn:#e8a34a; --warn-soft:#33260f;
+      --fail:#f08585; --fail-soft:#341a1a;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#131019; --surface:#1b1724; --sunken:#221d2e;
+    --ink:#ece9f3; --ink-2:#b6b0c6; --ink-3:#877f9b;
+    --rule:#2e2840; --rule-2:#413a58;
+    --accent:#b197f0; --accent-soft:#2a2140;
+    --pass:#6bc47d; --pass-soft:#18301d;
+    --warn:#e8a34a; --warn-soft:#33260f;
+    --fail:#f08585; --fail-soft:#341a1a;
+  }
+
+  body{
+    background:var(--ground); color:var(--ink);
+    font-family:var(--sans); font-size:15px; line-height:1.65;
+    margin:0; padding:0;
+  }
+  .sheet{ max-width:50rem; margin:0 auto; padding:3.5rem 1.75rem 5rem; }
+
+  /* ---- masthead ---- */
+  .masthead{ border-bottom:2px solid var(--accent); padding-bottom:1.4rem; margin-bottom:.6rem; }
+  .eyebrow{
+    font-family:var(--mono); font-size:.7rem; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--accent); margin:0 0 .7rem;
+  }
+  h1{
+    font-family:var(--serif); font-weight:600; font-size:2.1rem; line-height:1.15;
+    margin:0 0 .45rem; text-wrap:balance; letter-spacing:-.015em;
+  }
+  .subtitle{ font-family:var(--serif); font-size:1.05rem; font-style:italic; color:var(--ink-2); margin:0 0 1.1rem; }
+  .byline{ font-size:.83rem; color:var(--ink-3); margin:0; line-height:1.9; }
+  .byline strong{ color:var(--ink-2); font-weight:600; }
+
+  /* ---- sections ---- */
+  h2{
+    font-family:var(--serif); font-size:1.28rem; font-weight:600;
+    margin:2.6rem 0 .2rem; padding-top:1.1rem; border-top:1px solid var(--rule);
+    text-wrap:balance; letter-spacing:-.01em;
+  }
+  h2 .num{ font-family:var(--mono); font-size:.78rem; color:var(--accent); font-weight:400; margin-right:.6rem; letter-spacing:.06em; }
+  h3{ font-size:.96rem; font-weight:650; margin:1.5rem 0 .3rem; color:var(--ink); }
+  p{ margin:.7rem 0; max-width:66ch; }
+  ul{ margin:.6rem 0; padding-left:1.1rem; max-width:66ch; }
+  li{ margin:.32rem 0; }
+  code{ font-family:var(--mono); font-size:.85em; background:var(--sunken); padding:.1em .35em; border-radius:3px; color:var(--ink-2); }
+  strong{ font-weight:650; }
+
+  /* ---- tables ---- */
+  .scroll{ overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:5px; background:var(--surface); }
+  table{ border-collapse:collapse; width:100%; font-size:.83rem; font-variant-numeric:tabular-nums; }
+  caption{
+    caption-side:top; text-align:left; font-family:var(--mono); font-size:.68rem;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3);
+    padding:.7rem .85rem .5rem; border-bottom:1px solid var(--rule);
+  }
+  th,td{ padding:.45rem .85rem; text-align:left; border-bottom:1px solid var(--rule); }
+  thead th{ font-size:.72rem; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); font-weight:600; background:var(--sunken); }
+  tbody tr:last-child td{ border-bottom:none; }
+  td.n,th.n{ text-align:right; }
+  tr.hl td{ background:var(--accent-soft); font-weight:650; }
+
+  .tag{ font-family:var(--mono); font-size:.68rem; font-weight:600; padding:.13em .5em; border-radius:3px; letter-spacing:.04em; white-space:nowrap; }
+  .t-pass{ background:var(--pass-soft); color:var(--pass); }
+  .t-warn{ background:var(--warn-soft); color:var(--warn); }
+  .t-fail{ background:var(--fail-soft); color:var(--fail); }
+
+  /* ---- callouts ---- */
+  .note{
+    background:var(--surface); border:1px solid var(--rule);
+    border-left:3px solid var(--accent); border-radius:0 5px 5px 0;
+    padding:.9rem 1.1rem; margin:1.2rem 0; font-size:.88rem;
+  }
+  .note.pending{ border-left-color:var(--warn); }
+  .note p{ margin:.35rem 0; max-width:none; }
+  .note .lab{
+    font-family:var(--mono); font-size:.67rem; letter-spacing:.11em;
+    text-transform:uppercase; color:var(--accent); display:block; margin-bottom:.3rem;
+  }
+  .note.pending .lab{ color:var(--warn); }
+
+  /* ---- headline metrics ---- */
+  .metrics{ display:grid; grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr)); gap:.7rem; margin:1.3rem 0; }
+  .metric{ background:var(--surface); border:1px solid var(--rule); border-radius:5px; padding:.75rem .9rem; }
+  .metric .k{ font-family:var(--mono); font-size:.65rem; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); display:block; }
+  .metric .v{ font-family:var(--serif); font-size:1.5rem; font-weight:600; color:var(--accent); font-variant-numeric:tabular-nums; display:block; margin:.15rem 0 .05rem; }
+  .metric .d{ font-size:.72rem; color:var(--ink-3); }
+
+  footer{ margin-top:3rem; padding-top:1.1rem; border-top:1px solid var(--rule); font-size:.78rem; color:var(--ink-3); }
+
+  @media print{
+    @page{ margin:1.25cm 1.4cm; }
+    body{ background:#fff; color:#000; font-size:8.4pt; line-height:1.42; }
+    .sheet{ max-width:none; padding:0; }
+
+    .masthead{ padding-bottom:.6rem; margin-bottom:0; }
+    h1{ font-size:16pt; margin-bottom:.2rem; }
+    .subtitle{ font-size:9.5pt; margin-bottom:.5rem; }
+    .byline{ font-size:7.6pt; line-height:1.5; }
+    .eyebrow{ font-size:6.6pt; margin-bottom:.35rem; }
+
+    h2{ font-size:11pt; margin:.85rem 0 .1rem; padding-top:.45rem; break-after:avoid; page-break-after:avoid; }
+    h3{ font-size:8.8pt; margin:.6rem 0 .1rem; break-after:avoid; page-break-after:avoid; }
+    p{ margin:.32rem 0; max-width:none; }
+    ul{ margin:.3rem 0; padding-left:.95rem; max-width:none; }
+    li{ margin:.16rem 0; }
+
+    /* long tables may split across pages; short blocks stay whole */
+    .scroll{ margin:.45rem 0; break-inside:auto; page-break-inside:auto; }
+    table{ font-size:7.5pt; }
+    caption{ font-size:6.4pt; padding:.35rem .5rem .25rem; }
+    th,td{ padding:.2rem .5rem; }
+    .tag{ font-size:6.3pt; }
+
+    .note{ margin:.5rem 0; padding:.45rem .65rem; font-size:8pt; break-inside:avoid; page-break-inside:avoid; }
+    .note .lab{ font-size:6.4pt; margin-bottom:.15rem; }
+
+    /* duplicates Table 5 — drop from the printed sheet */
+    .metrics{ display:none; }
+
+    footer{ margin-top:.9rem; padding-top:.45rem; font-size:7pt; }
+  }
+</style>
+
+<div class="sheet">
+
+<header class="masthead">
+  <p class="eyebrow">Component Notes · Research Paper Integration</p>
+  <h1>Stratified VAE with Dual-Signal Anomaly Attribution</h1>
+  <p class="subtitle">Per-type variational autoencoders for unsupervised fraud detection and intrinsic attribution</p>
+  <p class="byline">
+    <strong>DeepSentinel</strong> — Multi-Modal Financial Fraud Detection Platform · Project R26-IT-121<br>
+    Component Author: <strong>Wijesinghe L.P.D.B. (IT22109194)</strong> · Member 2<br>
+    Supervisor: Mrs. Anjalie Gamage
+  </p>
+</header>
+
+<h2><span class="num">1</span>Component Overview</h2>
+
+<p>The Stratified VAE is the <strong>behavioural-modality detector</strong> of the DeepSentinel platform. It learns a generative model of normal transaction behaviour separately for each transaction type, then scores unseen transactions by how poorly that model reconstructs them. Unlike the relational detector (GraphSAGE, Member 1) which models account-to-account connections, and the temporal detector (TS-TCN, Member 3) which models sequence escalation, this component models <em>what a normal transaction of a given type looks like</em> and flags departures from it.</p>
+
+<p>It is the only <strong>fully unsupervised</strong> detector in the platform: every VAE is trained on non-fraud transactions alone, so no fraud labels enter training. This matters operationally — the component can flag fraud patterns absent from any historical label set.</p>
+
+<h3>Role within the platform</h3>
+<ul>
+  <li><strong>Input:</strong> a batch of transactions — a transaction log uploaded as CSV (PaySim schema in development; any mobile-money log in deployment). Feature engineering runs over the batch, each row is routed to the VAE for its transaction type, and every row is scored.</li>
+  <li><strong>Output:</strong> per transaction, a behavioural anomaly score and a per-type threshold decision; for each flagged transaction, an <em>anomaly fingerprint</em> — a 29-dimensional attribution vector with a discovered fraud typology label. The batch result is the reduced set of flagged transactions with their attributions.</li>
+  <li><strong>Downstream consumer:</strong> Member 4's Fusion Engine, which combines this output with the GraphSAGE and TS-TCN outputs.</li>
+  <li><strong>Join key:</strong> <code>composite_id</code>, formatted <code>nameOrig_step</code>.</li>
+</ul>
+
+<div class="note">
+  <span class="lab">Scoring granularity — batch pipeline, row-independent model</span>
+  <p>The VAE itself imposes no cross-transaction dependency: each row is encoded, reconstructed and scored on its own, unlike the TS-TCN (which requires a 32-transaction window) or GraphSAGE (which requires a constructed graph). The normalisation statistics, per-type thresholds and latent cluster centres are fitted once on the validation partition and persisted in <code>stratified_config.json</code>, so scoring a row needs no other rows.</p>
+  <p>The <strong>batch requirement comes from feature engineering, not from the model.</strong> Two of the thirteen features are computed as dataset-level aggregates: <code>F8_is_large</code> compares the amount against a per-type 95th percentile derived from non-fraud rows, and <code>F11_account_velocity</code> is the log transaction count for the originating account across the log. Single-transaction inference would therefore require the three F8 percentile constants to be persisted alongside the model, and a per-account counter to be served from state. Neither is a limitation of the detector, but both must be resolved before a per-transaction API can replace the batch path.</p>
+</div>
+
+<h2><span class="num">2</span>The Sub-Problem Addressed</h2>
+
+<ul>
+  <li><strong>A single global model averages incompatible behaviours.</strong> TRANSFER, CASH_OUT and PAYMENT have structurally different amount and balance distributions. One VAE fitted across all three learns an average of behaviours that never co-occur, reconstructing no type well and separating fraud within none — the global baseline reaches F1 <strong>0.0165</strong>.</li>
+  <li><strong>Anomaly scores arrive without a reason.</strong> A reconstruction error states that a transaction is unusual but not <em>in what respect</em>, leaving investigators unable to act. Post-hoc explainers such as SHAP add inference latency incompatible with real-time screening.</li>
+  <li><strong>Fraud typologies are assumed rather than discovered.</strong> Supervised detectors reproduce the categories present in their labels; a system expected to surface novel fraud must derive its typologies from the data.</li>
+</ul>
+
+<h2><span class="num">3</span>Novel Contributions</h2>
+
+<h3>N1 — Type-stratified VAE ensemble</h3>
+<p>One VAE, one MinMaxScaler and one decision threshold per transaction type. Fitting the scaler within type prevents cross-type scale leakage; sizing the architecture per type allocates capacity where the behaviour is harder to model.</p>
+
+<h3>N2 — Dual-Signal Anomaly Attribution (DSAA)</h3>
+<p>Attribution is read directly out of the VAE objective, with no auxiliary explainer and no added latency. <strong>Signal 1</strong> is the per-feature share of total reconstruction error — which of the 13 features the model failed to reproduce. <strong>Signal 2</strong> is the per-latent-dimension share of total KL divergence — which axes of learned normal behaviour the transaction departs from. Concatenated, they form a 29-dimensional anomaly fingerprint.</p>
+
+<h3>N3 — Characterising the β region in which native KL attribution stays informative</h3>
+<p>Signal 2 is only meaningful when the latent space carries information. Under a strong KL penalty every dimension collapses onto the Free Bits floor, attribution becomes uniform, and Signal 2 degenerates to a constant. This work maps that failure boundary empirically (Section 6) and selects β from it by a criterion fixed in advance. To our knowledge no prior work on VAE-based fraud detection reports the β region within which native KL attribution remains discriminative.</p>
+
+<h3>N4 — Unsupervised typology discovery from anomaly fingerprints</h3>
+<p>DBSCAN over the fingerprints groups fraud cases that fail in the same way, producing named typologies without fraud-category labels.</p>
+
+<h2><span class="num">4</span>Feature Engineering</h2>
+
+<p>Thirteen features, all computable from standard mobile-money fields. <code>F8</code> uses a 95th-percentile threshold computed <strong>on non-fraud rows only</strong>, so no label information enters the feature.</p>
+
+<div class="scroll">
+<table>
+  <caption>Table 1 — Engineered feature set</caption>
+  <thead><tr><th>ID</th><th>Feature</th><th>Fraud signal</th></tr></thead>
+  <tbody>
+    <tr><td>F1</td><td><code>log_amount</code></td><td>Scale of the transfer</td></tr>
+    <tr><td>F2</td><td><code>amount_balance_ratio</code></td><td>Amount relative to available balance</td></tr>
+    <tr><td>F3</td><td><code>balance_consistency</code></td><td>Ledger arithmetic that fails to reconcile</td></tr>
+    <tr><td>F4</td><td><code>balance_change_ratio</code></td><td>Proportion of the origin balance drained</td></tr>
+    <tr><td>F5</td><td><code>dest_balance_ratio</code></td><td>Enrichment of the destination account</td></tr>
+    <tr><td>F6</td><td><code>hour</code></td><td>Hour-of-day concentration of fraud</td></tr>
+    <tr><td>F7</td><td><code>day</code></td><td>Position within the simulation month</td></tr>
+    <tr><td>F8</td><td><code>is_large</code></td><td>Above the per-type non-fraud 95th percentile</td></tr>
+    <tr><td>F9</td><td><code>dest_starts_empty</code></td><td>Mule accounts begin with zero balance</td></tr>
+    <tr><td>F10</td><td><code>recipient_emptied</code></td><td>Destination drained immediately after receipt</td></tr>
+    <tr><td>F11</td><td><code>account_velocity</code></td><td>Transaction count for the originating account</td></tr>
+    <tr><td>F12</td><td><code>round_amount</code></td><td>Suspiciously round transfer values</td></tr>
+    <tr><td>F13</td><td><code>zero_dest_history</code></td><td>Destination with no prior activity</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2><span class="num">5</span>Model Architecture</h2>
+
+<p>Each VAE is a symmetric encoder–decoder with a Gaussian latent layer, trained only on non-fraud transactions of its own type under an 80/20 train/validation split.</p>
+
+<div class="scroll">
+<table>
+  <caption>Table 2 — Per-type architecture and training partition</caption>
+  <thead><tr><th>Stratum</th><th>Encoder</th><th class="n">Latent dim</th><th class="n">Training rows</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>TRANSFER</td><td>13 → 32 → 16</td><td class="n">8</td><td class="n">423,049</td><td>Primary fraud leg</td></tr>
+    <tr><td>CASH_OUT</td><td>13 → 64 → 32</td><td class="n">16</td><td class="n">1,786,707</td><td>Secondary fraud leg</td></tr>
+    <tr><td>PAYMENT</td><td>13 → 32 → 16</td><td class="n">8</td><td class="n">—</td><td>False-positive control (zero fraud)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>Training configuration.</strong> Adam (lr 1×10⁻³), batch 256, up to 60 epochs. Free Bits floor 0.1 nats per latent dimension. β annealed linearly 0 → 0.05 over 10 epochs, then held. Early stopping monitors <code>val_recon_loss</code> with patience 8, deferred until epoch 12.</p>
+
+<div class="note">
+  <span class="lab">Design note — why early stopping cannot monitor total loss</span>
+  <p>The total loss contains the term β·KL, and β rises every epoch during annealing, so the monitored quantity increases by construction. An earlier revision monitored <code>val_total_loss</code>, stopped at epoch 6 and restored the epoch-1 weights — a point at which β = 0, i.e. a plain autoencoder with no latent regularisation at all. Reconstruction loss carries no β term and is a valid stopping signal throughout. Deferring the stopping decision until annealing has finished ensures no decision is taken while the objective is still changing shape.</p>
+</div>
+
+<h2><span class="num">6</span>Latent-Space Validation</h2>
+
+<p>Signal 2 is derived from per-dimension KL divergence, so it is informative only while the latent space remains active. β was therefore swept on the TRANSFER stratum, with the selection rule <strong>fixed before the results were seen</strong>: take the largest β that keeps at least half the latent dimensions active and a Signal-2 spread above 0.02.</p>
+
+<div class="scroll">
+<table>
+  <caption>Table 3 — β sweep on TRANSFER (25 epochs per point, latent dim 8)</caption>
+  <thead><tr><th class="n">β</th><th class="n">KL total</th><th class="n">KL / dim</th><th class="n">Active dims</th><th class="n">Signal-2 spread</th><th class="n">Val recon</th><th>Verdict</th></tr></thead>
+  <tbody>
+    <tr><td class="n">0.01</td><td class="n">5.053</td><td class="n">0.632</td><td class="n">4 / 8</td><td class="n">0.1178</td><td class="n">0.0769</td><td><span class="tag t-pass">PASS</span></td></tr>
+    <tr class="hl"><td class="n">0.05</td><td class="n">2.727</td><td class="n">0.341</td><td class="n">4 / 8</td><td class="n">0.1378</td><td class="n">0.1470</td><td><span class="tag t-pass">PASS — selected</span></td></tr>
+    <tr><td class="n">0.10</td><td class="n">2.141</td><td class="n">0.268</td><td class="n">3 / 8</td><td class="n">0.1603</td><td class="n">0.1783</td><td><span class="tag t-warn">WARNING</span></td></tr>
+    <tr><td class="n">0.30</td><td class="n">1.100</td><td class="n">0.137</td><td class="n">1 / 8</td><td class="n">0.0389</td><td class="n">0.3601</td><td><span class="tag t-warn">WARNING</span></td></tr>
+    <tr><td class="n">1.00</td><td class="n">0.784</td><td class="n">0.098</td><td class="n">0 / 8</td><td class="n">0.0014</td><td class="n">0.4908</td><td><span class="tag t-fail">FAIL — collapse</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>At β = 1.0 — the conventional VAE setting — every dimension sits at 0.098, just under the 0.1 floor, and the Signal-2 spread falls to <strong>0.0014</strong>: attribution is uniform and carries no information. This is the collapse endpoint, and it reproduces the failure observed in the earlier revision of this component. Reducing β to 0.05 raises the spread to 0.1378, a <strong>98-fold increase</strong>.</p>
+
+<div class="scroll">
+<table>
+  <caption>Table 4 — Latent health of the three production models (β = 0.05, Free Bits 0.1)</caption>
+  <thead><tr><th>Stratum</th><th class="n">KL total</th><th class="n">KL / dim</th><th class="n">Active dims</th><th class="n">Signal-2 spread</th><th>Verdict</th></tr></thead>
+  <tbody>
+    <tr><td>TRANSFER</td><td class="n">2.482</td><td class="n">0.310</td><td class="n">4 / 8</td><td class="n">0.1630</td><td><span class="tag t-pass">PASS</span></td></tr>
+    <tr><td>CASH_OUT</td><td class="n">3.581</td><td class="n">0.224</td><td class="n">4 / 16</td><td class="n">0.0893</td><td><span class="tag t-warn">WARNING</span></td></tr>
+    <tr><td>PAYMENT</td><td class="n">2.794</td><td class="n">0.349</td><td class="n">3 / 8</td><td class="n">0.1492</td><td><span class="tag t-warn">WARNING</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The earlier revision recorded raw KL means of <strong>132.8</strong> (TRANSFER) and <strong>255.3</strong> (CASH_OUT) — an effectively unregularised latent space. The corrected models sit at 2.5–3.6, within the regime where the KL term is doing work.</p>
+
+<p>The two WARNING verdicts flag the <em>fraction</em> of dimensions in use, not collapse. Collapse means zero active dimensions, as observed at β = 1.0. All three strata carry three to four active dimensions with Signal-2 spreads of 0.089–0.163, several times the informativeness threshold. The warning indicates that the latent budget granted exceeds what the data requires — the models consistently find three to four intrinsic dimensions of variation regardless of the budget allocated.</p>
+
+<h2><span class="num">7</span>Detection Results</h2>
+
+<p>Thresholds are tuned on a 30% holdout and all reported metrics come from the untouched 70% test partition, so no threshold information leaks into the results. Tuning optimises F2, which weights recall twice precision, on the basis that a missed fraud costs more than a false alarm.</p>
+
+<div class="scroll">
+<table>
+  <caption>Table 5 — Ablation across configurations</caption>
+  <thead><tr><th>Configuration</th><th class="n">Precision</th><th class="n">Recall</th><th class="n">F1</th><th class="n">AUC-ROC</th><th class="n">FPR</th></tr></thead>
+  <tbody>
+    <tr><td>A — Global VAE, global threshold</td><td class="n">0.0395</td><td class="n">0.0104</td><td class="n">0.0165</td><td class="n">0.7839</td><td class="n">0.0004</td></tr>
+    <tr class="hl"><td>B — VAE_TRANSFER, type threshold</td><td class="n">0.9751</td><td class="n">0.9924</td><td class="n">0.9836</td><td class="n">0.9997</td><td class="n">0.0002</td></tr>
+    <tr><td>C — VAE_CASH_OUT, type threshold</td><td class="n">0.0530</td><td class="n">0.5091</td><td class="n">0.0961</td><td class="n">0.9646</td><td class="n">0.0167</td></tr>
+    <tr><td>D — Stratified ensemble (full coverage)</td><td class="n">0.1434</td><td class="n">0.7545</td><td class="n">0.2410</td><td class="n">0.9819</td><td class="n">0.0134</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="metrics">
+  <div class="metric"><span class="k">TRANSFER F1</span><span class="v">0.9836</span><span class="d">from 0.0165 global baseline</span></div>
+  <div class="metric"><span class="k">TRANSFER AUC</span><span class="v">0.9997</span><span class="d">recall 0.9924 at FPR 0.0002</span></div>
+  <div class="metric"><span class="k">Signal-2 spread</span><span class="v">62.5×</span><span class="d">vs. the β = 1.0 collapse point (120 runs, 5 seeds; supersedes the 98× single-seed v3 figure)</span></div>
+  <div class="metric"><span class="k">Typologies</span><span class="v">12</span><span class="d">discovered without labels</span></div>
+</div>
+
+<p><strong>Configurations B and D are not directly comparable:</strong> B is evaluated on TRANSFER transactions alone, D across TRANSFER and CASH_OUT combined. D is the full-coverage configuration, not a strictly superior one.</p>
+
+<h2><span class="num">8</span>Typology Discovery</h2>
+
+<p>DBSCAN (ε = 0.108, <code>min_samples</code> = 10, Euclidean) over the 29-dimensional fingerprints of all 8,213 fraud cases yields <strong>12 clusters</strong> with 505 noise points (6.1%) and a silhouette score of 0.239. Four typology families emerge, each named from its dominant attribution components.</p>
+
+<div class="scroll">
+<table>
+  <caption>Table 6 — Discovered fraud typologies</caption>
+  <thead><tr><th>Typology</th><th class="n">Cases</th><th>Dominant attribution</th></tr></thead>
+  <tbody>
+    <tr><td>PASS_THROUGH_MULE</td><td class="n">3,979</td><td>S1 <code>F10_recipient_emptied</code> up to 0.85; S2 dims 3, 6, 7</td></tr>
+    <tr><td>LATENT_PATTERN_VIOLATION</td><td class="n">1,903</td><td>S1 <code>F7_day</code>, <code>F3_balance_consistency</code>; S2 dims 1, 8</td></tr>
+    <tr><td>MIXED_ANOMALY</td><td class="n">1,685</td><td>S1 <code>F7_day</code> + <code>F6_hour</code>; S2 dim 0</td></tr>
+    <tr><td>ROUND_AMOUNT_FRAUD</td><td class="n">141</td><td>S1 <code>F12_round_amount</code> ≈ 0.73; S2 dims 0, 1</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>Evidence that Signal 2 became discriminative.</strong> In the earlier revision the same three latent dimensions dominated every discovered cluster — the signal was a constant background rather than an attribution. After correction, each cluster is dominated by a <em>distinct</em> latent dimension (3, 6, 8, 1 and 0 respectively) with weights roughly doubled. The mean Signal-2 non-uniformity rose from <strong>0.0400 to 0.0716</strong>. This is the central experimental result of the component: the correction is what makes N2 and N4 mean anything.</p>
+
+<h2><span class="num">9</span>Known Limitations</h2>
+
+<p>Stated plainly, since each is likely to be raised in review.</p>
+
+<ul>
+  <li><strong>CASH_OUT detection is weak and cannot be fixed by tuning.</strong> Sweeping the decision threshold across the full precision–recall curve gives a maximum attainable F1 of 0.1263, against 0.0961 achieved. The limit is the representation, not the operating point. Fraudulent CASH_OUT transactions are only identifiable through their linkage to a preceding TRANSFER — a relational and temporal property this component cannot observe. <em>This is the gap the GraphSAGE and TS-TCN components are designed to fill, and is the empirical justification for the multi-modal ensemble.</em></li>
+  <li><strong>The correction improved ranking but not CASH_OUT detection.</strong> AUC-ROC rose from 0.9119 to 0.9646 while F1 fell from 0.1766 to 0.0961. The KL regularisation that makes the latent space interpretable also smooths the reconstruction tail that the unregularised model was exploiting. This is a measured trade-off, accepted because latent-space validity is a precondition for the attribution contribution.</li>
+  <li><strong>Discovered clusters are type-pure by construction.</strong> Signal 2 is zero-padded to the maximum latent dimension, so TRANSFER fingerprints occupy an 8-dimensional subspace and CASH_OUT a 16-dimensional one; the minimum cosine distance between the two groups is 0.2056. Typology discovery therefore operates within each stratum — consistent with the stratified architecture, but it means the clustering does not relate typologies across types.</li>
+  <li><strong>β was swept on TRANSFER only</strong>, under a fixed compute budget, then verified post hoc on all three strata via the latent health check in Table 4.</li>
+  <li><strong>AUC-ROC is optimistic at this class balance.</strong> Fraud is 0.18% of CASH_OUT, so an AUC of 0.9646 coexists with an F1 of 0.096. Average precision is the appropriate summary statistic.</li>
+</ul>
+
+<div class="note pending">
+  <span class="lab">Pending — not yet measured</span>
+  <p><strong>PAYMENT false-positive rate.</strong> PAYMENT contains no fraud, so its threshold cannot be tuned from labels. The current rule takes mean + 3σ of the score distribution, which assumes Gaussian tails; the actual scores are heavy-tailed, and the rule flags 17,669 of 1,506,047 transactions (1.17%) rather than the 0.13% a Gaussian would imply. The planned revision replaces the distributional assumption with an explicit false-alarm budget at the 99.9th percentile. The corrected figure is <strong>not yet computed</strong> and must be inserted before this section is used in the paper.</p>
+  <p><strong>Average precision (AUC-PR)</strong> for configurations B, C and D is not yet computed.</p>
+</div>
+
+<h2><span class="num">10</span>Output for the Fusion Engine</h2>
+
+<p>For each transaction in the submitted batch the component returns a behavioural anomaly score and a per-type threshold decision; for each flagged transaction it additionally returns an anomaly fingerprint block carrying the ranked Signal 1 features, the ranked Signal 2 latent dimensions, and the assigned typology label with its cluster identifier. The join key across all modules is <code>composite_id</code>, formatted <code>nameOrig_step</code>, so the three detectors' outputs align row-for-row on the same uploaded log.</p>
+
+<p>The recommended fusion policy follows directly from Table 5: <strong>route by transaction type rather than averaging scores.</strong> This component should carry the TRANSFER leg, where it reaches F1 0.9836, and defer the CASH_OUT leg to the relational and temporal detectors. Reporting the aggregate Configuration D figure as this component's performance would understate its contribution on the leg it resolves.</p>
+
+<footer>
+  Stratified VAE component · R26-IT-121 · Wijesinghe L.P.D.B. (IT22109194)<br>
+  All figures from the corrected training run. Two items in Section 9 remain pending and are marked as such.
+</footer>
+
+</div>

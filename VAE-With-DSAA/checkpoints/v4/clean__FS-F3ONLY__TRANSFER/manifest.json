@@ -1,0 +1,68 @@
+{
+  "protocol": "clean",
+  "feature_set": "FS-F3ONLY",
+  "stratum": "TRANSFER",
+  "features": [
+    "F3_balance_consistency"
+  ],
+  "n_features": 1,
+  "architecture": {
+    "h1": 32,
+    "h2": 16,
+    "latent": 2,
+    "input_dim": 1
+  },
+  "latent_dim": 2,
+  "hyperparameters": {
+    "free_bits": 0.1,
+    "beta_max": 0.05,
+    "anneal_epochs": 10,
+    "optimizer": "Adam",
+    "lr": 0.001,
+    "batch_size": 256
+  },
+  "split": {
+    "strategy": "chronological",
+    "split_step": 595,
+    "step_recovery": "step = F7_day * 720"
+  },
+  "framework": "pytorch 2.13.0+cpu",
+  "git_commit": "4e585bf",
+  "created_utc": "2026-08-25T14:19:50Z",
+  "train_history": {
+    "epochs_run": 29,
+    "seconds": 70.58372831344604,
+    "val_recon_loss": 0.001073502356942394,
+    "val_kl_raw": 0.3383553577855118
+  },
+  "provenance": {
+    "feature_set": "FS-F3ONLY",
+    "n_features": 1,
+    "features": [
+      "F3_balance_consistency"
+    ],
+    "origin_balance": [
+      "F3_balance_consistency"
+    ],
+    "destination_balance": [],
+    "excluded_look_ahead": [
+      "F11_account_velocity"
+    ],
+    "excluded_absolute_time": [
+      "F7_day"
+    ],
+    "source_columns": [
+      "amount",
+      "newbalanceOrig",
+      "oldbalanceOrg"
+    ]
+  },
+  "seed": 42,
+  "config": "G",
+  "serving": {
+    "f8_p95_causal": 2653427.0139999934,
+    "f8_p95_source": "fit-partition non-fraud amounts",
+    "f6_hour_formula": "(step % 24) / 24",
+    "note": "Constants required to engineer features for a single transaction at serving time. Without f8_p95_causal the F8_is_large feature cannot be reproduced and every served score is wrong."
+  }
+}

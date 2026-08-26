@@ -1,0 +1,755 @@
+{
+  "support_audit_FS-ORIGIN": {
+    "TRANSFER": [
+      {
+        "feature": "F1_log_amount",
+        "fit_min": 1.2809338569641113,
+        "fit_max": 18.342130661010742,
+        "test_min": 2.9673328399658203,
+        "test_max": 16.538311004638672,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F2_amount_balance_ratio",
+        "fit_min": 4.536634514806792e-05,
+        "fit_max": 92445520.0,
+        "test_min": 0.0010414669523015618,
+        "test_max": 15222881.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F3_balance_consistency",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F4_balance_change_ratio",
+        "fit_min": -0.9999995827674866,
+        "fit_max": 0.0,
+        "test_min": -0.9999998807907104,
+        "test_max": 0.0,
+        "test_within_fit_range": false,
+        "frac_test_outside": 0.008314567815693747,
+        "fully_outside": false
+      },
+      {
+        "feature": "F6_hour",
+        "fit_min": 0.0,
+        "fit_max": 0.9583333134651184,
+        "test_min": 0.0,
+        "test_max": 0.9583333134651184,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F8_is_large",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F12_round_amount",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      }
+    ],
+    "CASH_OUT": [
+      {
+        "feature": "F1_log_amount",
+        "fit_min": 0.00995033048093319,
+        "fit_max": 14.86197566986084,
+        "test_min": 0.0,
+        "test_max": 16.11809539794922,
+        "test_within_fit_range": false,
+        "frac_test_outside": 0.003736960963544467,
+        "fully_outside": false
+      },
+      {
+        "feature": "F2_amount_balance_ratio",
+        "fit_min": 2.782837100312463e-06,
+        "fit_max": 2847566.5,
+        "test_min": 0.0,
+        "test_max": 848949.5,
+        "test_within_fit_range": false,
+        "frac_test_outside": 0.00021507688998817078,
+        "fully_outside": false
+      },
+      {
+        "feature": "F3_balance_consistency",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F4_balance_change_ratio",
+        "fit_min": -0.999998927116394,
+        "fit_max": 0.3318357765674591,
+        "test_min": -0.9999998807907104,
+        "test_max": 0.0,
+        "test_within_fit_range": false,
+        "frac_test_outside": 0.007285729648349285,
+        "fully_outside": false
+      },
+      {
+        "feature": "F6_hour",
+        "fit_min": 0.0,
+        "fit_max": 0.9583333134651184,
+        "test_min": 0.0,
+        "test_max": 0.9583333134651184,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F8_is_large",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F12_round_amount",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      }
+    ],
+    "PAYMENT": [
+      {
+        "feature": "F1_log_amount",
+        "fit_min": 0.019802628085017204,
+        "fit_max": 12.191985130310059,
+        "test_min": 0.23111172020435333,
+        "test_max": 11.582341194152832,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F2_amount_balance_ratio",
+        "fit_min": 1.462009748820492e-07,
+        "fit_max": 174146.671875,
+        "test_min": 4.330735009716591e-06,
+        "test_max": 107187.171875,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F3_balance_consistency",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F4_balance_change_ratio",
+        "fit_min": -0.999993622303009,
+        "fit_max": 0.0,
+        "test_min": -0.9999851584434509,
+        "test_max": 0.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F6_hour",
+        "fit_min": 0.0,
+        "fit_max": 0.9583333134651184,
+        "test_min": 0.0,
+        "test_max": 0.9583333134651184,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F8_is_large",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F12_round_amount",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 0.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      }
+    ]
+  },
+  "f6_hour_check": {
+    "TRANSFER": {
+      "feature": "F6_hour",
+      "fit_min": 0.0,
+      "fit_max": 0.9583333134651184,
+      "test_min": 0.0,
+      "test_max": 0.9583333134651184,
+      "test_within_fit_range": true,
+      "frac_test_outside": 0.0,
+      "fully_outside": false
+    },
+    "CASH_OUT": {
+      "feature": "F6_hour",
+      "fit_min": 0.0,
+      "fit_max": 0.9583333134651184,
+      "test_min": 0.0,
+      "test_max": 0.9583333134651184,
+      "test_within_fit_range": true,
+      "frac_test_outside": 0.0,
+      "fully_outside": false
+    },
+    "PAYMENT": {
+      "feature": "F6_hour",
+      "fit_min": 0.0,
+      "fit_max": 0.9583333134651184,
+      "test_min": 0.0,
+      "test_max": 0.9583333134651184,
+      "test_within_fit_range": true,
+      "frac_test_outside": 0.0,
+      "fully_outside": false
+    }
+  },
+  "support_audit_FS12": {
+    "TRANSFER": [
+      {
+        "feature": "F1_log_amount",
+        "fit_min": 1.2809338569641113,
+        "fit_max": 18.342130661010742,
+        "test_min": 2.9673328399658203,
+        "test_max": 16.538311004638672,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F2_amount_balance_ratio",
+        "fit_min": 4.536634514806792e-05,
+        "fit_max": 92445520.0,
+        "test_min": 0.0010414669523015618,
+        "test_max": 15222881.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F3_balance_consistency",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F4_balance_change_ratio",
+        "fit_min": -0.9999995827674866,
+        "fit_max": 0.0,
+        "test_min": -0.9999998807907104,
+        "test_max": 0.0,
+        "test_within_fit_range": false,
+        "frac_test_outside": 0.008314567815693747,
+        "fully_outside": false
+      },
+      {
+        "feature": "F5_dest_balance_ratio",
+        "fit_min": 0.0,
+        "fit_max": 66308420.0,
+        "test_min": 0.0,
+        "test_max": 14297478.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F6_hour",
+        "fit_min": 0.0,
+        "fit_max": 0.9583333134651184,
+        "test_min": 0.0,
+        "test_max": 0.9583333134651184,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F7_day",
+        "fit_min": 0.0013888889225199819,
+        "fit_max": 0.519444465637207,
+        "test_min": 0.8277778029441833,
+        "test_max": 1.0319443941116333,
+        "test_within_fit_range": false,
+        "frac_test_outside": 1.0,
+        "fully_outside": true
+      },
+      {
+        "feature": "F8_is_large",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F9_dest_starts_empty",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F10_recipient_emptied",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F12_round_amount",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F13_zero_dest_history",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      }
+    ],
+    "CASH_OUT": [
+      {
+        "feature": "F1_log_amount",
+        "fit_min": 0.00995033048093319,
+        "fit_max": 14.86197566986084,
+        "test_min": 0.0,
+        "test_max": 16.11809539794922,
+        "test_within_fit_range": false,
+        "frac_test_outside": 0.003736960963544467,
+        "fully_outside": false
+      },
+      {
+        "feature": "F2_amount_balance_ratio",
+        "fit_min": 2.782837100312463e-06,
+        "fit_max": 2847566.5,
+        "test_min": 0.0,
+        "test_max": 848949.5,
+        "test_within_fit_range": false,
+        "frac_test_outside": 0.00021507688998817078,
+        "fully_outside": false
+      },
+      {
+        "feature": "F3_balance_consistency",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F4_balance_change_ratio",
+        "fit_min": -0.999998927116394,
+        "fit_max": 0.3318357765674591,
+        "test_min": -0.9999998807907104,
+        "test_max": 0.0,
+        "test_within_fit_range": false,
+        "frac_test_outside": 0.007285729648349285,
+        "fully_outside": false
+      },
+      {
+        "feature": "F5_dest_balance_ratio",
+        "fit_min": 0.0,
+        "fit_max": 42661092.0,
+        "test_min": 0.0,
+        "test_max": 10000000.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F6_hour",
+        "fit_min": 0.0,
+        "fit_max": 0.9583333134651184,
+        "test_min": 0.0,
+        "test_max": 0.9583333134651184,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F7_day",
+        "fit_min": 0.0013888889225199819,
+        "fit_max": 0.5180555582046509,
+        "test_min": 0.8277778029441833,
+        "test_max": 1.0319443941116333,
+        "test_within_fit_range": false,
+        "frac_test_outside": 1.0,
+        "fully_outside": true
+      },
+      {
+        "feature": "F8_is_large",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F9_dest_starts_empty",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F10_recipient_emptied",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F12_round_amount",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F13_zero_dest_history",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      }
+    ],
+    "PAYMENT": [
+      {
+        "feature": "F1_log_amount",
+        "fit_min": 0.019802628085017204,
+        "fit_max": 12.191985130310059,
+        "test_min": 0.23111172020435333,
+        "test_max": 11.582341194152832,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F2_amount_balance_ratio",
+        "fit_min": 1.462009748820492e-07,
+        "fit_max": 174146.671875,
+        "test_min": 4.330735009716591e-06,
+        "test_max": 107187.171875,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F3_balance_consistency",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F4_balance_change_ratio",
+        "fit_min": -0.999993622303009,
+        "fit_max": 0.0,
+        "test_min": -0.9999851584434509,
+        "test_max": 0.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F5_dest_balance_ratio",
+        "fit_min": 0.0,
+        "fit_max": 0.0,
+        "test_min": 0.0,
+        "test_max": 0.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F6_hour",
+        "fit_min": 0.0,
+        "fit_max": 0.9583333134651184,
+        "test_min": 0.0,
+        "test_max": 0.9583333134651184,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F7_day",
+        "fit_min": 0.0013888889225199819,
+        "fit_max": 0.519444465637207,
+        "test_min": 0.8277778029441833,
+        "test_max": 0.9972222447395325,
+        "test_within_fit_range": false,
+        "frac_test_outside": 1.0,
+        "fully_outside": true
+      },
+      {
+        "feature": "F8_is_large",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F9_dest_starts_empty",
+        "fit_min": 1.0,
+        "fit_max": 1.0,
+        "test_min": 1.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F10_recipient_emptied",
+        "fit_min": 1.0,
+        "fit_max": 1.0,
+        "test_min": 1.0,
+        "test_max": 1.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F12_round_amount",
+        "fit_min": 0.0,
+        "fit_max": 1.0,
+        "test_min": 0.0,
+        "test_max": 0.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      },
+      {
+        "feature": "F13_zero_dest_history",
+        "fit_min": 0.0,
+        "fit_max": 0.0,
+        "test_min": 0.0,
+        "test_max": 0.0,
+        "test_within_fit_range": true,
+        "frac_test_outside": 0.0,
+        "fully_outside": false
+      }
+    ]
+  },
+  "f7_day_check": {
+    "TRANSFER": {
+      "feature": "F7_day",
+      "fit_min": 0.0013888889225199819,
+      "fit_max": 0.519444465637207,
+      "test_min": 0.8277778029441833,
+      "test_max": 1.0319443941116333,
+      "test_within_fit_range": false,
+      "frac_test_outside": 1.0,
+      "fully_outside": true
+    },
+    "CASH_OUT": {
+      "feature": "F7_day",
+      "fit_min": 0.0013888889225199819,
+      "fit_max": 0.5180555582046509,
+      "test_min": 0.8277778029441833,
+      "test_max": 1.0319443941116333,
+      "test_within_fit_range": false,
+      "frac_test_outside": 1.0,
+      "fully_outside": true
+    },
+    "PAYMENT": {
+      "feature": "F7_day",
+      "fit_min": 0.0013888889225199819,
+      "fit_max": 0.519444465637207,
+      "test_min": 0.8277778029441833,
+      "test_max": 0.9972222447395325,
+      "test_within_fit_range": false,
+      "frac_test_outside": 1.0,
+      "fully_outside": true
+    }
+  },
+  "error_budget_FS12": {
+    "TRANSFER": {
+      "n_sampled": 11546,
+      "mean_signal_1_share": {
+        "F7_day": 0.9403,
+        "F6_hour": 0.0275,
+        "F10_recipient_emptied": 0.0219,
+        "F1_log_amount": 0.0065,
+        "F3_balance_consistency": 0.0014,
+        "F4_balance_change_ratio": 0.0012,
+        "F8_is_large": 0.0005,
+        "F12_round_amount": 0.0005,
+        "F5_dest_balance_ratio": 0.0001,
+        "F13_zero_dest_history": 0.0001,
+        "F2_amount_balance_ratio": 0.0,
+        "F9_dest_starts_empty": 0.0
+      },
+      "top_feature": "F7_day",
+      "top_share": 0.9403
+    },
+    "CASH_OUT": {
+      "n_sampled": 37196,
+      "mean_signal_1_share": {
+        "F7_day": 0.9717,
+        "F6_hour": 0.0177,
+        "F1_log_amount": 0.0059,
+        "F4_balance_change_ratio": 0.0029,
+        "F2_amount_balance_ratio": 0.0006,
+        "F12_round_amount": 0.0005,
+        "F13_zero_dest_history": 0.0003,
+        "F9_dest_starts_empty": 0.0002,
+        "F3_balance_consistency": 0.0001,
+        "F5_dest_balance_ratio": 0.0,
+        "F8_is_large": 0.0,
+        "F10_recipient_emptied": 0.0
+      },
+      "top_feature": "F7_day",
+      "top_share": 0.9717
+    },
+    "PAYMENT": {
+      "n_sampled": 41219,
+      "mean_signal_1_share": {
+        "F7_day": 0.9586,
+        "F6_hour": 0.0206,
+        "F1_log_amount": 0.012,
+        "F4_balance_change_ratio": 0.0076,
+        "F2_amount_balance_ratio": 0.0012,
+        "F8_is_large": 0.0,
+        "F3_balance_consistency": 0.0,
+        "F12_round_amount": 0.0,
+        "F13_zero_dest_history": 0.0,
+        "F5_dest_balance_ratio": 0.0,
+        "F10_recipient_emptied": 0.0,
+        "F9_dest_starts_empty": 0.0
+      },
+      "top_feature": "F7_day",
+      "top_share": 0.9586
+    }
+  },
+  "error_budget_FS-ORIGIN": {
+    "TRANSFER": {
+      "n_sampled": 11546,
+      "mean_signal_1_share": {
+        "F6_hour": 0.5683,
+        "F1_log_amount": 0.3788,
+        "F4_balance_change_ratio": 0.0366,
+        "F8_is_large": 0.0076,
+        "F2_amount_balance_ratio": 0.0059,
+        "F12_round_amount": 0.0015,
+        "F3_balance_consistency": 0.0014
+      },
+      "top_feature": "F6_hour",
+      "top_share": 0.5683
+    },
+    "CASH_OUT": {
+      "n_sampled": 37196,
+      "mean_signal_1_share": {
+        "F6_hour": 0.6147,
+        "F1_log_amount": 0.2929,
+        "F4_balance_change_ratio": 0.0493,
+        "F2_amount_balance_ratio": 0.0413,
+        "F12_round_amount": 0.0008,
+        "F3_balance_consistency": 0.0005,
+        "F8_is_large": 0.0004
+      },
+      "top_feature": "F6_hour",
+      "top_share": 0.6147
+    },
+    "PAYMENT": {
+      "n_sampled": 41219,
+      "mean_signal_1_share": {
+        "F6_hour": 0.487,
+        "F1_log_amount": 0.3317,
+        "F4_balance_change_ratio": 0.1365,
+        "F2_amount_balance_ratio": 0.0445,
+        "F8_is_large": 0.0002,
+        "F3_balance_consistency": 0.0001,
+        "F12_round_amount": 0.0
+      },
+      "top_feature": "F6_hour",
+      "top_share": 0.487
+    }
+  }
+}

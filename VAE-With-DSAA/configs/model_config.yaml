@@ -1,44 +1,135 @@
 # ============================================================
-# DeepSentinel — VAE-With-DSAA Model Configuration
+# DeepSentinel - VAE-With-DSAA Model Configuration
 # R26-IT-121 | IT22109194 | Wijesinghe L P D B
 # ============================================================
+# Updated 25 August 2026 to match the v4 pipeline as implemented.
+# Values changed from the v2/v3 revision are marked CHANGED with the old value.
+
+framework:
+  name: pytorch                 # CHANGED from tensorflow/keras.
+                                # TensorFlow publishes no wheel for Python 3.14,
+                                # so the model was reimplemented in PyTorch with
+                                # architecture, loss terms, Free Bits clamp, beta
+                                # schedule, optimiser and early-stopping rule
+                                # matched, and Glorot-uniform init reproducing
+                                # the Keras default.
+  version: "2.13.0+cpu"
+  device: cpu
 
 dataset:
   source: kaggle/ealaxi/paysim1
   transaction_types: [TRANSFER, CASH_OUT, PAYMENT]
-  features: 8
-  feature_names:
-    - F1_log_amount
-    - F2_amount_balance_ratio
-    - F3_balance_consistency
-    - F4_balance_change_ratio
-    - F5_dest_balance_ratio
-    - F6_hour
-    - F7_day
-    - F8_is_large
+
+# Evaluation protocol - CHANGED from a stratified random 30/70 split.
+# The previous protocol fitted the scaler and the VAE on all non-fraud rows and
+# then evaluated on a set containing those same rows. Correcting it reduced AP
+# lift by 8.7x (TRANSFER) and 8.3x (CASH_OUT), framework and features held equal.
+split:
+  strategy: chronological       # CHANGED from stratified random
+  split_step: 595
+  step_recovery: "step = F7_day * 720"
+  validation_fraction_of_train: 0.15
+  test_fraud_total: 1642
+  fitted_on_fit_partition: [vae_weights, minmax_scaler, kmeans_centroids]
+  fitted_on_validation: [decision_thresholds, zscore_statistics]
+  test_partition_used_for: nothing
+
+features:
+  primary_set: FS-ORIGIN        # CHANGED from all 13 features
+  sets:
+    FS-FULL: 11
+    FS-ORIGIN: 7
+    FS-ORIGIN-NOF3: 6
+    FS-CLEAN: 4
+    FS12: 12
+    FS13: 13
+  excluded:
+    F11_account_velocity: >-
+      Aggregates an account transaction count across the whole log, including
+      rows occurring after the transaction being scored. Unavailable at score
+      time.
+    F7_day: >-
+      Monotone function of time. Under a chronological split every test row
+      falls outside the training range (fit max 0.5194, test min 0.8278, all
+      three strata). Retaining it makes the PAYMENT control flag 66-73% of rows.
+  caveat_primary_set: >-
+    FS-ORIGIN removes the destination-side artifact, but its advantage over
+    FS-CLEAN rests almost entirely on F3_balance_consistency. Removing F3 drops
+    TRANSFER lift 9.85x to 5.10x (FS-CLEAN 4.89x) and CASH_OUT 33.97x to 15.72x
+    (FS-CLEAN 16.59x). F4_balance_change_ratio alone reaches 9.84x and 32.74x,
+    so the VAE adds 0.1 and 3.8 percent over a single column.
 
 vae:
-  input_dim: 8
-  hidden_1: 32
-  hidden_2: 16
-  latent_dim: 8
   activation: relu
   output_activation: sigmoid
+  per_type:
+    TRANSFER: {hidden_1: 32, hidden_2: 16, latent_dim: 8}
+    CASH_OUT: {hidden_1: 64, hidden_2: 32, latent_dim: 16}
+    PAYMENT:  {hidden_1: 32, hidden_2: 16, latent_dim: 8}
+    GLOBAL:   {hidden_1: 32, hidden_2: 16, latent_dim: 8}
 
 training:
-  epochs: 50
+  epochs: 60                    # CHANGED from 50
   batch_size: 256
   learning_rate: 0.001
+  optimizer: adam
+  seed: 42
+  beta_max: 0.05                # CHANGED from 1.0. The beta sweep shows beta=1.0
+                                # drives every latent dimension onto the Free
+                                # Bits floor: 0/8 active, Signal-2 spread 0.0014.
+                                # At 0.05 the spread is 98x higher.
   beta_anneal_epochs: 10
-  free_bits_lambda: 0.1
-  train_val_split: 0.8
+  free_bits: 0.1                # CHANGED from 0.01. 0.01 was INERT - it sat
+                                # below the natural KL floor, so the clamp never
+                                # bound and gave no protection against collapse.
+                                # 0.1 is also what the proposal specified.
+  early_stopping:
+    monitor: val_recon_loss     # CHANGED from val_total_loss. total_loss holds
+                                # beta*KL and beta rises during annealing, so the
+                                # monitored value rose by construction; the old
+                                # run stopped at epoch 6 and restored epoch-1
+                                # weights, i.e. beta=0, a plain autoencoder.
+    patience: 8                 # CHANGED from 5
+    start_from_epoch: 12
 
 anomaly_scoring:
   alpha: 0.5
-  threshold_tune_split: 0.3
+  beta: 0.3
+  gamma: 0.2
+  deterministic_inference: true # CHANGED from sampled. Scoring previously drew
+                                # z = mu + exp(0.5*lv)*eps, so every metric
+                                # depended on RNG state and a reloaded model
+                                # could not reproduce its own figures. Inference
+                                # now decodes the posterior mean; training still
+                                # samples.
+  threshold_metric: f1          # CHANGED from f2; both points are reported
+  threshold_selection_set: validation_partition   # CHANGED from random 30% of eval
+  payment_control_rule: quantile_0.999            # CHANGED from mean+3*std, which
+                                # flagged 72.8% of the PAYMENT test partition
+                                # because the scores are heavy-tailed.
 
-google_drive:
-  base: /content/drive/MyDrive/DeepSentinel
-  output: /content/drive/MyDrive/DeepSentinel/DeepSentinel_Output
-  eda: /content/drive/MyDrive/DeepSentinel/DeepSentinel_EDA
-  results: /content/drive/MyDrive/DeepSentinel/DeepSentinel_Results
+dsaa:
+  signal_1: per_feature_reconstruction_share
+  signal_2: per_latent_dim_kl_share
+  signal_3: per_latent_dim_density_share
+  fingerprint_zero_padding: false  # CHANGED from true. v3 padded Signal 2 to the
+                                # widest latent width, so TRANSFER rows carried
+                                # exact zeros in dims 8-15 and the strata were
+                                # separable before clustering began.
+  row_selection: model_flagged  # CHANGED from isFraud == 1, which is supervised
+                                # selection followed by unsupervised clustering.
+
+typology:
+  algorithm: dbscan
+  min_samples: 10
+  metric: euclidean
+  eps: per_stratum_swept
+  primary_validity_index: dbcv  # CHANGED from silhouette, which assumes convex
+                                # equal-density clusters that DBSCAN output is not
+  secondary_indices: [silhouette, davies_bouldin, calinski_harabasz]
+  stability_check: bootstrap_ari
+
+paths:
+  prepared_arrays: results/v4/data
+  bundles: checkpoints/v4
+  reports: reports/v4

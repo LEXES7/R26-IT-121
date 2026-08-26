@@ -1,0 +1,1978 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>DeepSentinel — VAE + DSAA Dashboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  :root{
+    --bg:#0b1020; --panel:#111935; --panel2:#16204a; --line:#243068;
+    --text:#e6e9f5; --muted:#9aa3c7; --accent:#7c9cff; --green:#10b981;
+    --red:#ef4444; --amber:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:linear-gradient(180deg,#070b1e 0%,#0b1020 100%);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;}
+  a{color:var(--accent)}
+  .layout{display:flex;min-height:100vh}
+  aside{
+    width:240px;flex-shrink:0;background:rgba(16,22,52,0.7);backdrop-filter:blur(8px);
+    border-right:1px solid var(--line);padding:1.5rem 1.2rem;position:sticky;top:0;height:100vh;
+  }
+  aside h1{font-size:1.25rem;margin:0 0 0.25rem;letter-spacing:-0.02em}
+  aside .sub{color:var(--muted);font-size:0.82rem;margin-bottom:1.4rem;line-height:1.4}
+  nav button{
+    display:block;width:100%;text-align:left;background:none;border:none;color:var(--muted);
+    padding:0.6rem 0.8rem;border-radius:8px;cursor:pointer;font-size:0.92rem;margin-bottom:0.2rem;
+    transition:all 0.15s;font-family:inherit;
+  }
+  nav button:hover{background:rgba(124,156,255,0.08);color:var(--text)}
+  nav button.active{background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;font-weight:600}
+  aside .footer{position:absolute;bottom:1.2rem;left:1.2rem;right:1.2rem;color:var(--muted);font-size:0.75rem;line-height:1.5}
+  main{flex:1;padding:2rem 2.5rem;max-width:1400px}
+  h2{font-size:1.8rem;margin:0 0 0.3rem;letter-spacing:-0.025em}
+  h3{font-size:1.1rem;margin:1.5rem 0 0.7rem;color:#cdd4f0}
+  .lede{color:var(--muted);margin-bottom:1.5rem;max-width:780px;line-height:1.5}
+  .grid{display:grid;gap:1rem}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  .grid-2{grid-template-columns:1fr 1fr}
+  .grid-3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:1100px){.grid-4{grid-template-columns:repeat(2,1fr)}.grid-2,.grid-3{grid-template-columns:1fr}}
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1.2rem 1.3rem;
+    box-shadow:0 4px 14px rgba(0,0,0,0.2);
+  }
+  .stat{background:linear-gradient(135deg,#1e3a8a,#312e81);border:none}
+  .stat .label{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;opacity:0.85;color:#cfd5f5}
+  .stat .value{font-size:2rem;font-weight:700;margin-top:0.25rem;color:#fff}
+  .stat .sub{font-size:0.78rem;opacity:0.75;margin-top:0.3rem;color:#cfd5f5}
+  table{width:100%;border-collapse:collapse;font-size:0.88rem}
+  th,td{padding:0.55rem 0.7rem;text-align:left;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:0.72rem;letter-spacing:0.05em}
+  tr:hover td{background:rgba(124,156,255,0.05)}
+  .num{font-variant-numeric:tabular-nums;text-align:right}
+  img.result{width:100%;border-radius:8px;border:1px solid var(--line);margin-top:0.5rem;background:#fff}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:0.72rem;font-weight:600}
+  .pill-g{background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3)}
+  .pill-a{background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3)}
+  .pill-r{background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3)}
+  .typology-row{display:grid;grid-template-columns:200px 1fr;gap:1.2rem;padding:1rem 0;border-bottom:1px solid var(--line)}
+  .typology-row:last-child{border-bottom:none}
+  .typology-label{font-weight:700;color:#fff;margin:0.2rem 0}
+  .typology-desc{color:var(--muted);font-size:0.9rem;line-height:1.5}
+  .typology-dims{color:#7c9cff;font-size:0.78rem;margin-top:0.4rem}
+  .bar-bg{background:var(--panel2);height:6px;border-radius:3px;margin-top:0.5rem;overflow:hidden}
+  .bar-fg{height:100%;background:linear-gradient(90deg,#3b82f6,#10b981);border-radius:3px}
+  .section{display:none}
+  .section.active{display:block;animation:fadein 0.3s ease}
+  @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .controls{display:flex;gap:0.8rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem}
+  .controls label{color:var(--muted);font-size:0.85rem}
+  select,input[type=range]{
+    background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;
+    padding:0.4rem 0.6rem;font-family:inherit;font-size:0.9rem;
+  }
+  input[type=range]{padding:0;width:240px;accent-color:var(--accent)}
+  .verdict{padding:1.5rem;border-radius:12px;text-align:center;color:#fff;margin-bottom:1rem}
+  .verdict.fraud{background:linear-gradient(135deg,#dc2626,#7f1d1d)}
+  .verdict.ok{background:linear-gradient(135deg,#16a34a,#14532d)}
+  .verdict .vlabel{font-size:0.8rem;opacity:0.9}
+  .verdict .vmain{font-size:1.6rem;font-weight:700;margin-top:0.3rem}
+  .verdict .vsub{font-size:0.85rem;opacity:0.85;margin-top:0.4rem}
+  .slider-row{display:flex;flex-direction:column;gap:0.3rem;margin-bottom:0.7rem}
+  .slider-row .top{display:flex;justify-content:space-between;font-size:0.85rem}
+  .slider-row .top .v{color:var(--accent);font-weight:600}
+  .quote{border-left:3px solid var(--green);background:rgba(16,185,129,0.08);padding:0.9rem 1.1rem;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <h1>🛡️ DeepSentinel</h1>
+    <div class="sub">Stratified VAE + DSAA framework for fraud detection on PaySim.</div>
+    <nav>
+      <button class="nav-btn active" data-target="overview">Overview</button>
+      <button class="nav-btn" data-target="comparison">Model Comparison</button>
+      <button class="nav-btn" data-target="features">Feature Explorer</button>
+      <button class="nav-btn" data-target="dsaa">DSAA Typologies</button>
+      <button class="nav-btn" data-target="scoring">Live Scoring Demo</button>
+    </nav>
+    <div class="footer">
+      <b>Team R26-IT-121</b><br/>
+      Wijesinghe · Ewaduge<br/>Pathirana · Vidanaarachchi
+    </div>
+  </aside>
+
+  <main>
+    <!-- OVERVIEW -->
+    <section id="overview" class="section active">
+      <h2>Fraud Detection with Stratified VAE + DSAA</h2>
+      <p class="lede">A two-stage anomaly-detection framework: per-transaction-type Variational Autoencoders score every payment, and the DSAA post-processor clusters flagged frauds into named typologies aligned with FATF money-laundering categories.</p>
+      <div class="grid grid-4" id="overview-stats"></div>
+      <div class="grid grid-2" style="margin-top:1.5rem">
+        <div class="card">
+          <h3>Pipeline</h3>
+          <ol style="color:var(--muted);line-height:1.7;padding-left:1.2rem">
+            <li><b style="color:var(--text)">Feature engineering</b> — 13 hand-crafted signals (F1–F13).</li>
+            <li><b style="color:var(--text)">Stratified VAEs</b> — one VAE per type (TRANSFER, CASH_OUT, PAYMENT).</li>
+            <li><b style="color:var(--text)">Hybrid score</b> — α·recon + β·KL + γ·density, per-type thresholds.</li>
+            <li><b style="color:var(--text)">DSAA</b> — fingerprint frauds → DBSCAN → typology labelling.</li>
+          </ol>
+          <img class="result" id="img-train" alt="training history"/>
+        </div>
+        <div class="card">
+          <h3>Headline result</h3>
+          <div class="quote" id="headline"></div>
+          <img class="result" id="img-strat" alt="stratified evaluation" style="margin-top:1rem"/>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMPARISON -->
+    <section id="comparison" class="section">
+      <h2>Model Comparison</h2>
+      <p class="lede">Four configurations evaluated on the same held-out PaySim test split.</p>
+      <div class="card"><div id="metrics-table"></div></div>
+      <div class="grid grid-2" style="margin-top:1rem">
+        <div class="card"><h3>Headline metrics</h3><div id="metrics-bars" style="height:380px"></div></div>
+        <div class="card"><h3>Recall vs FPR</h3><div id="metrics-scatter" style="height:380px"></div></div>
+      </div>
+      <div class="card" style="margin-top:1rem"><h3>Confusion matrices</h3><img class="result" id="img-cm" alt="confusion matrices"/></div>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features" class="section">
+      <h2>Feature Explorer</h2>
+      <p class="lede">Saved feature heatmaps and per-type fraud distribution. (Full CSVs are too large for a static page — use the Streamlit app for live exploration.)</p>
+      <div class="grid grid-2">
+        <div class="card"><h3>Fraud by transaction type</h3><img class="result" id="img-fbt"/></div>
+        <div class="card"><h3>TRANSFER feature heatmap</h3><img class="result" id="img-ht"/></div>
+      </div>
+      <div class="card" style="margin-top:1rem"><h3>CASH_OUT feature heatmap</h3><img class="result" id="img-hc"/></div>
+    </section>
+
+    <!-- DSAA -->
+    <section id="dsaa" class="section">
+      <h2>DSAA — Discovered Fraud Typologies</h2>
+      <p class="lede">Each flagged fraud is fingerprinted, clustered with DBSCAN, then labelled against FATF money-laundering categories.</p>
+      <div class="grid grid-4" id="dsaa-stats"></div>
+      <div class="grid grid-2" style="margin-top:1rem">
+        <div class="card"><h3>DSAA dashboard</h3><img class="result" id="img-dsaa"/></div>
+        <div class="card"><h3>Typology radar</h3><img class="result" id="img-radar"/></div>
+      </div>
+      <div class="card" style="margin-top:1rem"><h3>Typology cards</h3><div id="typology-list"></div></div>
+    </section>
+
+    <!-- SCORING -->
+    <section id="scoring" class="section">
+      <h2>Live Scoring Demo</h2>
+      <p class="lede">Tune a synthetic transaction and watch the hybrid anomaly score against the trained per-type threshold. Score = α·recon + β·KL + γ·density.</p>
+      <div class="card">
+        <div class="controls">
+          <label>Transaction type
+            <select id="tx-type"></select>
+          </label>
+        </div>
+        <div class="grid grid-3">
+          <div class="slider-row">
+            <div class="top"><span>Reconstruction z-score</span><span class="v" id="v-recon">0.0</span></div>
+            <input type="range" id="s-recon" min="-1" max="8" step="0.1" value="0"/>
+          </div>
+          <div class="slider-row">
+            <div class="top"><span>KL z-score</span><span class="v" id="v-kl">0.0</span></div>
+            <input type="range" id="s-kl" min="-2" max="8" step="0.1" value="0"/>
+          </div>
+          <div class="slider-row">
+            <div class="top"><span>Density z-score</span><span class="v" id="v-dens">0.0</span></div>
+            <input type="range" id="s-dens" min="-2" max="8" step="0.1" value="0"/>
+          </div>
+        </div>
+        <div class="grid grid-2" style="margin-top:1rem">
+          <div>
+            <div id="verdict"></div>
+            <div class="card" style="background:var(--panel2)" id="weights"></div>
+          </div>
+          <div class="card" style="background:var(--panel2)"><div id="gauge" style="height:280px"></div></div>
+        </div>
+        <div class="card" style="background:var(--panel2);margin-top:1rem"><div id="decomp" style="height:280px"></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script id="data" type="application/json">{
+  "metrics": [
+    {
+      "config": "A - Global VAE, Global Threshold",
+      "precision": 0.03949967083607637,
+      "recall": 0.010404022888850355,
+      "f1_score": 0.016469942355201758,
+      "auc_roc": 0.7838791015117001,
+      "fpr": 0.00042418142288881797,
+      "threshold": 2.7035248346664007,
+      "tp": 60,
+      "fp": 1459,
+      "tn": 3438107,
+      "fn": 5707,
+      "train_time_seconds": 2978.300413608551,
+      "epochs": 50,
+      "batch_size": 256
+    },
+    {
+      "precision": 0.5351872871736663,
+      "recall": 0.9829742876997916,
+      "f1_score": 0.6930426261636453,
+      "f2_score": 0.8420645314918442,
+      "auc_roc": 0.9950751466134136,
+      "fpr": 0.006637688128615001,
+      "threshold": 3.861348765216121,
+      "tp": 2829,
+      "fp": 2457,
+      "tn": 367702,
+      "fn": 49,
+      "config": "B - VAE_TRANSFER, Type-Specific Threshold",
+      "train_time_seconds": 72.70388436317444
+    },
+    {
+      "precision": 0.12915724895059735,
+      "recall": 0.2791346824842987,
+      "f1_score": 0.17660044150110377,
+      "f2_score": 0.22652622041001247,
+      "auc_roc": 0.9118778464989855,
+      "fpr": 0.0034502080103160837,
+      "threshold": 3.4152023662275206,
+      "tp": 800,
+      "fp": 5394,
+      "tn": 1557990,
+      "fn": 2066,
+      "config": "C - VAE_CASH_OUT, Type-Specific Threshold",
+      "train_time_seconds": 189.74381399154663
+    },
+    {
+      "config": "D - Stratified Ensemble (3 VAEs, per-type thresholds)",
+      "precision": 0.31755472438530874,
+      "recall": 0.6305856568854256,
+      "f1_score": 0.422396215643096,
+      "auc_roc": 0.9537615507501619,
+      "fpr": 0.0040294026926402035,
+      "threshold_transfer": 3.861348765216121,
+      "threshold_cashout": 3.4152023662275206,
+      "tp": 5179,
+      "fp": 11130,
+      "tn": 2751066,
+      "fn": 3034,
+      "train_time_seconds": 428.3845281600952
+    }
+  ],
+  "stratified_cfg": {
+    "TRANSFER": {
+      "threshold": 3.861348765216121,
+      "alpha": 0.5,
+      "recon_mean": 0.09567965291438099,
+      "recon_std": 0.2869912648029205,
+      "kl_mean": 132.76161193847656,
+      "kl_std": 35.7550048828125,
+      "dens_mean": 1.377336025238037,
+      "dens_std": 0.9205282926559448,
+      "beta": 0.3,
+      "gamma": 0.2,
+      "n_clusters": 8,
+      "cluster_centers": [
+        [
+          4.448184013366699,
+          1.3296542167663574,
+          -1.2257088422775269,
+          -8.892033576965332,
+          -7.539427757263184,
+          2.6003527641296387,
+          6.985825061798096,
+          7.430158615112305
+        ],
+        [
+          -1.852832555770874,
+          4.425079345703125,
+          4.527947902679443,
+          -1.1996278762817383,
+          -8.794822692871094,
+          -4.753190994262695,
+          -0.1086573600769043,
+          6.853424072265625
+        ],
+        [
+          1.9229130744934082,
+          2.230059862136841,
+          1.0505640506744385,
+          -5.227628707885742,
+          -7.3553147315979,
+          -0.2448718547821045,
+          3.7049591541290283,
+          6.261837959289551
+        ],
+        [
+          3.8608360290527344,
+          1.4567854404449463,
+          -1.407745122909546,
+          -8.116394996643066,
+          -8.222441673278809,
+          2.416121482849121,
+          5.400110244750977,
+          5.049098968505859
+        ],
+        [
+          2.8511881828308105,
+          2.2561702728271484,
+          1.380638599395752,
+          -6.281951904296875,
+          -7.674370765686035,
+          0.5005936026573181,
+          4.3656816482543945,
+          8.144818305969238
+        ],
+        [
+          2.2423412799835205,
+          1.2776734828948975,
+          -0.28892892599105835,
+          -4.329065322875977,
+          -4.9237165451049805,
+          0.934526801109314,
+          2.944277048110962,
+          4.379007816314697
+        ],
+        [
+          3.211745262145996,
+          1.243741750717163,
+          -1.8750404119491577,
+          -7.73021125793457,
+          -6.800197124481201,
+          1.4424769878387451,
+          7.039729595184326,
+          5.520424842834473
+        ],
+        [
+          4.432188034057617,
+          1.9169023036956787,
+          -1.0193076133728027,
+          -10.312067031860352,
+          -9.79516887664795,
+          1.9046757221221924,
+          9.572381019592285,
+          9.397220611572266
+        ]
+      ]
+    },
+    "CASH_OUT": {
+      "threshold": 3.4152023662275206,
+      "alpha": 0.5,
+      "recon_mean": 0.052424451592336496,
+      "recon_std": 0.19523356568168673,
+      "kl_mean": 255.31040954589844,
+      "kl_std": 70.00440979003906,
+      "dens_mean": 1.3253297805786133,
+      "dens_std": 0.8045316934585571,
+      "beta": 0.3,
+      "gamma": 0.2,
+      "n_clusters": 8,
+      "cluster_centers": [
+        [
+          -1.8414462804794312,
+          5.7616777420043945,
+          -0.5079140067100525,
+          -0.7964644432067871,
+          1.4410901069641113,
+          2.936384677886963,
+          -2.537592649459839,
+          4.440554141998291,
+          -7.071844100952148,
+          3.7259738445281982,
+          -8.55369758605957,
+          -3.822542190551758,
+          4.989386081695557,
+          -5.1314897537231445,
+          -1.34515380859375,
+          -3.4572534561157227
+        ],
+        [
+          -3.842334270477295,
+          5.547640323638916,
+          -0.16604895889759064,
+          -1.9185447692871094,
+          3.2628369331359863,
+          2.6376326084136963,
+          -1.5002057552337646,
+          4.040365219116211,
+          -6.142935752868652,
+          6.7755022048950195,
+          -7.586842060089111,
+          -4.9498515129089355,
+          3.876605272293091,
+          -4.648481369018555,
+          -0.31759265065193176,
+          -4.788076400756836
+        ],
+        [
+          -7.835014343261719,
+          4.284769058227539,
+          1.8053196668624878,
+          -5.455066680908203,
+          8.408645629882812,
+          1.630393147468567,
+          1.4141435623168945,
+          6.65419864654541,
+          -2.175837278366089,
+          12.808740615844727,
+          -5.797727584838867,
+          -7.730657577514648,
+          0.6819920539855957,
+          -5.219267845153809,
+          4.192695617675781,
+          -7.76924991607666
+        ],
+        [
+          4.536802291870117,
+          0.1673893928527832,
+          0.7645590901374817,
+          -7.4276652336120605,
+          -1.0283653736114502,
+          -3.7260994911193848,
+          -6.806156158447266,
+          3.153841972351074,
+          -3.657499313354492,
+          4.294345855712891,
+          -10.140726089477539,
+          -3.262320041656494,
+          5.7295308113098145,
+          -5.548349857330322,
+          3.89730167388916,
+          1.064138650894165
+        ],
+        [
+          -0.20106720924377441,
+          -1.328749179840088,
+          2.7455074787139893,
+          -11.419301986694336,
+          3.936145782470703,
+          -4.66658878326416,
+          -3.8155999183654785,
+          4.113664150238037,
+          1.5635876655578613,
+          11.774867057800293,
+          -7.132305145263672,
+          -7.0481438636779785,
+          1.9328269958496094,
+          -5.059385299682617,
+          8.799915313720703,
+          -2.418788194656372
+        ],
+        [
+          -0.7427264451980591,
+          4.639444351196289,
+          -0.8257569670677185,
+          -1.421053171157837,
+          1.4044753313064575,
+          1.8639620542526245,
+          -2.7339162826538086,
+          3.9457640647888184,
+          -6.7482523918151855,
+          3.1426074504852295,
+          -8.265527725219727,
+          -3.1154990196228027,
+          4.3348469734191895,
+          -4.384652137756348,
+          -1.6081634759902954,
+          -2.5059115886688232
+        ],
+        [
+          -2.7803897857666016,
+          4.46378231048584,
+          -0.5136592984199524,
+          -2.5279059410095215,
+          3.234389305114746,
+          1.5772401094436646,
+          -1.6498925685882568,
+          3.5916199684143066,
+          -5.915935516357422,
+          6.250171184539795,
+          -7.346322059631348,
+          -4.235788822174072,
+          3.2249433994293213,
+          -3.9237799644470215,
+          -0.6142923831939697,
+          -3.8537323474884033
+        ],
+        [
+          2.070265531539917,
+          2.025200366973877,
+          -1.6736055612564087,
+          -3.7464094161987305,
+          2.1311416625976562,
+          -1.3099048137664795,
+          -3.548673152923584,
+          3.062973976135254,
+          -6.803460597991943,
+          2.9587514400482178,
+          -8.376032829284668,
+          -1.9224152565002441,
+          2.534018039703369,
+          -2.9536421298980713,
+          -2.665337324142456,
+          -0.6488404273986816
+        ]
+      ]
+    },
+    "PAYMENT": {
+      "threshold": 2.4918699221228198,
+      "alpha": 0.5,
+      "recon_mean": 0.05738783151058393,
+      "recon_std": 0.14987028541150488,
+      "kl_mean": 190.8038787841797,
+      "kl_std": 61.85126495361328,
+      "dens_mean": 1.395765781402588,
+      "dens_std": 0.7283945083618164,
+      "beta": 0.3,
+      "gamma": 0.2,
+      "n_clusters": 8,
+      "cluster_centers": [
+        [
+          -4.238158226013184,
+          4.794585704803467,
+          0.9854847192764282,
+          -3.8295788764953613,
+          -16.2086181640625,
+          -4.871860027313232,
+          -2.1473724842071533,
+          8.517267227172852
+        ],
+        [
+          -2.9156434535980225,
+          6.319911956787109,
+          -2.648888111114502,
+          -3.318275213241577,
+          -8.01685619354248,
+          -5.5748982429504395,
+          -1.831565499305725,
+          4.363289833068848
+        ],
+        [
+          1.882580041885376,
+          7.012813091278076,
+          -3.212742805480957,
+          2.245652675628662,
+          -2.4203243255615234,
+          -7.015049934387207,
+          2.8188352584838867,
+          9.406081199645996
+        ],
+        [
+          -3.2543022632598877,
+          6.802490711212158,
+          -4.351433753967285,
+          -2.375002384185791,
+          -6.2020416259765625,
+          -4.945884704589844,
+          -0.7214054465293884,
+          2.559586524963379
+        ],
+        [
+          1.008763074874878,
+          4.170888900756836,
+          0.3169597387313843,
+          -0.020733356475830078,
+          -9.09031867980957,
+          -6.238933563232422,
+          2.9937167167663574,
+          13.487702369689941
+        ],
+        [
+          -2.050095558166504,
+          3.3600821495056152,
+          2.2970924377441406,
+          -4.674590110778809,
+          -13.738110542297363,
+          -5.148808002471924,
+          -3.2159721851348877,
+          8.507792472839355
+        ],
+        [
+          -4.563364505767822,
+          3.8237032890319824,
+          0.4937899112701416,
+          -5.489333152770996,
+          -15.799304008483887,
+          -4.556979656219482,
+          -0.8992776870727539,
+          8.546797752380371
+        ],
+        [
+          -3.7719249725341797,
+          7.203812122344971,
+          -3.1717379093170166,
+          -2.694149971008301,
+          -9.408733367919922,
+          -5.607593536376953,
+          -1.5223203897476196,
+          4.541566848754883
+        ]
+      ]
+    }
+  },
+  "typologies": [
+    {
+      "cluster_id": 0,
+      "cluster_size": 3386,
+      "typology_label": "MULE_NETWORK_FRESH",
+      "typology_description": "Fresh mule account pattern. F9 (dest starts empty) and/or F13 (zero dest history) dominant \u2014 destination account has no prior balance activity. Maps to FATF Layering via fresh mule accounts.",
+      "top_dims": [
+        [
+          "S1_F10recipientemptied",
+          0.4105500583709572
+        ],
+        [
+          "S1_F13zerodesthistory",
+          0.3507784122862009
+        ],
+        [
+          "S2_dim4",
+          0.2470511200486276
+        ],
+        [
+          "S2_dim7",
+          0.21698718967782063
+        ],
+        [
+          "S1_F3balanceconsistency",
+          0.2158810663498053
+        ]
+      ],
+      "transfer_pct": 100.0,
+      "cashout_pct": 0.0,
+      "centroid": [
+        0.006189955134579312,
+        6.411406415675342e-08,
+        0.2158810663498053,
+        9.89102974309312e-07,
+        1.373607858038279e-07,
+        0.006052190367527893,
+        0.010518344000030655,
+        2.6078682911138683e-05,
+        2.462148871276536e-07,
+        0.4105500583709572,
+        2.370683093795939e-06,
+        8.322660830831388e-08,
+        0.3507784122862009,
+        0.06475618855430312,
+        0.10137095096825285,
+        0.09935310962667708,
+        0.0642995985386573,
+        0.2470511200486276,
+        0.15220455630702762,
+        0.05397728650857641,
+        0.21698718967782063,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cluster_id": 1,
+      "cluster_size": 511,
+      "typology_label": "PASS_THROUGH_MULE",
+      "typology_description": "Pass-through mule pattern. F10 (recipient emptied) dominant \u2014 funds in then immediately out. Maps to FATF Layering via active mules.",
+      "top_dims": [
+        [
+          "S2_dim4",
+          0.3076401569255411
+        ],
+        [
+          "S1_F10recipientemptied",
+          0.2850141747804376
+        ],
+        [
+          "S1_F8islarge",
+          0.28481135565249893
+        ],
+        [
+          "S1_F3balanceconsistency",
+          0.2762562009623031
+        ],
+        [
+          "S2_dim7",
+          0.23598911429512992
+        ]
+      ],
+      "transfer_pct": 100.0,
+      "cashout_pct": 0.0,
+      "centroid": [
+        0.011412504537777512,
+        2.3820815281126055e-12,
+        0.2762562009623031,
+        3.2185951097367832e-09,
+        7.69722865193813e-12,
+        0.0014852966653068089,
+        0.003538399145332905,
+        0.28481135565249893,
+        2.9139518065392964e-06,
+        0.2850141747804376,
+        0.00016093381119937412,
+        9.053775563784479e-12,
+        0.1373182144054671,
+        0.04188995500352168,
+        0.09036541539162339,
+        0.08163354003441077,
+        0.06394800441722347,
+        0.3076401569255411,
+        0.11357322532078525,
+        0.06496058865915072,
+        0.23598911429512992,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cluster_id": 2,
+      "cluster_size": 141,
+      "typology_label": "PASS_THROUGH_MULE",
+      "typology_description": "Pass-through mule pattern. F10 (recipient emptied) dominant \u2014 funds in then immediately out. Maps to FATF Layering via active mules.",
+      "top_dims": [
+        [
+          "S2_dim4",
+          0.3767802189005182
+        ],
+        [
+          "S1_F10recipientemptied",
+          0.22965364282502534
+        ],
+        [
+          "S1_F12roundamount",
+          0.2296536226524651
+        ],
+        [
+          "S1_F8islarge",
+          0.22963577865017967
+        ],
+        [
+          "S1_F3balanceconsistency",
+          0.22959735518633662
+        ]
+      ],
+      "transfer_pct": 100.0,
+      "cashout_pct": 0.0,
+      "centroid": [
+        0.010082773809084306,
+        5.441018704858712e-16,
+        0.22959735518633662,
+        0.046900128873790546,
+        1.6601948903420343e-15,
+        0.004244052557332357,
+        0.002506761664180357,
+        0.22963577865017967,
+        0.0038985879440042626,
+        0.22965364282502534,
+        4.807252848391656e-15,
+        0.2296536226524651,
+        0.013827293541057873,
+        0.024773593873102615,
+        0.07556890545690313,
+        0.0640930822977783,
+        0.10114147625070938,
+        0.3767802189005182,
+        0.07050729541649632,
+        0.06898568244320703,
+        0.21814973937704207,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "cluster_id": 3,
+      "cluster_size": 14,
+      "typology_label": "PASS_THROUGH_MULE",
+      "typology_description": "Pass-through mule pattern. F10 (recipient emptied) dominant \u2014 funds in then immediately out. Maps to FATF Layering via active mules.",
+      "top_dims": [
+        [
+          "S1_F10recipientemptied",
+          0.9910494276904516
+        ],
+        [
+          "S2_dim10",
+          0.14747107507927076
+        ],
+        [
+          "S2_dim3",
+          0.12849749784384454
+        ],
+        [
+          "S2_dim5",
+          0.08395394603056568
+        ],
+        [
+          "S2_dim13",
+          0.08072290143796376
+        ]
+      ],
+      "transfer_pct": 0.0,
+      "cashout_pct": 100.0,
+      "centroid": [
+        0.002255681200222016,
+        3.267036345890686e-09,
+        5.208875002988465e-07,
+        0.0024958230159876347,
+        2.2000069815308228e-07,
+        0.0020182976673497007,
+        0.0018171634536143545,
+        8.316979275339899e-13,
+        0.00036222169912573005,
+        0.9910494276904516,
+        2.052445203516813e-08,
+        3.5981281533283887e-10,
+        6.103191484717123e-07,
+        0.05827756625201021,
+        0.026506160918091024,
+        0.02646338420787028,
+        0.12849749784384454,
+        0.026773761292653426,
+        0.08395394603056568,
+        0.06033681466111115,
+        0.06928179759000029,
+        0.03675452606486423,
+        0.07688988984695502,
+        0.14747107507927076,
+        0.036481996066868305,
+        0.049935156745570045,
+        0.08072290143796376,
+        0.06701923853584699,
+        0.024634268933108876
+      ]
+    },
+    {
+      "cluster_id": 4,
+      "cluster_size": 1143,
+      "typology_label": "MIXED_ANOMALY",
+      "typology_description": "Mixed-feature anomaly. Top contributors: S1_F7day S1_F4balancechangeratio S2_dim10.",
+      "top_dims": [
+        [
+          "S1_F7day",
+          0.5110724690552294
+        ],
+        [
+          "S1_F4balancechangeratio",
+          0.2086569743873516
+        ],
+        [
+          "S2_dim10",
+          0.17489330061203748
+        ],
+        [
+          "S1_F1logamount",
+          0.1688485482646885
+        ],
+        [
+          "S2_dim3",
+          0.14096737055927647
+        ]
+      ],
+      "transfer_pct": 0.0,
+      "cashout_pct": 100.0,
+      "centroid": [
+        0.1688485482646885,
+        1.6514387851468358e-08,
+        0.000333374472829719,
+        0.2086569743873516,
+        2.9139015369826216e-06,
+        0.1002858488503758,
+        0.5110724690552294,
+        2.202850014184433e-13,
+        0.010793343469890308,
+        2.625774134173892e-06,
+        5.090450346310943e-07,
+        6.956996028646638e-09,
+        1.0659008150965148e-09,
+        0.054611638095474306,
+        0.024040557613575136,
+        0.02235063302639484,
+        0.14096737055927647,
+        0.022804281479586973,
+        0.06667898434979397,
+        0.08477068707438175,
+        0.04793154193399668,
+        0.04519660212425474,
+        0.07320518584389073,
+        0.17489330061203748,
+        0.043012162629752854,
+        0.05852745198306553,
+        0.0693631585645029,
+        0.05039734159346119,
+        0.021249102014634345
+      ]
+    },
+    {
+      "cluster_id": 5,
+      "cluster_size": 1719,
+      "typology_label": "LATENT_PATTERN_VIOLATION",
+      "typology_description": "Behavioural pattern violation in latent space (S1_F8islarge S2_dim10 S2_dim3). Atypical combination of feature values not seen in normal behaviour.",
+      "top_dims": [
+        [
+          "S1_F8islarge",
+          0.9431744044714462
+        ],
+        [
+          "S2_dim10",
+          0.16678535248466603
+        ],
+        [
+          "S2_dim3",
+          0.1491550252561031
+        ],
+        [
+          "S2_dim9",
+          0.11207480655594092
+        ],
+        [
+          "S2_dim5",
+          0.05903269675272609
+        ]
+      ],
+      "transfer_pct": 0.0,
+      "cashout_pct": 100.0,
+      "centroid": [
+        0.01338591144068125,
+        3.661825767252467e-09,
+        0.00031142356599473867,
+        0.00045520721542654006,
+        0.003812760150611041,
+        0.015249849312664866,
+        0.02354586728896263,
+        0.9431744044714462,
+        4.993444947671041e-06,
+        1.5600413774899856e-08,
+        6.474108135105142e-09,
+        1.876198414418272e-10,
+        5.899457093399392e-05,
+        0.043453537371419174,
+        0.026350946288605705,
+        0.024504133817101023,
+        0.1491550252561031,
+        0.03474801667836463,
+        0.05903269675272609,
+        0.05858039457314128,
+        0.04997999395323465,
+        0.05413205321897699,
+        0.11207480655594092,
+        0.16678535248466603,
+        0.04402199116876265,
+        0.04689523907147517,
+        0.05553001067327545,
+        0.052295509735561164,
+        0.02246029269429159
+      ]
+    },
+    {
+      "cluster_id": 6,
+      "cluster_size": 172,
+      "typology_label": "LATENT_PATTERN_VIOLATION",
+      "typology_description": "Behavioural pattern violation in latent space (S1_F7day S2_dim9 S2_dim3). Atypical combination of feature values not seen in normal behaviour.",
+      "top_dims": [
+        [
+          "S1_F7day",
+          0.7422661591377496
+        ],
+        [
+          "S2_dim9",
+          0.19394335297997609
+        ],
+        [
+          "S2_dim3",
+          0.18877683467296666
+        ],
+        [
+          "S1_F6hour",
+          0.1577212562099412
+        ],
+        [
+          "S2_dim14",
+          0.10763449421109156
+        ]
+      ],
+      "transfer_pct": 0.0,
+      "cashout_pct": 100.0,
+      "centroid": [
+        0.035563851893753676,
+        2.871890701924759e-08,
+        0.00015811696736360147,
+        0.00011332152229268018,
+        0.004414845949484532,
+        0.1577212562099412,
+        0.7422661591377496,
+        0.018212287636476632,
+        4.2319169698248236e-08,
+        1.9639275164429632e-08,
+        2.5368677884526825e-11,
+        2.0880624987990023e-09,
+        0.04154497202358454,
+        0.017558449148308744,
+        0.023928056427732457,
+        0.02550431288952051,
+        0.18877683467296666,
+        0.04083298348150281,
+        0.05678723564068245,
+        0.032938344945567986,
+        0.0468965915876419,
+        0.0212204116071726,
+        0.19394335297997609,
+        0.08136945705167777,
+        0.07231993052761915,
+        0.021302821136317974,
+        0.048454365887960725,
+        0.10763449421109156,
+        0.020532358984657845
+      ]
+    },
+    {
+      "cluster_id": 7,
+      "cluster_size": 177,
+      "typology_label": "LATENT_PATTERN_VIOLATION",
+      "typology_description": "Behavioural pattern violation in latent space (S1_F7day S2_dim9 S1_F1logamount). Atypical combination of feature values not seen in normal behaviour.",
+      "top_dims": [
+        [
+          "S1_F7day",
+          0.41695979533308014
+        ],
+        [
+          "S2_dim9",
+          0.2282436062387154
+        ],
+        [
+          "S1_F1logamount",
+          0.19917818770818116
+        ],
+        [
+          "S1_F8islarge",
+          0.18073548127834527
+        ],
+        [
+          "S2_dim3",
+          0.17038349680981393
+        ]
+      ],
+      "transfer_pct": 0.0,
+      "cashout_pct": 100.0,
+      "centroid": [
+        0.19917818770818116,
+        3.8351849512431315e-08,
+        0.017384934711811323,
+        2.9748662603912936e-07,
+        0.09757138956661321,
+        0.08720479325278838,
+        0.41695979533308014,
+        0.18073548127834527,
+        0.0,
+        1.105830711401415e-08,
+        2.1979827081821833e-12,
+        4.82412356027042e-10,
+        0.0009582509073505191,
+        0.021850502286842988,
+        0.02339234628246329,
+        0.02712599274381406,
+        0.17038349680981393,
+        0.06993212992862119,
+        0.04559601581323955,
+        0.016778290508535958,
+        0.051230150743224526,
+        0.025917239097804672,
+        0.2282436062387154,
+        0.04632140533988085,
+        0.06464976105986342,
+        0.016887314633418946,
+        0.03888329957206707,
+        0.1216836233260268,
+        0.031124820111919256
+      ]
+    },
+    {
+      "cluster_id": 8,
+      "cluster_size": 48,
+      "typology_label": "SMURFING_ESCALATION",
+      "typology_description": "Escalating partial transfers. F4 (balance change ratio) dominant with temporal/size co-deviation. Maps to FATF Structuring / Smurfing.",
+      "top_dims": [
+        [
+          "S1_F6hour",
+          0.7843395846916176
+        ],
+        [
+          "S2_dim10",
+          0.17367501836270094
+        ],
+        [
+          "S1_F4balancechangeratio",
+          0.10437993968692331
+        ],
+        [
+          "S2_dim3",
+          0.10415462575231989
+        ],
+        [
+          "S2_dim13",
+          0.09641815240805347
+        ]
+      ],
+      "transfer_pct": 0.0,
+      "cashout_pct": 100.0,
+      "centroid": [
+        0.04996046708917456,
+        1.4691485453912283e-10,
+        9.152685903195819e-05,
+        0.10437993968692331,
+        1.132560939512181e-07,
+        0.7843395846916176,
+        0.05202474271602306,
+        1.9432716169415403e-15,
+        0.009201111456128203,
+        3.7444500517956093e-07,
+        1.4756982275746514e-09,
+        1.0092945260574636e-11,
+        5.111697665945891e-13,
+        0.03191354649607092,
+        0.024807617844392855,
+        0.026374492056978244,
+        0.10415462575231989,
+        0.024786518692659836,
+        0.044551087310537696,
+        0.06127787847071886,
+        0.06890169717371464,
+        0.04546047296995918,
+        0.0856927049656709,
+        0.17367501836270094,
+        0.05059236388963958,
+        0.07322329593201478,
+        0.09641815240805347,
+        0.06811654792788129,
+        0.020053979358635843
+      ]
+    },
+    {
+      "cluster_id": 9,
+      "cluster_size": 53,
+      "typology_label": "ROUND_AMOUNT_FRAUD",
+      "typology_description": "Round-number amount fraud. F12 dominant \u2014 fraudster used a clean round figure (10K, 50K, 100K). Maps to FATF Structuring / Placement.",
+      "top_dims": [
+        [
+          "S1_F12roundamount",
+          0.7258088378098297
+        ],
+        [
+          "S2_dim9",
+          0.2610083076189149
+        ],
+        [
+          "S2_dim3",
+          0.1852853444387328
+        ],
+        [
+          "S1_F8islarge",
+          0.17342153550743816
+        ],
+        [
+          "S2_dim4",
+          0.08065133120091457
+        ]
+      ],
+      "transfer_pct": 0.0,
+      "cashout_pct": 100.0,
+      "centroid": [
+        0.009131823693412575,
+        1.0115536270060078e-11,
+        0.005774444009484364,
+        4.060113291982486e-13,
+        0.0398801253179124,
+        0.018286569412934377,
+        0.027696655805545468,
+        0.17342153550743816,
+        0.0,
+        4.261505486076677e-13,
+        1.7221250549159936e-15,
+        0.7258088378098297,
+        1.1743939395394813e-09,
+        0.027644776018723,
+        0.020330783717756002,
+        0.019303497735340642,
+        0.1852853444387328,
+        0.08065133120091457,
+        0.04001038405552225,
+        0.01956127652511844,
+        0.03735322529836645,
+        0.017396077232540778,
+        0.2610083076189149,
+        0.06114531919922469,
+        0.07267868364194655,
+        0.016025868279613414,
+        0.02776544084245304,
+        0.07445441720620641,
+        0.03938527110050309
+      ]
+    },
+    {
+      "cluster_id": 10,
+      "cluster_size": 64,
+      "typology_label": "SMURFING_ESCALATION",
+      "typology_description": "Escalating partial transfers. F4 (balance change ratio) dominant with temporal/size co-deviation. Maps to FATF Structuring / Smurfing.",
+      "top_dims": [
+        [
+          "S1_F4balancechangeratio",
+          0.43714642713864055
+        ],
+        [
+          "S1_F6hour",
+          0.3703438850326879
+        ],
+        [
+          "S2_dim10",
+          0.17056403029710054
+        ],
+        [
+          "S2_dim3",
+          0.12886787171009928
+        ],
+        [
+          "S1_F1logamount",
+          0.11231519643253511
+        ]
+      ],
+      "transfer_pct": 0.0,
+      "cashout_pct": 100.0,
+      "centroid": [
+        0.11231519643253511,
+        3.9557344528575405e-08,
+        0.0007311522925857517,
+        0.43714642713864055,
+        6.297483129245657e-06,
+        0.3703438850326879,
+        0.03644488366451959,
+        4.521296754321501e-13,
+        0.04299456440953832,
+        8.821528828608077e-06,
+        8.922356133963567e-07,
+        1.0904756477824098e-08,
+        1.7798890454675613e-09,
+        0.05627682839985937,
+        0.025240909890271723,
+        0.025370133575052023,
+        0.12886787171009928,
+        0.024603448575362563,
+        0.07499765261309221,
+        0.06766888918355107,
+        0.06486337288515642,
+        0.04708152945386246,
+        0.07068257813807577,
+        0.17056403029710054,
+        0.03665639564860612,
+        0.054555623210035264,
+        0.07706770952790976,
+        0.05261068808613345,
+        0.022892337088705972
+      ]
+    },
+    {
+      "cluster_id": 11,
+      "cluster_size": 65,
+      "typology_label": "LATENT_PATTERN_VIOLATION",
+      "typology_description": "Behavioural pattern violation in latent space (S1_F6hour S2_dim9 S2_dim3). Atypical combination of feature values not seen in normal behaviour.",
+      "top_dims": [
+        [
+          "S1_F6hour",
+          0.8228636128276815
+        ],
+        [
+          "S2_dim9",
+          0.20842330845502707
+        ],
+        [
+          "S2_dim3",
+          0.16242257746366354
+        ],
+        [
+          "S2_dim14",
+          0.12391122762973492
+        ],
+        [
+          "S1_F1logamount",
+          0.0850255559020945
+        ]
+      ],
+      "transfer_pct": 0.0,
+      "cashout_pct": 100.0,
+      "centroid": [
+        0.0850255559020945,
+        2.317380855926007e-09,
+        0.0005050723234659754,
+        3.260213578351859e-07,
+        0.015653509652384726,
+        0.8228636128276815,
+        0.054889068409258716,
+        0.012771678686338361,
+        8.397098255717253e-10,
+        2.6936940988305553e-09,
+        2.342362511967324e-12,
+        4.1639338288865305e-10,
+        0.00828445419396143,
+        0.01896312156548867,
+        0.019315750954242854,
+        0.028745647175953938,
+        0.16242257746366354,
+        0.04543799849656912,
+        0.040154565011079495,
+        0.024829554930329324,
+        0.0529273299070505,
+        0.020944279374984595,
+        0.20842330845502707,
+        0.07025155235941594,
+        0.07945462591373004,
+        0.02110409031693752,
+        0.05587803790202508,
+        0.12391122762973492,
+        0.027236335925184763
+      ]
+    },
+    {
+      "cluster_id": 12,
+      "cluster_size": 29,
+      "typology_label": "LATENT_PATTERN_VIOLATION",
+      "typology_description": "Behavioural pattern violation in latent space (S1_F4balancechangeratio S2_dim10 S2_dim3). Atypical combination of feature values not seen in normal behaviour.",
+      "top_dims": [
+        [
+          "S1_F4balancechangeratio",
+          0.7231966576482575
+        ],
+        [
+          "S2_dim10",
+          0.17300269264599372
+        ],
+        [
+          "S2_dim3",
+          0.1226147164044709
+        ],
+        [
+          "S1_F6hour",
+          0.12060294314980124
+        ],
+        [
+          "S2_dim13",
+          0.08222924198569923
+        ]
+      ],
+      "transfer_pct": 0.0,
+      "cashout_pct": 100.0,
+      "centroid": [
+        0.06290307345007652,
+        2.8677749322548965e-08,
+        0.0006319964881495992,
+        0.7231966576482575,
+        4.820331038954858e-06,
+        0.12060294314980124,
+        0.05959015209895983,
+        3.260268328112815e-13,
+        0.03304874088032302,
+        7.420604040026504e-06,
+        8.890980821481307e-07,
+        7.98084304648715e-09,
+        1.388871167214826e-09,
+        0.04747011769434501,
+        0.02427354191654715,
+        0.025363366408594722,
+        0.1226147164044709,
+        0.024694459191684066,
+        0.0647658081404094,
+        0.06644110728440614,
+        0.06486307675468511,
+        0.04665579993663163,
+        0.07631469697787843,
+        0.17300269264599372,
+        0.04147444993000606,
+        0.06072457622865151,
+        0.08222924198569923,
+        0.05758842401977243,
+        0.021523916451581592
+      ]
+    },
+    {
+      "cluster_id": 13,
+      "cluster_size": 18,
+      "typology_label": "MULE_NETWORK_BALANCE",
+      "typology_description": "Funds rapidly moved through destination accounts. F5 (destination balance ratio) dominant. Maps to FATF Layering via Mules.",
+      "top_dims": [
+        [
+          "S1_F5destbalanceratio",
+          0.36679213109905473
+        ],
+        [
+          "S1_F7day",
+          0.3120507035628089
+        ],
+        [
+          "S2_dim9",
+          0.2491682701640659
+        ],
+        [
+          "S1_F1logamount",
+          0.20000544394698497
+        ],
+        [
+          "S2_dim3",
+          0.15969127996100319
+        ]
+      ],
+      "transfer_pct": 0.0,
+      "cashout_pct": 100.0,
+      "centroid": [
+        0.20000544394698497,
+        2.108722636397385e-09,
+        0.019634252878706623,
+        9.714076814738942e-12,
+        0.36679213109905473,
+        0.07416925990607788,
+        0.3120507035628089,
+        0.027347994378327824,
+        0.0,
+        3.354431439489963e-11,
+        9.772617877023114e-16,
+        1.5371063918679466e-12,
+        0.0,
+        0.02972559237645732,
+        0.01979118337233861,
+        0.024843671048680942,
+        0.15969127996100319,
+        0.08166876352495617,
+        0.0363892110892468,
+        0.01438851168172227,
+        0.04882770673268371,
+        0.02161532278276152,
+        0.2491682701640659,
+        0.04338784495161639,
+        0.06897019553515646,
+        0.01577205852501922,
+        0.03588488573829333,
+        0.11086514426602258,
+        0.03901036435531245
+      ]
+    },
+    {
+      "cluster_id": 14,
+      "cluster_size": 87,
+      "typology_label": "ROUND_AMOUNT_FRAUD",
+      "typology_description": "Round-number amount fraud. F12 dominant \u2014 fraudster used a clean round figure (10K, 50K, 100K). Maps to FATF Structuring / Placement.",
+      "top_dims": [
+        [
+          "S1_F8islarge",
+          0.4852552567776526
+        ],
+        [
+          "S1_F12roundamount",
+          0.4852536412223586
+        ],
+        [
+          "S2_dim10",
+          0.2051174589272203
+        ],
+        [
+          "S2_dim3",
+          0.12642978011876688
+        ],
+        [
+          "S2_dim9",
+          0.09104770910123298
+        ]
+      ],
+      "transfer_pct": 0.0,
+      "cashout_pct": 100.0,
+      "centroid": [
+        0.007804129701644355,
+        6.799173432199877e-13,
+        0.0008336082585342788,
+        0.0003599089277907928,
+        1.345220346916092e-10,
+        0.007591140767881791,
+        0.012902258858585647,
+        0.4852552567776526,
+        4.866169468618441e-08,
+        1.4747508514847439e-09,
+        3.6135012412261597e-10,
+        0.4852536412223586,
+        1.5087404425286874e-15,
+        0.041961412277372406,
+        0.026036629174975144,
+        0.024490918214807565,
+        0.12642978011876688,
+        0.027446876033798032,
+        0.04590688373936319,
+        0.07001304737795358,
+        0.04818012154307859,
+        0.0823119568756257,
+        0.09104770910123298,
+        0.2051174589272203,
+        0.039987135657120025,
+        0.059764380598890374,
+        0.05619839082161585,
+        0.03284636589473691,
+        0.022260938203711618
+      ]
+    },
+    {
+      "cluster_id": 15,
+      "cluster_size": 37,
+      "typology_label": "LATENT_PATTERN_VIOLATION",
+      "typology_description": "Behavioural pattern violation in latent space (S1_F1logamount S2_dim9 S2_dim3). Atypical combination of feature values not seen in normal behaviour.",
+      "top_dims": [
+        [
+          "S1_F1logamount",
+          0.7484753345588463
+        ],
+        [
+          "S2_dim9",
+          0.19724099136687614
+        ],
+        [
+          "S2_dim3",
+          0.18546402212735769
+        ],
+        [
+          "S2_dim14",
+          0.10763874690274934
+        ],
+        [
+          "S2_dim10",
+          0.07838537403055139
+        ]
+      ],
+      "transfer_pct": 0.0,
+      "cashout_pct": 100.0,
+      "centroid": [
+        0.7484753345588463,
+        2.8711015641974827e-08,
+        0.0007021978211357514,
+        7.450385914715995e-08,
+        0.05246515306361758,
+        0.077677659023443,
+        0.05044596772394488,
+        0.06192585571944236,
+        0.0,
+        2.4996195748297976e-08,
+        5.831474109041333e-12,
+        1.157044781516229e-09,
+        0.008285728017429841,
+        0.016604450153740676,
+        0.024159832479985984,
+        0.026582190565563536,
+        0.18546402212735769,
+        0.04680714192422661,
+        0.059045444972611764,
+        0.02829478318626816,
+        0.051989153228901526,
+        0.020944164663150504,
+        0.19724099136687614,
+        0.07838537403055139,
+        0.06668474807127102,
+        0.020000528896579873,
+        0.04940942604396794,
+        0.10763874690274934,
+        0.020749009491221326
+      ]
+    },
+    {
+      "cluster_id": 16,
+      "cluster_size": 10,
+      "typology_label": "MIXED_ANOMALY",
+      "typology_description": "Mixed-feature anomaly. Top contributors: S1_F6hour S1_F7day S2_dim3.",
+      "top_dims": [
+        [
+          "S1_F6hour",
+          0.437639712639936
+        ],
+        [
+          "S1_F7day",
+          0.30803781258590823
+        ],
+        [
+          "S2_dim3",
+          0.19983118921518325
+        ],
+        [
+          "S2_dim9",
+          0.1876968115568161
+        ],
+        [
+          "S1_F1logamount",
+          0.17938584915587308
+        ]
+      ],
+      "transfer_pct": 0.0,
+      "cashout_pct": 100.0,
+      "centroid": [
+        0.17938584915587308,
+        1.544641745862304e-08,
+        0.00034150640222724114,
+        2.470061347090672e-07,
+        0.006894019652999938,
+        0.437639712639936,
+        0.30803781258590823,
+        0.015033784099180514,
+        2.960016549933173e-12,
+        2.2830846107827028e-08,
+        2.5562403145201544e-11,
+        6.163052587385677e-09,
+        0.05265424528526953,
+        0.01956284362822771,
+        0.026835040561854838,
+        0.024227771535515787,
+        0.19983118921518325,
+        0.041402726992964746,
+        0.06707162484526634,
+        0.034824483841657636,
+        0.04422556050121784,
+        0.02113426197320223,
+        0.1876968115568161,
+        0.08512246683239937,
+        0.06612511351704597,
+        0.02027472648769617,
+        0.04508378952741623,
+        0.09764466732740402,
+        0.01893692836165428
+      ]
+    },
+    {
+      "cluster_id": 17,
+      "cluster_size": 73,
+      "typology_label": "MULE_NETWORK_FRESH",
+      "typology_description": "Fresh mule account pattern. F9 (dest starts empty) and/or F13 (zero dest history) dominant \u2014 destination account has no prior balance activity. Maps to FATF Layering via fresh mule accounts.",
+      "top_dims": [
+        [
+          "S1_F13zerodesthistory",
+          0.5890202185173684
+        ],
+        [
+          "S1_F7day",
+          0.36564091310185093
+        ],
+        [
+          "S2_dim3",
+          0.22409503141494647
+        ],
+        [
+          "S2_dim9",
+          0.17061560509139545
+        ],
+        [
+          "S2_dim10",
+          0.10060971311918676
+        ]
+      ],
+      "transfer_pct": 0.0,
+      "cashout_pct": 100.0,
+      "centroid": [
+        0.02163447269006941,
+        1.8120455837321553e-09,
+        5.212775308855696e-05,
+        4.211565506882413e-09,
+        0.001562264083155006,
+        0.021953489597017272,
+        0.36564091310185093,
+        0.00013567362040927186,
+        5.479735023447536e-12,
+        2.8608706225909383e-09,
+        9.428360842987483e-12,
+        1.8158650047782091e-09,
+        0.5890202185173684,
+        0.023750576917847543,
+        0.03016494691678106,
+        0.020733210347490767,
+        0.22409503141494647,
+        0.0386349183239349,
+        0.07970693411484156,
+        0.04771695724905354,
+        0.035974667394814426,
+        0.021058784593662172,
+        0.17061560509139545,
+        0.10060971311918676,
+        0.060098567901000585,
+        0.019770007810159904,
+        0.03861335118951863,
+        0.07261638302509099,
+        0.015840342395926174
+      ]
+    },
+    {
+      "cluster_id": 18,
+      "cluster_size": 9,
+      "typology_label": "SMURFING_ESCALATION",
+      "typology_description": "Escalating partial transfers. F4 (balance change ratio) dominant with temporal/size co-deviation. Maps to FATF Structuring / Smurfing.",
+      "top_dims": [
+        [
+          "S1_F1logamount",
+          0.3760256081089989
+        ],
+        [
+          "S1_F4balancechangeratio",
+          0.33222249480355487
+        ],
+        [
+          "S1_F6hour",
+          0.26094703577763567
+        ],
+        [
+          "S2_dim10",
+          0.17438684238327873
+        ],
+        [
+          "S2_dim3",
+          0.11973682708210415
+        ]
+      ],
+      "transfer_pct": 0.0,
+      "cashout_pct": 100.0,
+      "centroid": [
+        0.3760256081089989,
+        5.3937573959979685e-08,
+        0.00046698430476943255,
+        0.33222249480355487,
+        4.431901228490631e-06,
+        0.26094703577763567,
+        0.012131785627367617,
+        1.0782861530408357e-12,
+        0.018189827059259162,
+        4.225103248591025e-06,
+        6.844716000716313e-07,
+        8.721610014993726e-09,
+        5.110314216948626e-09,
+        0.04460241148869196,
+        0.02463108135594262,
+        0.025387397449877527,
+        0.11973682708210415,
+        0.02507910215192371,
+        0.06155868826640977,
+        0.06501527999838193,
+        0.06658696962727441,
+        0.04801127314567566,
+        0.0783096013797654,
+        0.17438684238327873,
+        0.04195587792330318,
+        0.06170418941312366,
+        0.0840850861536132,
+        0.0575394444167614,
+        0.021409961498445935
+      ]
+    }
+  ],
+  "dbscan_cfg": {
+    "eps": 0.1177983371123129,
+    "min_samples": 10,
+    "metric": "euclidean",
+    "n_clusters_discovered": 19,
+    "n_noise_points": 457,
+    "silhouette_score": 0.35873339567066237,
+    "n_fraud_analysed": 8213
+  },
+  "img_paths": {
+    "training_history": "DeepSentinel-VAE-Results/DeepSentinel_Results_v2/training_history.png",
+    "stratified_eval": "DeepSentinel-VAE-Results/DeepSentinel_Results_v2/stratified_vae_evaluation.png",
+    "confusion": "DeepSentinel-VAE-Results/DeepSentinel_Results_v2/confusion_matrices.png",
+    "dsaa_dash": "DeepSentinel-VAE-Results/DeepSentinel_DSAA_v2/dsaa_dashboard.png",
+    "typology_radar": "DeepSentinel-VAE-Results/DeepSentinel_DSAA_v2/typology_radar.png",
+    "heatmap_transfer": "DeepSentinel-VAE-Results/DeepSentinel_Output_v2/feature_heatmap_transfer.png",
+    "heatmap_cashout": "DeepSentinel-VAE-Results/DeepSentinel_Output_v2/feature_heatmap_cashout.png",
+    "fraud_by_type": "DeepSentinel-VAE-Results/DeepSentinel_Output_v2/fraud_by_type.png"
+  }
+}</script>
+<script>
+const DATA = JSON.parse(document.getElementById('data').textContent);
+const PLOT_LAYOUT = {paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',font:{color:'#cdd4f0'},margin:{t:30,r:20,b:50,l:60}};
+
+// nav
+document.querySelectorAll('.nav-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById(b.dataset.target).classList.add('active');
+  });
+});
+
+// images
+const P = DATA.img_paths;
+document.getElementById('img-train').src = P.training_history;
+document.getElementById('img-strat').src = P.stratified_eval;
+document.getElementById('img-cm').src = P.confusion;
+document.getElementById('img-dsaa').src = P.dsaa_dash;
+document.getElementById('img-radar').src = P.typology_radar;
+document.getElementById('img-fbt').src = P.fraud_by_type;
+document.getElementById('img-ht').src = P.heatmap_transfer;
+document.getElementById('img-hc').src = P.heatmap_cashout;
+
+// overview stats
+const metrics = DATA.metrics;
+const best = metrics.find(m=>m.config.startsWith('B'));
+const strat = metrics.find(m=>m.config.startsWith('D'));
+const baseline = metrics.find(m=>m.config.startsWith('A'));
+const stats = [
+  ['Best F1 (Transfer)', best.f1_score.toFixed(3), 'AUC = '+best.auc_roc.toFixed(3)],
+  ['Best Recall', (best.recall*100).toFixed(1)+'%', `${best.tp} / ${best.tp+best.fn} frauds caught`],
+  ['Stratified F1', strat.f1_score.toFixed(3), 'AUC = '+strat.auc_roc.toFixed(3)],
+  ['Discovered Typologies', DATA.typologies.length, 'DBSCAN on fingerprints'],
+];
+document.getElementById('overview-stats').innerHTML = stats.map(s=>
+  `<div class="card stat"><div class="label">${s[0]}</div><div class="value">${s[1]}</div><div class="sub">${s[2]}</div></div>`
+).join('');
+
+document.getElementById('headline').innerHTML =
+  `The <b>TRANSFER-specific VAE</b> reaches <b>${(best.recall*100).toFixed(1)}% recall</b>
+   at <b>FPR = ${(best.fpr*100).toFixed(2)}%</b> — a ${best.auc_roc.toFixed(2)} AUC,
+   dramatically outperforming the global baseline (F1 ${baseline.f1_score.toFixed(3)} → ${best.f1_score.toFixed(3)}).`;
+
+// metrics table
+const cols = ['config','precision','recall','f1_score','auc_roc','fpr','tp','fp','fn'];
+let html = '<table><thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead><tbody>';
+metrics.forEach(m=>{
+  html += '<tr>'+cols.map(c=>{
+    let v=m[c];
+    if(typeof v==='number') v = (c==='tp'||c==='fp'||c==='fn') ? v.toLocaleString() : v.toFixed(4);
+    return `<td class="${typeof m[c]==='number'?'num':''}">${v}</td>`;
+  }).join('')+'</tr>';
+});
+html += '</tbody></table>';
+document.getElementById('metrics-table').innerHTML = html;
+
+// metrics bar chart
+const configsShort = metrics.map(m=>m.config[0]);
+const metricNames = ['precision','recall','f1_score','auc_roc'];
+const barTraces = configsShort.map((c,i)=>({
+  name:'Config '+c, type:'bar',
+  x:metricNames, y:metricNames.map(n=>metrics[i][n]),
+  text:metricNames.map(n=>metrics[i][n].toFixed(3)), textposition:'outside',
+}));
+Plotly.newPlot('metrics-bars', barTraces, {...PLOT_LAYOUT, barmode:'group', yaxis:{range:[0,1.15]}}, {displayModeBar:false});
+
+// scatter
+Plotly.newPlot('metrics-scatter',[{
+  x:metrics.map(m=>m.fpr), y:metrics.map(m=>m.recall),
+  text:configsShort, mode:'markers+text', textposition:'middle center',
+  textfont:{color:'#fff', size:14, family:'Arial Black'},
+  marker:{
+    size:metrics.map(m=>20+m.f1_score*60),
+    color:metrics.map(m=>m.auc_roc), colorscale:'Viridis', showscale:true,
+    colorbar:{title:'AUC'}, line:{color:'#fff',width:1},
+  },
+}], {...PLOT_LAYOUT, xaxis:{title:'FPR'}, yaxis:{title:'Recall'}}, {displayModeBar:false});
+
+// DSAA stats
+const cfg = DATA.dbscan_cfg;
+const dsaaStats = [
+  ['Clusters', cfg.n_clusters_discovered, 'DBSCAN'],
+  ['Frauds analysed', cfg.n_fraud_analysed.toLocaleString(), ''],
+  ['Silhouette', cfg.silhouette_score.toFixed(3), 'Higher = tighter'],
+  ['Noise points', cfg.n_noise_points.toLocaleString(), 'eps = '+cfg.eps.toFixed(3)],
+];
+document.getElementById('dsaa-stats').innerHTML = dsaaStats.map(s=>
+  `<div class="card stat"><div class="label">${s[0]}</div><div class="value">${s[1]}</div><div class="sub">${s[2]}</div></div>`
+).join('');
+
+// typology cards
+const typs = [...DATA.typologies].sort((a,b)=>b.cluster_size-a.cluster_size);
+document.getElementById('typology-list').innerHTML = typs.map(t=>{
+  const pill = t.cluster_size>500 ? 'pill-g' : (t.cluster_size>100 ? 'pill-a' : 'pill-r');
+  const dims = t.top_dims.slice(0,3).map(d=>d[0]).join(', ');
+  const tpct = (t.transfer_pct||0);
+  return `<div class="typology-row">
+    <div>
+      <div style="color:var(--muted);font-size:0.85rem">#${t.cluster_id}</div>
+      <div class="typology-label">${t.typology_label}</div>
+      <span class="pill ${pill}">${t.cluster_size.toLocaleString()} txns</span>
+    </div>
+    <div>
+      <div class="typology-desc">${t.typology_description}</div>
+      <div class="typology-dims">Top dims: ${dims}</div>
+      <div style="color:var(--muted);font-size:0.78rem;margin-top:0.6rem">TRANSFER share: ${tpct.toFixed(0)}%</div>
+      <div class="bar-bg"><div class="bar-fg" style="width:${tpct}%"></div></div>
+    </div>
+  </div>`;
+}).join('');
+
+// scoring
+const sCfg = DATA.stratified_cfg;
+const txSelect = document.getElementById('tx-type');
+Object.keys(sCfg).forEach(t=>{
+  const o = document.createElement('option'); o.value=t; o.textContent=t; txSelect.appendChild(o);
+});
+
+function updateScore(){
+  const t = txSelect.value;
+  const p = sCfg[t];
+  const zr = parseFloat(document.getElementById('s-recon').value);
+  const zk = parseFloat(document.getElementById('s-kl').value);
+  const zd = parseFloat(document.getElementById('s-dens').value);
+  document.getElementById('v-recon').textContent = zr.toFixed(1);
+  document.getElementById('v-kl').textContent = zk.toFixed(1);
+  document.getElementById('v-dens').textContent = zd.toFixed(1);
+
+  const score = p.alpha*zr + p.beta*zk + p.gamma*zd;
+  const thr = p.threshold;
+  const isFraud = score >= thr;
+  const margin = score - thr;
+
+  document.getElementById('verdict').innerHTML =
+    `<div class="verdict ${isFraud?'fraud':'ok'}">
+      <div class="vlabel">VERDICT</div>
+      <div class="vmain">${isFraud?'🚨 FLAGGED AS FRAUD':'✅ NORMAL'}</div>
+      <div class="vsub">Score = ${score.toFixed(3)} | Threshold = ${thr.toFixed(3)} | Margin = ${margin>=0?'+':''}${margin.toFixed(3)}</div>
+    </div>`;
+
+  document.getElementById('weights').innerHTML =
+    `<div style="font-size:0.85rem;color:var(--muted)">Hybrid weights</div>
+     <div style="margin-top:0.5rem">α (recon) = <b>${p.alpha}</b> &nbsp; β (KL) = <b>${p.beta}</b> &nbsp; γ (density) = <b>${p.gamma}</b></div>
+     <div style="margin-top:0.6rem;color:var(--muted);font-size:0.8rem">Threshold for ${t}: <b style="color:var(--text)">${thr.toFixed(3)}</b></div>`;
+
+  Plotly.newPlot('gauge', [{
+    type:'indicator', mode:'gauge+number+delta', value:score,
+    delta:{reference:thr, increasing:{color:'#ef4444'}, decreasing:{color:'#10b981'}},
+    gauge:{
+      axis:{range:[-2, Math.max(8, thr+4)], tickcolor:'#cdd4f0'},
+      bar:{color: isFraud?'#ef4444':'#10b981'},
+      bgcolor:'rgba(0,0,0,0)',
+      steps:[
+        {range:[-2,thr], color:'rgba(16,185,129,0.2)'},
+        {range:[thr, Math.max(8,thr+4)], color:'rgba(239,68,68,0.2)'},
+      ],
+      threshold:{line:{color:'#fff',width:3}, value:thr},
+    },
+    title:{text:'Anomaly Score — '+t},
+  }], {...PLOT_LAYOUT, margin:{t:50,b:10,l:30,r:30}}, {displayModeBar:false});
+
+  Plotly.newPlot('decomp', [{
+    type:'bar',
+    x:['α · recon', 'β · KL', 'γ · density'],
+    y:[p.alpha*zr, p.beta*zk, p.gamma*zd],
+    text:[(p.alpha*zr).toFixed(3),(p.beta*zk).toFixed(3),(p.gamma*zd).toFixed(3)],
+    textposition:'outside',
+    marker:{color:[p.alpha*zr,p.beta*zk,p.gamma*zd], colorscale:'RdYlGn', reversescale:true},
+  }], {...PLOT_LAYOUT, title:'Score decomposition'}, {displayModeBar:false});
+}
+
+['tx-type','s-recon','s-kl','s-dens'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', updateScore);
+});
+updateScore();
+</script>
+</body>
+</html>

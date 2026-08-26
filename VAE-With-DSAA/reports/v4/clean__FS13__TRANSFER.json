@@ -1,0 +1,48 @@
+{
+  "config": "clean|FS13|TRANSFER",
+  "feature_set": "FS13",
+  "n_features": 13,
+  "n_rows": 11546,
+  "n_fraud": 821,
+  "test_fraud_rate": 0.07110687684046423,
+  "auc_pr_average_precision": 0.9996170210424652,
+  "ap_lift_over_base_rate": 14.057951431128263,
+  "max_possible_ap_lift": 14.063337393422657,
+  "auc_roc": 0.9999720620427076,
+  "precision_at_500": 1.0,
+  "precision_at_1000": 0.821,
+  "operating_point_f1_optimal": {
+    "threshold": 7.490645783678023,
+    "precision": 0.992744860943168,
+    "recall": 1.0,
+    "f1": 0.9963592233009709,
+    "f2": 0.9985405010946242,
+    "tp": 821,
+    "fp": 6,
+    "tn": 10719,
+    "fn": 0,
+    "fpr": 0.0005594405594405594,
+    "flag_rate": 0.07162653732894508
+  },
+  "operating_point_f2_optimal": {
+    "threshold": 7.490645783678023,
+    "precision": 0.992744860943168,
+    "recall": 1.0,
+    "f1": 0.9963592233009709,
+    "f2": 0.9985405010946242,
+    "tp": 821,
+    "fp": 6,
+    "tn": 10719,
+    "fn": 0,
+    "fpr": 0.0005594405594405594,
+    "flag_rate": 0.07162653732894508
+  },
+  "train": {
+    "epochs_run": 32,
+    "seconds": 85.90825986862183,
+    "val_recon_loss": 0.15091848380487752,
+    "val_kl_raw": 4.102988227237015
+  },
+  "threshold_source": "validation partition, F-beta optimal",
+  "bundle": "D:\\Research\\VAE-With-DSAA\\checkpoints\\v4\\clean__FS13__TRANSFER"
+}

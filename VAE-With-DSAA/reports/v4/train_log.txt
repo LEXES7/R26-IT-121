@@ -1,0 +1,76 @@
+
+=== 1 configurations | sets=['FS-CLEAN'] ===
+  [clean|FS-CLEAN|TRANSFER] 4 features | fit 441,840 | val 76,247 | test 11,546 (821 fraud)
+      22 epochs, 51.8s, val_recon 0.02196, val_kl_raw 1.048
+    AP=0.3476 lift=4.9 F1=0.3427 -> clean__FS-CLEAN__TRANSFER
+
+DONE 1/1 in 55s -> D:\Research\VAE-With-DSAA\reports\v4\all_configs_v4.json
+
+=== 16 configurations | sets=['FS-FULL', 'FS-ORIGIN', 'FS-CLEAN', 'FS12', 'FS13'] ===
+  [clean|FS-FULL|TRANSFER] 11 features | fit 441,840 | val 76,247 | test 11,546 (821 fraud)
+      28 epochs, 75.9s, val_recon 0.03595, val_kl_raw 2.446
+    AP=1.0 lift=14.1 F1=0.9994 -> clean__FS-FULL__TRANSFER
+  [clean|FS-FULL|CASH_OUT] 11 features | fit 1,877,456 | val 319,553 | test 37,196 (821 fraud)
+      23 epochs, 282.8s, val_recon 0.04323, val_kl_raw 2.794
+    AP=0.7397 lift=33.5 F1=0.6569 -> clean__FS-FULL__CASH_OUT
+  [clean|FS-FULL|PAYMENT] 11 features | fit 1,801,437 | val 308,839 | test 41,219 (0 fraud)
+      26 epochs, 256.8s, val_recon 0.04351, val_kl_raw 2.623
+    AP=None lift=None F1=0.0000 -> clean__FS-FULL__PAYMENT
+  [clean|FS-ORIGIN|TRANSFER] 7 features | fit 441,840 | val 76,247 | test 11,546 (821 fraud)
+      32 epochs, 75.8s, val_recon 0.03101, val_kl_raw 2.004
+    AP=0.7001 lift=9.8 F1=0.6543 -> clean__FS-ORIGIN__TRANSFER
+  [clean|FS-ORIGIN|CASH_OUT] 7 features | fit 1,877,456 | val 319,553 | test 37,196 (821 fraud)
+      29 epochs, 510.7s, val_recon 0.04747, val_kl_raw 2.180
+    AP=0.7498 lift=34.0 F1=0.7148 -> clean__FS-ORIGIN__CASH_OUT
+  [clean|FS-ORIGIN|PAYMENT] 7 features | fit 1,801,437 | val 308,839 | test 41,219 (0 fraud)
+      31 epochs, 1896.3s, val_recon 0.04278, val_kl_raw 2.587
+    AP=None lift=None F1=0.0000 -> clean__FS-ORIGIN__PAYMENT
+  [clean|FS-CLEAN|TRANSFER] 4 features | fit 441,840 | val 76,247 | test 11,546 (821 fraud)
+      22 epochs, 58.5s, val_recon 0.02196, val_kl_raw 1.048
+    AP=0.3476 lift=4.9 F1=0.3427 -> clean__FS-CLEAN__TRANSFER
+  [clean|FS-CLEAN|CASH_OUT] 4 features | fit 1,877,456 | val 319,553 | test 37,196 (821 fraud)
+      28 epochs, 341.1s, val_recon 0.01527, val_kl_raw 1.721
+    AP=0.3663 lift=16.6 F1=0.2497 -> clean__FS-CLEAN__CASH_OUT
+  [clean|FS-CLEAN|PAYMENT] 4 features | fit 1,801,437 | val 308,839 | test 41,219 (0 fraud)
+      43 epochs, 476.3s, val_recon 0.02598, val_kl_raw 1.166
+    AP=None lift=None F1=0.0000 -> clean__FS-CLEAN__PAYMENT
+  [clean|FS12|TRANSFER] 12 features | fit 441,840 | val 76,247 | test 11,546 (821 fraud)
+      23 epochs, 54.4s, val_recon 0.15253, val_kl_raw 3.742
+    AP=1.0 lift=14.1 F1=1.0000 -> clean__FS12__TRANSFER
+  [clean|FS12|CASH_OUT] 12 features | fit 1,877,456 | val 319,553 | test 37,196 (821 fraud)
+      27 epochs, 1417.0s, val_recon 0.15245, val_kl_raw 4.056
+    AP=0.5765 lift=26.1 F1=0.0583 -> clean__FS12__CASH_OUT
+  [clean|FS12|PAYMENT] 12 features | fit 1,801,437 | val 308,839 | test 41,219 (0 fraud)
+      44 epochs, 3996.6s, val_recon 0.15176, val_kl_raw 4.142
+    AP=None lift=None F1=0.0000 -> clean__FS12__PAYMENT
+  [clean|FS13|TRANSFER] 13 features | fit 441,840 | val 76,247 | test 11,546 (821 fraud)
+      32 epochs, 85.9s, val_recon 0.15092, val_kl_raw 4.103
+    AP=0.9996 lift=14.1 F1=0.9964 -> clean__FS13__TRANSFER
+  [clean|FS13|CASH_OUT] 13 features | fit 1,877,456 | val 319,553 | test 37,196 (821 fraud)
+      38 epochs, 451.9s, val_recon 0.14504, val_kl_raw 4.628
+    AP=0.6125 lift=27.8 F1=0.0606 -> clean__FS13__CASH_OUT
+  [clean|FS13|PAYMENT] 13 features | fit 1,801,437 | val 308,839 | test 41,219 (0 fraud)
+      29 epochs, 318.0s, val_recon 0.15520, val_kl_raw 4.258
+    AP=None lift=None F1=0.0000 -> clean__FS13__PAYMENT
+  [clean|FS-FULL|GLOBAL] 11 features | fit 4,120,733 | val 704,639 | test 89,961 (1,642 fraud)
+      30 epochs, 3513.6s, val_recon 0.03698, val_kl_raw 3.408
+    AP=0.7333 lift=40.2 F1=0.5258 -> clean__FS-FULL__GLOBAL
+
+DONE 16/16 in 13844s -> D:\Research\VAE-With-DSAA\reports\v4\all_configs_v4.json
+
+=== 2 configurations | sets=['FS-ORIGIN-NOF3'] ===
+  [clean|FS-ORIGIN-NOF3|TRANSFER] 6 features | fit 441,840 | val 76,247 | test 11,546 (821 fraud)
+      42 epochs, 108.5s, val_recon 0.02966, val_kl_raw 1.812
+    AP=0.362 lift=5.1 F1=0.3601 -> clean__FS-ORIGIN-NOF3__TRANSFER
+  [clean|FS-ORIGIN-NOF3|CASH_OUT] 6 features | fit 1,877,456 | val 319,553 | test 37,196 (821 fraud)
+      21 epochs, 265.9s, val_recon 0.03221, val_kl_raw 1.782
+    AP=0.3464 lift=15.7 F1=0.3363 -> clean__FS-ORIGIN-NOF3__CASH_OUT
+
+DONE 2/2 in 380s -> D:\Research\VAE-With-DSAA\reports\v4\all_configs_v4.json
+
+=== 1 configurations | sets=['FS-ORIGIN'] ===
+  [clean|FS-ORIGIN|GLOBAL] 7 features | fit 4,120,733 | val 704,639 | test 89,961 (1,642 fraud)
+      25 epochs, 628.6s, val_recon 0.03739, val_kl_raw 2.387
+    AP=0.6078 lift=33.3 F1=0.4187 -> clean__FS-ORIGIN__GLOBAL
+
+DONE 1/1 in 635s -> D:\Research\VAE-With-DSAA\reports\v4\all_configs_v4.json

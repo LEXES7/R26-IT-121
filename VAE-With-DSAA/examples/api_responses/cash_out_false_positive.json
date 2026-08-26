@@ -1,0 +1,112 @@
+{
+  "transaction_id": "DEMO_004",
+  "composite_id": "C1000061579_613",
+  "timestamp": "2026-08-25T18:52:31.577799+00:00",
+  "model_version": "vae-dsaa-v4.0.0",
+  "feature_set": "FS-ORIGIN",
+  "transaction_type": "CASH_OUT",
+  "behavioral_risk_score": 0.310365,
+  "risk_level": "MEDIUM",
+  "vae_diagnostics": {
+    "combined_anomaly_score": 3.7317,
+    "raw_score": 3.7317,
+    "threshold": 3.6729,
+    "calibrated_threshold": 0.310365,
+    "flagged": true,
+    "operating_point": "f1_optimal",
+    "stratum": "CASH_OUT",
+    "recon_z": -0.3707,
+    "kl_z": 6.4932,
+    "density_z": 9.8457,
+    "weights": {
+      "alpha": 0.5,
+      "beta": 0.3,
+      "gamma": 0.2
+    },
+    "calibration_method": "isotonic",
+    "is_control_stratum": false,
+    "out_of_training_distribution": false
+  },
+  "anomaly_fingerprint": {
+    "signal_1_reconstruction_error": {
+      "dominant_feature_signal": "F4_balance_change_ratio (84% of reconstruction error)",
+      "shares": [
+        {
+          "feature": "F4_balance_change_ratio",
+          "share": 0.8391
+        },
+        {
+          "feature": "F6_hour",
+          "share": 0.16
+        },
+        {
+          "feature": "F1_log_amount",
+          "share": 0.0009
+        }
+      ]
+    },
+    "signal_2_kl_divergence": {
+      "dominant_dimension_signal": "dim_6 (44% of KL divergence)",
+      "shares": [
+        {
+          "dimension": "dim_6",
+          "share": 0.4397
+        },
+        {
+          "dimension": "dim_0",
+          "share": 0.4299
+        },
+        {
+          "dimension": "dim_1",
+          "share": 0.0116
+        }
+      ]
+    },
+    "signal_3_latent_density": {
+      "dominant_dimension_signal": "dim_6 (44% of latent density)",
+      "shares": [
+        {
+          "dimension": "dim_6",
+          "share": 0.4356
+        },
+        {
+          "dimension": "dim_11",
+          "share": 0.1031
+        },
+        {
+          "dimension": "dim_0",
+          "share": 0.0975
+        }
+      ]
+    }
+  },
+  "fraud_typology": {
+    "typology_label": "ORIGIN_ACCOUNT_DRAIN",
+    "cluster_id": 8,
+    "confidence": 0.1624,
+    "cluster_fraud_purity": 0.5833,
+    "cluster_size": 12,
+    "fatf_hint": "FATF-004",
+    "rationale": "origin balance change dominates the deviation \u2014 F4_balance_change_ratio carries 86% of this cluster's reconstruction error, +72% against the other typologies",
+    "discovery": "unsupervised DBSCAN over DSAA fingerprints; label is post-hoc"
+  },
+  "evidence": {
+    "current_transaction": {
+      "fraud_signal_summary": "Behavioural anomaly score 3.73 against the CASH_OUT threshold 3.67 (flagged, F1-optimal operating point), calibrated to a risk probability of 0.310 (MEDIUM). Dominant reconstruction error: F4_balance_change_ratio at 84% of the total, followed by F6_hour at 16%. Dominant latent deviation: dim_6 at 44% of KL divergence. Nearest discovered typology: ORIGIN_ACCOUNT_DRAIN (cluster 8, fit confidence 0.16, 58% of that cluster's members are fraud in the held-out test partition)."
+    }
+  },
+  "metadata": {
+    "inference_latency_ms": 1,
+    "bundle": "clean__FS-ORIGIN__CASH_OUT",
+    "protocol": "clean",
+    "engineered_features": {
+      "F1_log_amount": 13.037555,
+      "F2_amount_balance_ratio": 0.765251,
+      "F3_balance_consistency": 1.0,
+      "F4_balance_change_ratio": -0.765251,
+      "F6_hour": 0.541667,
+      "F8_is_large": 1.0,
+      "F12_round_amount": 0.0
+    }
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "protocol": "clean",
+  "feature_set": "FS13",
+  "stratum": "PAYMENT",
+  "features": [
+    "F1_log_amount",
+    "F2_amount_balance_ratio",
+    "F3_balance_consistency",
+    "F4_balance_change_ratio",
+    "F5_dest_balance_ratio",
+    "F6_hour",
+    "F7_day",
+    "F8_is_large",
+    "F9_dest_starts_empty",
+    "F10_recipient_emptied",
+    "F11_account_velocity",
+    "F12_round_amount",
+    "F13_zero_dest_history"
+  ],
+  "n_features": 13,
+  "architecture": {
+    "h1": 32,
+    "h2": 16,
+    "latent": 8,
+    "input_dim": 13
+  },
+  "latent_dim": 8,
+  "hyperparameters": {
+    "free_bits": 0.1,
+    "beta_max": 0.05,
+    "anneal_epochs": 10,
+    "optimizer": "Adam",
+    "lr": 0.001,
+    "batch_size": 256
+  },
+  "split": {
+    "strategy": "chronological",
+    "split_step": 595,
+    "step_recovery": "step = F7_day * 720"
+  },
+  "framework": "pytorch 2.13.0+cpu",
+  "git_commit": "4e585bf",
+  "created_utc": "2026-08-24T17:58:54Z",
+  "train_history": {
+    "epochs_run": 29,
+    "seconds": 318.04300141334534,
+    "val_recon_loss": 0.1551993369751798,
+    "val_kl_raw": 4.257571301783527
+  },
+  "provenance": {
+    "feature_set": "FS13",
+    "n_features": 13,
+    "features": [
+      "F1_log_amount",
+      "F2_amount_balance_ratio",
+      "F3_balance_consistency",
+      "F4_balance_change_ratio",
+      "F5_dest_balance_ratio",
+      "F6_hour",
+      "F7_day",
+      "F8_is_large",
+      "F9_dest_starts_empty",
+      "F10_recipient_emptied",
+      "F11_account_velocity",
+      "F12_round_amount",
+      "F13_zero_dest_history"
+    ],
+    "origin_balance": [
+      "F2_amount_balance_ratio",
+      "F3_balance_consistency",
+      "F4_balance_change_ratio"
+    ],
+    "destination_balance": [
+      "F10_recipient_emptied",
+      "F13_zero_dest_history",
+      "F5_dest_balance_ratio",
+      "F9_dest_starts_empty"
+    ],
+    "excluded_look_ahead": [],
+    "excluded_absolute_time": [],
+    "source_columns": [
+      "amount",
+      "nameOrig",
+      "newbalanceDest",
+      "newbalanceOrig",
+      "oldbalanceDest",
+      "oldbalanceOrg",
+      "step"
+    ]
+  },
+  "seed": 42,
+  "serving": {
+    "f8_p95_causal": 37283.529999999984,
+    "f8_p95_source": "fit-partition non-fraud amounts",
+    "f6_hour_formula": "(step % 24) / 24",
+    "note": "Constants required to engineer features for a single transaction at serving time. Without f8_p95_causal the F8_is_large feature cannot be reproduced and every served score is wrong."
+  }
+}

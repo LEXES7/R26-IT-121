@@ -1,0 +1,48 @@
+{
+  "config": "clean|FS-FULL|TRANSFER",
+  "feature_set": "FS-FULL",
+  "n_features": 11,
+  "n_rows": 11546,
+  "n_fraud": 821,
+  "test_fraud_rate": 0.07110687684046423,
+  "auc_pr_average_precision": 1.0,
+  "ap_lift_over_base_rate": 14.063337393422657,
+  "max_possible_ap_lift": 14.063337393422657,
+  "auc_roc": 1.0,
+  "precision_at_500": 1.0,
+  "precision_at_1000": 0.821,
+  "operating_point_f1_optimal": {
+    "threshold": 18.521886698040266,
+    "precision": 1.0,
+    "recall": 0.9987819732034104,
+    "f1": 0.9993906154783668,
+    "f2": 0.9990253411306043,
+    "tp": 820,
+    "fp": 0,
+    "tn": 10725,
+    "fn": 1,
+    "fpr": 0.0,
+    "flag_rate": 0.07102026675905075
+  },
+  "operating_point_f2_optimal": {
+    "threshold": 18.521886698040266,
+    "precision": 1.0,
+    "recall": 0.9987819732034104,
+    "f1": 0.9993906154783668,
+    "f2": 0.9990253411306043,
+    "tp": 820,
+    "fp": 0,
+    "tn": 10725,
+    "fn": 1,
+    "fpr": 0.0,
+    "flag_rate": 0.07102026675905075
+  },
+  "train": {
+    "epochs_run": 28,
+    "seconds": 75.90289664268494,
+    "val_recon_loss": 0.035952518136789624,
+    "val_kl_raw": 2.446433935803048
+  },
+  "threshold_source": "validation partition, F-beta optimal",
+  "bundle": "D:\\Research\\VAE-With-DSAA\\checkpoints\\v4\\clean__FS-FULL__TRANSFER"
+}

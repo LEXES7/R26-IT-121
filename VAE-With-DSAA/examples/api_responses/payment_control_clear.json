@@ -1,0 +1,112 @@
+{
+  "transaction_id": "DEMO_005",
+  "composite_id": "C1666544295_618",
+  "timestamp": "2026-08-25T18:52:33.807208+00:00",
+  "model_version": "vae-dsaa-v4.0.0",
+  "feature_set": "FS-ORIGIN",
+  "transaction_type": "PAYMENT",
+  "behavioral_risk_score": 0.000732,
+  "risk_level": "LOW",
+  "vae_diagnostics": {
+    "combined_anomaly_score": -0.1547,
+    "raw_score": -0.1547,
+    "threshold": 5.149,
+    "calibrated_threshold": 0.5,
+    "flagged": false,
+    "operating_point": "f1_optimal",
+    "stratum": "PAYMENT",
+    "recon_z": -0.3468,
+    "kl_z": -0.9696,
+    "density_z": 1.5481,
+    "weights": {
+      "alpha": 0.5,
+      "beta": 0.3,
+      "gamma": 0.2
+    },
+    "calibration_method": "threshold_logistic",
+    "is_control_stratum": true,
+    "out_of_training_distribution": false
+  },
+  "anomaly_fingerprint": {
+    "signal_1_reconstruction_error": {
+      "dominant_feature_signal": "F4_balance_change_ratio (92% of reconstruction error)",
+      "shares": [
+        {
+          "feature": "F4_balance_change_ratio",
+          "share": 0.9176
+        },
+        {
+          "feature": "F6_hour",
+          "share": 0.0413
+        },
+        {
+          "feature": "F1_log_amount",
+          "share": 0.0411
+        }
+      ]
+    },
+    "signal_2_kl_divergence": {
+      "dominant_dimension_signal": "dim_1 (48% of KL divergence)",
+      "shares": [
+        {
+          "dimension": "dim_1",
+          "share": 0.4757
+        },
+        {
+          "dimension": "dim_5",
+          "share": 0.4185
+        },
+        {
+          "dimension": "dim_3",
+          "share": 0.0621
+        }
+      ]
+    },
+    "signal_3_latent_density": {
+      "dominant_dimension_signal": "dim_7 (22% of latent density)",
+      "shares": [
+        {
+          "dimension": "dim_7",
+          "share": 0.2233
+        },
+        {
+          "dimension": "dim_4",
+          "share": 0.1773
+        },
+        {
+          "dimension": "dim_6",
+          "share": 0.1762
+        }
+      ]
+    }
+  },
+  "fraud_typology": {
+    "typology_label": "UNASSIGNED",
+    "cluster_id": -1,
+    "confidence": 0.0,
+    "cluster_fraud_purity": null,
+    "cluster_size": null,
+    "fatf_hint": null,
+    "rationale": "no typology index for this stratum",
+    "discovery": "unsupervised DBSCAN over DSAA fingerprints; label is post-hoc"
+  },
+  "evidence": {
+    "current_transaction": {
+      "fraud_signal_summary": "Behavioural anomaly score -0.15 against the PAYMENT threshold 5.15 (below threshold, F1-optimal operating point), calibrated to a risk probability of 0.001 (LOW). Dominant reconstruction error: F4_balance_change_ratio at 92% of the total, followed by F6_hour at 4%. Dominant latent deviation: dim_1 at 48% of KL divergence. The attribution fingerprint falls outside every discovered typology, so no typology is asserted."
+    }
+  },
+  "metadata": {
+    "inference_latency_ms": 1,
+    "bundle": "clean__FS-ORIGIN__PAYMENT",
+    "protocol": "clean",
+    "engineered_features": {
+      "F1_log_amount": 8.994515,
+      "F2_amount_balance_ratio": 0.263093,
+      "F3_balance_consistency": 1.0,
+      "F4_balance_change_ratio": -0.263093,
+      "F6_hour": 0.75,
+      "F8_is_large": 0.0,
+      "F12_round_amount": 0.0
+    }
+  }
+}
