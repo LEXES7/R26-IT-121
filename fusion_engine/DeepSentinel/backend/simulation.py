@@ -1,0 +1,176 @@
+"""Replaying historical decisions at a different threshold.
+
+The question an operator actually asks is not "what is our F1" but "if I move
+the line, how many more alerts land on my desk tomorrow, and how many real cases
+do I miss?" This answers that from what the system has already scored.
+
+Why this is only meaningful because the scores are calibrated
+------------------------------------------------------------
+Sliding a threshold over raw model output tells you nothing transferable — the
+number has no fixed meaning between models or over time. Isotonic calibration
+brought expected calibration error from 0.80 to 0.024, so a threshold of 0.4 is
+"40% likely to be fraud" rather than an arbitrary cut point. The slider is the
+commercial expression of that work.
+
+What this is not
+----------------
+A prediction. It replays decisions already made on transactions already seen,
+so it says what *would have* happened, not what *will*. Alert volume shifts with
+traffic; the response says how many records the estimate rests on so nobody
+reads a confident number off twelve rows.
+"""
+
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass
+
+from sqlalchemy import text
+
+from backend.db.session import get_session
+
+logger = logging.getLogger(__name__)
+
+# Anything below this and the numbers are noise dressed as analysis.
+MIN_SAMPLE = 20
+
+
+@dataclass
+class Point:
+    threshold: float
+    alerts: int
+    precision: float | None
+    recall: float | None
+    f1: float | None
+    true_positives: int
+    false_positives: int
+    false_negatives: int
+
+
+async def _rows(days: int | None = None) -> list[tuple[float, bool | None]]:
+    """(fused score, ground-truth label) for scored transactions.
+
+    Reads `fraud_cases` when it exists, since that is where labels live, and
+    falls back to `analysis_records` — which has scores but usually no labels,
+    so volume can still be estimated even when accuracy cannot.
+    """
+    async with get_session() as db:
+        try:
+            q = ("SELECT fused_score, label_is_fraud FROM fraud_cases "
+                 "WHERE fused_score IS NOT NULL")
+            if days:
+                q += " AND detected_at >= :cutoff"
+            rows = (await db.execute(
+                text(q),
+                {"cutoff": _cutoff(days)} if days else {},
+            )).all()
+            if rows:
+                return [(float(r[0]), None if r[1] is None else bool(r[1])) for r in rows]
+        except Exception:                                     # noqa: BLE001
+            pass
+
+        try:
+            rows = (await db.execute(
+                text("SELECT fraud_confidence_score, NULL FROM analysis_records "
+                     "WHERE fraud_confidence_score IS NOT NULL")
+            )).all()
+            return [(float(r[0]), None) for r in rows]
+        except Exception:                                     # noqa: BLE001
+            return []
+
+
+def _cutoff(days: int):
+    from datetime import datetime, timedelta, timezone
+
+    return datetime.now(timezone.utc) - timedelta(days=days)
+
+
+def _score_at(rows: list[tuple[float, bool | None]], threshold: float) -> Point:
+    alerts = tp = fp = fn = 0
+    for score, label in rows:
+        flagged = score >= threshold
+        if flagged:
+            alerts += 1
+        if label is None:
+            continue                       # counts toward volume, not accuracy
+        if flagged and label:
+            tp += 1
+        elif flagged and not label:
+            fp += 1
+        elif not flagged and label:
+            fn += 1
+
+    precision = tp / (tp + fp) if (tp + fp) else None
+    recall = tp / (tp + fn) if (tp + fn) else None
+    f1 = (
+        2 * precision * recall / (precision + recall)
+        if precision and recall and (precision + recall) > 0
+        else None
+    )
+    return Point(
+        threshold=round(threshold, 4),
+        alerts=alerts,
+        precision=None if precision is None else round(precision, 4),
+        recall=None if recall is None else round(recall, 4),
+        f1=None if f1 is None else round(f1, 4),
+        true_positives=tp, false_positives=fp, false_negatives=fn,
+    )
+
+
+async def sweep(days: int | None = None, points: int = 41) -> dict:
+    """Every threshold from 0 to 1, scored against history."""
+    rows = await _rows(days)
+    labelled = sum(1 for _, l in rows if l is not None)
+
+    if not rows:
+        return {
+            "sample_size": 0, "labelled": 0, "curve": [], "best": None,
+            "message": (
+                "Nothing has been scored yet. Run the monitor, or analyse a few "
+                "transactions, and the curve will fill in."
+            ),
+        }
+
+    curve = [_score_at(rows, i / (points - 1)) for i in range(points)]
+
+    # Only claim an optimum when there are labels and enough of them to mean
+    # something. Otherwise the caller gets volume and no accuracy claim.
+    best = None
+    if labelled >= MIN_SAMPLE:
+        scored = [p for p in curve if p.f1 is not None]
+        if scored:
+            best = max(scored, key=lambda p: p.f1)
+
+    message = ""
+    if labelled == 0:
+        message = (
+            "No ground-truth labels in this history, so alert volume can be "
+            "estimated but accuracy cannot. Ingest a file with an isFraud column "
+            "to see precision and recall."
+        )
+    elif labelled < MIN_SAMPLE:
+        message = (
+            f"Only {labelled} labelled record(s). Precision and recall are shown "
+            f"but are not yet stable — {MIN_SAMPLE} is the minimum worth reading."
+        )
+
+    return {
+        "sample_size": len(rows),
+        "labelled": labelled,
+        "curve": [p.__dict__ for p in curve],
+        "best": best.__dict__ if best else None,
+        "message": message,
+    }
+
+
+async def at(threshold: float, days: int | None = None) -> dict:
+    """One threshold, for a slider that moves faster than a full sweep."""
+    rows = await _rows(days)
+    if not rows:
+        return {"sample_size": 0, "message": "Nothing scored yet."}
+    point = _score_at(rows, max(0.0, min(float(threshold), 1.0)))
+    return {
+        "sample_size": len(rows),
+        "labelled": sum(1 for _, l in rows if l is not None),
+        **point.__dict__,
+    }

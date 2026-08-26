@@ -186,6 +186,18 @@ export const decideSarDraft = (draftId, approve, note) =>
     .post(`/analyses/sar/${draftId}/decision`, { approve, note })
     .then((r) => r.data)
 
+// ── Threshold simulation ─────────────────────────────────────────────────────
+// Replays decisions already recorded at a different threshold. Historical, not
+// predictive.
+
+export const simulateThresholds = (days) =>
+  client.get('/analyses/simulate', { params: days ? { days } : {} }).then((r) => r.data)
+
+// ── Plain-English restatement of a forensic report ───────────────────────────
+
+export const explainPlainly = (analysisId) =>
+  client.post(`/analyses/${analysisId}/explain`).then((r) => r.data)
+
 export const getHealth = () => client.get('/health').then((r) => r.data)
 
 export const getTypologies = () => client.get('/typologies').then((r) => r.data)

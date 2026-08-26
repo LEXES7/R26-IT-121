@@ -1176,6 +1176,66 @@ async def set_package_endpoint(
     return packages.status()
 
 
+# ── Plain-English explanation ────────────────────────────────────────────────
+
+
+@app.post("/analyses/{analysis_id}/explain", tags=["analysis"])
+async def explain_plainly(analysis_id: int, user: User = Depends(get_current_user)):
+    """Restate this alert's forensic report for a non-specialist."""
+    from backend import packages
+    from backend.rag.prompt_builder import build_plain_english_prompt
+    from backend.sar import get_analysis
+
+    packages.require("forensic_report")
+    record = await get_analysis(analysis_id)
+    if not record.forensic_report:
+        raise HTTPException(
+            409, "This alert has no forensic report to restate."
+        )
+    if forensic_reporter is None:
+        raise HTTPException(503, "No language model is configured.")
+
+    package = build_plain_english_prompt(
+        record.forensic_report, record.classification or "UNKNOWN"
+    )
+    try:
+        text_out = forensic_reporter.generate_report(package)
+    except Exception as exc:                                  # noqa: BLE001
+        raise HTTPException(502, f"Explanation failed: {type(exc).__name__}")
+
+    return {
+        "analysis_id": analysis_id,
+        "classification": record.classification,
+        "plain_english": (text_out or "").strip(),
+        # Named so the UI can say this is a restatement, not a second opinion.
+        "derived_from": "forensic_report",
+    }
+
+
+# ── Threshold simulation ─────────────────────────────────────────────────────
+# Replays decisions already made at a different threshold. Historical, not
+# predictive — see backend/simulation.py.
+
+
+@app.get("/analyses/simulate", tags=["analysis"])
+async def simulate_threshold(
+    threshold: float | None = None,
+    days: int | None = None,
+    user: User = Depends(get_current_user),
+):
+    """Alert volume and, where labels exist, accuracy at a given threshold.
+
+    Without `threshold`, returns the full curve so a slider can move without a
+    round trip per pixel.
+    """
+    from backend import packages, simulation
+
+    packages.require("threshold_sim")
+    if threshold is None:
+        return await simulation.sweep(days=days)
+    return await simulation.at(threshold, days=days)
+
+
 # ── Suspicious Activity Report drafting ──────────────────────────────────────
 # The system drafts; a named officer reviews, edits and decides. Nothing here
 # files anything with any authority.

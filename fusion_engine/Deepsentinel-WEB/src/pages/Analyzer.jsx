@@ -5,6 +5,7 @@ import RiskBadge from '../components/RiskBadge'
 import AblationComparison from '../components/AblationComparison'
 import TransactionForm from '../components/TransactionForm'
 import GraphEvidence from '../components/GraphEvidence'
+import NetworkGraph from '../components/NetworkGraph'
 import BehaviouralEvidence from '../components/BehaviouralEvidence'
 import ForensicReport from '../components/ForensicReport'
 import SarDraft from '../components/SarDraft'
@@ -303,6 +304,11 @@ export default function Analyzer() {
               title="Detailed attribution is not included in your package"
             >
               <>
+                {/* The picture first: an investigator reasons about the shape of
+                    the ring before reading the numbers behind it. */}
+                {result?.graph_evidence && (
+                  <NetworkGraph evidence={result.graph_evidence} />
+                )}
                 {result?.graph_evidence && (
                   <GraphEvidence evidence={result.graph_evidence} />
                 )}
@@ -325,6 +331,7 @@ export default function Analyzer() {
                 loading={running && !result?.forensic_report}
                 durationMs={stages?.report?.durationMs}
                 transactionId={result?.transaction_id}
+                analysisId={result?.analysis_id}
               />
             </Locked>
           )}
