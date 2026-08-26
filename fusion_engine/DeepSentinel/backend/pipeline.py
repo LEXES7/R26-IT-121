@@ -90,6 +90,7 @@ async def run_pipeline(
     mock_scenario_used = None
     behavioral_signal = graph_signal = temporal_signal = None
     graph_evidence = None
+    behavioral_evidence = None
     fell_back = False  # simulated because upstream was unreachable, not by choice
 
     # ── Stage 1: input ───────────────────────────────────────────────────────
@@ -176,6 +177,7 @@ async def run_pipeline(
             behavioral_signal = b_resp.fraud_signal_summary
             graph_signal = g_resp.fraud_signal_summary
             graph_evidence = g_resp.extra.get("suspicious_subgraph") or None
+            behavioral_evidence = b_resp.extra.get("evidence") or None
             temporal_signal = t_resp.fraud_signal_summary
 
             if not any([behavioral_available, graph_available, temporal_available]):
@@ -408,6 +410,7 @@ async def run_pipeline(
             "behavioral_signal": behavioral_signal,
             "graph_signal": graph_signal,
             "graph_evidence": graph_evidence,
+            "behavioral_evidence": behavioral_evidence,
             "temporal_signal": temporal_signal,
         }
     )
