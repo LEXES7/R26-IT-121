@@ -30,6 +30,11 @@ module.exports = {
   ...config.expo,
   extra: {
     ...(config.expo.extra ?? {}),
-    apiBase: process.env.EXPO_PUBLIC_API_BASE ?? "http://192.168.1.159:8090",
+    // A DHCP lease, so it moves. When it does the app reports the backend as
+    // unreachable, which is accurate but unhelpful — the address is simply
+    // stale. Overridden by the environment variable above, which is how it
+    // will be set once the engine is on Azure and has a name rather than a
+    // number.
+    apiBase: process.env.EXPO_PUBLIC_API_BASE ?? "http://192.168.1.100:8090",
   },
 };
