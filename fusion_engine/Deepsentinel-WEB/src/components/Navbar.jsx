@@ -29,8 +29,7 @@ export default function Navbar() {
 
   const primary = auth.isAuthenticated
     ? [
-        { to: '/', label: 'Overview' },
-        { to: '/components/network', label: 'Components' },
+        { to: '/', label: 'Dashboard' },
         { to: '/monitor', label: 'Live monitor' },
         { to: '/analyzer', label: 'Analyzer' },
         { to: '/cases', label: 'Cases' },

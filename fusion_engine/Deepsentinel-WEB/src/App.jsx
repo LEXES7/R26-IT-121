@@ -13,6 +13,7 @@ import Home from './pages/Home'
 import Analyzer from './pages/Analyzer'
 import Thresholds from './pages/Thresholds'
 import Cases from './pages/Cases'
+import Dashboard from './pages/Dashboard'
 import Monitor from './pages/Monitor'
 import Assistant from './pages/Assistant'
 import BatchAnalysis from './pages/BatchAnalysis'
@@ -53,7 +54,9 @@ function Shell() {
         <ErrorBoundary>
           <Routes>
             {/* Public */}
-            <Route path="/" element={<Home />} />
+            {/* Signed in, "/" is the operator's dashboard; signed out it is the
+                public overview. One address, and nobody has to learn a second. */}
+            <Route path="/" element={<RootPage />} />
             <Route path="/about" element={<About />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/components/:slug" element={<ComponentDetail />} />
@@ -117,7 +120,17 @@ function Shell() {
   )
 }
 
-export default function App() {
+export default /** The landing page depends on who is asking. */
+function RootPage() {
+  const { isAuthenticated, initialising } = useAuth()
+  // Render nothing rather than the marketing page while the session is still
+  // resolving — a signed-in user flashing the public page reads as a bug.
+  if (initialising) return null
+  return isAuthenticated ? <Dashboard /> : <Home />
+}
+
+
+function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
