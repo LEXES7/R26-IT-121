@@ -14,12 +14,13 @@ import type {
   GraphEvidence as GraphShape,
   TemporalEvidence as TemporalShape,
 } from "../api/analyses";
+import ForensicReport from "../components/ForensicReport";
 import Behavioural from "../components/evidence/Behavioural";
 import Graph from "../components/evidence/Graph";
 import Temporal from "../components/evidence/Temporal";
 import { Card, Fact, Label, MODALITIES, Note, RiskBadge, ScoreBar, Section } from "../components/ui";
 import { ago, money, score } from "../lib/format";
-import { bg, mono, radius, riskColour, space, text } from "../theme/tokens";
+import { accent, bg, mono, radius, riskColour, space, text } from "../theme/tokens";
 import { statusBarInset } from "../theme/layout";
 
 type Props = {
@@ -42,6 +43,11 @@ type Props = {
    * Shown beside the score, never fed to a model.
    */
   groundTruth?: boolean;
+  /**
+   * The engine's narrative report. Served by `/analyze` and absent from the
+   * analysis list, so a screened transaction has one and a listed one does not.
+   */
+  forensicReport?: string | null;
 };
 
 /**
@@ -67,6 +73,7 @@ export default function CaseScreen({
   evidence,
   available,
   groundTruth,
+  forensicReport,
 }: Props) {
   const colour = riskColour(row.classification);
   const used = row.modalities_used ?? 0;
@@ -159,6 +166,16 @@ export default function CaseScreen({
             </Note>
           </Card>
         )}
+
+        <Section
+          title="Forensic report"
+          subtitle="Language model · grounded in the retrieved typology"
+          accent={accent.base}
+          initiallyOpen
+          disabled={!forensicReport}
+        >
+          {forensicReport && <ForensicReport report={forensicReport} />}
+        </Section>
 
         <Card>
           <Label>Model contributions</Label>

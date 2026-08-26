@@ -55,6 +55,7 @@ type Detail = {
   };
   available?: { behavioral: boolean; graph: boolean; temporal: boolean };
   groundTruth?: boolean;
+  forensicReport?: string | null;
 };
 
 export default function App() {
@@ -169,6 +170,7 @@ export default function App() {
         temporal: result.temporal_available,
       },
       groundTruth: sample.isFraud,
+      forensicReport: result.forensic_report,
     });
   }, []);
 
@@ -182,6 +184,7 @@ export default function App() {
         evidence={detail.evidence}
         available={detail.available}
         groundTruth={detail.groundTruth}
+        forensicReport={detail.forensicReport}
         onBack={() => setDetail(null)}
       />
     );
