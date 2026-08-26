@@ -80,68 +80,66 @@ const MODALITY_STYLE = {
 }
 
 // Shown when nothing has been run yet, so the page still teaches.
+// Before a run there is nothing measured to show, so nothing numeric is shown.
+//
+// This block previously carried invented scores — 0.85, 0.88, 0.92, an account
+// id, "reconstruction error 4.2σ above baseline" — behind an "illustrative"
+// tag. A reader cannot tell a labelled fake number from a real one at a glance,
+// and a fraud tool that displays fabricated evidence undermines the only thing
+// it is selling. What each stage *does* is describable in words; what it
+// *found* only exists after it runs.
+
 const WALKTHROUGH = {
   input: {
-    rows: [
-      ['type', 'TRANSFER'],
-      ['amount', '50,000.00'],
-      ['nameOrig', 'C1305486145'],
-      ['nameDest', 'C553264065'],
-      ['oldbalanceOrg', '50,000.00'],
-      ['newbalanceOrig', '0.00'],
-    ],
-    note: 'Balance drained to exactly zero — suggestive on its own, but not proof.',
+    note: 'The transaction is validated against the schema every detector expects. '
+        + 'A malformed record is rejected here rather than halfway through the pipeline.',
   },
   models: {
-    note: 'If a model is unreachable its score is imputed and the confidence penalised, rather than failing the request.',
+    note: 'The three detectors run concurrently and none of them sees the others\' output. '
+        + 'If one is unreachable its score is imputed and the fused confidence penalised, '
+        + 'rather than the request failing.',
   },
   fusion: {
-    rows: [
-      ['graph', '0.85'],
-      ['behavioral', '0.88'],
-      ['temporal', '0.92'],
-      ['fused', '0.87 → HIGH'],
-    ],
-    note: 'Agreement across independent modalities is what makes the score trustworthy — any single model is far easier to fool.',
+    note: 'Agreement across independent modalities is what makes a score trustworthy — '
+        + 'any single model is far easier to fool. Scores are calibrated first, so they '
+        + 'share a scale and can meaningfully be combined.',
   },
   retrieval: {
-    rows: [
-      ['typology', 'Mule Network — Hub and Spoke'],
-      ['similarity', '0.91'],
-      ['stage', 'Placement'],
-    ],
-    note: 'This step is what separates a grounded report from a plausible-sounding invention.',
+    note: 'The closest matching FATF typology is retrieved by embedding similarity. '
+        + 'This step is what separates a grounded report from a plausible-sounding invention.',
   },
   report: {
-    note: 'Every claim traces back to a stage above it, which is what makes the output defensible in an investigation.',
+    note: 'The language model may cite only the scores produced above and the one retrieved '
+        + 'typology. Every claim traces back to a stage, which is what makes the output '
+        + 'defensible in an investigation.',
   },
 }
 
-const DEMO_MODELS = [
+// What each detector looks at. Descriptions only — a score appears here when a
+// run produces one, and never before.
+const MODEL_CARDS = [
   {
     key: 'graph',
     model: 'Edge-Enhanced GraphSAGE',
     modality: 'Network',
     detects: 'Who pays whom. Finds mule rings, hub-and-spoke funnels and layering chains.',
-    signal: 'HUB_AND_SPOKE — 3 senders converging on one sink account',
-    score: 0.85,
   },
   {
     key: 'behavioral',
     model: 'Stratified VAE + DSAA',
     modality: 'Behaviour',
-    detects: 'Whether this account is acting like itself, against a learned per-account baseline.',
-    signal: 'Reconstruction error 4.2σ above baseline',
-    score: 0.88,
+    // Per transaction type, not per account — the per-account description was
+    // wrong, and its own author corrected it.
+    detects: 'Whether the transaction fits normal behaviour for its type, against a '
+           + 'model trained only on non-fraud traffic of that type.',
   },
   {
     key: 'temporal',
     model: 'System-Context TCN',
     modality: 'Timing',
-    detects: 'Rhythm. Mechanically regular transfers betray a script rather than a person.',
+    detects: 'Rhythm. Reads the transactions preceding this one and finds which of them '
+           + 'made it suspicious.',
     detectsShort: 'Rhythm',
-    signal: 'Burstiness 0.92 — machine-paced, not human',
-    score: 0.92,
   },
 ]
 
@@ -261,7 +259,7 @@ export default function PipelineDiagram({ stages, running, live = false }) {
               )}
               {!live && !hasLiveData && (
                 <span className="rounded border border-subtle bg-surface-raised px-1.5 py-0.5 text-[10px] text-slate-600">
-                  illustrative
+                  not yet run
                 </span>
               )}
             </div>
@@ -314,7 +312,7 @@ function StageMark({ running, done, error, skipped, step, accentText }) {
 function ModelsPanel({ data }) {
   // Live data when a run has happened; the annotated example otherwise.
   const models = data
-    ? DEMO_MODELS.map((d) => {
+    ? MODEL_CARDS.map((d) => {
         const live = data[d.key] ?? {}
         return {
           ...d,
@@ -326,7 +324,7 @@ function ModelsPanel({ data }) {
           isLive: true,
         }
       })
-    : DEMO_MODELS.map((d) => ({ ...d, available: true, isLive: false }))
+    : MODEL_CARDS.map((d) => ({ ...d, available: null, isLive: false }))
 
   return (
     <div className="mt-5 space-y-3">
@@ -353,7 +351,14 @@ function ModelsPanel({ data }) {
 
             <p className="mt-2 text-sm font-semibold text-slate-200">{m.model}</p>
 
-            {m.available === false ? (
+            {/* Three distinct states. An empty score slot with a zero-width bar
+                reads as a broken measurement; "not yet run" must not look like
+                "returned nothing". */}
+            {m.available === null ? (
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                {m.detects}
+              </p>
+            ) : m.available === false ? (
               <p className="mt-2 text-xs leading-relaxed text-slate-500">
                 Not reachable. Its score was imputed and the fused confidence
                 penalised.

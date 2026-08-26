@@ -33,6 +33,10 @@ const SCENARIOS = [
   { value: 'legitimate', label: 'Legitimate', icon: '✅', short: 'Normal customer activity' },
 ]
 
+const RESULT_HEX = {
+  CRITICAL: '#ef4444', HIGH: '#f97316', MEDIUM: '#eab308', LOW: '#22c55e',
+}
+
 const CLASSIFICATION_STYLE = {
   CRITICAL: { bg: 'bg-risk-critical/8', border: 'border-risk-critical/30', text: 'text-risk-critical' },
   HIGH: { bg: 'bg-risk-high/8', border: 'border-risk-high/30', text: 'text-risk-high' },
@@ -88,15 +92,45 @@ export default function Analyzer() {
     Boolean(result) || running || Object.values(stages).some((s) => s.status !== 'idle')
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-10 sm:px-6">
-      <PageHeader
-        title="Transaction analyzer"
-        description="Runs one transaction through the full pipeline and streams each stage as it completes. Durations are measured, not simulated."
-      />
+    <div className="mx-auto max-w-[88rem] px-5 pb-16 pt-8 sm:px-8">
 
-      {error && <Alert tone="error">{error}</Alert>}
+      {/* The page states what it is doing, and what it has to work with. Before
+          a run there is nothing measured, and it says so rather than filling
+          the space with example figures. */}
+      <header className="hair-b pb-6">
+        <p className="eyebrow text-slate-500">Single transaction</p>
+        <h1 className="display mt-3 text-[2.5rem] text-slate-100 sm:text-[3rem]">
+          {result ? (
+            <>
+              Scored{' '}
+              <span className="numeric" style={{ color: RESULT_HEX[result.classification] ?? '#a39c92' }}>
+                {result.fraud_confidence_score?.toFixed(3)}
+              </span>
+              <span className="display-italic text-slate-500">
+                {' '}on {result.modalities_used} of 3.
+              </span>
+            </>
+          ) : running ? (
+            <>Running <span className="display-italic text-slate-500">the pipeline.</span></>
+          ) : liveTxn ? (
+            <>Ready. <span className="display-italic text-slate-500">Nothing scored yet.</span></>
+          ) : (
+            <>Pick a transaction <span className="display-italic text-slate-500">to begin.</span></>
+          )}
+        </h1>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-400">
+          {result
+            ? `Every figure below was produced by this run. ${result.modalities_used < 3
+                ? 'Fewer than three detectors answered, so an uncertainty penalty was applied and the confidence is deliberately conservative.'
+                : 'All three detectors contributed.'}`
+            : 'One transaction, through all five stages, with each stage timed as it completes. '
+              + 'Nothing on this page is illustrative — figures appear only once a run produces them.'}
+        </p>
+      </header>
 
-      <div className="grid gap-6 lg:grid-cols-[22rem_1fr] lg:items-start">
+      {error && <div className="mt-5"><Alert tone="error">{error}</Alert></div>}
+
+      <div className="mt-7 grid gap-8 lg:grid-cols-[20rem_1fr] lg:items-start">
         {/* ── Controls ── */}
         <div className="space-y-4 print:hidden">
           <Card className="p-5">
