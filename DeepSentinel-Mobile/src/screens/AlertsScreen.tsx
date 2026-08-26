@@ -16,7 +16,8 @@ import { listAnalyses, type Analysis } from "../api/analyses";
 import { getHealth, type Health } from "../api/client";
 import type { Session } from "../auth/session";
 import { ago, account, money, score } from "../lib/format";
-import { bg, mono, radius, riskColour, space, text } from "../theme/tokens";
+import { bg, mono, radius, risk, riskColour, space, text } from "../theme/tokens";
+import { statusBarInset } from "../theme/layout";
 import { MODALITIES, RiskBadge, ScoreBar } from "../components/ui";
 
 type Props = {
@@ -80,18 +81,20 @@ export default function AlertsScreen({ session, onOpen, onSignOut }: Props) {
             {rows.length} screened{filter !== "ALL" ? ` · ${filter.toLowerCase()}` : ""}
           </Text>
         </View>
-        {/* Signing out has to be asked for, not stumbled into: the name in the
-            corner reads as a label, and losing a session to a mistaken tap on
-            it is the kind of thing that happens with a phone in one hand. */}
-        <Pressable onPress={() => confirmSignOut(session.user.username, onSignOut)} hitSlop={12}>
-          <View style={styles.account}>
-            <Text style={styles.who}>{session.user.username}</Text>
-            <Text style={styles.signOutHint}>Sign out</Text>
-          </View>
+        {/* A bordered control, not a name that happens to be tappable. Losing
+            a session to a mistaken tap is the kind of thing that happens with
+            a phone in one hand, so it also asks before it acts. */}
+        <Pressable
+          onPress={() => confirmSignOut(session.user.username, onSignOut)}
+          style={({ pressed }) => [styles.signOut, pressed && styles.signOutPressed]}
+          hitSlop={8}
+        >
+          <Text style={styles.signOutText}>Sign out</Text>
+          <Text style={styles.who}>{session.user.username}</Text>
         </Pressable>
       </View>
 
-      <DetectorStrip health={health} />
+      <DetectorStrip health={health} rows={rows} />
 
       <View style={styles.filters}>
         {FILTERS.map((f) => (
@@ -153,24 +156,43 @@ function confirmSignOut(username: string, onSignOut: () => void) {
 }
 
 /**
- * Which detectors the engine is configured to call.
+ * How much of the system has actually been answering.
  *
- * Deliberately worded as "configured", not "up": the engine lists the
- * addresses without testing them, so this cannot claim a detector is running.
- * The honest count of who actually answered is on each row.
+ * An earlier version drew all three names in their own colour, which read as
+ * all three being up when only one was. The engine lists its upstream
+ * addresses without testing them, and the analysis list does not say which
+ * detector answered — so the only honest number available here is how many
+ * answered across recent screenings.
+ *
+ * It is at the top because it qualifies every row beneath it: with one
+ * detector answering, every score on this screen was built from one opinion
+ * and penalised for it.
  */
-function DetectorStrip({ health }: { health: Health | null }) {
-  if (!health) return null;
-  const bases = health.upstream_bases ?? {};
+function DetectorStrip({ health, rows }: { health: Health | null; rows: Analysis[] }) {
+  const configured = Object.keys(health?.upstream_bases ?? {}).length;
+  const recent = rows.slice(0, 10);
+  const worst = recent.length
+    ? Math.min(...recent.map((r) => r.modalities_used ?? 0))
+    : null;
+  const degraded = worst !== null && worst < 3;
+
   return (
     <View style={styles.strip}>
-      {MODALITIES.map(([key, label, colour]) => (
-        <View key={key} style={styles.stripItem}>
-          <View style={[styles.stripDot, { backgroundColor: colour }]} />
-          <Text style={styles.stripLabel}>{label}</Text>
-        </View>
-      ))}
-      <Text style={styles.stripNote}>{Object.keys(bases).length} configured</Text>
+      <View style={styles.stripNames}>
+        {MODALITIES.map(([key, label]) => (
+          <View key={key} style={styles.stripItem}>
+            <View style={styles.stripDot} />
+            <Text style={styles.stripLabel}>{label}</Text>
+          </View>
+        ))}
+      </View>
+      <Text style={[styles.stripNote, degraded && styles.stripWarn]}>
+        {worst === null
+          ? `${configured} detectors configured`
+          : degraded
+            ? `Recent screenings used ${worst} of 3 — scores are penalised`
+            : "All three answering"}
+      </Text>
     </View>
   );
 }
@@ -230,33 +252,51 @@ function Row({ row, onPress }: { row: Analysis; onPress: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: bg.canvas },
+  screen: { flex: 1, backgroundColor: bg.canvas, paddingTop: statusBarInset },
 
   header: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     paddingHorizontal: space.lg,
-    paddingTop: space.lg,
+    paddingTop: space.md,
     gap: space.md,
   },
   headerText: { flex: 1 },
-  title: { color: text.primary, fontSize: 26, fontWeight: "700", letterSpacing: -0.5 },
-  subtitle: { color: text.muted, fontSize: 13, marginTop: 2 },
-  account: { alignItems: "flex-end" },
-  who: { color: text.secondary, fontSize: 13 },
-  signOutHint: { color: text.faint, fontSize: 10, marginTop: 1 },
+  title: { color: text.primary, fontSize: 28, fontWeight: "700", letterSpacing: -0.5 },
+  subtitle: { color: text.muted, fontSize: 14, marginTop: 2 },
+
+  signOut: {
+    borderWidth: 1,
+    borderColor: bg.borderStrong,
+    borderRadius: radius.md,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    alignItems: "center",
+  },
+  signOutPressed: { opacity: 0.7, backgroundColor: bg.raised },
+  signOutText: { color: text.secondary, fontSize: 13, fontWeight: "600" },
+  who: { color: text.faint, fontSize: 11, marginTop: 1 },
 
   strip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.lg,
     paddingHorizontal: space.lg,
-    paddingVertical: space.md,
+    paddingTop: space.lg,
+    paddingBottom: space.md,
+    gap: space.xs,
   },
+  stripNames: { flexDirection: "row", gap: space.lg },
   stripItem: { flexDirection: "row", alignItems: "center", gap: space.xs },
-  stripDot: { width: 7, height: 7, borderRadius: 4 },
-  stripLabel: { color: text.muted, fontSize: 11 },
-  stripNote: { color: text.faint, fontSize: 11, marginLeft: "auto" },
+  // Hollow: this screen cannot tell which detector answered, and a filled dot
+  // in the detector's own colour would say that it did.
+  stripDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: text.faint,
+  },
+  stripLabel: { color: text.muted, fontSize: 12 },
+  stripNote: { color: text.faint, fontSize: 12 },
+  stripWarn: { color: risk.MEDIUM },
 
   filters: {
     flexDirection: "row",

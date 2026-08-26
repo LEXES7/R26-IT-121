@@ -15,6 +15,7 @@ import { NetworkError } from "../api/client";
 import { SAMPLES, type Sample } from "../data/samples";
 import { account, money } from "../lib/format";
 import { accent, bg, mono, radius, risk, space, text } from "../theme/tokens";
+import { statusBarInset } from "../theme/layout";
 import { Card, Fact, Label, Note } from "../components/ui";
 
 type Props = {
@@ -153,7 +154,7 @@ export default function AnalyzeScreen({ onResult }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: bg.canvas },
+  screen: { flex: 1, backgroundColor: bg.canvas, paddingTop: statusBarInset },
   content: { padding: space.lg, gap: space.lg, paddingBottom: space.xxl },
 
   title: { color: text.primary, fontSize: 26, fontWeight: "700", letterSpacing: -0.5 },

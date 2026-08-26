@@ -20,6 +20,7 @@ import Temporal from "../components/evidence/Temporal";
 import { Card, Fact, Label, MODALITIES, Note, RiskBadge, ScoreBar, Section } from "../components/ui";
 import { ago, money, score } from "../lib/format";
 import { bg, mono, radius, riskColour, space, text } from "../theme/tokens";
+import { statusBarInset } from "../theme/layout";
 
 type Props = {
   row: Analysis;
@@ -44,12 +45,6 @@ type Props = {
 };
 
 /**
- * One screened transaction, in the order an analyst asks about it: what was
- * decided, how much of the system stood behind that decision, and then — for
- * whoever wants it — why each detector said what it said.
- */
-
-/**
  * Whether a classification and a label point the same way.
  *
  * MEDIUM is deliberately not counted as agreement with either. The band exists
@@ -60,6 +55,12 @@ function agrees(classification: string, isFraud: boolean): boolean {
   const c = (classification ?? "").toUpperCase();
   return isFraud ? c === "CRITICAL" || c === "HIGH" : c === "LOW";
 }
+
+/**
+ * One screened transaction, in the order an analyst asks about it: what was
+ * decided, how much of the system stood behind that decision, and then — for
+ * whoever wants it — why each detector said what it said.
+ */
 export default function CaseScreen({
   row,
   onBack,
@@ -250,7 +251,7 @@ export default function CaseScreen({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: bg.canvas },
+  screen: { flex: 1, backgroundColor: bg.canvas, paddingTop: statusBarInset },
   content: { padding: space.lg, gap: space.md, paddingBottom: space.xxl },
 
   back: { paddingVertical: space.sm },

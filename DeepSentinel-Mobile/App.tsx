@@ -281,15 +281,15 @@ const styles = StyleSheet.create({
     backgroundColor: bg.raised,
     paddingBottom: space.lg,
   },
-  tab: { flex: 1, alignItems: "center", paddingTop: space.md, gap: space.xs },
+  tab: { flex: 1, alignItems: "center", paddingTop: space.md, paddingBottom: space.xs, gap: space.sm },
   tabMark: {
-    width: 18,
-    height: 2,
+    width: 24,
+    height: 3,
     borderRadius: 1,
     backgroundColor: "transparent",
   },
   tabMarkOn: { backgroundColor: accent.base },
-  tabText: { color: text.muted, fontSize: 12, fontWeight: "600" },
+  tabText: { color: text.muted, fontSize: 15, fontWeight: "600" },
   tabTextOn: { color: text.primary },
 
   splash: {
