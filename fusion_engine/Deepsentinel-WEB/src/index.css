@@ -1,6 +1,6 @@
 /* @import must come first — CSS drops any @import that follows another rule,
    which is why the font previously failed to load. */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -245,4 +245,95 @@ html.theme-transition * {
   @page {
     margin: 18mm 16mm;
   }
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Design foundation
+   ---------------------------------------------------------------------------
+   Three typefaces, each with one job:
+
+     Instrument Serif   headlines and hero figures. The editorial voice, and the
+                        single strongest signal that a person designed this.
+     Inter              everything functional — labels, body, controls.
+     JetBrains Mono     data. Tabular figures so columns of numbers align and
+                        a changing value does not shift its neighbours.
+
+   Depth comes from luminance, not from outlining every box. A page of equally
+   bordered cards has no hierarchy; a page where surfaces step subtly up toward
+   the reader does.
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Elevation steps. Each is a lift, not a new border. */
+  --lift-0: 0 0 0 0 rgb(0 0 0 / 0);
+  --lift-1: 0 1px 2px rgb(0 0 0 / 0.14);
+  --lift-2: 0 2px 8px -2px rgb(0 0 0 / 0.22), 0 1px 2px rgb(0 0 0 / 0.14);
+  --lift-3: 0 12px 32px -12px rgb(0 0 0 / 0.45), 0 2px 6px rgb(0 0 0 / 0.16);
+
+  /* One hairline, used everywhere a rule is needed. */
+  --hair: rgb(148 163 184 / 0.14);
+  --hair-strong: rgb(148 163 184 / 0.24);
+}
+
+:root[data-theme='light'],
+:root:not([data-theme='dark']) {
+  --hair: rgb(15 23 42 / 0.10);
+  --hair-strong: rgb(15 23 42 / 0.18);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --hair: rgb(148 163 184 / 0.14);
+    --hair-strong: rgb(148 163 184 / 0.24);
+  }
+}
+
+@layer components {
+  /* Editorial display type. Optical sizing matters at these sizes: the serif
+     is set tight and slightly negative-tracked so a large figure reads as one
+     shape rather than as spaced glyphs. */
+  .display {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    line-height: 0.95;
+  }
+  .display-italic { font-style: italic; }
+
+  /* Tabular figures. Without this a counter animating from 9 to 10 shifts
+     everything beside it. */
+  .numeric {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1, 'zero' 1;
+  }
+
+  /* The one label style. Small, spaced, quiet — it names a thing without
+     competing with it. */
+  .eyebrow {
+    font-size: 0.625rem;
+    line-height: 1;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  /* A rule, not a border-on-a-box. */
+  .hair    { border-color: var(--hair); }
+  .hair-t  { border-top: 1px solid var(--hair); }
+  .hair-b  { border-bottom: 1px solid var(--hair); }
+  .hair-l  { border-left: 1px solid var(--hair); }
+  .hair-r  { border-right: 1px solid var(--hair); }
+
+  /* Panels group content by luminance and shadow rather than by outline. */
+  .panel {
+    background: rgb(var(--surface-raised));
+    box-shadow: var(--lift-1);
+    border-radius: 0.75rem;
+  }
+  .panel-flat { background: rgb(var(--surface-raised)); border-radius: 0.75rem; }
+  .panel-lift { box-shadow: var(--lift-3); }
+
+  /* Dense list rows: a hairline between, no box around each. */
+  .rows > * + * { border-top: 1px solid var(--hair); }
 }

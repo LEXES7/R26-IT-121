@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Badge, Button, Card, CardHeader, cx } from './ui'
+import { cx } from './ui'
 
 /**
  * The forensic subgraph, drawn.
@@ -125,28 +125,38 @@ export default function NetworkGraph({ evidence, height = 420 }) {
   const detail = focus ? nodes.find((n) => n.account_id === focus) : null
 
   return (
-    <Card className="p-5 sm:p-6">
-      <CardHeader
-        title="Transaction network"
-        description="The accounts around this alert. Line thickness is how heavily each transfer weighed in the decision."
-        action={
-          <div className="flex items-center gap-2">
-            <Badge tone="low">{nodes.length} accounts</Badge>
-            {steps.length > 1 ? (
-              <Button size="sm" variant={playing ? 'ghost' : 'secondary'}
-                      onClick={() => setPlaying((p) => !p)}>
-                {playing ? '■ Stop' : `▶ Replay ${steps.length} transfers`}
-              </Button>
-            ) : (
-              // Say why there is nothing to play, rather than silently omitting
-              // the control and leaving the reader to wonder.
-              <span className="text-[10px] text-slate-600">single transfer</span>
-            )}
-          </div>
-        }
-      />
+    <div>
+      {/* No card around this: the page groups by hairline and space, and a box
+          here would make the one dominant element look like another panel. */}
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
+        <p className="text-xs text-slate-500">
+          Line thickness is how heavily each transfer weighed in the decision.
+        </p>
+        <div className="ml-auto flex items-center gap-3">
+          <span className="numeric text-[11px] text-slate-500">
+            {nodes.length} accounts · {edges.length} transfers
+          </span>
+          {steps.length > 1 ? (
+            <button
+              onClick={() => setPlaying((p) => !p)}
+              className={cx(
+                'rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors',
+                playing
+                  ? 'text-slate-400 hover:text-slate-200'
+                  : 'bg-accent-500/15 text-accent-300 hover:bg-accent-500/25',
+              )}
+            >
+              {playing ? '■ Stop' : `▶ Replay ${steps.length} transfers`}
+            </button>
+          ) : (
+            // Say why there is nothing to play rather than omitting the control
+            // and leaving the reader to wonder whether it failed.
+            <span className="text-[10px] text-slate-600">single transfer</span>
+          )}
+        </div>
+      </div>
 
-      <div className="mt-4 overflow-x-auto">
+      <div className="mt-2 overflow-x-auto">
         <svg
           viewBox={`0 0 ${W} ${H}`}
           className="w-full min-w-[560px]"
@@ -262,7 +272,7 @@ export default function NetworkGraph({ evidence, height = 420 }) {
       </div>
 
       {/* ── inspector ── */}
-      <div className="mt-4 rounded-xl border border-subtle bg-surface-raised p-4">
+      <div className="hair-t mt-3 pt-3">
         {detail ? (
           <>
             <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -296,7 +306,7 @@ export default function NetworkGraph({ evidence, height = 420 }) {
           </p>
         )}
       </div>
-    </Card>
+    </div>
   )
 }
 
