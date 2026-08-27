@@ -154,28 +154,47 @@ export default function Dashboard() {
               {name ? `${name} · ` : ''}Fraud operations
             </p>
             <h1 className="display mt-3 text-[2.75rem] text-slate-100 sm:text-[3.5rem]">
-              {featured ? (
+              {openCount ? (
                 <>
-                  {featured.graph_evidence.nodes.length} accounts,{' '}
-                  <span className="display-italic" style={{ color: SEV[featured.classification]?.hex }}>
-                    one destination.
-                  </span>
+                  {openCount} case{openCount === 1 ? '' : 's'}{' '}
+                  <span className="display-italic text-risk-medium">need your review.</span>
                 </>
               ) : running ? (
-                <>Watching. <span className="display-italic text-slate-500">Nothing yet.</span></>
+                <>All clear. <span className="display-italic text-slate-500">Nothing is waiting.</span></>
               ) : (
-                <>Nothing is <span className="display-italic text-slate-500">being screened.</span></>
+                <>Screening is <span className="display-italic text-slate-500">turned off.</span></>
               )}
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-400">
-              {featured
-                ? `The strongest case on the desk — ${SEV[featured.classification]?.label.toLowerCase()},
-                   scored ${featured.fused_score?.toFixed(3)}, matched to ${(featured.graph_pattern ?? 'no known typology')
-                    .toLowerCase().replace(/_/g, ' ')}.`
+              {openCount
+                ? `The models flagged these transactions. Open one to see why it
+                   was flagged, then confirm it as fraud or dismiss it.`
                 : running
-                  ? 'Every transaction is screened by the relational model first; only what looks structurally wrong costs the rest.'
-                  : 'Start the monitor to begin screening the ingestion queue.'}
+                  ? `Every transaction is being checked as it arrives. Anything
+                     suspicious will appear here.`
+                  : 'Start the monitor and transactions will be checked as they arrive.'}
             </p>
+
+            {/* One obvious next step. The dashboard used to state the situation
+                and leave the reader to work out what to do about it. */}
+            <div className="mt-5 flex flex-wrap items-center gap-4">
+              {openCount ? (
+                <button
+                  onClick={() => navigate('/cases')}
+                  className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-medium text-[#04231f] transition-colors hover:bg-accent-400"
+                >
+                  Start reviewing &rarr;
+                </button>
+              ) : null}
+              {featured && (
+                <Link
+                  to={`/cases/${featured.case_ref}`}
+                  className="hair border-b pb-1 text-sm text-slate-300 transition-colors hover:text-slate-100"
+                >
+                  See the strongest case &rarr;
+                </Link>
+              )}
+            </div>
           </div>
 
           {/* live state, typographic rather than a badge */}
@@ -217,14 +236,20 @@ export default function Dashboard() {
         </div>
 
         {/* the ledger — dense, no boxes */}
-        <dl className="mt-7 grid grid-cols-2 gap-y-5 sm:grid-cols-3 lg:grid-cols-6">
-          <Figure value={c.screened} label="Screened" />
-          <Figure value={c.escalated} label="Escalated" />
-          <Figure value={c.alerts} label="Alerts" accent />
-          <Figure value={openCount} label="Awaiting review" urgent={Boolean(openCount)}
-                  onClick={() => navigate('/cases')} />
-          <Figure value={queue.available ? queue.pending : null} label="In queue" />
-          <Figure value={liveCount} suffix="/3" label="Detectors" urgent={liveCount < 3} />
+        {/* Plain words, and a line under each saying what it counts. The old
+            labels — screened, escalated, alerts — are the pipeline's vocabulary,
+            not the reader's, and none of them said which number mattered. */}
+        <dl className="mt-7 grid grid-cols-2 gap-y-6 sm:grid-cols-3 lg:grid-cols-6">
+          <Figure value={openCount} label="Waiting for you" note="cases to review"
+                  urgent={Boolean(openCount)} onClick={() => navigate('/cases')} />
+          <Figure value={c.alerts} label="Alerts sent" note="someone was emailed" accent />
+          <Figure value={c.screened} label="Checked" note="transactions seen" />
+          <Figure value={c.escalated} label="Looked at closely" note="worth a second look" />
+          <Figure value={queue.available ? queue.pending : null} label="Still to check"
+                  note="waiting in the queue" />
+          <Figure value={liveCount} suffix="/3" label="Models online"
+                  note={liveCount < 3 ? 'one is not running' : 'all running'}
+                  urgent={liveCount < 3} />
         </dl>
       </header>
 
@@ -235,7 +260,7 @@ export default function Dashboard() {
           {featured ? (
             <section>
               <div className="hair-b flex flex-wrap items-baseline gap-3 pb-2.5">
-                <h2 className="text-sm font-semibold text-slate-100">The case on the desk</h2>
+                <h2 className="text-sm font-semibold text-slate-100">Most serious case right now</h2>
                 <span className="numeric text-[11px]" style={{ color: SEV[featured.classification]?.hex }}>
                   {featured.fused_score?.toFixed(3)}
                 </span>
@@ -261,7 +286,7 @@ export default function Dashboard() {
 
           <section>
             <div className="hair-b flex items-baseline justify-between pb-2.5">
-              <h2 className="text-sm font-semibold text-slate-100">Detections, last 24 hours</h2>
+              <h2 className="text-sm font-semibold text-slate-100">What was caught, last 24 hours</h2>
               <span className="text-[11px] text-slate-500">
                 <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-risk-critical align-middle" />
                 critical or high
@@ -272,7 +297,7 @@ export default function Dashboard() {
 
           <section>
             <div className="hair-b flex items-baseline justify-between pb-2.5">
-              <h2 className="text-sm font-semibold text-slate-100">Recent detections</h2>
+              <h2 className="text-sm font-semibold text-slate-100">Latest flagged transactions</h2>
               <Link to="/cases" className="text-xs text-accent-400 hover:text-accent-300">
                 All cases →
               </Link>
@@ -280,7 +305,18 @@ export default function Dashboard() {
             {cases.length === 0 ? (
               <p className="py-8 text-center text-sm text-slate-500">Nothing recorded yet.</p>
             ) : (
-              <div className="rows mt-1">
+              <>
+                {/* The columns were unlabelled, so "0.885 · Critical · 2/3"
+                    was four unexplained numbers in a row. */}
+                <div className="flex items-center gap-4 pb-1.5 pt-3 text-[10px] text-slate-600">
+                  <span className="w-[3px] shrink-0" />
+                  <span className="w-14 shrink-0">score</span>
+                  <span className="w-20 shrink-0">how serious</span>
+                  <span className="min-w-0 flex-1">pattern found</span>
+                  <span className="hidden w-12 shrink-0 sm:block">models</span>
+                  <span className="w-16 shrink-0 text-right">when</span>
+                </div>
+              <div className="rows">
                 {cases.slice(0, 9).map((x) => (
                   <button
                     key={x.case_ref}
@@ -307,6 +343,7 @@ export default function Dashboard() {
                   </button>
                 ))}
               </div>
+              </>
             )}
           </section>
         </div>
@@ -339,7 +376,7 @@ export default function Dashboard() {
             )}
           </Rail>
 
-          <Rail title="Detectors" note={`${liveCount}/3 live`}>
+          <Rail title="Models" note={`${liveCount}/3 running`}>
             <div className="rows mt-2">
               {MODELS.map(({ keys, label, hint }) => {
                 const d = pick(detectors, keys)
@@ -364,13 +401,13 @@ export default function Dashboard() {
             </div>
             {liveCount > 0 && liveCount < 3 && (
               <p className="mt-3 text-[10px] leading-relaxed text-slate-500">
-                Below three, fusion applies an uncertainty penalty. Confidences
-                are deliberately conservative.
+                With a model missing, scores are deliberately kept low rather
+                than pretending the missing one agreed.
               </p>
             )}
           </Rail>
 
-          <Rail title="Queue" note={queue.available ? 'connected' : 'not connected'}>
+          <Rail title="Incoming" note={queue.available ? 'connected' : 'not connected'}>
             {queue.available ? (
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <div>
@@ -410,7 +447,7 @@ export default function Dashboard() {
 
 /* ── pieces ──────────────────────────────────────────────────────── */
 
-function Figure({ value, label, suffix, accent, urgent, onClick }) {
+function Figure({ value, label, note, suffix, accent, urgent, onClick }) {
   const shown = useCountUp(typeof value === 'number' ? value : null)
   const Tag = onClick ? 'button' : 'div'
   return (
@@ -423,7 +460,8 @@ function Figure({ value, label, suffix, accent, urgent, onClick }) {
         {typeof value === 'number' ? shown : '—'}
         {suffix && <span className="text-slate-600">{suffix}</span>}
       </dd>
-      <dt className="eyebrow mt-2 text-slate-500">{label}</dt>
+      <dt className="mt-2 text-xs font-medium text-slate-300">{label}</dt>
+      {note && <p className="mt-0.5 text-[11px] text-slate-600">{note}</p>}
     </Tag>
   )
 }
