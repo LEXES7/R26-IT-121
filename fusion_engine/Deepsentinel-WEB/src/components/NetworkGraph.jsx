@@ -313,8 +313,8 @@ export default function NetworkGraph({ evidence, height = 420 }) {
           here would make the one dominant element look like another panel. */}
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
         <p className="text-xs text-slate-500">
-          Rings are hops from the destination. Line weight is the attention the
-          model paid that transfer.
+          Money flows toward the account in the middle. Each ring out is one
+          step further away, and thicker lines counted for more.
         </p>
         <div className="ml-auto flex items-center gap-3">
           <span className="numeric text-[11px] text-slate-500">
@@ -605,7 +605,7 @@ export default function NetworkGraph({ evidence, height = 420 }) {
           </>
         ) : (
           <p className="text-xs text-slate-500">
-            Hover an account to isolate its connections, or click to pin it.
+            Point at an account to see only its connections, or click to keep it selected.
             {steps.length > 1 && ' Press Replay to watch the transfers in order.'}
           </p>
         )}
