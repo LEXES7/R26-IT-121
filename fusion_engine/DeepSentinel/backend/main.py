@@ -1390,6 +1390,170 @@ async def review_case(
     return _case_row(row)
 
 
+# ── Picking a specific transaction to analyse ────────────────────────────────
+# Analysing a randomly pulled transaction proves the pipeline runs. Analysing
+# the transaction behind a case you are looking at proves something an
+# investigator cares about, and is reproducible — the same input gives the same
+# run, which a random pull never does.
+
+
+def _payload_from_row(raw, cols: dict) -> dict:
+    """The analyzable transaction, preferring the stored raw record.
+
+    `raw` is exactly what was ingested; the typed columns are our parse of it.
+    Prefer the former so the model sees what arrived, and fall back to
+    rebuilding from the columns when a row predates raw capture.
+    """
+    import json as _json
+
+    if raw:
+        d = raw if isinstance(raw, dict) else _json.loads(raw)
+        if d:
+            # Cast the numerics: the archive stores the CSV's strings verbatim,
+            # and the model APIs expect numbers.
+            for k in ("amount", "oldbalanceOrg", "newbalanceOrig",
+                      "oldbalanceDest", "newbalanceDest"):
+                if k in d and d[k] is not None:
+                    try:
+                        d[k] = float(d[k])
+                    except (TypeError, ValueError):
+                        pass
+            if d.get("step") is not None:
+                try:
+                    d["step"] = int(float(d["step"]))
+                except (TypeError, ValueError):
+                    pass
+            # Ground truth must never reach a model.
+            d.pop("isFraud", None)
+            d.pop("is_fraud", None)
+            return d
+
+    return {
+        "transaction_id": cols.get("transaction_id"),
+        "step": cols.get("step"),
+        "type": cols.get("tx_type"),
+        "amount": cols.get("amount"),
+        "nameOrig": cols.get("name_orig"),
+        "nameDest": cols.get("name_dest"),
+        "oldbalanceOrg": cols.get("old_balance_orig"),
+        "newbalanceOrig": cols.get("new_balance_orig"),
+        "oldbalanceDest": cols.get("old_balance_dest"),
+        "newbalanceDest": cols.get("new_balance_dest"),
+    }
+
+
+@app.get("/transactions", tags=["analysis"])
+async def search_transactions(
+    q: Optional[str] = None,
+    limit: int = 40,
+    user: User = Depends(get_current_user),
+):
+    """Ingested transactions, searchable by id or either account.
+
+    Joined to `fraud_cases` so a row says whether the platform has already
+    judged it — picking one then means "re-run the case in front of me", which
+    is the reason to choose a transaction rather than accept a random one.
+    """
+    from sqlalchemy import text as sql
+
+    from backend.db.session import get_session
+
+    where, params = ["1=1"], {"lim": max(1, min(limit, 200))}
+    if q:
+        where.append("(a.transaction_id LIKE :q OR a.name_orig LIKE :q "
+                     "OR a.name_dest LIKE :q)")
+        params["q"] = f"%{q.strip()}%"
+
+    try:
+        async with get_session() as db:
+            rows = (await db.execute(
+                sql(f"""
+                    SELECT a.transaction_id, a.step, a.tx_type, a.amount,
+                           a.name_orig, a.name_dest, a.is_fraud,
+                           c.case_ref, c.classification, c.fused_score
+                      FROM transactions_archive a
+                      LEFT JOIN fraud_cases c
+                        ON c.transaction_id = a.transaction_id
+                     WHERE {' AND '.join(where)}
+                     ORDER BY a.uploaded_at DESC, a.id DESC
+                     LIMIT :lim
+                """),
+                params,
+            )).all()
+    except Exception as exc:                                  # noqa: BLE001
+        raise HTTPException(
+            503,
+            f"No ingested transactions are available in this database "
+            f"({type(exc).__name__}). Upload a file with the Query Runner first.",
+        )
+
+    return {
+        "transactions": [
+            {
+                "transaction_id": r[0], "step": r[1], "type": r[2], "amount": r[3],
+                "nameOrig": r[4], "nameDest": r[5],
+                "label_is_fraud": None if r[6] is None else bool(r[6]),
+                "case_ref": r[7], "classification": r[8], "fused_score": r[9],
+            }
+            for r in rows
+        ]
+    }
+
+
+@app.get("/transactions/{transaction_id}", tags=["analysis"])
+async def get_transaction(
+    transaction_id: str, user: User = Depends(get_current_user)
+):
+    """One transaction, in the shape the analyzer sends to the models.
+
+    Looks in the archive first — that is the record of what was ingested — then
+    the live queue, so a transaction still awaiting screening can be analysed
+    too.
+    """
+    from sqlalchemy import text as sql
+
+    from backend.db.session import get_session
+
+    async with get_session() as db:
+        row = None
+        try:
+            row = (await db.execute(
+                sql("SELECT raw, transaction_id, step, tx_type, amount, name_orig, "
+                    "name_dest, old_balance_orig, new_balance_orig, "
+                    "old_balance_dest, new_balance_dest "
+                    "FROM transactions_archive WHERE transaction_id = :t LIMIT 1"),
+                {"t": transaction_id},
+            )).first()
+        except Exception:                                     # noqa: BLE001
+            pass
+
+        if row is None:
+            try:
+                row = (await db.execute(
+                    sql("SELECT payload, transaction_id, step, tx_type, amount, "
+                        "name_orig, name_dest, old_balance_orig, new_balance_orig, "
+                        "old_balance_dest, new_balance_dest "
+                        "FROM transactions_live WHERE transaction_id = :t LIMIT 1"),
+                    {"t": transaction_id},
+                )).first()
+            except Exception:                                 # noqa: BLE001
+                pass
+
+    if row is None:
+        raise HTTPException(
+            404,
+            f"No stored transaction {transaction_id}. Cases replayed from the "
+            f"graph service's sample feed are not persisted, so their original "
+            f"payload cannot be recovered — ingest through the Query Runner to "
+            f"be able to re-analyse.",
+        )
+
+    keys = ("transaction_id", "step", "tx_type", "amount", "name_orig",
+            "name_dest", "old_balance_orig", "new_balance_orig",
+            "old_balance_dest", "new_balance_dest")
+    return {"transaction": _payload_from_row(row[0], dict(zip(keys, row[1:])))}
+
+
 # ── Threshold simulation ─────────────────────────────────────────────────────
 # Replays decisions already made at a different threshold. Historical, not
 # predictive — see backend/simulation.py.

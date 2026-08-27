@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import PipelineDiagram from '../components/PipelineDiagram'
 import ScoreGauge from '../components/ScoreGauge'
 import RiskBadge from '../components/RiskBadge'
@@ -13,7 +13,7 @@ import SarDraft from '../components/SarDraft'
 import Locked from '../components/Locked'
 import { usePackage } from '../hooks/usePackage'
 import { useAnalysisStream } from '../hooks/useAnalysisStream'
-import { getSampleTransaction } from '../services/api'
+import { getSampleTransaction, getStoredTransaction, searchTransactions } from '../services/api'
 import {
   Alert,
   Badge,
@@ -59,13 +59,22 @@ const money = (n) =>
   typeof n === 'number' ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'
 
 export default function Analyzer() {
-  const [mode, setMode] = useState('live') // 'live' | 'manual' | 'scenario'
+  // 'pick' is the default: analysing a chosen transaction is reproducible and
+  // lets an investigator re-run the case actually in front of them. A random
+  // pull only ever demonstrates that the pipeline runs.
+  const [mode, setMode] = useState('pick') // 'pick' | 'live' | 'manual' | 'scenario'
   const [scenario, setScenario] = useState('mule_network')
   const [includeBaseline, setIncludeBaseline] = useState(false)
 
   const [liveTxn, setLiveTxn] = useState(null)
   const [pulling, setPulling] = useState(false)
   const [pullError, setPullError] = useState(null)
+
+  // Picking a stored transaction.
+  const [query, setQuery] = useState('')
+  const [hits, setHits] = useState([])
+  const [searching, setSearching] = useState(false)
+  const [searchError, setSearchError] = useState(null)
 
   const { stages, result, running, error, run, cancel } = useAnalysisStream()
   const { has, upsells } = usePackage()
@@ -83,6 +92,36 @@ export default function Analyzer() {
       )
     } finally {
       setPulling(false)
+    }
+  }, [])
+
+  // Debounced so typing an account number does not fire a query per keystroke.
+  useEffect(() => {
+    if (mode !== 'pick') return undefined
+    let cancelled = false
+    setSearching(true)
+    const t = setTimeout(() => {
+      searchTransactions(query)
+        .then((d) => { if (!cancelled) { setHits(d.transactions ?? []); setSearchError(null) } })
+        .catch((e) => {
+          if (!cancelled) {
+            setHits([])
+            setSearchError(e?.response?.data?.detail
+              ?? 'Could not read stored transactions.')
+          }
+        })
+        .finally(() => { if (!cancelled) setSearching(false) })
+    }, 250)
+    return () => { cancelled = true; clearTimeout(t) }
+  }, [query, mode])
+
+  const choose = useCallback(async (transactionId) => {
+    setPullError(null)
+    try {
+      const { transaction } = await getStoredTransaction(transactionId)
+      setLiveTxn(transaction)
+    } catch (e) {
+      setPullError(e?.response?.data?.detail ?? 'Could not load that transaction.')
     }
   }, [])
 
@@ -139,7 +178,8 @@ export default function Analyzer() {
           <Card className="p-5">
             <div className="flex gap-1 rounded-lg border border-subtle bg-surface p-1">
               {[
-                ['live', 'Live'],
+                ['pick', 'Choose'],
+                ['live', 'Random'],
                 ['manual', 'Manual'],
                 ['scenario', 'Scenario'],
               ].map(([value, label]) => (
@@ -158,6 +198,96 @@ export default function Analyzer() {
               ))}
             </div>
 
+            {mode === 'pick' && (
+              <div className="mt-5 space-y-4">
+                <p className="text-xs leading-relaxed text-slate-500">
+                  Search transactions the platform has ingested, by transaction
+                  id or by either account. A row that already has a case shows
+                  the verdict it was given — pick it to re-run that exact
+                  transaction through every deployed model.
+                </p>
+
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Transaction id or account…"
+                  aria-label="Search stored transactions"
+                  className="w-full rounded-lg border border-subtle bg-surface-raised px-3 py-2 text-xs text-slate-200 placeholder-slate-600 focus:border-accent-500 focus:outline-none"
+                />
+
+                {searchError && <Alert tone="error">{searchError}</Alert>}
+                {pullError && <Alert tone="error">{pullError}</Alert>}
+
+                {!searchError && (
+                  <div className="rows max-h-72 overflow-y-auto">
+                    {hits.length === 0 && !searching && (
+                      <p className="py-6 text-center text-xs text-slate-600">
+                        {query
+                          ? 'Nothing matches that.'
+                          : 'No ingested transactions yet — upload a file with the Query Runner.'}
+                      </p>
+                    )}
+                    {hits.map((t) => {
+                      const chosen = liveTxn?.transaction_id === t.transaction_id
+                      return (
+                        <button
+                          key={t.transaction_id}
+                          onClick={() => choose(t.transaction_id)}
+                          className={cx(
+                            'flex w-full items-center gap-2 py-2 pl-2 pr-1 text-left transition-colors',
+                            chosen ? 'bg-surface-raised' : 'hover:bg-surface',
+                          )}
+                        >
+                          <span
+                            className="h-6 w-[3px] shrink-0 rounded-full"
+                            style={{ background: t.case_ref
+                              ? (RESULT_HEX[t.classification] ?? '#6c655d')
+                              : 'rgb(var(--surface-overlay))' }}
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="numeric block truncate text-[11px] text-slate-300">
+                              {t.transaction_id}
+                            </span>
+                            <span className="block truncate text-[10px] text-slate-600">
+                              {t.type} · {money(t.amount)} · {t.nameOrig} → {t.nameDest}
+                            </span>
+                          </span>
+                          {t.case_ref ? (
+                            <span
+                              className="numeric shrink-0 text-[10px]"
+                              style={{ color: RESULT_HEX[t.classification] ?? '#a39c92' }}
+                            >
+                              {typeof t.fused_score === 'number' ? t.fused_score.toFixed(3) : '—'}
+                            </span>
+                          ) : (
+                            <span className="shrink-0 text-[10px] text-slate-600">not scored</span>
+                          )}
+                          {t.label_is_fraud !== null && t.label_is_fraud !== undefined && (
+                            <span
+                              className={cx('h-1.5 w-1.5 shrink-0 rounded-full',
+                                t.label_is_fraud ? 'bg-risk-critical' : 'bg-slate-700')}
+                              title={t.label_is_fraud ? 'labelled fraud' : 'labelled clean'}
+                            />
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {liveTxn && <LoadedTransaction txn={liveTxn} />}
+
+                <Button
+                  onClick={runLive}
+                  loading={running}
+                  disabled={!liveTxn}
+                  className="w-full"
+                >
+                  {running ? 'Running…' : liveTxn ? 'Analyse this transaction' : 'Choose a transaction'}
+                </Button>
+              </div>
+            )}
+
             {mode === 'live' && (
               <div className="mt-5 space-y-4">
                 <p className="text-xs leading-relaxed text-slate-500">
@@ -169,32 +299,7 @@ export default function Analyzer() {
                 {pullError && <Alert tone="error">{pullError}</Alert>}
 
                 {liveTxn ? (
-                  <div className="rounded-xl border border-subtle bg-surface-raised p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <SectionLabel>Loaded transaction</SectionLabel>
-                      <Badge tone="low">{liveTxn.type}</Badge>
-                    </div>
-                    <p className="mt-2 font-mono text-[11px] text-slate-500">
-                      {liveTxn.transaction_id}
-                    </p>
-                    <p className="mt-2 font-mono text-lg font-semibold text-slate-200">
-                      {money(liveTxn.amount)}
-                    </p>
-                    <dl className="mt-3 space-y-1 text-[11px]">
-                      <div className="flex justify-between gap-3">
-                        <dt className="text-slate-500">From</dt>
-                        <dd className="truncate font-mono text-slate-400">{liveTxn.nameOrig}</dd>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <dt className="text-slate-500">To</dt>
-                        <dd className="truncate font-mono text-slate-400">{liveTxn.nameDest}</dd>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <dt className="text-slate-500">Step</dt>
-                        <dd className="font-mono text-slate-400">{liveTxn.step}</dd>
-                      </div>
-                    </dl>
-                  </div>
+                  <LoadedTransaction txn={liveTxn} />
                 ) : (
                   <div className="rounded-xl border border-dashed border-subtle p-5 text-center text-xs text-slate-600">
                     No transaction loaded yet.
@@ -502,5 +607,27 @@ function ModalityPanel({ result }) {
         </p>
       )}
     </Card>
+  )
+}
+
+/** The transaction currently loaded, shown identically however it was chosen. */
+function LoadedTransaction({ txn }) {
+  return (
+    <div className="rounded-xl border border-subtle bg-surface-raised p-4">
+      <div className="flex items-start justify-between gap-2">
+        <SectionLabel>Loaded transaction</SectionLabel>
+        <Badge tone="low">{txn.type}</Badge>
+      </div>
+      <p className="numeric mt-2 text-[11px] text-slate-500">{txn.transaction_id}</p>
+      <p className="numeric mt-2 text-lg font-semibold text-slate-200">{money(txn.amount)}</p>
+      <dl className="mt-3 space-y-1 text-[11px]">
+        {[['From', txn.nameOrig], ['To', txn.nameDest], ['Step', txn.step]].map(([k, v]) => (
+          <div key={k} className="flex justify-between gap-3">
+            <dt className="text-slate-500">{k}</dt>
+            <dd className="numeric truncate text-slate-400">{v ?? '—'}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   )
 }

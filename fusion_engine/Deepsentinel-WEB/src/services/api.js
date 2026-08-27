@@ -200,6 +200,16 @@ export const explainPlainly = (analysisId) =>
 
 // ── Cases ────────────────────────────────────────────────────────────────────
 
+/** Ingested transactions, searchable by id or account, joined to any case. */
+export const searchTransactions = (q, limit = 40) =>
+  client.get('/transactions', { params: { q: q || undefined, limit } })
+    .then((r) => r.data)
+
+/** One stored transaction, in the shape the analyzer sends to the models. */
+export const getStoredTransaction = (transactionId) =>
+  client.get(`/transactions/${encodeURIComponent(transactionId)}`)
+    .then((r) => r.data)
+
 export const listCases = (params = {}) =>
   client.get('/cases', { params }).then((r) => r.data)
 

@@ -130,11 +130,12 @@ const MODEL_CARDS = [
   },
   {
     key: 'temporal',
-    model: 'System-Context TCN',
+    model: 'Transaction-Sequence TCN',
     modality: 'Timing',
-    detects: 'Rhythm. Reads the transactions preceding this one and finds which of them '
-           + 'made it suspicious.',
-    detectsShort: 'Rhythm',
+    detects: 'Reads this transaction as one step in a rolling window of those '
+           + 'that came before it, and names the single prior transaction that '
+           + 'drove the score.',
+    detectsShort: 'Sequence',
   },
 ]
 
