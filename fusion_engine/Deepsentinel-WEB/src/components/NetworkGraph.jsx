@@ -98,7 +98,8 @@ export default function NetworkGraph({ evidence, height = 420 }) {
   const W = 720
   // Shrink to fit a small subgraph. Two accounts in a 420px canvas is mostly
   // empty space, which reads as something failing to load.
-  const H = nodes.length <= 4 ? Math.min(height, 240)
+  const H = nodes.length <= 2 ? Math.min(height, 190)
+          : nodes.length <= 4 ? Math.min(height, 240)
           : nodes.length <= 8 ? Math.min(height, 320)
           : height
   const { pos, centreId } = useMemo(

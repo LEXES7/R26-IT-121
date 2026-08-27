@@ -20,7 +20,6 @@ const STAGE_META = {
     step: '01',
     title: 'Transaction',
     subtitle: 'record in',
-    icon: '📥',
     accent: 'slate',
     explain:
       'A single transfer arrives with its amount, both account identifiers, and the balances before and after.',
@@ -29,7 +28,6 @@ const STAGE_META = {
     step: '02',
     title: 'Three models',
     subtitle: 'in parallel',
-    icon: '🧠',
     accent: 'blue',
     explain:
       'Each model examines a different dimension of the same transaction. They run concurrently and none of them sees the others’ output.',
@@ -38,7 +36,6 @@ const STAGE_META = {
     step: '03',
     title: 'Fusion',
     subtitle: 'meta-classifier',
-    icon: '⚖️',
     accent: 'green',
     explain:
       'A logistic regression trained on the three scores produces one calibrated confidence. The weighting is learned, not hand-tuned.',
@@ -47,7 +44,6 @@ const STAGE_META = {
     step: '04',
     title: 'Typology',
     subtitle: 'FATF retrieval',
-    icon: '🔍',
     accent: 'amber',
     explain:
       'The risk profile queries a vector store of FATF typologies. The closest match becomes the factual anchor for the report.',
@@ -56,7 +52,6 @@ const STAGE_META = {
     step: '05',
     title: 'Forensic report',
     subtitle: 'chain of evidence',
-    icon: '📋',
     accent: 'red',
     explain:
       'The language model may cite only the retrieved typology and the actual scores. It cannot introduce a fact that did not come from an earlier stage.',
@@ -203,7 +198,7 @@ export default function PipelineDiagram({ stages, running, live = false }) {
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-lg leading-none">{meta.icon}</span>
+                  <span className="display text-lg leading-none text-slate-500">{meta.step}</span>
                   <StageMark
                     running={isRunning}
                     done={isDone}

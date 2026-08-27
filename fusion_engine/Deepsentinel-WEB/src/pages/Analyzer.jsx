@@ -25,13 +25,15 @@ import {
   cx,
 } from '../components/ui'
 
+// No emoji. A row of pictographs is the fastest way to make a research tool
+// look like a template — the label and the one-line description carry it.
 const SCENARIOS = [
-  { value: 'mule_network', label: 'Mule network', icon: '🕸️', short: 'Hub-and-spoke fund routing' },
-  { value: 'layering', label: 'Layering', icon: '🔀', short: 'Multi-hop transfer chain' },
-  { value: 'smurfing', label: 'Smurfing', icon: '🐡', short: 'Below-threshold structuring' },
-  { value: 'account_takeover', label: 'Account takeover', icon: '🔓', short: 'Unauthorised drain' },
-  { value: 'velocity_fraud', label: 'Velocity fraud', icon: '⚡', short: 'Automated rapid transfers' },
-  { value: 'legitimate', label: 'Legitimate', icon: '✅', short: 'Normal customer activity' },
+  { value: 'mule_network', label: 'Mule network', short: 'Hub-and-spoke fund routing' },
+  { value: 'layering', label: 'Layering', short: 'Multi-hop transfer chain' },
+  { value: 'smurfing', label: 'Smurfing', short: 'Below-threshold structuring' },
+  { value: 'account_takeover', label: 'Account takeover', short: 'Unauthorised drain' },
+  { value: 'velocity_fraud', label: 'Velocity fraud', short: 'Automated rapid transfers' },
+  { value: 'legitimate', label: 'Legitimate', short: 'Normal customer activity' },
 ]
 
 const RESULT_HEX = {
@@ -253,7 +255,6 @@ export default function Analyzer() {
                             : 'border-subtle bg-surface hover:border-strong',
                         )}
                       >
-                        <div className="mb-1.5 text-lg">{s.icon}</div>
                         <p
                           className={cx(
                             'text-xs font-semibold',

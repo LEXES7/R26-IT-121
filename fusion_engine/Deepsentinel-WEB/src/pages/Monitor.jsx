@@ -25,6 +25,14 @@ const SEV_HEX = {
   CRITICAL: '#ef4444', HIGH: '#f97316', MEDIUM: '#eab308', LOW: '#22c55e',
 }
 
+// Scores arrive already rounded by the server, so 0.9 and 0.8985 sit in the
+// same column at different widths. Fix the decimals here: a column of figures
+// that does not line up is harder to scan than one that does.
+const score3 = (v) => (typeof v === 'number' ? v.toFixed(3) : Number.isFinite(Number(v)) ? Number(v).toFixed(3) : '—')
+const money = (v) => (Number.isFinite(Number(v))
+  ? Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })
+  : '—')
+
 export default function Monitor() {
   const [snap, setSnap] = useState(null)
   const [feed, setFeed] = useState([])
@@ -245,7 +253,7 @@ export default function Monitor() {
                     <span className="h-7 w-[3px] shrink-0 rounded-full"
                           style={{ background: SEV_HEX[a.severity] ?? '#64748b' }} />
                     <span className="numeric w-14 shrink-0 text-sm text-slate-100">
-                      {a.fused_score}
+                      {score3(a.fused_score)}
                     </span>
                     <span className="w-16 shrink-0 text-xs"
                           style={{ color: SEV_HEX[a.severity] }}>
@@ -257,10 +265,10 @@ export default function Monitor() {
                       <span className="numeric text-slate-500">{a.sink_account ?? '—'}</span>
                     </span>
                     <span className="numeric hidden shrink-0 text-[11px] text-slate-600 sm:block">
-                      graph {a.graph_score} · {a.modalities_used}/3
+                      graph {score3(a.graph_score)} · {a.modalities_used}/3
                     </span>
                     <span className="numeric w-24 shrink-0 text-right text-[11px] text-slate-500">
-                      {Number(a.amount).toLocaleString()}
+                      {money(a.amount)}
                     </span>
                   </div>
                 ))}
