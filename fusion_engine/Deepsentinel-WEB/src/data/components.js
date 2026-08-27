@@ -134,37 +134,69 @@ export const COMPONENTS = {
     slug: 'temporal',
     modality: 'Timing',
     color: 'temporal',
-    title: 'System-Context Temporal CNN',
-    tagline: 'Scripts have a rhythm people do not',
-    question: 'When, and how fast?',
+    title: 'Transaction-Sequence TCN with fraud_attention',
+    tagline: 'No transaction happens in isolation',
+    question: 'What happened right before this?',
     intro:
-      'Automated fraud betrays itself in timing. This component reads sequences of '
-      + 'activity with a temporal convolutional network, looking for machine-paced '
-      + 'regularity, bursts and off-hours behaviour that a single transaction cannot show.',
+      'A transaction scored on its own looks unremarkable; the same transaction after '
+      + 'two prior partial drains from the same account is a pattern. This component '
+      + 'reads every transaction as one step in a system-wide 32-transaction sliding '
+      + 'window — not a per-account history, which PaySim cannot support — and a dilated '
+      + 'causal TCN with a self-attention layer, fraud_attention, names the single prior '
+      + 'transaction that drove the score.',
     detects: [
-      ['Burst activity', 'Many transfers compressed into a short window'],
-      ['Mechanical regularity', 'Intervals too even to be human'],
-      ['Off-hours patterns', 'Activity inconsistent with the account’s usual clock'],
+      ['Escalating drains', 'A partial drain from an account followed by a full one shortly after'],
+      ['Mule priming', 'A destination account emptied shortly before receiving a large transfer'],
+      ['Fraud clustering', 'Multiple fraud transactions falling inside the same short window'],
     ],
-    metrics: [],
+    metrics: [
+      { label: 'MLP baseline AUC-ROC', value: '0.992', note: 'flat features, no sequence — the bar TS-TCN must clear' },
+      { label: 'MLP baseline F1', value: '0.737', note: 'precision 0.995 · recall 0.586, held-out test partition' },
+      { label: 'isFlaggedFraud rule', value: 'F1 0.114', note: 'published PaySim baseline, catches 33.8% of fraud' },
+      { label: 'Fraud clustering', value: '2.22', note: 'avg. fraud transactions inside each 32-window — the signal targeted' },
+    ],
     findings: [
       {
-        title: 'Dilated convolutions see long context cheaply',
+        title: 'A non-sequential MLP already reaches 0.99 AUC-ROC',
         body:
-          'A TCN widens its receptive field without the sequential cost of a recurrent '
-          + 'model, so a long transaction history can be scored fast enough for an '
-          + 'interactive verdict.',
+          'Trained on the same 10 flat features with no window at all, a plain MLP hits '
+          + 'F1 0.737 and AUC-ROC 0.992 on the held-out test partition (steps 596-743, '
+          + '1,642 fraud cases). That is the real bar the 32-transaction window has to '
+          + 'clear to justify its cost — not the published rule, which nobody expects to '
+          + 'beat.',
       },
       {
-        title: 'System context separates load from intent',
+        title: 'Window size is derived, not guessed',
         body:
-          'Timing features are meaningless without knowing what the platform was doing. '
-          + 'System context distinguishes a genuinely unusual burst from ordinary '
-          + 'peak-hour traffic.',
+          'W=32 comes from two independent constraints: direct measurement shows an '
+          + 'average of 2.22 fraud transactions fall inside the 32 transactions preceding '
+          + 'any fraud event, and the four-block dilated TCN (dilations 1, 2, 4, 8) has a '
+          + 'receptive field of 61 — enough to cover the window without being '
+          + 'over-parameterised for it.',
+      },
+      {
+        title: 'Per-account sequences are structurally impossible here',
+        body:
+          'PaySim averages 1.00 transaction per originator account, so a model keyed on '
+          + 'account history would have nothing to learn from. fraud_attention instead '
+          + 'runs over a system-wide FIFO window shared across every account — arrival '
+          + 'order, not account identity — which is also why it needs no persistent '
+          + 'per-account log to deploy.',
+      },
+      {
+        title: 'Attribution returns a transaction, not a position',
+        body:
+          'Most attention mechanisms report which timestep mattered. fraud_attention '
+          + 'additionally reads that timestep’s full feature vector back out of the '
+          + 'rolling buffer, so the evidence handed to the forensic layer is a named '
+          + 'prior transaction and its numbers — not an index a human still has to look up.',
       },
     ],
-    pipeline: ['Transaction history', 'Sequence window', 'Dilated convolutions', 'Attention over time', 'Temporal score'],
-    output: 'A temporal risk score with the window that triggered it.',
+    pipeline: ['Transaction stream', '32-tx sliding window', 'Dilated causal TCN', 'fraud_attention', 'Risk + predecessor'],
+    output:
+      'A temporal risk score plus the one prior transaction fraud_attention weighted '
+      + 'most heavily — its own feature vector, not just a position — for the forensic '
+      + 'layer to cite by name.',
     status: 'in-progress',
   },
 

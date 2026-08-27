@@ -101,9 +101,16 @@ jupyter notebook notebooks/01_baseline_evaluation.ipynb
 ### Serve the API (Stage 8)
 
 ```bash
-uvicorn api.main:app --reload --port 8001
-# POST http://localhost:8001/api/v1/classify
+uvicorn api.main:app --reload --port 8003
+# POST http://localhost:8003/api/v1/classify
 ```
+
+Port 8003 is the fusion engine's default `TEMPORAL_API_BASE` — running here
+means the Fusion Engine and website pick it up with no extra configuration.
+See [`docs/api_contract.md`](docs/api_contract.md) for the full request /
+response schema, and note the **model status caveat**: the checkpoint served
+today (`ts_tcn_sanity.keras`) is the Stage 4 sanity run (1 epoch,
+architecture verification), not the converged model.
 
 ---
 

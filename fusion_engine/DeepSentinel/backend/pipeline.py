@@ -91,6 +91,7 @@ async def run_pipeline(
     behavioral_signal = graph_signal = temporal_signal = None
     graph_evidence = None
     behavioral_evidence = None
+    temporal_evidence = None
     fell_back = False  # simulated because upstream was unreachable, not by choice
 
     # ── Stage 1: input ───────────────────────────────────────────────────────
@@ -179,6 +180,7 @@ async def run_pipeline(
             graph_evidence = g_resp.extra.get("suspicious_subgraph") or None
             behavioral_evidence = b_resp.extra.get("evidence") or None
             temporal_signal = t_resp.fraud_signal_summary
+            temporal_evidence = t_resp.extra.get("temporal_evidence") or None
 
             if not any([behavioral_available, graph_available, temporal_available]):
                 logger.warning("All upstream APIs unavailable — falling back to mock.")
@@ -412,5 +414,6 @@ async def run_pipeline(
             "graph_evidence": graph_evidence,
             "behavioral_evidence": behavioral_evidence,
             "temporal_signal": temporal_signal,
+            "temporal_evidence": temporal_evidence,
         }
     )
