@@ -79,7 +79,7 @@ export default function PipelineLive({ stages, escalating }) {
 
       <Node x={300} y={23} label="Behaviour" sub="VAE + DSAA"
         status={s('behavioural')} colour={ACTIVE.behavioural} />
-      <Node x={300} y={131} label="Timing" sub="temporal CNN"
+      <Node x={300} y={131} label="Timing" sub="sequence TCN"
         status={s('temporal')} colour={ACTIVE.temporal} />
 
       <Flow d="M 420 46 H 462 V 100 M 420 154 H 462 V 100" active={s('fusion') === 'active'} dim={!branchOn} />

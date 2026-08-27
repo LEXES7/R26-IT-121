@@ -6,7 +6,7 @@ import asyncio
 import json
 import logging
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from monitor.engine import ENGINE
@@ -45,6 +45,50 @@ async def state() -> dict:
     snap["source"] = getattr(ENGINE, "_source", None)
     snap["queue"] = await ingest_queue.depth()
     return snap
+
+
+@router.get("/briefing")
+async def briefing(hours: int = 24) -> dict:
+    """The daily digest, as data and as text."""
+    from monitor import briefing as brief
+
+    data = await brief.gather(hours=hours)
+    return {**data, "text": brief.render_text(data)}
+
+
+@router.post("/briefing/send")
+async def send_briefing(hours: int = 24) -> dict:
+    """Email the digest to the configured risk managers."""
+    import asyncio
+
+    from backend.email_service import _send_plain
+    from backend.settings import get_alert_recipients
+    from monitor import briefing as brief
+
+    recipients = await get_alert_recipients()
+    if not recipients:
+        raise HTTPException(
+            409,
+            "No risk managers are configured. Add recipients under Settings.",
+        )
+
+    data = await brief.gather(hours=hours)
+    body = brief.render_text(data)
+    subject = (
+        f"DeepSentinel briefing — {data.get('total_cases', 0)} case(s), "
+        f"{data.get('open_for_review', 0)} awaiting review"
+    )
+
+    # _send_plain is synchronous and does network I/O, so it goes to a thread
+    # rather than blocking the event loop the monitor runs on.
+    sent = await asyncio.to_thread(_send_plain, subject, body, recipients)
+    if not sent:
+        raise HTTPException(
+            409,
+            "Email is not configured, or SMTP rejected the message. "
+            "Check the SMTP settings and try the test email under Settings.",
+        )
+    return {"sent": True, "recipients": recipients, "subject": subject}
 
 
 @router.post("/start")
@@ -109,10 +153,45 @@ async def runtime() -> dict:
         try:
             async with httpx.AsyncClient(timeout=4.0) as c:
                 r = await c.get(f"{base}/api/graph/runtime" if name == "graph" else f"{base}/health")
-            out["detectors"][name] = {"reachable": r.status_code < 500, **(r.json() if r.status_code == 200 else {})}
+            body = r.json() if r.status_code == 200 else {}
+            reachable = r.status_code < 500
+            out["detectors"][name] = {
+                "reachable": reachable,
+                "ready": reachable and _ready(name, body),
+                **body,
+            }
         except Exception as exc:                        # noqa: BLE001
-            out["detectors"][name] = {"reachable": False, "error": type(exc).__name__}
+            out["detectors"][name] = {
+                "reachable": False, "ready": False, "error": type(exc).__name__,
+            }
     return out
+
+
+def _ready(name: str, body: dict) -> bool:
+    """Whether a detector can actually score, not merely whether it replied.
+
+    Answering a health probe and being able to return a verdict are different
+    things, and conflating them is how a dead detector comes to be counted as
+    live: a service that has started but has no weights on disk still returns
+    200. Each upstream says this differently, so the shapes are normalised here
+    rather than being re-derived by every caller.
+    """
+    if name == "graph":
+        return bool((body.get("model") or {}).get("loaded"))
+    if name == "behavioural":
+        # Reports which strata it managed to load; any missing one means part
+        # of the traffic cannot be scored.
+        return (body.get("status") == "ok"
+                and bool(body.get("strata_loaded"))
+                and not body.get("strata_missing"))
+    if name == "temporal":
+        # `ready` is authoritative where the build provides it. Older builds
+        # only sent `status`, so fall back to that rather than reporting a
+        # working detector as broken.
+        if "ready" in body:
+            return bool(body["ready"])
+        return body.get("status") == "ok"
+    return body.get("status") == "ok"
 
 
 @router.get("/stream")

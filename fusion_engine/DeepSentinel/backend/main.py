@@ -303,6 +303,12 @@ class AnalyzeResponse(BaseModel):
     # against this exact result rather than re-deriving one from a re-run.
     analysis_id: Optional[int] = None
     temporal_signal: Optional[str] = None
+    # The sequential detector's evidence: the current transaction's F1-F10
+    # feature values plus the fraud_attention-identified triggering
+    # predecessor (its own feature vector and attention weight) — the
+    # temporal analogue of graph_evidence's subgraph and behavioral_evidence's
+    # decomposition.
+    temporal_evidence: Optional[dict] = None
 
 
 # ── Upstream callers ──────────────────────────────────────────────────────────
@@ -1174,6 +1180,402 @@ async def set_package_endpoint(
         detail=f"{previous} -> {pkg.value}",
     )
     return packages.status()
+
+
+# ── Plain-English explanation ────────────────────────────────────────────────
+
+
+@app.post("/analyses/{analysis_id}/explain", tags=["analysis"])
+async def explain_plainly(analysis_id: int, user: User = Depends(get_current_user)):
+    """Restate this alert's forensic report for a non-specialist."""
+    from backend import packages
+    from backend.rag.prompt_builder import build_plain_english_prompt
+    from backend.sar import get_analysis
+
+    packages.require("forensic_report")
+    record = await get_analysis(analysis_id)
+    if not record.forensic_report:
+        raise HTTPException(
+            409, "This alert has no forensic report to restate."
+        )
+    if forensic_reporter is None:
+        raise HTTPException(503, "No language model is configured.")
+
+    package = build_plain_english_prompt(
+        record.forensic_report, record.classification or "UNKNOWN"
+    )
+    try:
+        text_out = forensic_reporter.generate_report(package)
+    except Exception as exc:                                  # noqa: BLE001
+        raise HTTPException(502, f"Explanation failed: {type(exc).__name__}")
+
+    return {
+        "analysis_id": analysis_id,
+        "classification": record.classification,
+        "plain_english": (text_out or "").strip(),
+        # Named so the UI can say this is a restatement, not a second opinion.
+        "derived_from": "forensic_report",
+    }
+
+
+# ── Cases: review, timeline, sharing ─────────────────────────────────────────
+
+
+# The fraud_cases table is defined by the Query Runner's schema, and the
+# platform reads it over SQL rather than redeclaring an ORM model here. Two
+# declarations of one table drift, and a silently-renamed column is exactly the
+# failure that made every fused score read as zero.
+
+CASE_COLUMNS = (
+    "case_ref, transaction_id, detected_at, classification, fused_score, "
+    "graph_score, behavioral_score, temporal_score, "
+    "graph_available, behavioral_available, temporal_available, "
+    "modalities_used, uncertainty_penalty_applied, "
+    "typology_name, typology_id, graph_pattern, sink_account, "
+    "graph_evidence, forensic_report, screening_ms, total_ms, "
+    "alert_sent, alerted_at, recipients, "
+    "review_status, reviewed_by, reviewed_at, review_note, label_is_fraud"
+)
+_CASE_FIELDS = [c.strip() for c in CASE_COLUMNS.split(",")]
+
+
+def _case_row(row) -> dict:
+    """One case row as the UI consumes it."""
+    import json as _json
+
+    def load(v):
+        if isinstance(v, (dict, list)) or v is None:
+            return v
+        try:
+            return _json.loads(v)
+        except (ValueError, TypeError):
+            return None
+
+    d = dict(zip(_CASE_FIELDS, row))
+    for k in ("detected_at", "alerted_at", "reviewed_at"):
+        d[k] = str(d[k]) if d[k] else None
+    for k in ("graph_evidence", "recipients"):
+        d[k] = load(d[k])
+    for k in ("graph_available", "behavioral_available", "temporal_available",
+              "uncertainty_penalty_applied", "alert_sent"):
+        d[k] = None if d[k] is None else bool(d[k])
+    d["label_is_fraud"] = None if d["label_is_fraud"] is None else bool(d["label_is_fraud"])
+    return d
+
+
+@app.get("/cases", tags=["cases"])
+async def list_cases(
+    limit: int = 50,
+    review_status: Optional[str] = None,
+    classification: Optional[str] = None,
+    user: User = Depends(get_current_user),
+):
+    """Recorded cases, newest first."""
+    from sqlalchemy import text as sql
+
+    from backend.db.session import get_session
+
+    where, params = ["1=1"], {"lim": min(limit, 200)}
+    if review_status:
+        where.append("review_status = :rs")
+        params["rs"] = review_status
+    if classification:
+        where.append("classification = :cl")
+        params["cl"] = classification.upper()
+
+    try:
+        async with get_session() as db:
+            rows = (await db.execute(
+                sql(f"SELECT {CASE_COLUMNS} FROM fraud_cases "
+                    f"WHERE {' AND '.join(where)} "
+                    f"ORDER BY detected_at DESC LIMIT :lim"),
+                params,
+            )).all()
+        return {"cases": [_case_row(r) for r in rows]}
+    except Exception as exc:                                  # noqa: BLE001
+        raise HTTPException(
+            503,
+            f"The fraud_cases table is not available in this database "
+            f"({type(exc).__name__}). Create it with the Query Runner, pointed "
+            f"at the same database as this service.",
+        )
+
+
+@app.get("/cases/{case_ref}", tags=["cases"])
+async def get_case(case_ref: str, user: User = Depends(get_current_user)):
+    """One case in full, with a timeline derived from its own timestamps."""
+    from sqlalchemy import text as sql
+
+    from backend.db.session import get_session
+
+    async with get_session() as db:
+        row = (await db.execute(
+            sql(f"SELECT {CASE_COLUMNS} FROM fraud_cases WHERE case_ref = :r"),
+            {"r": case_ref},
+        )).first()
+    if row is None:
+        raise HTTPException(404, f"No case {case_ref}")
+
+    case = _case_row(row)
+
+    # Derived rather than stored: two sources for one chronology eventually
+    # disagree, and then neither can be trusted.
+    timeline = [{"stage": "Detected", "at": case["detected_at"],
+                 "detail": f"Screened and classified {case['classification']}"}]
+    if case["screening_ms"]:
+        timeline.append({"stage": "Graph screening", "at": case["detected_at"],
+                         "detail": f"{case['screening_ms']} ms"})
+    used = case["modalities_used"] or 0
+    timeline.append({
+        "stage": "Fusion", "at": case["detected_at"],
+        "detail": (f"{used} of 3 detectors contributed"
+                   + (" — uncertainty penalty applied"
+                      if case["uncertainty_penalty_applied"] else "")),
+    })
+    if case["typology_name"]:
+        timeline.append({"stage": "Typology matched", "at": case["detected_at"],
+                         "detail": case["typology_name"]})
+    if case["alert_sent"]:
+        n = len(case["recipients"] or [])
+        timeline.append({"stage": "Alert sent", "at": case["alerted_at"],
+                         "detail": f"{n} recipient(s)" if n else "Notified"})
+    if case["reviewed_at"]:
+        timeline.append({
+            "stage": "Reviewed", "at": case["reviewed_at"],
+            "detail": f"{case['review_status']} by {case['reviewed_by'] or 'unknown'}",
+        })
+
+    return {**case, "timeline": timeline}
+
+
+@app.patch("/cases/{case_ref}/review", tags=["cases"])
+async def review_case(
+    case_ref: str, body: dict, user: User = Depends(get_current_user)
+):
+    """Record an analyst's verdict.
+
+    `confirmed_fraud` and `false_positive` are what a retraining set is built
+    from, so the decision is attributed and audited.
+    """
+    from datetime import datetime, timezone
+
+    from sqlalchemy import text as sql
+
+    from backend.auth import audit
+    from backend.db.session import get_session
+
+    status = str(body.get("review_status") or "").lower()
+    valid = {"open", "investigating", "confirmed_fraud", "false_positive", "closed"}
+    if status not in valid:
+        raise HTTPException(422, f"review_status must be one of: {', '.join(sorted(valid))}")
+
+    async with get_session() as db:
+        result = await db.execute(
+            sql("UPDATE fraud_cases SET review_status = :s, reviewed_by = :by, "
+                "reviewed_at = :at, review_note = COALESCE(:note, review_note) "
+                "WHERE case_ref = :r"),
+            {"s": status, "by": user.username, "at": datetime.now(timezone.utc),
+             "note": (str(body["note"])[:2000] if body.get("note") else None),
+             "r": case_ref},
+        )
+        if (result.rowcount or 0) == 0:
+            raise HTTPException(404, f"No case {case_ref}")
+        row = (await db.execute(
+            sql(f"SELECT {CASE_COLUMNS} FROM fraud_cases WHERE case_ref = :r"),
+            {"r": case_ref},
+        )).first()
+
+    await audit(f"case.{status}", actor=user.username, target=case_ref,
+                detail=body.get("note"))
+    return _case_row(row)
+
+
+# ── Picking a specific transaction to analyse ────────────────────────────────
+# Analysing a randomly pulled transaction proves the pipeline runs. Analysing
+# the transaction behind a case you are looking at proves something an
+# investigator cares about, and is reproducible — the same input gives the same
+# run, which a random pull never does.
+
+
+def _payload_from_row(raw, cols: dict) -> dict:
+    """The analyzable transaction, preferring the stored raw record.
+
+    `raw` is exactly what was ingested; the typed columns are our parse of it.
+    Prefer the former so the model sees what arrived, and fall back to
+    rebuilding from the columns when a row predates raw capture.
+    """
+    import json as _json
+
+    if raw:
+        d = raw if isinstance(raw, dict) else _json.loads(raw)
+        if d:
+            # Cast the numerics: the archive stores the CSV's strings verbatim,
+            # and the model APIs expect numbers.
+            for k in ("amount", "oldbalanceOrg", "newbalanceOrig",
+                      "oldbalanceDest", "newbalanceDest"):
+                if k in d and d[k] is not None:
+                    try:
+                        d[k] = float(d[k])
+                    except (TypeError, ValueError):
+                        pass
+            if d.get("step") is not None:
+                try:
+                    d["step"] = int(float(d["step"]))
+                except (TypeError, ValueError):
+                    pass
+            # Ground truth must never reach a model.
+            d.pop("isFraud", None)
+            d.pop("is_fraud", None)
+            return d
+
+    return {
+        "transaction_id": cols.get("transaction_id"),
+        "step": cols.get("step"),
+        "type": cols.get("tx_type"),
+        "amount": cols.get("amount"),
+        "nameOrig": cols.get("name_orig"),
+        "nameDest": cols.get("name_dest"),
+        "oldbalanceOrg": cols.get("old_balance_orig"),
+        "newbalanceOrig": cols.get("new_balance_orig"),
+        "oldbalanceDest": cols.get("old_balance_dest"),
+        "newbalanceDest": cols.get("new_balance_dest"),
+    }
+
+
+@app.get("/transactions", tags=["analysis"])
+async def search_transactions(
+    q: Optional[str] = None,
+    limit: int = 40,
+    user: User = Depends(get_current_user),
+):
+    """Ingested transactions, searchable by id or either account.
+
+    Joined to `fraud_cases` so a row says whether the platform has already
+    judged it — picking one then means "re-run the case in front of me", which
+    is the reason to choose a transaction rather than accept a random one.
+    """
+    from sqlalchemy import text as sql
+
+    from backend.db.session import get_session
+
+    where, params = ["1=1"], {"lim": max(1, min(limit, 200))}
+    if q:
+        where.append("(a.transaction_id LIKE :q OR a.name_orig LIKE :q "
+                     "OR a.name_dest LIKE :q)")
+        params["q"] = f"%{q.strip()}%"
+
+    try:
+        async with get_session() as db:
+            rows = (await db.execute(
+                sql(f"""
+                    SELECT a.transaction_id, a.step, a.tx_type, a.amount,
+                           a.name_orig, a.name_dest, a.is_fraud,
+                           c.case_ref, c.classification, c.fused_score
+                      FROM transactions_archive a
+                      LEFT JOIN fraud_cases c
+                        ON c.transaction_id = a.transaction_id
+                     WHERE {' AND '.join(where)}
+                     ORDER BY a.uploaded_at DESC, a.id DESC
+                     LIMIT :lim
+                """),
+                params,
+            )).all()
+    except Exception as exc:                                  # noqa: BLE001
+        raise HTTPException(
+            503,
+            f"No ingested transactions are available in this database "
+            f"({type(exc).__name__}). Upload a file with the Query Runner first.",
+        )
+
+    return {
+        "transactions": [
+            {
+                "transaction_id": r[0], "step": r[1], "type": r[2], "amount": r[3],
+                "nameOrig": r[4], "nameDest": r[5],
+                "label_is_fraud": None if r[6] is None else bool(r[6]),
+                "case_ref": r[7], "classification": r[8], "fused_score": r[9],
+            }
+            for r in rows
+        ]
+    }
+
+
+@app.get("/transactions/{transaction_id}", tags=["analysis"])
+async def get_transaction(
+    transaction_id: str, user: User = Depends(get_current_user)
+):
+    """One transaction, in the shape the analyzer sends to the models.
+
+    Looks in the archive first — that is the record of what was ingested — then
+    the live queue, so a transaction still awaiting screening can be analysed
+    too.
+    """
+    from sqlalchemy import text as sql
+
+    from backend.db.session import get_session
+
+    async with get_session() as db:
+        row = None
+        try:
+            row = (await db.execute(
+                sql("SELECT raw, transaction_id, step, tx_type, amount, name_orig, "
+                    "name_dest, old_balance_orig, new_balance_orig, "
+                    "old_balance_dest, new_balance_dest "
+                    "FROM transactions_archive WHERE transaction_id = :t LIMIT 1"),
+                {"t": transaction_id},
+            )).first()
+        except Exception:                                     # noqa: BLE001
+            pass
+
+        if row is None:
+            try:
+                row = (await db.execute(
+                    sql("SELECT payload, transaction_id, step, tx_type, amount, "
+                        "name_orig, name_dest, old_balance_orig, new_balance_orig, "
+                        "old_balance_dest, new_balance_dest "
+                        "FROM transactions_live WHERE transaction_id = :t LIMIT 1"),
+                    {"t": transaction_id},
+                )).first()
+            except Exception:                                 # noqa: BLE001
+                pass
+
+    if row is None:
+        raise HTTPException(
+            404,
+            f"No stored transaction {transaction_id}. Cases replayed from the "
+            f"graph service's sample feed are not persisted, so their original "
+            f"payload cannot be recovered — ingest through the Query Runner to "
+            f"be able to re-analyse.",
+        )
+
+    keys = ("transaction_id", "step", "tx_type", "amount", "name_orig",
+            "name_dest", "old_balance_orig", "new_balance_orig",
+            "old_balance_dest", "new_balance_dest")
+    return {"transaction": _payload_from_row(row[0], dict(zip(keys, row[1:])))}
+
+
+# ── Threshold simulation ─────────────────────────────────────────────────────
+# Replays decisions already made at a different threshold. Historical, not
+# predictive — see backend/simulation.py.
+
+
+@app.get("/analyses/simulate", tags=["analysis"])
+async def simulate_threshold(
+    threshold: float | None = None,
+    days: int | None = None,
+    user: User = Depends(get_current_user),
+):
+    """Alert volume and, where labels exist, accuracy at a given threshold.
+
+    Without `threshold`, returns the full curve so a slider can move without a
+    round trip per pixel.
+    """
+    from backend import packages, simulation
+
+    packages.require("threshold_sim")
+    if threshold is None:
+        return await simulation.sweep(days=days)
+    return await simulation.at(threshold, days=days)
 
 
 # ── Suspicious Activity Report drafting ──────────────────────────────────────

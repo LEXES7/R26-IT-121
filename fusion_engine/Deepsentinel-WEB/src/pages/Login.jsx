@@ -54,7 +54,7 @@ export default function Login() {
     >
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {error && (
-          <Alert tone="danger" onDismiss={() => setError(null)}>
+          <Alert tone="error" onDismiss={() => setError(null)}>
             {error}
           </Alert>
         )}

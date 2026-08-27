@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
-import { Badge, Button, Card, CardHeader, cx } from './ui'
+import { useMemo, useState } from 'react'
+import { explainPlainly } from '../services/api'
+import { Alert, Badge, Button, Card, CardHeader, cx } from './ui'
 
 /**
  * Renders the generated forensic report as a document rather than a text dump.
@@ -74,8 +75,24 @@ export default function ForensicReport({
   grounded = true,
   durationMs,
   transactionId,
+  analysisId,
 }) {
   const { meta, sections } = useMemo(() => parseReport(report), [report])
+  const [plain, setPlain] = useState(null)
+  const [explaining, setExplaining] = useState(false)
+  const [explainError, setExplainError] = useState(null)
+
+  const explain = async () => {
+    setExplaining(true)
+    setExplainError(null)
+    try {
+      setPlain(await explainPlainly(analysisId))
+    } catch (e) {
+      setExplainError(e?.response?.data?.detail ?? 'Could not produce an explanation.')
+    } finally {
+      setExplaining(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -118,12 +135,43 @@ export default function ForensicReport({
             {typeof durationMs === 'number' && (
               <Badge tone="low">{(durationMs / 1000).toFixed(1)}s</Badge>
             )}
+            {analysisId && !plain && (
+              <Button size="sm" variant="ghost" loading={explaining} onClick={explain}>
+                Explain simply
+              </Button>
+            )}
             <Button size="sm" variant="ghost" onClick={() => window.print()}>
               Save as PDF
             </Button>
           </div>
         }
       />
+
+      {explainError && <Alert tone="error" className="mt-4">{explainError}</Alert>}
+
+      {plain && (
+        <div className="mt-5 rounded-xl border border-accent-500/25 bg-accent-500/[0.06] p-5">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-accent-400">
+              In plain language
+            </p>
+            <button
+              onClick={() => setPlain(null)}
+              className="shrink-0 text-[11px] text-slate-500 hover:text-slate-300 print:hidden"
+            >
+              hide
+            </button>
+          </div>
+          <p className="mt-2 text-sm leading-relaxed text-slate-300">
+            {plain.plain_english}
+          </p>
+          {/* Said plainly, because a reader must not mistake this for a second
+              opinion that independently agrees with the first. */}
+          <p className="mt-3 text-[10px] leading-relaxed text-slate-500">
+            A restatement of the report below — same evidence, no new analysis.
+          </p>
+        </div>
+      )}
 
       <div
         data-print-region="forensic-report"

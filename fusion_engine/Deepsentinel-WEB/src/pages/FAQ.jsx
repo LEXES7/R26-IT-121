@@ -35,7 +35,7 @@ const FAQS = [
       },
       {
         q: 'What is the Fraud Confidence Score?',
-        a: 'It is the output of the Logistic Regression meta-classifier (fusion layer) that combines the three sub-model scores into a single probability between 0 and 1. A score above 0.80 is classified CRITICAL, 0.65–0.80 is HIGH, 0.50–0.65 is MEDIUM, and below 0.50 is LOW. If an upstream model is unavailable, a 10% confidence penalty is applied per missing modality.',
+        a: 'It is the output of the logistic-regression meta-classifier that combines the three sub-model scores into a single calibrated probability between 0 and 1. The bands that turn that number into CRITICAL, HIGH, MEDIUM or LOW are not fixed in the interface — the monitor reads them from the relational model’s own health endpoint at startup, so they move with the calibration rather than drifting away from it. When that endpoint cannot be reached it falls back to 0.39, 0.18 and 0.09. If an upstream model is unavailable, a 10% confidence penalty is applied per missing modality, so a verdict reached without all three is deliberately conservative.',
       },
       {
         q: 'What is RAG and why does it matter here?',

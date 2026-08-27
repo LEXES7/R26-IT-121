@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 import Logo from './Logo'
 import Globe from './Globe'
-import { Eyebrow } from './Editorial'
 
 /**
  * Split layout shared by sign in and sign up.
@@ -32,27 +31,30 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
           </Link>
 
           <div className="max-w-md">
-            <Eyebrow>Multi-modal fraud detection</Eyebrow>
-            <p className="mt-4 text-3xl font-bold leading-tight tracking-tight text-slate-200">
+            <p className="eyebrow text-slate-500">Multi-modal fraud detection</p>
+            <p className="display mt-5 text-[3rem] text-slate-100">
               Detect the fraud.
               <br />
-              <span className="text-accent-500">Then prove it.</span>
+              <span className="display-italic text-accent-400">Then prove it.</span>
             </p>
-            <p className="mt-5 text-sm leading-relaxed text-slate-400">
+            <p className="mt-6 text-sm leading-relaxed text-slate-400">
               Three detectors, one fused verdict, and a forensic narrative where
               every claim traces back to a model output or a retrieved typology.
             </p>
           </div>
 
-          <dl className="flex gap-10">
+          {/* Measured figures only. This panel previously advertised a
+              "<150ms" response time that nothing had ever recorded. */}
+          <dl className="hair-t flex gap-12 pt-6">
             {[
-              ['0.406', 'Network F1'],
-              ['3', 'Detectors'],
-              ['<150ms', 'Response'],
-            ].map(([v, l]) => (
+              ['0.406', 'Relational F1', 'leakage-free, 5 seeds'],
+              ['0.024', 'Calibration error', 'isotonic'],
+              ['3', 'Detectors', 'network, behaviour, timing'],
+            ].map(([v, l, note]) => (
               <div key={l}>
-                <dd className="text-2xl font-bold tabular-nums text-slate-200">{v}</dd>
-                <dt className="mt-1 text-[11px] text-slate-600">{l}</dt>
+                <dd className="numeric text-2xl text-slate-100">{v}</dd>
+                <dt className="eyebrow mt-2 text-slate-500">{l}</dt>
+                <p className="mt-1 text-[10px] text-slate-600">{note}</p>
               </div>
             ))}
           </dl>
@@ -66,8 +68,10 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
             <Logo />
           </Link>
 
-          <h1 className="text-2xl font-bold tracking-tight text-slate-200">{title}</h1>
-          {subtitle && <p className="mt-2 text-sm text-slate-500">{subtitle}</p>}
+          <h1 className="display text-[2.5rem] text-slate-100">{title}</h1>
+          {subtitle && (
+            <p className="mt-3 text-sm leading-relaxed text-slate-400">{subtitle}</p>
+          )}
 
           <div className="mt-8">{children}</div>
 

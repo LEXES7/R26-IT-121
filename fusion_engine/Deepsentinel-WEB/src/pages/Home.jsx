@@ -7,12 +7,22 @@ import { IconBlackBox, IconHallucination, IconLink } from '../components/Icons'
 import PipelineDiagram from '../components/PipelineDiagram'
 import { useAuth } from '../context/AuthContext'
 import { Badge, cx } from '../components/ui'
+import { COMPONENTS as COMPONENT_DATA, COMPONENT_ORDER } from '../data/components'
 
+// Every figure here is measured, and labelled with the protocol that produced
+// it.
+//
+// This list previously advertised "0.988 fusion F1 score — meta-classifier,
+// held-out set". That number is the meta-classifier's cross-validation on
+// synthetic data it generated itself; it is a fit diagnostic, not a detection
+// result, and "held-out set" implied an evaluation that never happened. The
+// honest figure is 0.406 under a leakage-free protocol, and it is the one worth
+// defending: 0.41 with no leakage is a stronger claim than 0.99 with it.
 const STATS = [
   { value: '3', label: 'detection models', detail: 'network, behaviour, timing' },
-  { value: '10', label: 'FATF typologies', detail: 'vector-indexed knowledge base' },
-  { value: '0.988', label: 'fusion F1 score', detail: 'meta-classifier, held-out set' },
-  { value: '6.3M', label: 'transactions', detail: 'PaySim training corpus' },
+  { value: '0.406', label: 'relational F1', detail: 'leakage-free, 5 seeds, p=0.045' },
+  { value: '0.024', label: 'calibration error', detail: 'isotonic; 0.80 uncalibrated' },
+  { value: '6.3M', label: 'transactions', detail: 'PaySim, fully synthetic' },
 ]
 
 const PROBLEM = [
@@ -33,36 +43,18 @@ const PROBLEM = [
   },
 ]
 
-const COMPONENTS = [
-  {
-    slug: 'behavioural',
-    component: 'Stratified VAE with Dual-Signal Anomaly Attribution',
-    modality: 'Behaviour',
-    color: 'behavioral',
-    summary: 'Learns each account\'s normal spending shape and flags departures from it.',
-  },
-  {
-    slug: 'network',
-    component: 'Edge-Enhanced GraphSAGE',
-    modality: 'Network',
-    color: 'graph',
-    summary: 'Reads the transaction graph to expose mule rings that per-transaction models cannot see.',
-  },
-  {
-    slug: 'temporal',
-    component: 'System-Context Temporal CNN',
-    modality: 'Timing',
-    color: 'temporal',
-    summary: 'Finds suspicious rhythm — bursts, off-hours activity and sequence patterns.',
-  },
-  {
-    slug: 'fusion',
-    component: 'Fusion engine, RAG retrieval and forensic reporting',
-    modality: 'Fusion',
-    color: 'fusion',
-    summary: 'Combines the three verdicts and writes a cited, human-readable case narrative.',
-  },
-]
+// Read from the component reference data rather than restated here. This list
+// was a second copy, and it drifted: it still described the temporal detector
+// as a "System-Context Temporal CNN" looking for off-hours bursts weeks after
+// that component became a transaction-sequence TCN with a different claim.
+const COMPONENTS = COMPONENT_ORDER.map((slug) => COMPONENT_DATA[slug])
+
+const MODALITY_STYLE_TEXT = {
+  graph: 'text-modality-graph',
+  behavioral: 'text-modality-behavioral',
+  temporal: 'text-modality-temporal',
+  fusion: 'text-accent-400',
+}
 
 const MODALITY_STYLE = {
   graph: 'text-modality-graph border-modality-graph/30 bg-modality-graph/10',
@@ -87,15 +79,17 @@ export default function Home() {
           className="pointer-events-none absolute -left-40 top-0 h-[32rem] w-[32rem] rounded-full bg-accent-500/10 blur-[120px]"
         />
 
-        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[1fr_minmax(0,34rem)] lg:gap-6 lg:py-28">
+        <div className="relative mx-auto grid max-w-[88rem] items-center gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_minmax(0,36rem)] lg:gap-10 lg:py-28">
           {/* Left — the argument */}
           <div>
             <Eyebrow>Multi-modal fraud detection</Eyebrow>
 
-            <h1 className="mt-5 text-5xl font-bold leading-[1.02] tracking-tight text-slate-200 sm:text-6xl">
+            {/* Serif, not the bold sans every product page uses. The italic
+                clause is the promise; the roman half is the commodity. */}
+            <h1 className="display mt-5 text-[3.5rem] text-slate-100 sm:text-[4.75rem]">
               Detect the fraud.
               <br />
-              <span className="text-accent-500">Then prove it.</span>
+              <span className="display-italic text-accent-400">Then prove it.</span>
             </h1>
 
             <p className="mt-6 max-w-xl text-base leading-relaxed text-slate-400">
@@ -117,15 +111,17 @@ export default function Home() {
               </a>
             </div>
 
-            {/* Stats: white numerals, accent suffix — the template's device. */}
-            <dl className="mt-14 grid grid-cols-2 gap-x-8 gap-y-7 sm:grid-cols-4">
+            {/* Measured figures, each carrying the protocol that produced it.
+                The detail line is not decoration — a number without its method
+                is a claim, and this page should not make claims. */}
+            <dl className="hair-t mt-14 grid grid-cols-2 gap-x-8 gap-y-7 pt-8 sm:grid-cols-4">
               {STATS.map((s) => (
                 <div key={s.label}>
-                  <dd className="text-4xl font-bold tracking-tight text-slate-200 tabular-nums">
+                  <dd className="numeric text-[2rem] leading-none text-slate-100">
                     {s.value}
                   </dd>
-                  <dt className="mt-1.5 text-xs font-semibold text-accent-500">{s.label}</dt>
-                  <p className="mt-0.5 text-[10px] leading-tight text-slate-600">{s.detail}</p>
+                  <dt className="eyebrow mt-2.5 text-accent-400">{s.label}</dt>
+                  <p className="mt-1 text-[10px] leading-tight text-slate-600">{s.detail}</p>
                 </div>
               ))}
             </dl>
@@ -148,27 +144,32 @@ export default function Home() {
       </section>
 
       {/* ── The problem ──────────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-4 py-24 sm:px-6">
+      {/* Three claims that build on each other, so they are numbered and ruled
+          rather than boxed. Equal-weight cards read as a feature grid; this is
+          an argument. */}
+      <section className="mx-auto max-w-[88rem] px-5 py-24 sm:px-8">
         <Reveal className="max-w-2xl">
           <Eyebrow>The problem</Eyebrow>
-          <Display
-            lead="Fraud detection has"
-            accent="an explanation problem"
-            className="mt-4"
-          />
+          <h2 className="display mt-4 text-[2.5rem] text-slate-100 sm:text-[3.25rem]">
+            Fraud detection has{' '}
+            <span className="display-italic text-accent-400">an explanation problem.</span>
+          </h2>
         </Reveal>
 
-        <div className="mt-14 grid gap-4 md:grid-cols-3">
+        <div className="hair-t mt-14 grid gap-x-10 gap-y-12 pt-12 md:grid-cols-3">
           {PROBLEM.map((p, i) => (
             <Reveal key={p.title} delay={i * 110}>
-              <article className="group h-full rounded-2xl border border-subtle bg-surface p-6 transition-colors duration-300 hover:border-accent-500/40 hover:bg-surface-raised">
-                <span className="inline-flex rounded-xl border border-subtle bg-sentinel-950 p-3 text-slate-500 transition-colors duration-300 group-hover:border-accent-500/40 group-hover:text-accent-500">
-                  <p.Icon />
-                </span>
-                <h3 className="mt-5 text-base font-semibold leading-snug text-slate-200">
+              <article className={cx('h-full', i > 0 && 'md:hair-l md:pl-10')}>
+                <div className="flex items-baseline gap-4">
+                  <span className="display text-[2.5rem] leading-none text-slate-700">
+                    0{i + 1}
+                  </span>
+                  <span className="text-slate-600"><p.Icon /></span>
+                </div>
+                <h3 className="mt-5 text-lg font-semibold leading-snug text-slate-100">
                   {p.title}
                 </h3>
-                <p className="mt-2.5 text-sm leading-relaxed text-slate-500">{p.body}</p>
+                <p className="mt-3 text-sm leading-relaxed text-slate-400">{p.body}</p>
               </article>
             </Reveal>
           ))}
@@ -196,83 +197,94 @@ export default function Home() {
         </Reveal>
       </section>
 
-      {/* ── Team ─────────────────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-5xl space-y-8 px-4 py-16 sm:px-6">
+      {/* ── The four components ──────────────────────────────────────────── */}
+      {/* An index, not a card grid: each row is a claim you can open. Numbered
+          and ruled so the four read as one system rather than four products. */}
+      <section className="mx-auto max-w-[88rem] px-5 py-20 sm:px-8">
         <Reveal className="max-w-2xl">
           <Eyebrow>The architecture</Eyebrow>
-          <Display lead="Four models," accent="one verdict" className="mt-4" />
-          <p className="mt-5 text-sm leading-relaxed text-slate-500">
-            Each detector reads a different signal — behaviour, network structure
+          <h2 className="display mt-4 text-[2.5rem] text-slate-100 sm:text-[3.25rem]">
+            Four models,{' '}
+            <span className="display-italic text-accent-400">one verdict.</span>
+          </h2>
+          <p className="mt-5 max-w-xl text-sm leading-relaxed text-slate-400">
+            Each detector reads a different signal — network structure, behaviour
             and timing — and each ships as its own evaluated, deployable API. The
             fusion engine consumes all three through a common adapter layer.
           </p>
         </Reveal>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rows mt-12">
           {COMPONENTS.map((c, i) => (
-            <Reveal key={c.slug} delay={i * 90}>
-            <Link
-              to={`/components/${c.slug}`}
-              className="group flex h-full items-start gap-4 rounded-2xl border border-subtle bg-surface p-5 transition-colors duration-300 hover:border-accent-500/40 hover:bg-surface-raised"
-            >
-              <div className="min-w-0 flex-1">
-                <span
-                  className={cx(
-                    'rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
-                    MODALITY_STYLE[c.color],
-                  )}
-                >
+            <Reveal key={c.slug} delay={i * 80}>
+              <Link
+                to={`/components/${c.slug}`}
+                className="group grid items-baseline gap-x-8 gap-y-2 py-7 transition-colors hover:bg-surface md:grid-cols-[3rem_9rem_minmax(0,22rem)_minmax(0,1fr)_5rem]"
+              >
+                <span className="display text-[2rem] leading-none text-slate-700 transition-colors group-hover:text-slate-500">
+                  0{i + 1}
+                </span>
+                <span className={cx('eyebrow', MODALITY_STYLE_TEXT[c.color])}>
                   {c.modality}
                 </span>
-                <p className="mt-2 font-semibold text-slate-200">{c.component}</p>
-                <p className="mt-1 text-xs leading-relaxed text-slate-500">{c.summary}</p>
-                <ArrowLink className="mt-4 text-xs">Explore</ArrowLink>
-              </div>
-            </Link>
+                <span className="text-base font-semibold leading-snug text-slate-100">
+                  {c.title}
+                </span>
+                <span className="text-sm leading-relaxed text-slate-400">
+                  <span className="display-italic font-serif text-slate-300">
+                    {c.tagline}.
+                  </span>{' '}
+                  {c.question}
+                </span>
+                <span className="text-xs text-slate-600 transition-colors group-hover:text-accent-400 md:text-right">
+                  Explore &rarr;
+                </span>
+              </Link>
             </Reveal>
           ))}
         </div>
       </section>
 
       {/* ── Research contribution ────────────────────────────────────────── */}
-      <section className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
-        <div className="relative overflow-hidden rounded-3xl border border-subtle bg-surface p-8 text-center sm:p-12">
-          <div
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                'radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.08) 0%, transparent 70%)',
-            }}
-          />
-          <div className="relative mx-auto max-w-2xl space-y-4">
-            <p className="text-xs font-medium tracking-wide text-accent-500">
-              Research contribution
-            </p>
-            <h2 className="text-xl font-bold leading-snug text-slate-200 sm:text-2xl">
+      {/* Set as a pull-quote. The previous version was a rounded box with a blue
+          radial gradient behind centred text — the single most generic shape on
+          the page. */}
+      <section className="hair-t mx-auto max-w-[88rem] px-5 py-24 sm:px-8">
+        <div className="grid gap-x-16 gap-y-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <Reveal>
+            <Eyebrow>Research contribution</Eyebrow>
+            <blockquote className="display mt-5 text-[2rem] leading-[1.15] text-slate-100 sm:text-[2.75rem]">
               Forensic-ready LLM architectures with traceable outputs were named
-              an open research gap by three independent 2025–2026 surveys.
-            </h2>
+              an{' '}
+              <span className="display-italic text-accent-400">
+                open research gap
+              </span>{' '}
+              by three independent 2025&ndash;2026 surveys.
+            </blockquote>
+          </Reveal>
+
+          <Reveal delay={120} className="lg:hair-l lg:pl-16">
             <p className="text-sm leading-relaxed text-slate-400">
               No prior system pairs a multi-modal fraud ensemble with a retrieval
               layer that anchors the generated narrative in a structured typology
-              knowledge base. That pairing is what makes the output traceable, and
-              it is what this project contributes.
+              knowledge base. That pairing is what makes the output traceable,
+              and it is what this project contributes.
             </p>
-            <div className="flex flex-wrap justify-center gap-3 pt-2">
+            <div className="mt-8 flex flex-wrap items-center gap-6">
               <Link
                 to={isAuthenticated ? '/analyzer' : '/login'}
-                className="rounded-xl bg-accent-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent-500/20 transition-colors hover:bg-accent-400"
+                className="rounded-lg bg-accent-500 px-5 py-2.5 text-sm font-medium text-[#04231f] transition-colors hover:bg-accent-400"
               >
                 {isAuthenticated ? 'Run the analyzer' : 'Sign in to run it'}
               </Link>
               <Link
                 to="/about"
-                className="rounded-xl border border-subtle px-6 py-3 text-sm text-slate-400 transition-all hover:border-strong hover:text-slate-200"
+                className="hair border-b pb-1 text-sm text-slate-300 transition-colors hover:text-slate-100"
               >
-                Read the architecture
+                Read the architecture &rarr;
               </Link>
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
     </div>
