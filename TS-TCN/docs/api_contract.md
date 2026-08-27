@@ -1,66 +1,97 @@
 # API Contract — TS-TCN ↔ Fusion Engine
 
-This document defines the JSON contract between the **TS-TCN service**
-(Member 3) and the **Fusion Engine** (Member 4). It is locked — any change
-must be agreed by both parties.
+This document defines the JSON contract between the **TS-TCN service** (Member
+3) and the **Fusion Engine** (Member 4). It is locked — any change must be
+agreed by both parties.
+
+> **2026-08-26 revision.** The previous version of this document (`attribution.peak_position`,
+> `fraud_probability`, a nested `{"transaction": {...}}` request body) was
+> never implemented against and does not match what the Fusion Engine's
+> adapter (`DeepSentinel/backend/adapters/upstream.py::call_temporal_api`)
+> actually parses. This revision replaces it with the schema from the
+> research proposal (Appendix C), which the adapter was written against, and
+> is what `api/routes/classify.py` now implements.
 
 ## Endpoint
 
 ```
 POST /api/v1/classify
-Host: tstcn-service:8001
+Host: localhost:8003
 Content-Type: application/json
 ```
 
+Port **8003** is the default `TEMPORAL_API_BASE` the fusion engine dials
+(`DeepSentinel/backend/config.py`). Run the service on this port for it to be
+picked up without extra configuration.
+
+The service maintains an internal thread-safe `deque(maxlen=32)` of recent
+transactions, shared across requests (system-wide, not per-account — see
+proposal §1.3, Research Gap 1). The request only needs the *current*
+transaction; the service reconstructs the 32-transaction window from its own
+buffer, with the current transaction as the last (most recent) position.
+
 ## Request
+
+Flat body — the fusion engine spreads the full transaction dict and adds
+`composite_id` before sending, so extra fields (`nameDest`, `isFlaggedFraud`,
+`transaction_id`, `composite_id`, ...) may be present and are ignored.
 
 ```json
 {
-  "transaction": {
-    "step": 596,
-    "type": "TRANSFER",
-    "amount": 181.00,
-    "nameOrig": "C1305486145",
-    "oldbalanceOrg": 181.00,
-    "newbalanceOrig": 0.00,
-    "nameDest": "C553264065",
-    "oldbalanceDest": 0.00,
-    "newbalanceDest": 0.00
-  }
+  "nameOrig": "C1231006815",
+  "step": 214,
+  "type": "TRANSFER",
+  "amount": 450000.0,
+  "oldbalanceOrg": 451000.0,
+  "newbalanceOrig": 0.0,
+  "oldbalanceDest": 0.0,
+  "newbalanceDest": 449000.0
 }
 ```
 
-The TS-TCN service maintains an internal thread-safe `deque(maxlen=32)`
-of recent transactions. The request only needs the *current* transaction —
-the service reconstructs the window from its own buffer.
-
-## Response
+## Response — 200 OK
 
 ```json
 {
-  "composite_id": "C1305486145_596",
-  "fraud_probability": 0.873,
-  "fraud_label": 1,
-  "threshold_used": 0.34,
-  "attribution": {
-    "peak_position": 28,
-    "peak_weight": 0.412,
-    "peak_transaction_id": "C84281453_595",
-    "peak_features": {
-      "drain_ratio": 0.998,
-      "log_amount": 12.04,
+  "transaction_ref": {
+    "nameOrig": "C1231006815",
+    "step": 214,
+    "composite_id": "C1231006815_214"
+  },
+  "temporal_risk_score": 0.974,
+  "risk_level": "CRITICAL",
+  "detection_method": "TS-TCN",
+  "modality": "temporal_sequence",
+  "evidence": {
+    "current_transaction": {
+      "type": "TRANSFER",
+      "amount": 450000.0,
+      "drain_ratio": 0.999,
       "post_transfer_ratio": 0.001,
       "dest_was_empty": 1.0,
-      "dest_enrichment": 0.997,
-      "type_risk_weight": 0.501,
-      "inv_dest_ratio": 0.000,
-      "amt_to_orig": 0.992,
-      "hour_of_day": 0.65,
-      "day_of_week": 0.5
-    },
-    "attention_distribution": [0.001, 0.002, ..., 0.412]
+      "dest_enrichment": 0.998,
+      "type_risk": 0.499,
+      "hour_of_day": 0.609,
+      "fraud_signal_summary": "Account fully drained into empty destination account"
+    }
   },
-  "model_version": "ts-tcn-v1.0",
+  "triggering_predecessor": {
+    "nameOrig": "C1231006815",
+    "step": 211,
+    "composite_id": "C1231006815_211",
+    "attention_weight": 0.847,
+    "offset_from_current": -3,
+    "features": {
+      "type": "TRANSFER",
+      "amount": 180000.0,
+      "drain_ratio": 0.401,
+      "post_transfer_ratio": 0.599,
+      "dest_was_empty": 1.0,
+      "type_risk": 0.499
+    },
+    "predecessor_signal": "Prior partial drain from same account — escalating fraud pattern"
+  },
+  "model_version": "ts-tcn-sanity-v0.1",
   "inference_time_ms": 23.7
 }
 ```
@@ -69,24 +100,43 @@ the service reconstructs the window from its own buffer.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `composite_id` | string | `{nameOrig}_{step}` — join key across components |
-| `fraud_probability` | float ∈ [0, 1] | Sigmoid output before thresholding |
-| `fraud_label` | int ∈ {0, 1} | Binary decision after threshold |
-| `threshold_used` | float | Tuned threshold from Stage 6 evaluation |
-| `attribution.peak_position` | int ∈ [0, 31] | Most influential predecessor index in window |
-| `attribution.peak_weight` | float ∈ [0, 1] | Attention weight at `peak_position` |
-| `attribution.peak_transaction_id` | string | composite_id of the peak predecessor |
-| `attribution.peak_features` | object | F1–F10 feature values of the peak predecessor |
-| `attribution.attention_distribution` | array[32] | Full attention vector (sums to 1.0) |
-| `model_version` | string | Semver string of the deployed model |
-| `inference_time_ms` | float | End-to-end serving time |
+| `transaction_ref.nameOrig` | string | PaySim originator account ID — shared cross-component key (also used by M1 graph nodes, M2 VAE account keys) |
+| `transaction_ref.step` | int | Simulation hour of the current transaction |
+| `transaction_ref.composite_id` | string | `{nameOrig}_{step}` — unique join key |
+| `temporal_risk_score` | float ∈ [0, 1] | `fraud_prob` sigmoid output of the TS-TCN |
+| `risk_level` | string | `NORMAL` (\< 0.3) · `SUSPICIOUS` (0.3–0.7) · `CRITICAL` (≥ 0.7) |
+| `detection_method` | string | Constant `"TS-TCN"` |
+| `modality` | string | Constant `"temporal_sequence"` — tells M4 which ensemble channel this is |
+| `evidence.current_transaction` | object | The 10 engineered features (a labelled subset) for the current transaction plus `fraud_signal_summary`, a one-line human-readable anchor for the LLM prompt |
+| `triggering_predecessor` | object | The window position (excluding the current transaction itself) that `fraud_attention` weighted highest |
+| `triggering_predecessor.attention_weight` | float ∈ [0, 1] | Attention weight at that position (`fraud_attention` output, not a heuristic) |
+| `triggering_predecessor.offset_from_current` | int, negative | Position relative to the current transaction, e.g. `-3` = 3 transactions back in the window |
+| `triggering_predecessor.features` | object | Feature vector of the predecessor transaction, read from the rolling buffer |
+| `triggering_predecessor.predecessor_signal` | string | Human-readable label of the escalation pattern |
+| `model_version` | string | Identifies which trained checkpoint answered. `ts-tcn-sanity-v0.1` is the Stage 4 sanity-trained checkpoint (1 epoch, architecture-verification only) — see caveat below |
+| `inference_time_ms` | float | End-to-end serving time for this request |
+
+## Model status caveat
+
+The checkpoint currently served (`outputs/stage4_tcn/ts_tcn_sanity.keras`) is
+the Stage 4 **sanity** run — one epoch, trained to verify the architecture
+shape and the `fraud_attention` mechanism produce correct outputs, not to
+converge. `temporal_risk_score` and `risk_level` from this checkpoint should
+not be read as the model's true detection performance. The full 30-epoch run
+(Stage 4, `best_tstcn.h5`) and threshold tuning (Stage 6) are scheduled per
+the WBS and will replace it — `model_version` distinguishes the checkpoints so
+this is never ambiguous to a downstream consumer.
 
 ## Error Responses
 
-| HTTP | Code | When |
-|------|------|------|
-| 200 | OK | Successful classification |
-| 400 | `BAD_REQUEST` | Missing/malformed transaction fields |
-| 422 | `UNPROCESSABLE_ENTITY` | Invalid types or out-of-range values |
-| 503 | `WARMING_UP` | Buffer has < 32 transactions (cold start) |
+| HTTP | Detail | When |
+|------|--------|------|
+| 200 | — | Successful classification |
+| 422 | Pydantic validation message | Missing/malformed transaction fields |
+| 503 | `WARMING_UP` | Buffer has fewer than 32 transactions since service start (cold start) |
+| 503 | `MODEL_UNAVAILABLE` | Service is running but its model artefacts are not on disk |
 | 500 | `INTERNAL_ERROR` | Model inference failure |
+
+`503` is expected and normal for the first 31 requests after a restart — the
+fusion engine's adapter treats it as "model unavailable for this request", not
+an outage, and does not log it as a failure.

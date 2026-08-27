@@ -4,8 +4,7 @@ import {
   getMonitorRuntime, getMonitorState, pauseMonitor, restartMonitor,
   resumeMonitor, startMonitor, stopMonitor, streamMonitor,
 } from '../services/api'
-import { Alert, Badge, Button, cx } from '../components/ui'
-import { Eyebrow } from '../components/Editorial'
+import { Alert, cx } from '../components/ui'
 import PipelineLive from '../components/PipelineLive'
 import RuntimePanel from '../components/RuntimePanel'
 
@@ -16,37 +15,23 @@ import RuntimePanel from '../components/RuntimePanel'
  * here comes from the server's event stream — no interval polling, no local
  * simulation — so what an analyst reads is what the models actually did.
  *
- * Layout follows how an incident is actually handled: the funnel counters say
- * whether anything is wrong, the pipeline says where the work is happening,
- * alerts say what to act on, and the feed is the audit trail underneath.
+ * Layout follows how an incident is actually handled: the headline says
+ * whether anything is wrong, the funnel says how much got through, the
+ * pipeline says where the work is happening, alerts say what to act on, and
+ * the feed is the audit trail underneath.
  */
 
-const SEVERITY_TONE = {
-  CRITICAL: 'critical',
-  HIGH: 'high',
-  MEDIUM: 'medium',
-  LOW: 'low',
+const SEV_HEX = {
+  CRITICAL: '#ef4444', HIGH: '#f97316', MEDIUM: '#eab308', LOW: '#22c55e',
 }
 
-function Stat({ label, value, sub, accent }) {
-  return (
-    <div className="rounded-2xl border border-subtle bg-surface p-5">
-      <p className={cx('text-3xl font-bold tabular-nums', accent ? 'text-accent-500' : 'text-slate-200')}>
-        {value}
-      </p>
-      <p className="mt-1 text-xs font-semibold text-slate-400">{label}</p>
-      {sub && <p className="mt-0.5 text-[10px] text-slate-600">{sub}</p>}
-    </div>
-  )
-}
-
-function severityColour(sev) {
-  return {
-    CRITICAL: 'text-risk-critical border-risk-critical/40 bg-risk-critical/10',
-    HIGH: 'text-risk-high border-risk-high/40 bg-risk-high/10',
-    MEDIUM: 'text-risk-medium border-risk-medium/40 bg-risk-medium/10',
-  }[sev] ?? 'text-slate-400 border-subtle bg-surface'
-}
+// Scores arrive already rounded by the server, so 0.9 and 0.8985 sit in the
+// same column at different widths. Fix the decimals here: a column of figures
+// that does not line up is harder to scan than one that does.
+const score3 = (v) => (typeof v === 'number' ? v.toFixed(3) : Number.isFinite(Number(v)) ? Number(v).toFixed(3) : '—')
+const money = (v) => (Number.isFinite(Number(v))
+  ? Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })
+  : '—')
 
 export default function Monitor() {
   const [snap, setSnap] = useState(null)
@@ -87,7 +72,9 @@ export default function Monitor() {
     if (kind === 'screened' || kind === 'fused') {
       // Counters live on the server; refresh them cheaply rather than
       // recomputing a parallel copy that could drift.
-      getMonitorState().then((s) => setSnap((prev) => ({ ...s, stages: prev?.stages ?? s.stages }))).catch(() => {})
+      getMonitorState()
+        .then((s) => setSnap((prev) => ({ ...s, stages: prev?.stages ?? s.stages })))
+        .catch(() => {})
     }
     if (kind === 'monitor') {
       setSnap((s) => (s ? { ...s, running: e.status === 'started' } : s))
@@ -128,200 +115,283 @@ export default function Monitor() {
   const c = snap?.counters ?? {}
   const running = !!snap?.running
   const paused = !!runtime?.monitor?.paused
+  const alerts = snap?.alerts ?? []
+  const worst = alerts.reduce(
+    (w, a) => (['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].indexOf(a.severity)
+      > ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].indexOf(w) ? a.severity : w),
+    'LOW',
+  )
+  // What can actually score. A service that answers its health probe without
+  // weights is reachable but useless, and must not be counted as live.
+  const live = Object.values(runtime?.detectors ?? {}).filter((d) => d?.ready).length
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      {/* ── Header ─────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <Eyebrow>Live monitoring</Eyebrow>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-200">
-            Transaction stream
-          </h1>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-500">
-            The graph model screens every transaction as it arrives. Only what
-            looks structurally suspicious is escalated to the behavioural and
-            temporal detectors, then fused into a verdict.
-          </p>
-        </div>
+    <div className="mx-auto max-w-[88rem] px-5 pb-16 pt-8 sm:px-8">
 
-        <div className="flex items-center gap-3">
-          <span
-            className={cx(
-              'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium',
-              running
-                ? 'border-risk-low/40 bg-risk-low/10 text-risk-low'
-                : 'border-subtle text-slate-500',
-            )}
-          >
-            <span
-              className={cx(
-                'h-1.5 w-1.5 rounded-full',
-                running && !paused ? 'animate-pulse bg-risk-low' : 'bg-slate-600',
+      {/* ═══ the statement ═══════════════════════════════════════════ */}
+      <header className="hair-b pb-7">
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div className="min-w-0">
+            <p className="eyebrow text-slate-500">Live monitoring</p>
+            <h1 className="display mt-3 text-[2.75rem] text-slate-100 sm:text-[3.5rem]">
+              {!running ? (
+                <>The stream is <span className="display-italic text-slate-500">not running.</span></>
+              ) : paused ? (
+                <>Screening is <span className="display-italic text-risk-medium">paused.</span></>
+              ) : alerts.length ? (
+                <>
+                  {alerts.length} open alert{alerts.length === 1 ? '' : 's'}.{' '}
+                  <span className="display-italic" style={{ color: SEV_HEX[worst] }}>
+                    Worst is {worst.toLowerCase()}.
+                  </span>
+                </>
+              ) : (
+                <>Screening. <span className="display-italic text-slate-500">Nothing flagged.</span></>
               )}
-            />
-            {!running ? 'Stopped' : paused ? 'Paused' : 'Monitoring'}
-          </span>
-
-          {/* Pause keeps the session; stop tears it down. Both are offered
-              because an analyst reading an alert wants the first, not the
-              second. */}
-          {!running ? (
-            <Button onClick={() => control(() => startMonitor(1.2))} loading={busy}>
-              Start monitoring
-            </Button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                onClick={() => control(paused ? resumeMonitor : pauseMonitor)}
-                loading={busy}
-              >
-                {paused ? 'Resume' : 'Pause'}
-              </Button>
-              <Button variant="ghost" onClick={() => control(() => restartMonitor(1.2))} loading={busy}>
-                Restart
-              </Button>
-              <Button variant="danger" onClick={() => control(stopMonitor)} loading={busy}>
-                Stop
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {error && (
-        <Alert tone="danger" className="mt-6" onDismiss={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
-
-      {/* ── Funnel ─────────────────────────────────────────────────── */}
-      <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Screened" value={c.screened ?? 0} sub="every transaction" />
-        <Stat
-          label="Escalated"
-          value={c.escalated ?? 0}
-          sub={`${((c.escalation_rate ?? 0) * 100).toFixed(1)}% of stream`}
-        />
-        <Stat label="Alerts" value={c.alerts ?? 0} sub="fused, MEDIUM+" accent />
-        <Stat label="Throughput" value={`${c.throughput_per_min ?? 0}`} sub="per minute" />
-      </div>
-
-      {/* ── Pipeline ───────────────────────────────────────────────── */}
-      <div className="mt-4 rounded-2xl border border-subtle bg-surface p-5">
-        <PipelineLive stages={snap?.stages} escalating={escalating} />
-      </div>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
-        <RuntimePanel runtime={runtime} />
-        <div className="lg:col-span-2 grid gap-4 sm:grid-cols-2">
-        {/* ── Alerts ───────────────────────────────────────────────── */}
-        <section className="rounded-2xl border border-subtle bg-surface p-5">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-sm font-semibold text-slate-200">Open alerts</h2>
-            <span className="text-[10px] text-slate-600">fused verdict ≥ MEDIUM</span>
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-400">
+              The graph model screens every transaction as it arrives. Only what
+              looks structurally suspicious costs the behavioural and temporal
+              detectors, and only then is a verdict fused.
+            </p>
           </div>
 
-          {!snap?.alerts?.length ? (
-            <p className="py-10 text-center text-xs text-slate-600">
-              {running
-                ? 'Nothing flagged yet. Most traffic is legitimate — that is the point.'
-                : 'Start monitoring to screen the live stream.'}
-            </p>
-          ) : (
-            <ul className="mt-4 space-y-2">
-              {snap.alerts.map((a) => (
+          {/* controls, typographic rather than a row of chips */}
+          <div className="flex items-end gap-6">
+            <div>
+              <p className="eyebrow text-slate-500">Status</p>
+              <p className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-200">
+                <span className="relative flex h-2 w-2">
+                  {running && !paused && (
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-400 opacity-70" />
+                  )}
+                  <span className={cx('relative h-2 w-2 rounded-full',
+                    !running ? 'bg-slate-600' : paused ? 'bg-risk-medium' : 'bg-accent-400')} />
+                </span>
+                {!running ? 'Stopped' : paused ? 'Paused' : 'Monitoring'}
+              </p>
+              <p className="mt-1 text-[11px] text-slate-500">
+                {snap?.source === 'queue' ? 'ingested traffic' : running ? 'sample replay' : 'idle'}
+              </p>
+            </div>
+
+            {/* Pause keeps the session; stop tears it down. Both are offered
+                because an analyst reading an alert wants the first. */}
+            {!running ? (
+              <button
+                onClick={() => control(() => startMonitor(1.2))}
+                disabled={busy}
+                className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-medium text-[#04231f] transition-colors hover:bg-accent-400 disabled:opacity-50"
+              >
+                {busy ? 'Starting…' : 'Start monitoring'}
+              </button>
+            ) : (
+              <div className="flex items-end gap-4 text-sm">
+                <Ctl onClick={() => control(paused ? resumeMonitor : pauseMonitor)} busy={busy}>
+                  {paused ? 'Resume' : 'Pause'}
+                </Ctl>
+                <Ctl onClick={() => control(() => restartMonitor(1.2))} busy={busy}>Restart</Ctl>
+                <Ctl onClick={() => control(stopMonitor)} busy={busy} danger>Stop</Ctl>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* the funnel */}
+        <dl className="mt-7 grid grid-cols-2 gap-y-5 sm:grid-cols-3 lg:grid-cols-6">
+          <Figure value={c.screened} label="Screened" note="every transaction" />
+          <Figure value={c.escalated} label="Escalated"
+                  note={`${((c.escalation_rate ?? 0) * 100).toFixed(1)}% of stream`} />
+          <Figure value={c.alerts} label="Alerts" note="fused, medium+" accent />
+          <Figure value={c.throughput_per_min} label="Per minute" note="throughput" />
+          <Figure value={alerts.length} label="Open" note="awaiting action"
+                  urgent={alerts.length > 0} />
+          <Figure value={live} suffix="/3" label="Detectors" note="reachable"
+                  urgent={live < 3} />
+        </dl>
+      </header>
+
+      {error && (
+        <div className="mt-6">
+          <Alert tone="error" onDismiss={() => setError(null)}>{error}</Alert>
+        </div>
+      )}
+
+      {/* ═══ the pipeline ═══════════════════════════════════════════ */}
+      <section className="mt-8">
+        <div className="hair-b flex items-baseline justify-between pb-2.5">
+          <h2 className="text-sm font-semibold text-slate-100">The pipeline, right now</h2>
+          <span className="text-[11px] text-slate-500">
+            lit as each stage runs
+          </span>
+        </div>
+        <div className="mt-5">
+          <PipelineLive stages={snap?.stages} escalating={escalating} />
+        </div>
+      </section>
+
+      {/* ═══ alerts · feed · runtime ════════════════════════════════ */}
+      <div className="mt-9 grid gap-8 lg:grid-cols-[minmax(0,1fr)_19rem]">
+        <div className="min-w-0 space-y-9">
+
+          {/* ── alerts ── */}
+          <section>
+            <div className="hair-b flex items-baseline justify-between pb-2.5">
+              <h2 className="text-sm font-semibold text-slate-100">Open alerts</h2>
+              <span className="text-[11px] text-slate-500">fused verdict ≥ medium</span>
+            </div>
+
+            {!alerts.length ? (
+              <p className="py-10 text-center text-sm text-slate-500">
+                {running
+                  ? 'Nothing flagged yet. Most traffic is legitimate — that is the point.'
+                  : 'Start monitoring to screen the live stream.'}
+              </p>
+            ) : (
+              <div className="rows mt-1">
+                {alerts.map((a) => (
+                  <div key={a.transaction_id + a.at}
+                       className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3">
+                    <span className="h-7 w-[3px] shrink-0 rounded-full"
+                          style={{ background: SEV_HEX[a.severity] ?? '#64748b' }} />
+                    <span className="numeric w-14 shrink-0 text-sm text-slate-100">
+                      {score3(a.fused_score)}
+                    </span>
+                    <span className="w-16 shrink-0 text-xs"
+                          style={{ color: SEV_HEX[a.severity] }}>
+                      {(a.severity ?? '').toLowerCase()}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-xs text-slate-400">
+                      {a.pattern?.replace(/_/g, ' ') ?? 'pattern unknown'}
+                      <span className="text-slate-600"> · sink </span>
+                      <span className="numeric text-slate-500">{a.sink_account ?? '—'}</span>
+                    </span>
+                    <span className="numeric hidden shrink-0 text-[11px] text-slate-600 sm:block">
+                      graph {score3(a.graph_score)} · {a.modalities_used}/3
+                    </span>
+                    <span className="numeric w-24 shrink-0 text-right text-[11px] text-slate-500">
+                      {money(a.amount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* ── the feed ── */}
+          <section>
+            <div className="hair-b flex items-baseline justify-between pb-2.5">
+              <h2 className="text-sm font-semibold text-slate-100">Activity</h2>
+              <span className="text-[11px] text-slate-500">newest first · from the event stream</span>
+            </div>
+
+            <ul className="mt-2 max-h-[28rem] overflow-y-auto">
+              {feed.length === 0 && (
+                <li className="py-10 text-center text-sm text-slate-500">
+                  Waiting for the stream…
+                </li>
+              )}
+              {feed.map((e, i) => (
                 <li
-                  key={a.transaction_id + a.at}
-                  className="rounded-xl border border-subtle bg-sentinel-950 p-3"
+                  key={`${e.transaction_id ?? e.kind}-${e.at}-${i}`}
+                  className="numeric flex items-baseline gap-3 py-1 text-[11px]"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <span
-                      className={cx(
-                        'rounded-md border px-2 py-0.5 text-[10px] font-bold',
-                        severityColour(a.severity),
-                      )}
-                    >
-                      {a.severity}
-                    </span>
-                    <span className="font-mono text-[10px] text-slate-600">
-                      {a.transaction_id}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-xs text-slate-300">
-                    {a.pattern?.replace(/_/g, ' ') ?? 'pattern unknown'} · sink{' '}
-                    <span className="font-mono">{a.sink_account ?? '—'}</span>
-                  </p>
-                  <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-slate-600">
-                    <span>fused {a.fused_score}</span>
-                    <span>graph {a.graph_score}</span>
-                    <span>{a.modalities_used}/3 detectors</span>
-                    <span>{Number(a.amount).toLocaleString()}</span>
-                  </div>
+                  <span
+                    className={cx(
+                      'w-[4.5rem] shrink-0',
+                      e.kind === 'alert' && 'text-risk-critical',
+                      e.kind === 'escalated' && 'text-accent-400',
+                      e.kind === 'notification' && 'text-risk-medium',
+                      !['alert', 'escalated', 'notification'].includes(e.kind) && 'text-slate-600',
+                    )}
+                  >
+                    {e.kind}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-slate-400">
+                    {e.kind === 'screened' &&
+                      `${e.transaction_id} · ${e.risk_level} · ${e.graph_score}${e.escalated ? ' → escalate' : ''}`}
+                    {e.kind === 'escalated' &&
+                      `${e.transaction_id} · ${e.pattern ?? '—'} · ${e.convergence ?? 0} senders`}
+                    {e.kind === 'model' && `${e.transaction_id} · ${e.model} = ${e.score ?? 'unavailable'}`}
+                    {e.kind === 'fused' &&
+                      `${e.transaction_id} · ${e.severity} · ${e.fused_score} (${e.modalities_used}/3)`}
+                    {e.kind === 'alert' && `${e.transaction_id} · ${e.severity} · ${e.pattern ?? ''}`}
+                    {e.kind === 'notification' &&
+                      `${e.transaction_id} · ${e.stage} email ${e.sent ? 'sent' : 'not sent'}`}
+                    {e.kind === 'monitor' && `monitor ${e.status}`}
+                    {e.kind === 'error' && e.message}
+                  </span>
                 </li>
               ))}
             </ul>
-          )}
-        </section>
-
-        {/* ── Feed ─────────────────────────────────────────────────── */}
-        <section className="rounded-2xl border border-subtle bg-surface p-5">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-sm font-semibold text-slate-200">Activity</h2>
-            <span className="text-[10px] text-slate-600">newest first</span>
-          </div>
-
-          <ul className="mt-4 max-h-[26rem] space-y-1 overflow-y-auto pr-1">
-            {feed.length === 0 && (
-              <li className="py-10 text-center text-xs text-slate-600">
-                Waiting for the stream…
-              </li>
-            )}
-            {feed.map((e, i) => (
-              <li
-                key={`${e.transaction_id ?? e.kind}-${e.at}-${i}`}
-                className="flex items-baseline gap-2 rounded-lg px-2 py-1.5 font-mono text-[11px] odd:bg-surface-raised"
-              >
-                <span
-                  className={cx(
-                    'w-[4.5rem] shrink-0 font-semibold',
-                    e.kind === 'alert' && 'text-risk-critical',
-                    e.kind === 'escalated' && 'text-accent-500',
-                    e.kind === 'notification' && 'text-risk-medium',
-                    !['alert', 'escalated', 'notification'].includes(e.kind) && 'text-slate-600',
-                  )}
-                >
-                  {e.kind}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-slate-400">
-                  {e.kind === 'screened' &&
-                    `${e.transaction_id} · ${e.risk_level} · ${e.graph_score}${e.escalated ? ' → escalate' : ''}`}
-                  {e.kind === 'escalated' &&
-                    `${e.transaction_id} · ${e.pattern ?? '—'} · ${e.convergence ?? 0} senders`}
-                  {e.kind === 'model' && `${e.transaction_id} · ${e.model} = ${e.score ?? 'unavailable'}`}
-                  {e.kind === 'fused' &&
-                    `${e.transaction_id} · ${e.severity} · ${e.fused_score} (${e.modalities_used}/3)`}
-                  {e.kind === 'alert' && `${e.transaction_id} · ${e.severity} · ${e.pattern ?? ''}`}
-                  {e.kind === 'notification' &&
-                    `${e.transaction_id} · ${e.stage} email ${e.sent ? 'sent' : 'not sent'}`}
-                  {e.kind === 'monitor' && `monitor ${e.status}`}
-                  {e.kind === 'error' && e.message}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
+          </section>
         </div>
-      </div>
 
-      <p className="mt-6 text-center text-xs text-slate-600">
-        Seeing something you want explained?{' '}
-        <Link to="/assistant" className="text-accent-500 hover:text-accent-400">
-          Ask the assistant
-        </Link>{' '}
-        — it reads this same live state.
-      </p>
+        {/* ═══ the rail ═══ */}
+        <aside className="space-y-7 lg:hair-l lg:pl-7">
+          <RuntimePanel runtime={runtime} />
+
+          <section>
+            <h3 className="text-xs font-semibold text-slate-200">Fusion</h3>
+            <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+              {runtime?.monitor?.fusion
+                ? <>Strategy <span className="numeric text-slate-300">{runtime.monitor.fusion}</span>.</>
+                : 'Strategy unavailable.'}{' '}
+              A detector that cannot be reached abstains — fusion applies an
+              uncertainty penalty rather than reading silence as innocence.
+            </p>
+          </section>
+
+          <section>
+            <h3 className="text-xs font-semibold text-slate-200">Go to</h3>
+            <div className="rows mt-1">
+              {[['/cases', 'Review the queue'], ['/analyzer', 'Analyse a transaction'],
+                ['/thresholds', 'Tune the threshold'], ['/assistant', 'Ask the assistant']]
+                .map(([to, label]) => (
+                <Link key={to} to={to}
+                      className="block py-2 text-xs text-slate-400 transition-colors hover:text-slate-100">
+                  {label}
+                </Link>
+              ))}
+            </div>
+            <p className="mt-3 text-[10px] leading-relaxed text-slate-600">
+              The assistant reads this same live state.
+            </p>
+          </section>
+        </aside>
+      </div>
     </div>
+  )
+}
+
+/* ── pieces ───────────────────────────────────────────────────────── */
+
+function Figure({ value, label, note, suffix, accent, urgent }) {
+  return (
+    <div>
+      <dd className={cx('numeric text-[1.75rem] leading-none',
+        typeof value !== 'number' ? 'text-slate-600'
+          : accent ? 'text-accent-400' : urgent ? 'text-risk-medium' : 'text-slate-100')}>
+        {typeof value === 'number' ? value : '—'}
+        {suffix && typeof value === 'number' && <span className="text-slate-600">{suffix}</span>}
+      </dd>
+      <dt className="eyebrow mt-2 text-slate-500">{label}</dt>
+      {note && <p className="mt-1 text-[10px] text-slate-600">{note}</p>}
+    </div>
+  )
+}
+
+function Ctl({ onClick, busy, danger, children }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={busy}
+      className={cx(
+        'hair border-b pb-1 transition-colors disabled:opacity-50',
+        danger ? 'text-slate-400 hover:text-risk-critical' : 'text-slate-300 hover:text-slate-100',
+      )}
+    >
+      {children}
+    </button>
   )
 }

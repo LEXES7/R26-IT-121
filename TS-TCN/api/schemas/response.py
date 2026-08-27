@@ -1,21 +1,52 @@
-"""Response schemas. Locked contract — see docs/api_contract.md."""
-from typing import Dict, List
-from pydantic import BaseModel, Field
+"""Response schemas. Locked contract — see docs/api_contract.md (proposal
+Appendix C). Field names here are read verbatim by the fusion engine's
+adapter (DeepSentinel/backend/adapters/upstream.py::call_temporal_api) — do
+not rename without updating both sides.
+"""
+from typing import Dict, Optional
+
+from pydantic import BaseModel
 
 
-class Attribution(BaseModel):
-    peak_position: int = Field(..., ge=0, le=31)
-    peak_weight: float = Field(..., ge=0.0, le=1.0)
-    peak_transaction_id: str
-    peak_features: Dict[str, float]
-    attention_distribution: List[float] = Field(..., min_items=32, max_items=32)
+class TransactionRef(BaseModel):
+    nameOrig: str
+    step: int
+    composite_id: str
+
+
+class CurrentTransactionEvidence(BaseModel):
+    type: str
+    amount: float
+    drain_ratio: float
+    post_transfer_ratio: float
+    dest_was_empty: float
+    dest_enrichment: float
+    type_risk: float
+    hour_of_day: float
+    fraud_signal_summary: str
+
+
+class Evidence(BaseModel):
+    current_transaction: CurrentTransactionEvidence
+
+
+class TriggeringPredecessor(BaseModel):
+    nameOrig: str
+    step: int
+    composite_id: str
+    attention_weight: float
+    offset_from_current: int
+    features: Dict[str, float | str]
+    predecessor_signal: str
 
 
 class ClassifyResponse(BaseModel):
-    composite_id: str
-    fraud_probability: float = Field(..., ge=0.0, le=1.0)
-    fraud_label: int = Field(..., ge=0, le=1)
-    threshold_used: float = Field(..., ge=0.0, le=1.0)
-    attribution: Attribution
-    model_version: str = "ts-tcn-v1.0"
+    transaction_ref: TransactionRef
+    temporal_risk_score: float
+    risk_level: str
+    detection_method: str = "TS-TCN"
+    modality: str = "temporal_sequence"
+    evidence: Evidence
+    triggering_predecessor: Optional[TriggeringPredecessor] = None
+    model_version: str
     inference_time_ms: float

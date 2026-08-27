@@ -121,8 +121,13 @@ async def record(
 
     sg = graph_evidence or {}
     typ = typology or {}
-    pay = payload or {}
     case_ref = new_case_ref()
+
+    # Keep the transaction this verdict was reached on. Without it a case can
+    # be read but never re-run, and "analyse the transaction behind this case"
+    # is the first thing anyone wants to do with a case. Queue-sourced rows are
+    # already in the archive; replayed samples were not persisted anywhere.
+    await _archive_if_absent(transaction_id, payload)
 
     # Recorded explicitly rather than inferred later: with fewer than three
     # detectors the fusion applies an uncertainty penalty, and a reader needs to
@@ -199,4 +204,73 @@ async def record(
     except Exception as exc:                                  # noqa: BLE001
         # A case that cannot be stored must not take the alert down with it.
         logger.warning(f"Could not record case for {transaction_id}: {type(exc).__name__}: {exc}")
+        return None
+
+
+async def _archive_if_absent(transaction_id: str, payload: dict | None) -> None:
+    """Store a replayed sample transaction so its case can be re-analysed.
+
+    Rows that arrived through the ingestion queue are already in the archive
+    and are left untouched — this only backfills the sample feed, and marks it
+    as such in `source_file` so replayed traffic is never mistaken for
+    evidence a customer uploaded.
+
+    Best-effort by design: failing to archive a transaction must not prevent
+    the case from being recorded.
+    """
+    if not payload:
+        return
+    try:
+        async with get_session() as db:
+            exists = (await db.execute(
+                text("SELECT 1 FROM transactions_archive "
+                     "WHERE transaction_id = :t LIMIT 1"),
+                {"t": transaction_id},
+            )).first()
+            if exists:
+                return
+            await db.execute(
+                text("""
+                    INSERT INTO transactions_archive (
+                        transaction_id, business_date, step, tx_type, amount,
+                        name_orig, name_dest, old_balance_orig, new_balance_orig,
+                        old_balance_dest, new_balance_dest,
+                        raw, source_file, uploaded_by, uploaded_at
+                    ) VALUES (
+                        :t, :bd, :step, :type, :amount,
+                        :orig, :dest, :ob_o, :nb_o, :ob_d, :nb_d,
+                        :raw, 'monitor:sample-replay', 'monitor', :at
+                    )
+                """),
+                {
+                    "t": transaction_id,
+                    "bd": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                    "step": _int(payload.get("step")),
+                    "type": payload.get("type"),
+                    "amount": _float(payload.get("amount")),
+                    "orig": payload.get("nameOrig"),
+                    "dest": payload.get("nameDest"),
+                    "ob_o": _float(payload.get("oldbalanceOrg")),
+                    "nb_o": _float(payload.get("newbalanceOrig")),
+                    "ob_d": _float(payload.get("oldbalanceDest")),
+                    "nb_d": _float(payload.get("newbalanceDest")),
+                    "raw": _js(payload),
+                    "at": datetime.now(timezone.utc),
+                },
+            )
+    except Exception as exc:                                  # noqa: BLE001
+        logger.debug(f"Could not archive {transaction_id} for replay: {exc}")
+
+
+def _float(v):
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _int(v):
+    try:
+        return int(float(v))
+    except (TypeError, ValueError):
         return None

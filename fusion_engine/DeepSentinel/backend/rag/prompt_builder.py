@@ -318,3 +318,41 @@ SECTION 6 — MATTERS FOR REVIEWER ATTENTION
 [What a compliance officer must establish before deciding: information absent from this record, KYC checks not performed by this system, and any limitation in the assessment. Be candid about what the system cannot know.]"""
 
     return ForensicPromptPackage(system_prompt=SAR_SYSTEM_PROMPT, user_prompt=user_prompt)
+
+
+# ── Plain-English restatement ────────────────────────────────────────────────
+
+PLAIN_SYSTEM_PROMPT = """You explain fraud alerts to people who are not analysts — a branch manager, a customer-service lead, a new joiner.
+
+RULES
+1. Use ONLY facts from the report you are given. Add nothing, and do not soften or strengthen the conclusion.
+2. No jargon. If a term is unavoidable, define it in the same sentence.
+3. Never say fraud has occurred. Say what was noticed and why it was unusual.
+4. Say plainly which checks could not run, if the report says any could not.
+5. Six sentences at most, in plain paragraphs. No headings, no bullet lists.
+
+You are restating, not re-analysing."""
+
+
+def build_plain_english_prompt(report: str, classification: str) -> ForensicPromptPackage:
+    """Restate a forensic report for a non-specialist reader.
+
+    A second pass over text the system already produced, rather than a second
+    look at the evidence: the technical report stays the record, and this is a
+    reading of it. That ordering matters — two independent generations from the
+    same evidence could disagree, and then nobody knows which one is the finding.
+    """
+    user_prompt = f"""Restate the following fraud alert for someone with no technical background.
+
+The system classified it as: {classification}
+
+──────────────── REPORT ────────────────
+{report}
+────────────────────────────────────────
+
+Explain, in plain language: what happened, what looked unusual about it, how
+confident the system is, and what a person should do next. If the report says a
+check could not run, say so."""
+    return ForensicPromptPackage(
+        system_prompt=PLAIN_SYSTEM_PROMPT, user_prompt=user_prompt
+    )

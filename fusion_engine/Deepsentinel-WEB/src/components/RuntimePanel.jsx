@@ -9,12 +9,12 @@ import { cx } from './ui'
  * whether each has weights loaded, how many forward passes it has done and how
  * long it has been up.
  */
-function Dot({ ok }) {
+function Dot({ ok, warn }) {
   return (
     <span
       className={cx(
-        'inline-block h-1.5 w-1.5 shrink-0 rounded-full',
-        ok ? 'animate-pulse bg-risk-low' : 'bg-slate-600',
+        'mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full',
+        ok ? 'animate-pulse bg-risk-low' : warn ? 'bg-risk-medium' : 'bg-slate-600',
       )}
     />
   )
@@ -30,77 +30,85 @@ function uptime(sec) {
 
 export default function RuntimePanel({ runtime }) {
   const detectors = runtime?.detectors ?? {}
+  // British spelling is what the monitor runtime keys on. Getting this wrong
+  // reported a live detector as offline three separate times.
   const rows = [
-    ['graph', 'GraphSAGE', 'network'],
+    ['graph', 'Edge-Enhanced GraphSAGE', 'network'],
     ['behavioural', 'Stratified VAE', 'behaviour'],
-    ['temporal', 'Temporal CNN', 'timing'],
+    ['temporal', 'Transaction-Sequence TCN', 'timing'],
   ]
+  const live = rows.filter(([k]) => detectors[k]?.ready).length
 
   return (
-    <section className="rounded-2xl border border-subtle bg-surface p-5">
+    <section>
       <div className="flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold text-slate-200">Model runtime</h2>
-        <span className="text-[10px] text-slate-600">
-          fusion: {runtime?.monitor?.fusion ?? '—'}
-        </span>
+        <h3 className="text-xs font-semibold text-slate-200">Model runtime</h3>
+        <span className="text-[10px] text-slate-600">{live}/3 reachable</span>
       </div>
 
-      <ul className="mt-4 space-y-2">
+      <div className="rows mt-2">
         {rows.map(([key, name, role]) => {
           const d = detectors[key] ?? {}
           const reachable = !!d.reachable
+          // Answering a probe is not the same as being able to score. A
+          // service that started without its weights replies 200 and returns
+          // nothing useful; counting it as live is how a dead detector hides.
+          const ready = !!d.ready
           const model = d.model
-          const live = model?.loaded
+          const state = !reachable ? 'offline'
+            : !ready ? 'no model'
+            : d.warming_up ? 'warming up'
+            : model?.loaded ? 'weights loaded' : 'serving'
           return (
-            <li
-              key={key}
-              className="rounded-xl border border-subtle bg-sentinel-950 p-3"
-            >
-              <div className="flex items-center gap-2">
-                <Dot ok={reachable} />
-                <span className="text-xs font-semibold text-slate-200">{name}</span>
-                <span className="text-[10px] text-slate-600">{role}</span>
-                <span
-                  className={cx(
-                    'ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium',
-                    reachable
-                      ? 'bg-risk-low/10 text-risk-low'
-                      : 'bg-surface-raised text-slate-600',
-                  )}
-                >
-                  {reachable ? (live ? 'weights loaded' : 'serving') : 'not deployed'}
+            <div key={key} className="py-2.5">
+              <div className="flex items-baseline gap-2">
+                <Dot ok={ready} warn={reachable && !ready} />
+                <span className={cx('text-xs', ready ? 'text-slate-200' : 'text-slate-500')}>
+                  {name}
+                </span>
+                <span className={cx('ml-auto text-[10px]',
+                  reachable && !ready ? 'text-risk-medium' : 'text-slate-600')}>
+                  {state}
                 </span>
               </div>
+              <p className="mt-0.5 pl-3.5 text-[10px] text-slate-600">{role}</p>
 
               {reachable && model && (
-                <dl className="mt-2 grid grid-cols-3 gap-2 text-[10px]">
+                <dl className="mt-2 grid grid-cols-3 gap-2 pl-3.5 text-[10px]">
                   <div>
                     <dt className="text-slate-600">params</dt>
-                    <dd className="font-mono text-slate-400">
+                    <dd className="numeric text-slate-400">
                       {model.parameters?.toLocaleString() ?? '—'}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-slate-600">forward passes</dt>
-                    <dd className="font-mono text-slate-400">{model.inferences ?? 0}</dd>
+                    <dt className="text-slate-600">passes</dt>
+                    <dd className="numeric text-slate-400">{model.inferences ?? 0}</dd>
                   </div>
                   <div>
                     <dt className="text-slate-600">uptime</dt>
-                    <dd className="font-mono text-slate-400">{uptime(model.uptime_seconds)}</dd>
+                    <dd className="numeric text-slate-400">{uptime(model.uptime_seconds)}</dd>
                   </div>
                 </dl>
               )}
 
-              {!reachable && (
-                <p className="mt-1.5 text-[10px] leading-relaxed text-slate-600">
-                  Not reachable — this detector abstains, and fusion applies an
-                  uncertainty penalty rather than treating silence as innocence.
+              {!ready && (
+                <p className="mt-1 pl-3.5 text-[10px] leading-relaxed text-slate-600">
+                  {!reachable
+                    ? `Not reachable — this detector abstains, and fusion applies
+                       an uncertainty penalty rather than treating silence as
+                       innocence.`
+                    : d.missing_artifacts?.length
+                      ? `Running, but its weights are not on disk, so it cannot
+                         score. Missing: ${d.missing_artifacts.join(', ')}.`
+                      : `Running, but not ready to score. It abstains until it
+                         is.`}
                 </p>
               )}
-            </li>
+            </div>
           )
         })}
-      </ul>
+      </div>
     </section>
   )
 }
