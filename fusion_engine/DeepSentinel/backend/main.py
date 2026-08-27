@@ -303,6 +303,12 @@ class AnalyzeResponse(BaseModel):
     # against this exact result rather than re-deriving one from a re-run.
     analysis_id: Optional[int] = None
     temporal_signal: Optional[str] = None
+    # The sequential detector's evidence: the current transaction's F1-F10
+    # feature values plus the fraud_attention-identified triggering
+    # predecessor (its own feature vector and attention weight) — the
+    # temporal analogue of graph_evidence's subgraph and behavioral_evidence's
+    # decomposition.
+    temporal_evidence: Optional[dict] = None
 
 
 # ── Upstream callers ──────────────────────────────────────────────────────────

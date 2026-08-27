@@ -6,6 +6,7 @@ import AblationComparison from '../components/AblationComparison'
 import TransactionForm from '../components/TransactionForm'
 import GraphEvidence from '../components/GraphEvidence'
 import BehaviouralEvidence from '../components/BehaviouralEvidence'
+import TemporalEvidence from '../components/TemporalEvidence'
 import ForensicReport from '../components/ForensicReport'
 import SarDraft from '../components/SarDraft'
 import Locked from '../components/Locked'
@@ -311,6 +312,9 @@ export default function Analyzer() {
                 )}
               </>
             </Locked>
+          )}
+          {result?.temporal_evidence && (
+            <TemporalEvidence evidence={result.temporal_evidence} />
           )}
 
           {(result || running) && (
