@@ -132,7 +132,7 @@ export default function RequestAccess() {
       }
     >
       <form onSubmit={submit} className="space-y-5" noValidate>
-        {error && <Alert tone="danger" onDismiss={() => setError(null)}>{error}</Alert>}
+        {error && <Alert tone="error" onDismiss={() => setError(null)}>{error}</Alert>}
 
         {/* Honeypot — hidden from people, irresistible to bots. */}
         <input

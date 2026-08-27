@@ -55,18 +55,41 @@ class ModelArtifactsMissing(Exception):
     """A required model/scaler/weights artefact was not found on disk."""
 
 
+# Each artefact with the step that produces it, so a missing one reports how to
+# get it rather than just its absence.
+REQUIRED_ARTIFACTS = (
+    (MODEL_PATH, "Run notebooks/03_tcn_architecture.ipynb (Stage 4 build) "
+                 "or copy ts_tcn_sanity.keras from Drive"),
+    (SCALER_PATH, "Run notebooks/01_baseline_evaluation.ipynb (Stage 2) "
+                  "to fit and save the scaler"),
+    (TYPE_RISK_WEIGHTS_PATH, "Produced alongside scaler.pkl in Stage 2"),
+)
+
+
+def missing_artifacts() -> list[str]:
+    """Which required files are absent. Cheap: filesystem only, no TensorFlow.
+
+    /health calls this so the service can answer "am I able to score?" without
+    importing keras or loading weights. A health check that says "ok" while
+    every classify() raises is worse than one that fails outright — the fusion
+    engine reads this endpoint to decide whether the detector contributes, and
+    a false "ok" makes a dead detector look live on the dashboard.
+    """
+    return [str(p.relative_to(_REPO_ROOT)) for p, _ in REQUIRED_ARTIFACTS
+            if not p.exists()]
+
+
+def model_loaded() -> bool:
+    """Whether weights are resident in this process right now."""
+    return _model is not None
+
+
 def _load() -> None:
     global _model, _scaler, _type_risk_weights
     if _model is not None:
         return
 
-    for path, note in (
-        (MODEL_PATH, "Run notebooks/03_tcn_architecture.ipynb (Stage 4 build) "
-                     "or copy ts_tcn_sanity.keras from Drive"),
-        (SCALER_PATH, "Run notebooks/01_baseline_evaluation.ipynb (Stage 2) "
-                      "to fit and save the scaler"),
-        (TYPE_RISK_WEIGHTS_PATH, "Produced alongside scaler.pkl in Stage 2"),
-    ):
+    for path, note in REQUIRED_ARTIFACTS:
         if not path.exists():
             raise ModelArtifactsMissing(f"{path} not found. {note}.")
 

@@ -134,6 +134,7 @@ this is never ambiguous to a downstream consumer.
 | 200 | — | Successful classification |
 | 422 | Pydantic validation message | Missing/malformed transaction fields |
 | 503 | `WARMING_UP` | Buffer has fewer than 32 transactions since service start (cold start) |
+| 503 | `MODEL_UNAVAILABLE` | Service is running but its model artefacts are not on disk |
 | 500 | `INTERNAL_ERROR` | Model inference failure |
 
 `503` is expected and normal for the first 31 requests after a restart — the

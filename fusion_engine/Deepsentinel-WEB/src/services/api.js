@@ -186,6 +186,49 @@ export const decideSarDraft = (draftId, approve, note) =>
     .post(`/analyses/sar/${draftId}/decision`, { approve, note })
     .then((r) => r.data)
 
+// ── Threshold simulation ─────────────────────────────────────────────────────
+// Replays decisions already recorded at a different threshold. Historical, not
+// predictive.
+
+export const simulateThresholds = (days) =>
+  client.get('/analyses/simulate', { params: days ? { days } : {} }).then((r) => r.data)
+
+// ── Plain-English restatement of a forensic report ───────────────────────────
+
+export const explainPlainly = (analysisId) =>
+  client.post(`/analyses/${analysisId}/explain`).then((r) => r.data)
+
+// ── Cases ────────────────────────────────────────────────────────────────────
+
+/** Ingested transactions, searchable by id or account, joined to any case. */
+export const searchTransactions = (q, limit = 40) =>
+  client.get('/transactions', { params: { q: q || undefined, limit } })
+    .then((r) => r.data)
+
+/** One stored transaction, in the shape the analyzer sends to the models. */
+export const getStoredTransaction = (transactionId) =>
+  client.get(`/transactions/${encodeURIComponent(transactionId)}`)
+    .then((r) => r.data)
+
+export const listCases = (params = {}) =>
+  client.get('/cases', { params }).then((r) => r.data)
+
+export const getCase = (caseRef) =>
+  client.get(`/cases/${caseRef}`).then((r) => r.data)
+
+export const reviewCase = (caseRef, reviewStatus, note) =>
+  client
+    .patch(`/cases/${caseRef}/review`, { review_status: reviewStatus, note })
+    .then((r) => r.data)
+
+// ── Daily briefing ───────────────────────────────────────────────────────────
+
+export const getBriefing = (hours = 24) =>
+  client.get('/api/monitor/briefing', { params: { hours } }).then((r) => r.data)
+
+export const sendBriefing = (hours = 24) =>
+  client.post('/api/monitor/briefing/send', null, { params: { hours } }).then((r) => r.data)
+
 export const getHealth = () => client.get('/health').then((r) => r.data)
 
 export const getTypologies = () => client.get('/typologies').then((r) => r.data)

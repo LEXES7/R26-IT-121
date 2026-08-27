@@ -87,6 +87,7 @@ export default {
       },
 
       fontFamily: {
+        display: ["'Instrument Serif'", 'Georgia', 'serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },

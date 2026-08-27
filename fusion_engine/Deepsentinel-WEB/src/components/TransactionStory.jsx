@@ -126,10 +126,9 @@ export default function TransactionStory() {
         {/* ── Left: the story, one step at a time ─────────────────────── */}
         <div className="relative">
           <Eyebrow>How it works</Eyebrow>
-          <h2 className="mt-4 text-4xl font-bold leading-[1.05] tracking-tight text-slate-200 sm:text-5xl">
-            Follow one transaction
-            <br />
-            <span className="text-accent-500">through the system</span>
+          <h2 className="display mt-5 text-[2.5rem] text-slate-100 sm:text-[3.25rem]">
+            Follow one transaction{' '}
+            <span className="display-italic text-accent-400">through the system.</span>
           </h2>
 
           <div className="relative mt-10 min-h-[11rem]">

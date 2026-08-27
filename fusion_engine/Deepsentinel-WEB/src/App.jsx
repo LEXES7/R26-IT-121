@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { destroySmoothScroll, initSmoothScroll } from './lib/motion'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
@@ -11,6 +11,9 @@ import ChatBot from './components/ChatBot'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import Analyzer from './pages/Analyzer'
+import Thresholds from './pages/Thresholds'
+import Cases from './pages/Cases'
+import Dashboard from './pages/Dashboard'
 import Monitor from './pages/Monitor'
 import Assistant from './pages/Assistant'
 import BatchAnalysis from './pages/BatchAnalysis'
@@ -32,8 +35,25 @@ import RequestAccess from './pages/RequestAccess'
  * Protected — anything that touches real data or configuration. Gated on a
  * capability, not a role, and independently enforced server-side.
  */
+/**
+ * Routes that belong to the operator console rather than the public showcase.
+ *
+ * The marketing footer is a sitemap for a visitor deciding whether to sign up.
+ * Under a case queue it is just noise — and worse, it invites an analyst
+ * mid-triage to click away into the brochure. Console routes get a single
+ * quiet line instead.
+ */
+const CONSOLE_ROUTES = [
+  '/monitor', '/analyzer', '/thresholds', '/cases', '/batch',
+  '/assistant', '/account', '/settings', '/users', '/audit-log',
+]
+
 function Shell() {
   const { isAuthenticated } = useAuth()
+  const { pathname } = useLocation()
+  // "/" is the dashboard once signed in, so it is a console route only then.
+  const isConsole = CONSOLE_ROUTES.some((r) => pathname.startsWith(r))
+    || (isAuthenticated && pathname === '/')
 
   // Lenis drives GSAP's ticker so pinned sections scrub smoothly. Skipped
   // entirely under prefers-reduced-motion — hijacking the wheel is exactly
@@ -51,7 +71,9 @@ function Shell() {
         <ErrorBoundary>
           <Routes>
             {/* Public */}
-            <Route path="/" element={<Home />} />
+            {/* Signed in, "/" is the operator's dashboard; signed out it is the
+                public overview. One address, and nobody has to learn a second. */}
+            <Route path="/" element={<RootPage />} />
             <Route path="/about" element={<About />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/components/:slug" element={<ComponentDetail />} />
@@ -67,6 +89,10 @@ function Shell() {
             {/* Any signed-in user */}
             <Route path="/monitor" element={<ProtectedRoute><Monitor /></ProtectedRoute>} />
             <Route path="/analyzer" element={<ProtectedRoute><Analyzer /></ProtectedRoute>} />
+            <Route path="/thresholds" element={<ProtectedRoute><Thresholds /></ProtectedRoute>} />
+            <Route path="/cases" element={<ProtectedRoute><Cases /></ProtectedRoute>} />
+            {/* Addressable so a case can be sent to a colleague. Still authenticated. */}
+            <Route path="/cases/:caseRef" element={<ProtectedRoute><Cases /></ProtectedRoute>} />
             <Route path="/batch" element={<ProtectedRoute><BatchAnalysis /></ProtectedRoute>} />
             {/* Entitlement is enforced server-side; the page renders an upsell when not licensed. */}
             <Route path="/assistant" element={<ProtectedRoute><Assistant /></ProtectedRoute>} />
@@ -103,13 +129,39 @@ function Shell() {
         </ErrorBoundary>
       </main>
 
-      <Footer />
+      {isConsole ? <ConsoleFooter /> : <Footer />}
 
       {/* Available on every page — reviewers read the showcase without signing in. */}
       <ChatBot />
     </div>
   )
 }
+
+/** One quiet line under the console — provenance, not a sitemap. */
+function ConsoleFooter() {
+  return (
+    <footer className="mx-auto w-full max-w-[88rem] px-5 pb-8 sm:px-8">
+      <div className="hair-t flex flex-wrap items-center gap-x-5 gap-y-2 pt-5 text-[11px] text-slate-600">
+        <span>DeepSentinel</span>
+        <span>Scores are calibrated probabilities, not verdicts.</span>
+        <Link to="/about" className="ml-auto transition-colors hover:text-slate-400">
+          How it works
+        </Link>
+        <Link to="/faq" className="transition-colors hover:text-slate-400">FAQ</Link>
+      </div>
+    </footer>
+  )
+}
+
+/** The landing page depends on who is asking. */
+function RootPage() {
+  const { isAuthenticated, initialising } = useAuth()
+  // Render nothing rather than the marketing page while the session is still
+  // resolving — a signed-in user flashing the public page reads as a bug.
+  if (initialising) return null
+  return isAuthenticated ? <Dashboard /> : <Home />
+}
+
 
 export default function App() {
   return (

@@ -213,10 +213,16 @@ class MonitorEngine:
         self._label = txn.get("_is_fraud")
         STATE.set_stage("graph", "active")
 
+        # Measured here rather than estimated later. The case table has always
+        # had screening_ms and total_ms columns and the case page has always
+        # rendered them; nothing was ever writing them, so every case showed a
+        # dash. Timing the calls is the whole fix.
+        t0 = time.perf_counter()
         try:
             r = await client.post(f"{graph_base}/api/graph/analyze", json=payload)
         finally:
             STATE.set_stage("graph", "idle")
+        screening_ms = int((time.perf_counter() - t0) * 1000)
 
         STATE.counters.screened += 1
 
@@ -253,10 +259,13 @@ class MonitorEngine:
         if not escalating:
             return
 
-        await self._escalate(client, payload, result, sg)
+        await self._escalate(client, payload, result, sg,
+                             screening_ms=screening_ms, started=t0)
 
     # ── stage 2: escalate ────────────────────────────────────────────
-    async def _escalate(self, client, payload: dict, graph_result: dict, sg: dict) -> None:
+    async def _escalate(self, client, payload: dict, graph_result: dict, sg: dict,
+                        screening_ms: int | None = None,
+                        started: float | None = None) -> None:
         STATE.counters.escalated += 1
         txid = payload["transaction_id"]
         graph_score = float(graph_result.get("relational_risk_score") or 0.0)
@@ -352,6 +361,9 @@ class MonitorEngine:
             behavioral_evidence=behavioural_evidence(b_body) if b_body else None,
             alert_sent=(severity != "LOW"),
             label_is_fraud=self._label,
+            screening_ms=screening_ms,
+            total_ms=(int((time.perf_counter() - started) * 1000)
+                      if started is not None else None),
         )
 
         if severity == "LOW":
