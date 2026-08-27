@@ -9,12 +9,12 @@ import { cx } from './ui'
  * whether each has weights loaded, how many forward passes it has done and how
  * long it has been up.
  */
-function Dot({ ok }) {
+function Dot({ ok, warn }) {
   return (
     <span
       className={cx(
-        'inline-block h-1.5 w-1.5 shrink-0 rounded-full',
-        ok ? 'animate-pulse bg-risk-low' : 'bg-slate-600',
+        'mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full',
+        ok ? 'animate-pulse bg-risk-low' : warn ? 'bg-risk-medium' : 'bg-slate-600',
       )}
     />
   )
@@ -37,7 +37,7 @@ export default function RuntimePanel({ runtime }) {
     ['behavioural', 'Stratified VAE', 'behaviour'],
     ['temporal', 'Transaction-Sequence TCN', 'timing'],
   ]
-  const live = rows.filter(([k]) => detectors[k]?.reachable).length
+  const live = rows.filter(([k]) => detectors[k]?.ready).length
 
   return (
     <section>
@@ -50,16 +50,25 @@ export default function RuntimePanel({ runtime }) {
         {rows.map(([key, name, role]) => {
           const d = detectors[key] ?? {}
           const reachable = !!d.reachable
+          // Answering a probe is not the same as being able to score. A
+          // service that started without its weights replies 200 and returns
+          // nothing useful; counting it as live is how a dead detector hides.
+          const ready = !!d.ready
           const model = d.model
+          const state = !reachable ? 'offline'
+            : !ready ? 'no model'
+            : d.warming_up ? 'warming up'
+            : model?.loaded ? 'weights loaded' : 'serving'
           return (
             <div key={key} className="py-2.5">
               <div className="flex items-baseline gap-2">
-                <Dot ok={reachable} />
-                <span className={cx('text-xs', reachable ? 'text-slate-200' : 'text-slate-500')}>
+                <Dot ok={ready} warn={reachable && !ready} />
+                <span className={cx('text-xs', ready ? 'text-slate-200' : 'text-slate-500')}>
                   {name}
                 </span>
-                <span className="ml-auto text-[10px] text-slate-600">
-                  {reachable ? (model?.loaded ? 'weights loaded' : 'serving') : 'not deployed'}
+                <span className={cx('ml-auto text-[10px]',
+                  reachable && !ready ? 'text-risk-medium' : 'text-slate-600')}>
+                  {state}
                 </span>
               </div>
               <p className="mt-0.5 pl-3.5 text-[10px] text-slate-600">{role}</p>
@@ -83,10 +92,17 @@ export default function RuntimePanel({ runtime }) {
                 </dl>
               )}
 
-              {!reachable && (
+              {!ready && (
                 <p className="mt-1 pl-3.5 text-[10px] leading-relaxed text-slate-600">
-                  Not reachable — this detector abstains, and fusion applies an
-                  uncertainty penalty rather than treating silence as innocence.
+                  {!reachable
+                    ? `Not reachable — this detector abstains, and fusion applies
+                       an uncertainty penalty rather than treating silence as
+                       innocence.`
+                    : d.missing_artifacts?.length
+                      ? `Running, but its weights are not on disk, so it cannot
+                         score. Missing: ${d.missing_artifacts.join(', ')}.`
+                      : `Running, but not ready to score. It abstains until it
+                         is.`}
                 </p>
               )}
             </div>

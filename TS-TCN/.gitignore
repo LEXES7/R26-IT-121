@@ -9,6 +9,7 @@ data/windows/*
 # ─── Generated artefacts (regenerable from notebooks) ──────────────────
 outputs/**/*
 !outputs/**/.gitkeep
+!outputs/README.md
 
 # ─── Large model & data files ──────────────────────────────────────────
 *.keras

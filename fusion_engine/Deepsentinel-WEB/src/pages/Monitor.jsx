@@ -121,7 +121,9 @@ export default function Monitor() {
       > ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].indexOf(w) ? a.severity : w),
     'LOW',
   )
-  const live = Object.values(runtime?.detectors ?? {}).filter((d) => d?.reachable).length
+  // What can actually score. A service that answers its health probe without
+  // weights is reachable but useless, and must not be counted as live.
+  const live = Object.values(runtime?.detectors ?? {}).filter((d) => d?.ready).length
 
   return (
     <div className="mx-auto max-w-[88rem] px-5 pb-16 pt-8 sm:px-8">

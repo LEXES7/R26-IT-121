@@ -106,7 +106,9 @@ export default function Dashboard() {
   const queue = state?.queue ?? {}
   const running = Boolean(state?.running)
   const detectors = runtime?.detectors ?? {}
-  const liveCount = MODELS.filter(({ keys }) => pick(detectors, keys)?.reachable).length
+  // `ready`, not `reachable`: a detector that replies to a health probe but
+  // has no weights cannot score, and counting it here overstates the system.
+  const liveCount = MODELS.filter(({ keys }) => pick(detectors, keys)?.ready).length
 
   const bySeverity = useMemo(() => {
     const acc = {}
@@ -341,17 +343,20 @@ export default function Dashboard() {
             <div className="rows mt-2">
               {MODELS.map(({ keys, label, hint }) => {
                 const d = pick(detectors, keys)
-                const up = Boolean(d?.reachable)
+                const up = Boolean(d?.ready)
+                const halfUp = Boolean(d?.reachable) && !up
                 return (
                   <div key={label} className="flex items-baseline gap-2.5 py-2">
                     <span className={cx('mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full',
-                      up ? 'bg-risk-low' : 'bg-slate-700')} />
+                      up ? 'bg-risk-low' : halfUp ? 'bg-risk-medium' : 'bg-slate-700')} />
                     <div className="min-w-0">
                       <p className={cx('text-xs', up ? 'text-slate-200' : 'text-slate-500')}>{label}</p>
                       <p className="text-[10px] text-slate-600">{hint}</p>
                     </div>
-                    <span className="numeric ml-auto shrink-0 text-[10px] text-slate-500">
-                      {up ? (uptime(d.service_uptime_seconds) ?? 'up') : 'offline'}
+                    <span className={cx('numeric ml-auto shrink-0 text-[10px]',
+                      halfUp ? 'text-risk-medium' : 'text-slate-500')}>
+                      {up ? (uptime(d.service_uptime_seconds) ?? 'up')
+                          : halfUp ? 'no model' : 'offline'}
                     </span>
                   </div>
                 )

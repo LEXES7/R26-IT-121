@@ -153,10 +153,45 @@ async def runtime() -> dict:
         try:
             async with httpx.AsyncClient(timeout=4.0) as c:
                 r = await c.get(f"{base}/api/graph/runtime" if name == "graph" else f"{base}/health")
-            out["detectors"][name] = {"reachable": r.status_code < 500, **(r.json() if r.status_code == 200 else {})}
+            body = r.json() if r.status_code == 200 else {}
+            reachable = r.status_code < 500
+            out["detectors"][name] = {
+                "reachable": reachable,
+                "ready": reachable and _ready(name, body),
+                **body,
+            }
         except Exception as exc:                        # noqa: BLE001
-            out["detectors"][name] = {"reachable": False, "error": type(exc).__name__}
+            out["detectors"][name] = {
+                "reachable": False, "ready": False, "error": type(exc).__name__,
+            }
     return out
+
+
+def _ready(name: str, body: dict) -> bool:
+    """Whether a detector can actually score, not merely whether it replied.
+
+    Answering a health probe and being able to return a verdict are different
+    things, and conflating them is how a dead detector comes to be counted as
+    live: a service that has started but has no weights on disk still returns
+    200. Each upstream says this differently, so the shapes are normalised here
+    rather than being re-derived by every caller.
+    """
+    if name == "graph":
+        return bool((body.get("model") or {}).get("loaded"))
+    if name == "behavioural":
+        # Reports which strata it managed to load; any missing one means part
+        # of the traffic cannot be scored.
+        return (body.get("status") == "ok"
+                and bool(body.get("strata_loaded"))
+                and not body.get("strata_missing"))
+    if name == "temporal":
+        # `ready` is authoritative where the build provides it. Older builds
+        # only sent `status`, so fall back to that rather than reporting a
+        # working detector as broken.
+        if "ready" in body:
+            return bool(body["ready"])
+        return body.get("status") == "ok"
+    return body.get("status") == "ok"
 
 
 @router.get("/stream")
