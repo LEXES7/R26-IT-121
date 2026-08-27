@@ -2,7 +2,7 @@
 # DeepSentinel — VAE-With-DSAA
 # R26-IT-121 | IT22109194 | Wijesinghe L P D B
 # ============================================================
-# Rule of thumb: source, configuration, reports and evidence are TRACKED.
+# Rule of thumb: source, configuration and evidence are TRACKED.
 # Data, trained weights and anything large are IGNORED and regenerable —
 # see data/README.md and checkpoints/README.md for the exact commands.
 #
@@ -75,8 +75,9 @@ wandb/
 !scripts/**/*.py
 !tests/**/*.py
 
-# Reports, evidence and configuration are always tracked. These are small
-# JSON/PNG/Markdown files and they are the reviewable record of the work.
+# Measured evidence and configuration are always tracked: the JSON metrics
+# and the figures are what the results rest on, and they are small. The
+# report write-ups are excluded at the bottom of this file.
 !reports/**/*.json
 !reports/**/*.md
 !reports/**/*.png
@@ -104,3 +105,16 @@ wandb/
 # inside it would never be reached.
 !checkpoints/v4/
 !checkpoints/v4/**
+
+# ─── Kept local, deliberately ──────────────────────────────────────────
+# These have to sit after the re-inclusions above rather than with the
+# other ignores: git applies the LAST matching pattern, and `!docs/**`
+# and `!reports/**/*.md` would otherwise pull them straight back in.
+#
+# The proposal is a personal submission rather than part of the component.
+# The report markdown is a working record written for one reader — candid
+# about limitations and easy to misread without its context — so it stays
+# on disk and out of the repository. What those write-ups measure is still
+# tracked: reports/**/*.json and reports/figures are untouched.
+docs/proposal/
+reports/*.md
