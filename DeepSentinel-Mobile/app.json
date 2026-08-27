@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "DeepSentinel",
+    "slug": "deepsentinel-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "deepsentinel",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#06091A",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#06091A"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "lk.ac.sliit.r26it121.deepsentinel"
+    },
+    "android": {
+      "package": "lk.ac.sliit.r26it121.deepsentinel",
+      "adaptiveIcon": {
+        "backgroundColor": "#06091A",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ]
+  }
+}
