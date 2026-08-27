@@ -54,17 +54,33 @@ function layout(nodes, edges, sinkId, w, h) {
   const cy0 = h / 2
   const pos = { [centre?.account_id]: { x: cx0, y: cy0 } }
 
-  // Two rings so a wide fan does not crowd into an unreadable band.
+  // Two rings so a wide fan does not crowd into an unreadable band. The rings
+  // are elliptical rather than circular: a circle sized to `min(w, h)` leaves
+  // most of a wide canvas empty, which made a two-account case render as a
+  // speck in the middle of the panel.
   const inner = others.slice(0, 10)
   const outer = others.slice(10)
-  const place = (list, radius, offset) =>
+
+  // Room for the account label beneath the lowest node, and for the amount
+  // label that sits on the edge.
+  const padX = 96
+  const padY = 40
+
+  // With only a couple of accounts, start the ring at the left so the arrow
+  // reads sender → sink across the page rather than bottom-to-top.
+  const offset = others.length <= 2 ? Math.PI : -Math.PI / 2
+
+  const place = (list, scale, extra) =>
     list.forEach((n, i) => {
-      const a = (i / Math.max(list.length, 1)) * Math.PI * 2 + offset
-      pos[n.account_id] = { x: cx0 + radius * Math.cos(a), y: cy0 + radius * Math.sin(a) }
+      const a = (i / Math.max(list.length, 1)) * Math.PI * 2 + offset + extra
+      pos[n.account_id] = {
+        x: cx0 + (w / 2 - padX) * scale * Math.cos(a),
+        y: cy0 + (h / 2 - padY) * scale * Math.sin(a),
+      }
     })
 
-  place(inner, Math.min(w, h) * 0.32, -Math.PI / 2)
-  place(outer, Math.min(w, h) * 0.44, -Math.PI / 2 + 0.3)
+  place(inner, 0.72, 0)
+  place(outer, 1, 0.3)
   return { pos, centreId: centre?.account_id }
 }
 

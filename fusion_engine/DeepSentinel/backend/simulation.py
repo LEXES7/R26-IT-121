@@ -137,7 +137,12 @@ async def sweep(days: int | None = None, points: int = 41) -> dict:
     # something. Otherwise the caller gets volume and no accuracy claim.
     best = None
     if labelled >= MIN_SAMPLE:
-        scored = [p for p in curve if p.f1 is not None]
+        # Exclude the degenerate end of the sweep. At threshold 0 everything
+        # alerts, which scores perfect recall and therefore often wins on F1 —
+        # but "alert on every transaction" is the absence of a decision, not an
+        # operating point, and offering it as the recommended one would be
+        # actively misleading to an operator.
+        scored = [p for p in curve if p.f1 is not None and p.threshold > 0.0]
         if scored:
             best = max(scored, key=lambda p: p.f1)
 

@@ -290,7 +290,10 @@ function Curve({ curve, point, maxAlerts, hasLabels, onPick }) {
               )}
               {hasLabels ? (
                 <>
+                  {/* 2px of surface between the segments so the split is a
+                      boundary and not a colour change. */}
                   <div style={{ height: `${Math.max(0, h - realPart)}%`,
+                                marginBottom: p.true_positives && p.false_positives ? 2 : 0,
                                 background: active ? HUE.false : 'rgb(234 179 8 / 0.5)' }} />
                   <div style={{ height: `${realPart}%`,
                                 background: active ? HUE.real : 'rgb(34 197 94 / 0.5)' }} />

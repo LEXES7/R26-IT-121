@@ -331,7 +331,8 @@ export default function Analyzer() {
 
           {/* Attribution, the report and SAR drafting are Professional
               features. The score and classification above never are. */}
-          {(result?.graph_evidence || result?.behavioral_evidence) && (
+          {(result?.graph_evidence || result?.behavioral_evidence
+            || result?.temporal_evidence) && (
             <Locked
               feature="attribution_panels"
               has={has}
@@ -350,11 +351,11 @@ export default function Analyzer() {
                 {result?.behavioral_evidence && (
                   <BehaviouralEvidence evidence={result.behavioral_evidence} />
                 )}
+                {result?.temporal_evidence && (
+                  <TemporalEvidence evidence={result.temporal_evidence} />
+                )}
               </>
             </Locked>
-          )}
-          {result?.temporal_evidence && (
-            <TemporalEvidence evidence={result.temporal_evidence} />
           )}
 
           {(result || running) && (

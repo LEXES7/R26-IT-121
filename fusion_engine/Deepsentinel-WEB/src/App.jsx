@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { destroySmoothScroll, initSmoothScroll } from './lib/motion'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
@@ -35,8 +35,25 @@ import RequestAccess from './pages/RequestAccess'
  * Protected — anything that touches real data or configuration. Gated on a
  * capability, not a role, and independently enforced server-side.
  */
+/**
+ * Routes that belong to the operator console rather than the public showcase.
+ *
+ * The marketing footer is a sitemap for a visitor deciding whether to sign up.
+ * Under a case queue it is just noise — and worse, it invites an analyst
+ * mid-triage to click away into the brochure. Console routes get a single
+ * quiet line instead.
+ */
+const CONSOLE_ROUTES = [
+  '/monitor', '/analyzer', '/thresholds', '/cases', '/batch',
+  '/assistant', '/account', '/settings', '/users', '/audit-log',
+]
+
 function Shell() {
   const { isAuthenticated } = useAuth()
+  const { pathname } = useLocation()
+  // "/" is the dashboard once signed in, so it is a console route only then.
+  const isConsole = CONSOLE_ROUTES.some((r) => pathname.startsWith(r))
+    || (isAuthenticated && pathname === '/')
 
   // Lenis drives GSAP's ticker so pinned sections scrub smoothly. Skipped
   // entirely under prefers-reduced-motion — hijacking the wheel is exactly
@@ -112,11 +129,27 @@ function Shell() {
         </ErrorBoundary>
       </main>
 
-      <Footer />
+      {isConsole ? <ConsoleFooter /> : <Footer />}
 
       {/* Available on every page — reviewers read the showcase without signing in. */}
       <ChatBot />
     </div>
+  )
+}
+
+/** One quiet line under the console — provenance, not a sitemap. */
+function ConsoleFooter() {
+  return (
+    <footer className="mx-auto w-full max-w-[88rem] px-5 pb-8 sm:px-8">
+      <div className="hair-t flex flex-wrap items-center gap-x-5 gap-y-2 pt-5 text-[11px] text-slate-600">
+        <span>DeepSentinel</span>
+        <span>Scores are calibrated probabilities, not verdicts.</span>
+        <Link to="/about" className="ml-auto transition-colors hover:text-slate-400">
+          How it works
+        </Link>
+        <Link to="/faq" className="transition-colors hover:text-slate-400">FAQ</Link>
+      </div>
+    </footer>
   )
 }
 
