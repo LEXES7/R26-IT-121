@@ -39,7 +39,11 @@ class GeminiBackend:
             full_prompt,
             generation_config=genai.GenerationConfig(
                 temperature=0.1,       # low temp = deterministic, grounded output
-                max_output_tokens=2048,
+                # 8192, not 2048: Gemini 2.5+ spends output budget on internal
+                # reasoning before emitting a token, and that counts against the
+                # same ceiling. At 2048 a six-section report truncates mid-word
+                # partway through — observed here, cut off inside section 3 of 6.
+                max_output_tokens=8192,
             ),
         )
         return response.text

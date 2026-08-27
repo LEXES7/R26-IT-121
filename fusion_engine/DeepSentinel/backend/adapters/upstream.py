@@ -31,6 +31,27 @@ def _clamp(v: float) -> float:
     return max(0.0, min(1.0, v))
 
 
+def behavioural_evidence(data: dict) -> dict:
+    """The behavioural detector's forensic decomposition, in one shape.
+
+    Two callers need it and they have to agree: the analyzer renders it live
+    from /analyze, and the monitor stores it on the case a reviewer opens
+    afterwards. Written out twice it would drift, and the drift would surface
+    only as a panel that fills from one path and stays empty from the other.
+    """
+    diagnostics = data.get("vae_diagnostics", {}) or {}
+    return {
+        "risk_level": data.get("risk_level"),
+        "transaction_type": data.get("transaction_type"),
+        "feature_set": data.get("feature_set"),
+        "model_version": data.get("model_version"),
+        "vae_diagnostics": diagnostics,
+        "fingerprint": data.get("anomaly_fingerprint", {}) or {},
+        "fraud_typology": data.get("fraud_typology", {}) or {},
+        "metadata": data.get("metadata", {}) or {},
+    }
+
+
 # ── Member 1: Wijesinghe — VAE/DSAA ──────────────────────────────────────────
 
 async def call_behavioral_api(
@@ -58,7 +79,18 @@ async def call_behavioral_api(
         resp.raise_for_status()
         data = resp.json()
 
-        score = _clamp(float(data.get("behavioral_risk_score", 0.5)))
+        # A 200 response without "behavioral_risk_score" is a contract
+        # violation, not a measurement of 0.5. Defaulting here would report
+        # available=True with a placeholder — removing the very uncertainty
+        # penalty that exists to flag a missing modality.
+        raw = data.get("behavioral_risk_score")
+        if raw is None:
+            logger.error(
+                "Behavioural API returned 200 without 'behavioral_risk_score'. "
+                "Keys present: %s. Treating as unavailable.", sorted(data)[:12]
+            )
+            return UpstreamResponse(score=0.5, available=False)
+        score = _clamp(float(raw))
 
         # Extract M1's rich forensic signals for LLM prompt enrichment
         evidence = data.get("evidence", {})
@@ -96,16 +128,7 @@ async def call_behavioral_api(
                 # the per-feature and per-latent-dimension attribution shares,
                 # and which discovered typology the fingerprint matched. Kept
                 # under one key so nothing above changes shape.
-                "evidence": {
-                    "risk_level": data.get("risk_level"),
-                    "transaction_type": data.get("transaction_type"),
-                    "feature_set": data.get("feature_set"),
-                    "model_version": data.get("model_version"),
-                    "vae_diagnostics": diagnostics,
-                    "fingerprint": anomaly_fp,
-                    "fraud_typology": data.get("fraud_typology", {}) or {},
-                    "metadata": data.get("metadata", {}) or {},
-                },
+                "evidence": behavioural_evidence(data),
             },
         )
     except Exception as e:
@@ -155,7 +178,18 @@ async def call_graph_api(
             logger.debug(f"Graph API: NOT_APPLICABLE for transaction {transaction.get('transaction_id', '?')}")
             return UpstreamResponse(score=0.5, available=False)
 
-        score = _clamp(float(data.get("relational_risk_score", 0.5)))
+        # A 200 response without "relational_risk_score" is a contract
+        # violation, not a measurement of 0.5. Defaulting here would report
+        # available=True with a placeholder — removing the very uncertainty
+        # penalty that exists to flag a missing modality.
+        raw = data.get("relational_risk_score")
+        if raw is None:
+            logger.error(
+                "Graph API returned 200 without 'relational_risk_score'. "
+                "Keys present: %s. Treating as unavailable.", sorted(data)[:12]
+            )
+            return UpstreamResponse(score=0.5, available=False)
+        score = _clamp(float(raw))
 
         subgraph = data.get("suspicious_subgraph") or {}
         pattern = subgraph.get("pattern", "UNKNOWN") if subgraph else "UNKNOWN"
@@ -235,7 +269,18 @@ async def call_temporal_api(
         resp.raise_for_status()
         data = resp.json()
 
-        score = _clamp(float(data.get("temporal_risk_score", 0.5)))
+        # A 200 response without "temporal_risk_score" is a contract
+        # violation, not a measurement of 0.5. Defaulting here would report
+        # available=True with a placeholder — removing the very uncertainty
+        # penalty that exists to flag a missing modality.
+        raw = data.get("temporal_risk_score")
+        if raw is None:
+            logger.error(
+                "Temporal API returned 200 without 'temporal_risk_score'. "
+                "Keys present: %s. Treating as unavailable.", sorted(data)[:12]
+            )
+            return UpstreamResponse(score=0.5, available=False)
+        score = _clamp(float(raw))
 
         evidence = data.get("evidence", {})
         current_tx = evidence.get("current_transaction", {})

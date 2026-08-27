@@ -299,6 +299,9 @@ class AnalyzeResponse(BaseModel):
     # the three score terms combined, the per-feature and per-latent-dimension
     # attribution shares, and the discovered typology the fingerprint matched.
     behavioral_evidence: Optional[dict] = None
+    # Primary key of the persisted record. The UI needs it to draft a SAR
+    # against this exact result rather than re-deriving one from a re-run.
+    analysis_id: Optional[int] = None
     temporal_signal: Optional[str] = None
     # The sequential detector's evidence: the current transaction's F1-F10
     # feature values plus the fraud_attention-identified triggering
@@ -406,11 +409,11 @@ async def analyze(request: AnalyzeRequest):
         if isinstance(event, PipelineResult):
             from backend.settings import record_analysis
 
-            await record_analysis(
+            analysis_id = await record_analysis(
                 event.payload,
                 transaction=request.transaction.model_dump() if request.transaction else None,
             )
-            return AnalyzeResponse(**event.payload)
+            return AnalyzeResponse(**event.payload, analysis_id=analysis_id)
 
         if isinstance(event, StageEvent) and event.status == Status.ERROR:
             # A bad scenario name is the caller's mistake; anything else is ours.
@@ -489,13 +492,13 @@ async def analyze_stream(request: AnalyzeRequest):
                 if isinstance(item, PipelineResult):
                     from backend.settings import record_analysis
 
-                    await record_analysis(
+                    analysis_id = await record_analysis(
                         item.payload,
                         transaction=(
                             request.transaction.model_dump() if request.transaction else None
                         ),
                     )
-                    yield sse("complete", item.payload)
+                    yield sse("complete", {**item.payload, "analysis_id": analysis_id})
                 elif isinstance(item, StageEvent):
                     yield sse("stage", item.to_dict())
         except Exception as e:
@@ -1141,6 +1144,122 @@ async def get_analysis_statistics(user: User = Depends(get_current_user)):
     from backend.settings import analysis_statistics
 
     return await analysis_statistics()
+
+
+# ── Packages ─────────────────────────────────────────────────────────────────
+# Which commercial package this deployment is licensed for. Detection, fusion,
+# alerting and monitoring are never gated — see backend/packages.py.
+
+
+@app.get("/packages", tags=["packages"])
+async def get_package(user: User = Depends(get_current_user)):
+    """The licensed package and which features it unlocks."""
+    from backend import packages
+
+    return packages.status()
+
+
+@app.put("/packages", tags=["packages"])
+async def set_package_endpoint(
+    body: dict, user: User = Depends(require_admin)
+):
+    """Change the licensed package. Admin only, and audited."""
+    from backend import packages
+    from backend.auth import audit
+
+    name = body.get("package")
+    if not name:
+        raise HTTPException(422, "Body must contain a 'package' field.")
+
+    previous = packages.current().value
+    pkg = packages.set_package(str(name), actor=user.username)
+    await audit(
+        "package.change",
+        actor=user.username,
+        target=pkg.value,
+        detail=f"{previous} -> {pkg.value}",
+    )
+    return packages.status()
+
+
+# ── Suspicious Activity Report drafting ──────────────────────────────────────
+# The system drafts; a named officer reviews, edits and decides. Nothing here
+# files anything with any authority.
+
+
+@app.get("/analyses/{analysis_id}/sar", tags=["sar"])
+async def get_sar_draft(analysis_id: int, user: User = Depends(get_current_user)):
+    """The latest draft for this alert, or 404 if none has been generated."""
+    from backend import packages, sar
+
+    packages.require("sar_draft")
+    draft = await sar.latest_draft(analysis_id)
+    if draft is None:
+        raise HTTPException(404, "No draft has been generated for this alert yet.")
+    return draft
+
+
+@app.post("/analyses/{analysis_id}/sar", tags=["sar"])
+async def create_sar_draft(analysis_id: int, user: User = Depends(get_current_user)):
+    """Draft a SAR from a stored alert. Audited, because it is a compliance artefact."""
+    from backend import packages, sar
+    from backend.auth import audit
+
+    packages.require("sar_draft")
+    draft = await sar.generate(analysis_id, forensic_reporter, actor=user.username)
+    await audit(
+        "sar.generate",
+        actor=user.username,
+        target=f"analysis:{analysis_id}",
+        detail=f"draft {draft['id']} generated",
+    )
+    return draft
+
+
+@app.patch("/analyses/sar/{draft_id}", tags=["sar"])
+async def revise_sar_draft(
+    draft_id: int, body: dict, user: User = Depends(get_current_user)
+):
+    """Record an officer's edits. The generated text is preserved separately."""
+    from backend import packages, sar
+    from backend.auth import audit
+
+    packages.require("sar_draft")
+    text = body.get("text")
+    if text is None:
+        raise HTTPException(422, "Body must contain a 'text' field.")
+    draft = await sar.revise(draft_id, str(text), actor=user.username)
+    await audit("sar.revise", actor=user.username, target=f"sar:{draft_id}")
+    return draft
+
+
+@app.post("/analyses/sar/{draft_id}/decision", tags=["sar"])
+async def decide_sar_draft(
+    draft_id: int, body: dict, user: User = Depends(get_current_user)
+):
+    """Approve or reject a draft.
+
+    Approval attributes the text to this user. It does not file the report —
+    filing is a separate, deliberate act in the institution's own system.
+    """
+    from backend import packages, sar
+    from backend.auth import audit
+
+    packages.require("sar_draft")
+    if "approve" not in body:
+        raise HTTPException(422, "Body must contain an 'approve' boolean.")
+
+    approve = bool(body["approve"])
+    draft = await sar.decide(
+        draft_id, approve, actor=user.username, note=body.get("note")
+    )
+    await audit(
+        "sar.approve" if approve else "sar.reject",
+        actor=user.username,
+        target=f"sar:{draft_id}",
+        detail=body.get("note"),
+    )
+    return draft
 
 
 @app.get("/audit-log", tags=["users"])

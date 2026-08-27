@@ -56,6 +56,8 @@ class MonitorEngine:
         self._fusion = None            # the project's trained MetaClassifier
         self._task: asyncio.Task | None = None
         self._queue: list[dict] = []
+        self._source = None          # "queue" | "sample" — published when it changes
+        self._label = None           # ground truth from the source file, if present
         self.interval = DEFAULT_INTERVAL
         self.watch_threshold = DEFAULT_WATCH_THRESHOLD
         self._bands: dict[str, float] = {}
@@ -171,18 +173,44 @@ class MonitorEngine:
             logger.info(f"Using default watch threshold ({exc})")
 
     async def _next_transaction(self, client: httpx.AsyncClient, graph_base: str):
+        """The next transaction to screen, preferring real arrivals.
+
+        Rows ingested by the Query Runner are claimed from `transactions_live`.
+        When that queue is empty — or its table lives in another database — the
+        monitor falls back to its sample source so a demo still has something to
+        show. The source is published either way: a dashboard must never imply
+        it is watching live traffic when it is replaying samples.
+        """
+        from monitor import queue as ingest_queue
+
         if not self._queue:
-            r = await client.get(
-                f"{graph_base}/api/graph/sample-transactions",
-                params={"n": POLL_BATCH, "fraud_ratio": 0.08},
-            )
-            r.raise_for_status()
-            self._queue = r.json().get("transactions", [])
+            claimed = await ingest_queue.claim(POLL_BATCH)
+            if claimed:
+                self._queue = claimed
+                if self._source != "queue":
+                    self._source = "queue"
+                    STATE.publish("source", {"source": "queue",
+                                             "detail": "screening ingested transactions"})
+            else:
+                r = await client.get(
+                    f"{graph_base}/api/graph/sample-transactions",
+                    params={"n": POLL_BATCH, "fraud_ratio": 0.08},
+                )
+                r.raise_for_status()
+                self._queue = r.json().get("transactions", [])
+                if self._source != "sample":
+                    self._source = "sample"
+                    STATE.publish("source", {"source": "sample",
+                                             "detail": "ingestion queue empty — replaying samples"})
+
         return self._queue.pop(0) if self._queue else None
 
     # ── stage 1: screen ──────────────────────────────────────────────
     async def _screen(self, client, graph_base: str, txn: dict) -> None:
+        # row_id marks a claimed queue row; it is bookkeeping, not model input.
+        row_id = txn.pop("row_id", None)
         payload = {k: v for k, v in txn.items() if not k.startswith("_")}
+        self._label = txn.get("_is_fraud")
         STATE.set_stage("graph", "active")
 
         try:
@@ -196,6 +224,9 @@ class MonitorEngine:
             STATE.publish("screened", {
                 "transaction_id": payload["transaction_id"], "outcome": "unknown_accounts",
             })
+            if row_id is not None:
+                from monitor import queue as ingest_queue
+                await ingest_queue.mark_done(row_id, escalated=False)
             return
         r.raise_for_status()
         result = r.json()
@@ -214,7 +245,12 @@ class MonitorEngine:
             "escalated": score >= self.watch_threshold,
         })
 
-        if score < self.watch_threshold:
+        escalating = score >= self.watch_threshold
+        if row_id is not None:
+            from monitor import queue as ingest_queue
+            await ingest_queue.mark_done(row_id, escalated=escalating)
+
+        if not escalating:
             return
 
         await self._escalate(client, payload, result, sg)
@@ -237,12 +273,19 @@ class MonitorEngine:
         await self._notify_early(txid, payload, graph_score, sg)
 
         scores: dict[str, float | None] = {"graph": graph_score}
+        # The response bodies are kept, not just the scores. A detector answers
+        # with its reasoning attached, and that reasoning is what a reviewer
+        # opens the case for — dropping it here is why it never reached the
+        # case record.
+        bodies: dict[str, dict | None] = {}
         for name, key, base_key in (
             ("behavioural", "behavioral_risk_score", "behavioral_api_base"),
             ("temporal", "temporal_risk_score", "temporal_api_base"),
         ):
             STATE.set_stage(name, "active")
-            scores[name] = await self._call_upstream(client, base_key, key, payload)
+            scores[name], bodies[name] = await self._call_upstream(
+                client, base_key, key, payload
+            )
             STATE.set_stage(name, "idle")
             STATE.publish("model", {
                 "transaction_id": txid, "model": name, "score": scores[name],
@@ -257,7 +300,12 @@ class MonitorEngine:
                     self._fusion.fuse,
                     scores.get("graph"), scores.get("behavioural"), scores.get("temporal"),
                 )
-                fused = float(getattr(result, "fraud_confidence_score", 0.0))
+                # `confidence_score`, not `fraud_confidence_score` — the
+                # latter is the API response field, not the dataclass one. Read
+                # it directly rather than through getattr with a default: a
+                # silent 0.0 on a renamed attribute reads as "nothing
+                # suspicious" and suppresses every alert.
+                fused = float(result.confidence_score)
             except Exception as exc:                    # noqa: BLE001
                 logger.warning(f"Fusion failed, averaging instead: {exc}")
                 fused = sum(available) / len(available) if available else 0.0
@@ -279,6 +327,32 @@ class MonitorEngine:
             "modalities_used": len(available),
             "scores": {k: (round(v, 4) if v is not None else None) for k, v in scores.items()},
         })
+
+        # Record the case before the severity gate. A MEDIUM that was screened,
+        # fused and judged not worth an email is still something a reviewer may
+        # want to see later; dropping it would make the case table a record of
+        # alerts rather than of detections.
+        from backend.adapters.upstream import behavioural_evidence
+        from monitor import cases
+
+        # Built through the same function the analyzer's panel is fed from, so
+        # a case opened later shows the decomposition in the shape the panel
+        # already knows how to render.
+        b_body = bodies.get("behavioural")
+
+        await cases.record(
+            transaction_id=txid,
+            classification=severity,
+            fused_score=fused,
+            scores=scores,
+            available_flags={k: (v is not None) for k, v in scores.items()},
+            modalities_used=len(available),
+            payload=payload,
+            graph_evidence=sg,
+            behavioral_evidence=behavioural_evidence(b_body) if b_body else None,
+            alert_sent=(severity != "LOW"),
+            label_is_fraud=self._label,
+        )
 
         if severity == "LOW":
             return
@@ -304,16 +378,29 @@ class MonitorEngine:
         STATE.set_stage("report", "idle")
 
     async def _call_upstream(self, client, base_key: str, score_key: str, payload: dict):
-        """Score one modality. Returns None when the detector cannot answer."""
+        """Score one modality.
+
+        Returns `(score, body)`. The body comes back alongside the score
+        because the detectors answer with their attribution attached and the
+        case record needs it; `(None, None)` when the detector cannot answer.
+
+        A 200 without the score key is a contract violation rather than a
+        measurement, so it falls through to the next path and ultimately
+        counts as unavailable — the same reading the request adapters take.
+        """
         base = str(config.get("upstream", base_key)).rstrip("/")
         for path in ("/api/v1/classify", "/api/v1/behavioral/classify"):
             try:
                 r = await client.post(f"{base}{path}", json=payload, timeout=10.0)
                 if r.status_code == 200:
-                    return float(r.json().get(score_key))
+                    data = r.json()
+                    raw = data.get(score_key)
+                    if raw is None:
+                        continue
+                    return float(raw), data
             except Exception:                           # noqa: BLE001
                 continue
-        return None
+        return None, None
 
     def _severity(self, fused: float) -> str:
         b = self._bands

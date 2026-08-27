@@ -33,7 +33,18 @@ def _auth():
 
 @router.get("/state")
 async def state() -> dict:
-    return STATE.snapshot()
+    """Monitor state, plus where its transactions are coming from.
+
+    `source` matters: a dashboard that shows throughput without saying whether
+    those are ingested transactions or replayed samples invites the reader to
+    assume the former.
+    """
+    from monitor import queue as ingest_queue
+
+    snap = STATE.snapshot()
+    snap["source"] = getattr(ENGINE, "_source", None)
+    snap["queue"] = await ingest_queue.depth()
+    return snap
 
 
 @router.post("/start")

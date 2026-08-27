@@ -159,10 +159,16 @@ async def _model_scores(**kwargs) -> dict:
             out["scores"][name] = {"available": False,
                                    "error": f"{type(res).__name__}: {res}"}
             continue
+        # Read UpstreamResponse's real fields. The previous version asked for
+        # `ok` and `error`, which that dataclass does not define, so getattr
+        # fell through to its default and every model — including one that had
+        # answered "I have no opinion" — was reported as available with a 0.5
+        # placeholder. A detector that did not answer must never be presented
+        # as one that did.
         out["scores"][name] = {
-            "available": getattr(res, "ok", None) is not False,
-            "score": getattr(res, "score", None),
-            "detail": getattr(res, "error", None),
+            "available": bool(res.available),
+            "score": (round(float(res.score), 4) if res.available else None),
+            "detail": res.fraud_signal_summary,
         }
     available = sum(1 for v in out["scores"].values() if v.get("available"))
     out["modalities_available"] = available
