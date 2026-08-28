@@ -8,33 +8,35 @@ import { cx } from './ui'
  * inline so the voice stays consistent as pages are added.
  */
 
-/** `// Section label //` — the eyebrow above a display heading. */
+/** The small spaced label above a display heading. */
 export function Eyebrow({ children, className }) {
   return (
-    <p className={cx('text-xs font-medium tracking-wide text-accent-500', className)}>
-      <span aria-hidden className="opacity-50">//</span> {children}{' '}
-      <span aria-hidden className="opacity-50">//</span>
-    </p>
+    <p className={cx('eyebrow text-slate-500', className)}>{children}</p>
   )
 }
 
 /**
- * Display heading. The second line carries the accent, so the eye lands on the
- * specific claim rather than the generic opener.
+ * Display heading.
+ *
+ * Set in the display serif, with the second line italic and accented, so the
+ * eye lands on the specific claim rather than the generic opener. This was a
+ * bold sans heading — which is what every generated dashboard uses, and which
+ * made each page that composes it read as one. Changing it here converts every
+ * page that still uses the primitive.
  */
 export function Display({ lead, accent, className, as: Tag = 'h2' }) {
   return (
     <Tag
       className={cx(
-        'text-4xl font-bold leading-[1.05] tracking-tight text-slate-200 sm:text-5xl',
+        'display text-[2.5rem] text-slate-100 sm:text-[3.25rem]',
         className,
       )}
     >
       {lead}
       {accent && (
         <>
-          <br />
-          <span className="text-accent-500">{accent}</span>
+          {' '}
+          <span className="display-italic text-accent-400">{accent}</span>
         </>
       )}
     </Tag>

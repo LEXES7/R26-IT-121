@@ -38,6 +38,15 @@ def classify(req: ClassifyRequest, request: Request):
             message=f"Rolling window buffer not yet full: {e}",
         ).model_dump())
     except state.ModelArtifactsMissing as e:
+        # 503, not 500. The service is healthy and correctly configured; it
+        # simply has no weights on disk yet, which is a deployment state rather
+        # than a bug in this request. The fusion adapter already treats 503 as
+        # "unavailable for this request" and abstains instead of logging an
+        # outage — exactly the right behaviour here.
+        #
+        # The message names the files relative to the repo: the exception text
+        # carries absolute paths, and an error body is not the place to publish
+        # someone's home directory.
         logger.error(f"TS-TCN model artefacts missing: {e}")
         return JSONResponse(status_code=500, content=ErrorResponse(
             error="InternalError", message=str(e),
