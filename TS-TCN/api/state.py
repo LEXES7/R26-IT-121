@@ -134,7 +134,14 @@ class TSTCNService:
             (self.type_risk_weights_path, "Produced alongside scaler.pkl in Stage 2"),
         ):
             if not path.exists():
-                raise ModelArtifactsMissing(f"{path} not found. {note}.")
+                # Relative to the repo root: the exception message ends up in
+                # an HTTP error body (see routes/classify.py), and an absolute
+                # path there would publish this machine's home directory.
+                try:
+                    shown = path.relative_to(_REPO_ROOT)
+                except ValueError:
+                    shown = path
+                raise ModelArtifactsMissing(f"{shown} not found. {note}.")
 
         # Deferred: tensorflow is a heavy import, and pulling it in at module
         # load would force every consumer of this module (including tests

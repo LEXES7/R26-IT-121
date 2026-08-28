@@ -125,12 +125,15 @@ def test_warming_up_returns_structured_503():
         assert "1/2 buffered" in body["message"]
 
 
-def test_model_artifacts_missing_returns_structured_500():
+def test_model_artifacts_missing_returns_structured_503():
+    # 503, not 500: the service is healthy and correctly configured, it just
+    # has no weights on disk yet — a deployment state, not a bug in this
+    # request. Distinct from WarmingUp (also 503) via the "error" label.
     app = create_app(service=FakeService(raise_on_classify=state.ModelArtifactsMissing("no checkpoint")))
     with TestClient(app) as client:
         r = client.post("/api/v1/classify", json=_tx(1))
-        assert r.status_code == 500
-        assert r.json()["error"] == "InternalError"
+        assert r.status_code == 503
+        assert r.json()["error"] == "ModelUnavailable"
 
 
 def test_unexpected_exception_returns_structured_500_not_a_trace():
