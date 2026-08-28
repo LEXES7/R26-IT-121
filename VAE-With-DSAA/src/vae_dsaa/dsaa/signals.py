@@ -60,7 +60,21 @@ def compute_signals(predictor, X: np.ndarray, *, with_signal_3: bool = True) -> 
         "kl_total": kl_contrib.sum(axis=1),
         "feature_names": list(predictor.features),
         "latent_names": [f"dim_{i}" for i in range(mu.shape[1])],
+
+        # The two sides of the reconstruction, in feature units rather than
+        # scaled ones. Signal 1 says which feature carried the error; these say
+        # what the value was and what the model expected instead, which is the
+        # difference between asserting an attribution and showing it. The error
+        # itself is still measured in scaled space above — this pair is for
+        # reading, not for scoring.
+        "observed": X,
     }
+
+    # Not every scaler an older bundle was fitted with can invert. Attribution
+    # is an extra here, never a dependency, so a scaler that cannot round-trip
+    # loses the readable pair rather than the score.
+    if hasattr(predictor.scaler, "inverse_transform"):
+        out["reconstructed"] = predictor.scaler.inverse_transform(recon)
 
     if with_signal_3:
         # Signal 3 — squared displacement per latent dimension from the nearest
@@ -90,11 +104,35 @@ def fingerprint(signals: dict, *, include_signal_3: bool = False) -> np.ndarray:
     return np.hstack(parts)
 
 
-def rank_signal(shares: np.ndarray, names: list[str], row: int, top: int = 3) -> list[dict]:
-    """Top contributors for one row, as the API returns them."""
+def rank_signal(
+    shares: np.ndarray,
+    names: list[str],
+    row: int,
+    top: int = 3,
+    *,
+    observed: np.ndarray | None = None,
+    reconstructed: np.ndarray | None = None,
+) -> list[dict]:
+    """Top contributors for one row, as the API returns them.
+
+    `observed` and `reconstructed` apply to Signal 1 only, where the columns
+    are input features and the pair can be read directly. Signals 2 and 3 index
+    latent dimensions, which have no such counterpart, so both stay unset and
+    the keys are simply absent — a consumer reading only name and share is
+    unaffected.
+    """
     v = shares[row]
     idx = np.argsort(-v)[:top]
-    return [{"name": names[i], "share": round(float(v[i]), 4)} for i in idx]
+
+    out = []
+    for i in idx:
+        entry = {"name": names[i], "share": round(float(v[i]), 4)}
+        if observed is not None:
+            entry["observed"] = round(float(observed[row][i]), 6)
+        if reconstructed is not None:
+            entry["reconstructed"] = round(float(reconstructed[row][i]), 6)
+        out.append(entry)
+    return out
 
 
 def mean_signals(signals: dict, *, include_signal_3: bool = False) -> dict:
