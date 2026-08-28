@@ -13,7 +13,7 @@ service still starts and still answers `/health`, but reports
 
 | Destination (exact path) | Produced by |
 |---|---|
-| `outputs/stage4_tcn/ts_tcn_sanity.keras` | `notebooks/03_tcn_architecture.ipynb`, cell 20 (`model.save(MODEL_PATH)`) |
+| `outputs/stage4_tcn/best_tstcn.keras` | the Stage 4 full-training notebook (`DeepSentinel_T4_FullTraining.ipynb`) |
 | `outputs/stage2_baselines/scaler.pkl` | `notebooks/01_baseline_evaluation.ipynb`, cell 14 (fit on TRAIN only — FR1) |
 | `outputs/stage2_baselines/type_risk_weights.json` | `notebooks/01_baseline_evaluation.ipynb`, cell 22 |
 
@@ -41,10 +41,8 @@ python -m uvicorn api.main:app --host 127.0.0.1 --port 8003
 Port 8003 is what the fusion engine's `config.ini` expects
 (`[upstream] temporal_api_base`).
 
-## Model status caveat
+## Model status
 
-The checkpoint named above is `ts-tcn-sanity-v0.1` — the Stage 4 **sanity** run
-(one epoch, architecture verification only), and `THRESHOLD = 0.5` is the
-untuned sigmoid midpoint, not a validated operating point (Stage 6 threshold
-tuning has not run). Treat any score it returns as a plumbing check, not a
-detection result. See `docs/api_contract.md`.
+The served checkpoint is `ts-tcn-v1.0-stage4` — the full Stage 4 training run —
+and `THRESHOLD = 0.4311` comes from Stage 6 tuning rather than being the
+untuned sigmoid midpoint. See `docs/api_contract.md`.

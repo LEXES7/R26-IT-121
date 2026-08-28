@@ -168,6 +168,19 @@ class TSTCNService:
         with self._lock:
             self._buffer.clear()
 
+    def missing_artifacts(self) -> list[str]:
+        """Which required files are absent, named relative to the repo.
+
+        The exception text carries absolute paths, which are fine in a log and
+        wrong in an HTTP body — an error response is not the place to publish
+        somebody's home directory.
+        """
+        return [
+            str(p.relative_to(_REPO_ROOT))
+            for p in (self.model_path, self.scaler_path, self.type_risk_weights_path)
+            if not p.exists()
+        ]
+
     def health(self) -> dict:
         return {
             "status": "ok" if self.loaded else ("error" if self.load_error else "loading"),
