@@ -26,19 +26,21 @@ logger = logging.getLogger(__name__)
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _ARTIFACT_DIR = _REPO_ROOT / "outputs"
 
-MODEL_PATH = _ARTIFACT_DIR / "stage4_tcn" / "ts_tcn_sanity.keras"
+MODEL_PATH = _ARTIFACT_DIR / "stage4_tcn" / "best_tstcn.keras"
 SCALER_PATH = _ARTIFACT_DIR / "stage2_baselines" / "scaler.pkl"
 TYPE_RISK_WEIGHTS_PATH = _ARTIFACT_DIR / "stage2_baselines" / "type_risk_weights.json"
 
-# Stage 4 sanity checkpoint (1 epoch, architecture verification only — see
-# docs/api_contract.md "Model status caveat"). Swap to a versioned name once
-# the full Stage 4 training run (best_tstcn.h5) replaces it.
-MODEL_VERSION = "ts-tcn-sanity-v0.1"
+# Stage 4 full training run (30-epoch budget, EarlyStopping fired at epoch 6 —
+# see outputs/stage6_evaluation/tstcn_test_metrics.json). Real trained
+# checkpoint, not the earlier sanity run — but it underperforms the B2 MLP
+# baseline on F1/Recall and misses the proposal's targets (F1>0.88, AUC>0.97,
+# Recall>0.90). Serve it honestly labelled rather than waiting on a retrain.
+MODEL_VERSION = "ts-tcn-v1.0-stage4"
 WINDOW_SIZE = 32
 
-# Provisional — Stage 6 (precision_recall_curve threshold tuning) has not run
-# yet. 0.5 is the untuned sigmoid midpoint, not a validated operating point.
-THRESHOLD = 0.5
+# F1-optimal threshold from Stage 6 (sklearn.metrics.precision_recall_curve
+# on the held-out test partition) — see outputs/stage6_evaluation/tstcn_test_metrics.json.
+THRESHOLD = 0.4311
 
 _model = None
 _scaler = None
