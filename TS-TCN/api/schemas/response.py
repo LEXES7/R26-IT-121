@@ -50,3 +50,10 @@ class ClassifyResponse(BaseModel):
     triggering_predecessor: Optional[TriggeringPredecessor] = None
     model_version: str
     inference_time_ms: float
+
+
+class ErrorResponse(BaseModel):
+    """Any non-200 is treated by the fusion engine as 'temporal unavailable'."""
+
+    error: str
+    message: str

@@ -3,6 +3,7 @@ from .request import ClassifyRequest
 from .response import (
     ClassifyResponse,
     CurrentTransactionEvidence,
+    ErrorResponse,
     Evidence,
     TransactionRef,
     TriggeringPredecessor,
@@ -15,4 +16,5 @@ __all__ = [
     "CurrentTransactionEvidence",
     "TransactionRef",
     "TriggeringPredecessor",
+    "ErrorResponse",
 ]

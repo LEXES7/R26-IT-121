@@ -91,7 +91,7 @@ Flat body — the fusion engine spreads the full transaction dict and adds
     },
     "predecessor_signal": "Prior partial drain from same account — escalating fraud pattern"
   },
-  "model_version": "ts-tcn-sanity-v0.1",
+  "model_version": "ts-tcn-v1.0-stage4",
   "inference_time_ms": 23.7
 }
 ```
@@ -113,19 +113,27 @@ Flat body — the fusion engine spreads the full transaction dict and adds
 | `triggering_predecessor.offset_from_current` | int, negative | Position relative to the current transaction, e.g. `-3` = 3 transactions back in the window |
 | `triggering_predecessor.features` | object | Feature vector of the predecessor transaction, read from the rolling buffer |
 | `triggering_predecessor.predecessor_signal` | string | Human-readable label of the escalation pattern |
-| `model_version` | string | Identifies which trained checkpoint answered. `ts-tcn-sanity-v0.1` is the Stage 4 sanity-trained checkpoint (1 epoch, architecture-verification only) — see caveat below |
+| `model_version` | string | Identifies which trained checkpoint answered. `ts-tcn-v1.0-stage4` is the Stage 4 full-training checkpoint — see caveat below |
 | `inference_time_ms` | float | End-to-end serving time for this request |
 
 ## Model status caveat
 
-The checkpoint currently served (`outputs/stage4_tcn/ts_tcn_sanity.keras`) is
-the Stage 4 **sanity** run — one epoch, trained to verify the architecture
-shape and the `fraud_attention` mechanism produce correct outputs, not to
-converge. `temporal_risk_score` and `risk_level` from this checkpoint should
-not be read as the model's true detection performance. The full 30-epoch run
-(Stage 4, `best_tstcn.h5`) and threshold tuning (Stage 6) are scheduled per
-the WBS and will replace it — `model_version` distinguishes the checkpoints so
-this is never ambiguous to a downstream consumer.
+The checkpoint currently served (`outputs/stage4_tcn/best_tstcn.keras`) is a
+genuine Stage 4 full-training run against the real 30-epoch budget
+(`BinaryFocalCrossentropy(γ=2.0)`, EarlyStopping on `val_fraud_prob_recall`),
+not a sanity checkpoint — it is real, deployed, and this is what
+`temporal_risk_score` reflects.
+
+It underperforms Baseline 2 (MLP, no sequence) on F1 and Recall and misses
+all three proposal targets (F1>0.88, AUC-ROC>0.97, Recall>0.90) — see
+`outputs/stage6_evaluation/tstcn_test_metrics.json` for the full numbers.
+EarlyStopping fired at epoch 6 (patience=5) and restored epoch 1's weights,
+the only epoch where validation recall improved; the run used patience=5
+where the proposal (§3.8) specifies patience=10, which is the leading
+hypothesis for why training stopped before recall could recover. A rerun
+with the corrected patience is the next experiment — `model_version` will
+gain a new suffix when it lands, so a downstream consumer is never left
+guessing which checkpoint answered.
 
 ## Error Responses
 
