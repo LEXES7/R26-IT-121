@@ -2,6 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getBriefing, getCase, listCases, reviewCase, sendBriefing } from '../services/api'
 import NetworkGraph from '../components/NetworkGraph'
+import GraphEvidence from '../components/GraphEvidence'
+import BehaviouralEvidence from '../components/BehaviouralEvidence'
+import TemporalEvidence from '../components/TemporalEvidence'
+import ModalityVerdict from '../components/ModalityVerdict'
+import CaseMechanism from '../components/CaseMechanism'
 import { Alert, cx } from '../components/ui'
 
 /**
@@ -506,6 +511,10 @@ function CaseDetail({ caseRef }) {
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="min-w-0 space-y-8">
 
+          <ModalityVerdict c={c} />
+
+          <CaseMechanism c={c} />
+
           {nodes >= 2 ? (
             <section>
               <div className="hair-b flex flex-wrap items-baseline gap-3 pb-2.5">
@@ -529,6 +538,52 @@ function CaseDetail({ caseRef }) {
               <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500">
                 The relational detector either did not run or found nothing
                 structurally connected to this transaction.
+              </p>
+            </section>
+          )}
+
+          {/* Each detector's own evidence, in the modality order used
+              everywhere else. The drawing above is the relational model's
+              subgraph; this is what it read off it — pattern, sink, the
+              transfers ranked by attention, the accounts implicated and their
+              roles. Without it the case gives the behavioural model a full
+              account of itself and the other two a picture. */}
+          {c.graph_evidence && <GraphEvidence evidence={c.graph_evidence} />}
+
+          {c.behavioral_evidence ? (
+            <BehaviouralEvidence evidence={c.behavioral_evidence} />
+          ) : c.behavioral_available ? (
+            <section className="hair rounded-xl border border-dashed px-6 py-8 text-center">
+              <p className="text-sm text-slate-400">
+                The behavioural detector scored this case, but no attribution was
+                recorded with it.
+              </p>
+              <p className="mx-auto mt-1.5 max-w-md text-xs leading-relaxed text-slate-600">
+                Cases written before the attribution was stored show the score
+                alone.
+              </p>
+            </section>
+          ) : null}
+
+          {c.temporal_evidence ? (
+            <TemporalEvidence evidence={c.temporal_evidence} />
+          ) : (
+            // Rendered rather than omitted: a case that simply stops after two
+            // detectors reads as though there were only ever two. Saying the
+            // third has not shipped is a different statement from saying it
+            // found nothing, and only one of them is true.
+            <section className="hair rounded-xl border border-dashed px-8 py-12 text-center">
+              <p className="display text-2xl text-slate-300">
+                {c.temporal_available
+                  ? 'The temporal detector left no working.'
+                  : 'The temporal detector has not shipped.'}
+              </p>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+                {c.temporal_available
+                  ? 'It scored this case but recorded no evidence with the score.'
+                  : 'When it does, this is where the 32-transaction window ending '
+                    + 'here will appear, with the one earlier transaction it '
+                    + 'weighted most heavily.'}
               </p>
             </section>
           )}
