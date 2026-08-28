@@ -1,15 +1,17 @@
 """POST /api/v1/classify — main classification endpoint.
 
 Per docs/api_contract.md: classifies the current transaction against the
-system-wide 32-transaction rolling window maintained in api/state.py.
+system-wide 32-transaction rolling window owned by the app's TSTCNService
+(request.app.state.service — see api/main.py's lifespan / create_app).
 """
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 
 from .. import state
 from ..schemas.request import ClassifyRequest
-from ..schemas.response import ClassifyResponse
+from ..schemas.response import ClassifyResponse, ErrorResponse
 
 logger = logging.getLogger(__name__)
 
@@ -17,18 +19,24 @@ router = APIRouter()
 
 
 @router.post("/classify", response_model=ClassifyResponse)
-def classify(req: ClassifyRequest) -> ClassifyResponse:
+def classify(req: ClassifyRequest, request: Request):
     """Classify a single transaction using the system-wide deque buffer.
 
     The service maintains an internal `deque(maxlen=32)` shared across
     requests, populated by the FIFO arrival order of transactions. Fewer than
-    32 transactions in the buffer returns 503 WARMING_UP — normal for the
+    32 transactions in the buffer returns 503 WarmingUp — normal for the
     first 31 requests after a (re)start, not a failure.
     """
+    service: state.TSTCNService = request.app.state.service
+
     try:
-        result = state.classify(req.model_dump())
+        result = service.classify(req.model_dump())
     except state.WarmingUp as e:
-        raise HTTPException(status_code=503, detail=f"WARMING_UP: {e}") from e
+        logger.info(f"TS-TCN warming up: {e}")
+        return JSONResponse(status_code=503, content=ErrorResponse(
+            error="WarmingUp",
+            message=f"Rolling window buffer not yet full: {e}",
+        ).model_dump())
     except state.ModelArtifactsMissing as e:
         # 503, not 500. The service is healthy and correctly configured; it
         # simply has no weights on disk yet, which is a deployment state rather
@@ -40,14 +48,13 @@ def classify(req: ClassifyRequest) -> ClassifyResponse:
         # carries absolute paths, and an error body is not the place to publish
         # someone's home directory.
         logger.error(f"TS-TCN model artefacts missing: {e}")
-        raise HTTPException(
-            status_code=503,
-            detail="MODEL_UNAVAILABLE: model artefacts are not present on this "
-                   f"instance ({', '.join(state.missing_artifacts())}). See "
-                   "docs/api_contract.md, 'Model status caveat'.",
-        ) from e
-    except Exception as e:  # noqa: BLE001 — surface as a 500, never a bare 502/tracer
+        return JSONResponse(status_code=500, content=ErrorResponse(
+            error="InternalError", message=str(e),
+        ).model_dump())
+    except Exception as e:  # noqa: BLE001 — surface as a structured 500, never a bare trace
         logger.exception("TS-TCN inference failed")
-        raise HTTPException(status_code=500, detail=f"INTERNAL_ERROR: {type(e).__name__}: {e}") from e
+        return JSONResponse(status_code=500, content=ErrorResponse(
+            error="InternalError", message=f"{type(e).__name__}: {e}",
+        ).model_dump())
 
     return ClassifyResponse(**result)
