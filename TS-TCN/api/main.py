@@ -49,16 +49,30 @@ def create_app(service: Optional[state.TSTCNService] = None) -> FastAPI:
         try:
             svc.load()
             logger.info(f"TS-TCN ready in {svc.startup_seconds:.2f}s")
-        except state.ModelArtifactsMissing as e:
+        except Exception as e:  # noqa: BLE001 — see below
+            # Deliberately broad. Missing artefacts is only one way loading
+            # fails: a broken or absent TensorFlow, a checkpoint saved by an
+            # incompatible Keras, a corrupt download. All of them should
+            # surface the same way — the service answers /health with
+            # status "error" and the reason, instead of the process refusing
+            # to start and leaving the reason only in a container log.
+            if not isinstance(e, state.ModelArtifactsMissing):
+                logger.exception("TS-TCN failed to load its model")
             # Fail visible, not fail hard: /health reports "error" with the
             # reason rather than the process refusing to start, so ops can
             # see why via curl instead of reading container logs.
             # Relative paths: /health is read over the network, and the
             # exception text carries the absolute path of whoever's machine
             # this is running on.
+            missing = svc.missing_artifacts()
+            # Relative paths: /health is read over the network, and the
+            # exception text carries the absolute path of whoever's machine
+            # this is running on.
             svc.load_error = (
                 "Model artefacts are not present on this instance: "
-                + ", ".join(svc.missing_artifacts())
+                + ", ".join(missing)
+                if missing
+                else f"Model could not be loaded: {type(e).__name__}: {e}"
             )
             logger.error(f"TS-TCN artefacts missing at startup: {e}")
         yield
