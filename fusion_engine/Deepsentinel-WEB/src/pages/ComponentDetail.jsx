@@ -3,6 +3,14 @@ import { COMPONENTS, COMPONENT_ORDER } from '../data/components'
 import { Badge, cx } from '../components/ui'
 import { ArrowLink, Display, Eyebrow, Tag } from '../components/Editorial'
 import Reveal from '../components/Reveal'
+import SystemLens from '../components/SystemLens'
+
+/** Component slugs to the lens they own. Fusion owns none — it owns all three. */
+const LENS_FOR = {
+  network: 'graph',
+  behavioural: 'behavioural',
+  temporal: 'temporal',
+}
 
 /**
  * One page per detection component.
@@ -130,6 +138,18 @@ export default function ComponentDetail() {
               )}
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ── Where it sits ────────────────────────────────────────────────── */}
+      {/* The same drawing on every component page, with this one's field of
+          view lit and the others dimmed — so a reader arriving at any single
+          component still learns what it cannot see, and why the other two
+          exist. The fusion page lights all three, which is what it is for. */}
+      <section className="mx-auto max-w-5xl px-4 pt-12 sm:px-6">
+        <Eyebrow>{LENS_FOR[c.slug] ? 'What it can see' : 'What the detectors see'}</Eyebrow>
+        <div className="mt-4">
+          <SystemLens highlight={LENS_FOR[c.slug] ?? null} />
         </div>
       </section>
 

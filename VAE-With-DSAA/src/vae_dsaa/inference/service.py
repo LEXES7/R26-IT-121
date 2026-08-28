@@ -155,7 +155,9 @@ class BehavioralPredictor:
             level = "HIGH" if flagged else "LOW"
 
         sig = compute_signals(b.predictor, X, with_signal_3=True)
-        s1 = rank_signal(sig["signal_1"], sig["feature_names"], 0, top=3)
+        s1 = rank_signal(sig["signal_1"], sig["feature_names"], 0, top=3,
+                         observed=sig.get("observed"),
+                         reconstructed=sig.get("reconstructed"))
         s2 = rank_signal(sig["signal_2"], sig["latent_names"], 0, top=3)
         s3 = rank_signal(sig["signal_3"], sig["latent_names"], 0, top=3)
 

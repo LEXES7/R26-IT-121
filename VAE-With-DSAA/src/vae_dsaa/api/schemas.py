@@ -85,6 +85,14 @@ class FeatureShare(BaseModel):
     feature: str
     share: float = Field(ge=0, le=1)
 
+    #: The value that arrived and the value the decoder produced for it, in
+    #: feature units. Additive extension: a consumer reading only `feature` and
+    #: `share` is unaffected, and both stay unset wherever a reconstruction has
+    #: no meaning. The share is still computed in scaled space — this pair says
+    #: which direction the deviation ran, not how the score was formed.
+    observed: float | None = None
+    reconstructed: float | None = None
+
 
 class DimensionShare(BaseModel):
     dimension: str

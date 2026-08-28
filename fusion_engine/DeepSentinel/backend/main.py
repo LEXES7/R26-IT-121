@@ -1238,9 +1238,21 @@ CASE_COLUMNS = (
 )
 _CASE_FIELDS = [c.strip() for c in CASE_COLUMNS.split(",")]
 
+# The queue lists up to 200 cases at a time, so the two remaining evidence
+# blobs are read only when a single case is opened. Both are written at
+# detection time by monitor/cases.py; without them the case desk can say what
+# the behavioural and temporal detectors scored but not what they saw, which
+# is the question a reviewer actually has.
+CASE_DETAIL_COLUMNS = CASE_COLUMNS + ", behavioral_evidence, temporal_evidence"
+_CASE_DETAIL_FIELDS = [c.strip() for c in CASE_DETAIL_COLUMNS.split(",")]
 
-def _case_row(row) -> dict:
-    """One case row as the UI consumes it."""
+
+def _case_row(row, fields: Optional[list] = None) -> dict:
+    """One case row as the UI consumes it.
+
+    `fields` names the projection the row was selected with, since the detail
+    view reads two columns the queue does not.
+    """
     import json as _json
 
     def load(v):
@@ -1251,11 +1263,13 @@ def _case_row(row) -> dict:
         except (ValueError, TypeError):
             return None
 
-    d = dict(zip(_CASE_FIELDS, row))
+    d = dict(zip(fields or _CASE_FIELDS, row))
     for k in ("detected_at", "alerted_at", "reviewed_at"):
         d[k] = str(d[k]) if d[k] else None
-    for k in ("graph_evidence", "recipients"):
-        d[k] = load(d[k])
+    for k in ("graph_evidence", "behavioral_evidence", "temporal_evidence",
+              "recipients"):
+        if k in d:
+            d[k] = load(d[k])
     for k in ("graph_available", "behavioral_available", "temporal_available",
               "uncertainty_penalty_applied", "alert_sent"):
         d[k] = None if d[k] is None else bool(d[k])
@@ -1310,13 +1324,13 @@ async def get_case(case_ref: str, user: User = Depends(get_current_user)):
 
     async with get_session() as db:
         row = (await db.execute(
-            sql(f"SELECT {CASE_COLUMNS} FROM fraud_cases WHERE case_ref = :r"),
+            sql(f"SELECT {CASE_DETAIL_COLUMNS} FROM fraud_cases WHERE case_ref = :r"),
             {"r": case_ref},
         )).first()
     if row is None:
         raise HTTPException(404, f"No case {case_ref}")
 
-    case = _case_row(row)
+    case = _case_row(row, _CASE_DETAIL_FIELDS)
 
     # Derived rather than stored: two sources for one chronology eventually
     # disagree, and then neither can be trusted.
