@@ -8,6 +8,7 @@ import TemporalEvidence from '../components/TemporalEvidence'
 import ModalityVerdict from '../components/ModalityVerdict'
 import CaseMechanism from '../components/CaseMechanism'
 import { Alert, cx } from '../components/ui'
+import { Badge, Footer, Metric, Panel, SectionHeading } from '../components/ConsoleShell'
 
 /**
  * The case desk.
@@ -141,108 +142,81 @@ function CaseQueue() {
   }, [cases])
 
   return (
-    <div className="mx-auto max-w-[88rem] px-5 pb-16 pt-8 sm:px-8">
+    <div className="ds-fade-up" style={{ display: 'grid', gap: 15 }}>
 
-      {/* ═══ the statement ═══════════════════════════════════════════ */}
-      <header className="hair-b pb-7">
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <div className="min-w-0">
-            <p className="eyebrow text-slate-500">Case review</p>
-            <h1 className="display mt-3 text-[2.75rem] text-slate-100 sm:text-[3.5rem]">
-              {cases.length === 0 ? (
-                <>The desk is <span className="display-italic text-slate-500">clear.</span></>
-              ) : stats.urgent > 0 ? (
-                <>
-                  {cases.length} case{cases.length === 1 ? '' : 's'}.{' '}
-                  <span className="display-italic" style={{ color: SEV.CRITICAL.hex }}>
-                    {stats.urgent} can&rsquo;t wait.
-                  </span>
-                </>
-              ) : (
-                <>
-                  {cases.length} case{cases.length === 1 ? '' : 's'}.{' '}
-                  <span className="display-italic text-slate-500">None urgent.</span>
-                </>
-              )}
-            </h1>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-400">
-              What the models caught, newest first. Decisions here are recorded
-              against your name and feed the retraining set — so confirm what you
-              are sure of, and leave the rest open.
-            </p>
-          </div>
+      {/* ── the figures, then the queue ── */}
+      <div style={{ display: 'grid', gap: 11,
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+        <Metric label={filter === 'all' ? 'All cases' : REVIEW_LABEL[filter]}
+                value={cases.length} meta="in this view" tone="accent" />
+        {ORDER.map((k) => (
+          <Metric key={k} label={SEV[k].label} value={stats.sev[k] ?? 0}
+                  meta={stats.sev[k] ? 'awaiting a decision' : 'none'}
+                  tone={k === 'CRITICAL' && stats.sev[k] ? 'alert' : ''} />
+        ))}
+        <Metric label="Ground truth" value={stats.labelled} meta="labelled by the source file" />
+      </div>
 
-          <div className="flex items-end gap-6">
-            <button
-              onClick={() => {
-                setBriefOpen((o) => !o)
-                if (!brief) getBriefing().then(setBrief).catch(() => {})
-              }}
-              className="hair border-b pb-1 text-sm text-slate-300 transition-colors hover:text-slate-100"
-            >
-              Daily briefing {briefOpen ? '↑' : '↓'}
+      <div style={{ display: 'flex', justifyContent: 'space-between',
+                    gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {FILTERS.map(([f, label]) => (
+            <button key={f} onClick={() => setFilter(f)}
+                    className={`ds-btn ${filter === f ? 'ds-btn-primary' : 'ds-btn-quiet'}`}>
+              {label}
             </button>
-          </div>
-        </div>
-
-        {/* the ledger */}
-        <dl className="mt-7 grid grid-cols-2 gap-y-5 sm:grid-cols-3 lg:grid-cols-6">
-          <Figure value={cases.length} label={filter === 'all' ? 'All cases' : REVIEW_LABEL[filter]} />
-          {ORDER.map((k) => (
-            <Figure key={k} value={stats.sev[k] ?? 0} label={SEV[k].label} hex={stats.sev[k] ? SEV[k].hex : undefined} />
           ))}
-          <Figure value={stats.labelled} label="Ground truth" />
-        </dl>
-      </header>
+        </div>
+        <button className="ds-btn" onClick={() => {
+          setBriefOpen((o) => !o)
+          if (!brief) getBriefing().then(setBrief).catch(() => {})
+        }}>
+          Daily briefing {briefOpen ? '↑' : '↓'}
+        </button>
+      </div>
 
       {/* ── briefing, folded away until asked for ── */}
       {briefOpen && (
-        <section className="hair-b py-5">
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold text-slate-100">Last 24 hours</h2>
-              <p className="mt-0.5 text-xs text-slate-500">
-                What was caught, and what is still waiting for someone.
-              </p>
-            </div>
-            <button
+        <Panel className="ds-panel-pad">
+          <SectionHeading
+            label="Last 24 hours" title="What was caught, and what is still waiting"
+            action={<button className="ds-btn ds-btn-quiet"
               onClick={() => sendBriefing()
                 .then(() => setBrief((b) => ({ ...(b || {}), sent: true })))
-                .catch((e) => setError(e?.response?.data?.detail ?? 'Send failed.'))}
-              className="text-xs text-accent-400 transition-colors hover:text-accent-300"
-            >
+                .catch((e) => setError(e?.response?.data?.detail ?? 'Send failed.'))}>
               Email it →
-            </button>
-          </div>
-          {brief?.sent && <p className="mt-3 text-xs text-risk-low">Briefing sent.</p>}
-          <pre className="numeric mt-4 max-h-64 overflow-auto whitespace-pre-wrap text-[11px] leading-relaxed text-slate-400">
+            </button>}
+          />
+          {brief?.sent && (
+            <div style={{ fontSize: 10, color: 'rgb(var(--ds-accent-strong))', marginBottom: 8 }}>
+              Briefing sent.
+            </div>
+          )}
+          <pre className="ds-mono ds-scroll" style={{ maxHeight: 240, overflow: 'auto',
+                whiteSpace: 'pre-wrap', fontSize: 10, lineHeight: 1.6, margin: 0,
+                color: 'rgb(var(--ds-muted))' }}>
             {brief?.text ?? 'Loading…'}
           </pre>
-        </section>
+        </Panel>
       )}
 
-      {error && <div className="mt-6"><Alert tone="error">{error}</Alert></div>}
+      {error && (
+        <div style={{ background: 'rgb(var(--ds-signal-soft))', color: 'rgb(var(--ds-signal))',
+                      borderRadius: 6, padding: 11, fontSize: 11 }}>{error}</div>
+      )}
 
       {/* ═══ list · preview ══════════════════════════════════════════ */}
-      <div className="mt-7 grid gap-8 lg:grid-cols-[24rem_minmax(0,1fr)]">
+      <div style={{ display: 'grid', gap: 12,
+                    gridTemplateColumns: 'minmax(0, 24rem) minmax(0, 1fr)' }}>
 
         {/* ── the queue itself ── */}
-        <div className="min-w-0 lg:hair-r lg:pr-7">
-          <div className="hair-b flex flex-wrap items-center gap-x-4 gap-y-1 pb-2.5">
-            {FILTERS.map(([f, label]) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={cx(
-                  'text-xs transition-colors',
-                  filter === f ? 'font-semibold text-slate-100' : 'text-slate-500 hover:text-slate-300',
-                )}
-              >
-                {label}
-              </button>
-            ))}
+        <Panel style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '17px 17px 0' }}>
+            <SectionHeading label="Queue" title={`${cases.length} in view`}
+              action={<span className="ds-mono" style={{ fontSize: 10,
+                      color: 'rgb(var(--ds-muted))' }}>newest first</span>} />
           </div>
-
+          <div style={{ padding: '0 10px 12px' }}>
           {cases.length === 0 ? (
             <p className="py-10 text-center text-sm text-slate-500">
               {filter === 'open' ? 'No cases are waiting for review.' : 'No cases with that status.'}
@@ -286,14 +260,16 @@ function CaseQueue() {
             </div>
           )}
 
-          <p className="mt-4 text-[10px] leading-relaxed text-slate-600">
+          </div>
+          <div style={{ padding: '11px 17px 15px', borderTop: '1px solid rgb(var(--ds-line))',
+                        fontSize: 9, color: 'rgb(var(--ds-faint))', lineHeight: 1.7 }}>
             <Key>j</Key><Key>k</Key> move · <Key>f</Key> confirm fraud ·{' '}
             <Key>d</Key> false positive · <Key>i</Key> investigating · <Key>↵</Key> open in full
-          </p>
-        </div>
+          </div>
+        </Panel>
 
         {/* ── the case under the cursor ── */}
-        <div className="min-w-0">
+        <Panel className="ds-panel-pad" style={{ minWidth: 0 }}>
           {selected
             ? <Preview key={selected.case_ref} c={selected} busy={busy} onDecide={decide} />
             : (
@@ -306,8 +282,10 @@ function CaseQueue() {
                 </div>
               </div>
             )}
-        </div>
+        </Panel>
       </div>
+
+      <Footer left="Decisions here feed the retraining set, so they are attributed." />
     </div>
   )
 }
@@ -743,7 +721,8 @@ function Verdict({ onClick, disabled, k, primary, block, children }) {
 
 function Key({ children }) {
   return (
-    <kbd className="numeric mx-0.5 rounded bg-surface-overlay px-1 py-0.5 text-[10px] text-slate-400">
+    <kbd className="ds-mono" style={{ margin: '0 2px', borderRadius: 3, padding: '1px 4px',
+          background: 'rgb(var(--ds-surface-3))', color: 'rgb(var(--ds-muted))', fontSize: 9 }}>
       {children}
     </kbd>
   )
