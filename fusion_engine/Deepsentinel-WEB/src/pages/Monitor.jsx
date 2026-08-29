@@ -226,7 +226,7 @@ export default function Monitor() {
           </span>
         </div>
         <div className="mt-5">
-          <PipelineLive stages={snap?.stages} escalating={escalating} />
+          <PipelineLive stages={snap?.stages} escalating={escalating} counters={c} />
         </div>
       </section>
 
