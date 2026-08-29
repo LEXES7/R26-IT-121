@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { simulateThresholds } from '../services/api'
+import {
+  applyThresholds, getThresholds, resetThresholds, simulateThresholds,
+} from '../services/api'
 import { usePackage } from '../hooks/usePackage'
 import Locked from '../components/Locked'
 import { Alert, cx } from '../components/ui'
@@ -42,11 +44,19 @@ export default function Thresholds() {
   // questions: the detectors disagree, and their scores are not on a shared
   // scale, so a single number cannot stand in for all four.
   const [selected, setSelected] = useState('fused')
+  // The line the monitor is actually alerting on right now, as distinct from
+  // the line being explored on this page.
+  const [live, setLive] = useState(null)
+  const [saving, setSaving] = useState(false)
   const [lines, setLines] = useState({
     fused: 0.5, graph: 0.5, behavioural: 0.5, temporal: 0.5,
   })
   const t = lines[selected] ?? 0.5
   const setT = (v) => setLines((p) => ({ ...p, [selected]: v }))
+
+  useEffect(() => {
+    getThresholds().then(setLive).catch(() => {})
+  }, [])
 
   useEffect(() => {
     simulateThresholds()
@@ -263,6 +273,59 @@ export default function Thresholds() {
                   <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
                     Everything scored at or above this raises an alert.
                   </p>
+
+                  {/* The fused line is settable: the monitor reads it and
+                      alerts on it. Per-detector lines belong to the services
+                      that own them, so those stay simulated. */}
+                  {selected === 'fused' && live && (
+                    <div style={{ marginTop: 14, paddingTop: 13,
+                                  borderTop: '1px solid rgb(var(--ds-line))' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between',
+                                    fontSize: 10, marginBottom: 4 }}>
+                        <span style={{ color: 'rgb(var(--ds-muted))' }}>Monitor is using</span>
+                        <span className="ds-mono">
+                          {Number(live.bands?.critical ?? 0).toFixed(2)}
+                          <span style={{ color: 'rgb(var(--ds-faint))' }}> critical</span>
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 9, color: 'rgb(var(--ds-faint))',
+                                    marginBottom: 11 }}>
+                        {live.source === 'operator'
+                          ? 'set here previously'
+                          : "the relational model's own calibration"}
+                      </div>
+                      <div style={{ display: 'flex', gap: 7 }}>
+                        <button className="ds-btn ds-btn-primary" disabled={saving}
+                          onClick={async () => {
+                            setSaving(true)
+                            try {
+                              // One slider, three bands: high and medium keep
+                              // their spacing below the chosen critical line so
+                              // the ladder stays ordered.
+                              setLive(await applyThresholds({
+                                critical: Number(t.toFixed(3)),
+                                high: Number((t * 0.46).toFixed(3)),
+                                medium: Number((t * 0.23).toFixed(3)),
+                              }))
+                            } catch (e) {
+                              setError(e?.response?.data?.detail ?? 'Could not apply.')
+                            } finally { setSaving(false) }
+                          }}>
+                          {saving ? 'Applying…' : 'Alert on this line'}
+                        </button>
+                        {live.source === 'operator' && (
+                          <button className="ds-btn ds-btn-quiet" disabled={saving}
+                            onClick={async () => {
+                              setSaving(true)
+                              try { setLive(await resetThresholds()) }
+                              finally { setSaving(false) }
+                            }}>
+                            Reset
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </Panel>
 
                 {data?.best && (

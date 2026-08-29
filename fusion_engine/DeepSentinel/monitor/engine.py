@@ -421,7 +421,12 @@ class MonitorEngine:
         return None, None
 
     def _severity(self, fused: float) -> str:
-        b = self._bands
+        # An operator-set line wins over the model's own calibration: someone
+        # looked at the replay and decided. Falls back to the model's bands,
+        # then to the built-in defaults.
+        from backend import thresholds
+
+        b = thresholds.current() or self._bands
         if fused >= float(b.get("critical", 0.39)):
             return "CRITICAL"
         if fused >= float(b.get("high", 0.18)):

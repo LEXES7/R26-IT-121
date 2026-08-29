@@ -1417,6 +1417,48 @@ async def review_case(
     return _case_row(row)
 
 
+# ── The operating point ──────────────────────────────────────────────────────
+
+
+@app.get("/settings/thresholds", tags=["settings"])
+async def get_thresholds(user: User = Depends(get_current_user)):
+    """The fused operating point, and where it came from."""
+    from backend import thresholds
+
+    chosen = thresholds.current()
+    return {
+        "bands": chosen or thresholds.DEFAULT_BANDS,
+        "source": "operator" if chosen else "model",
+        "editable": ["critical", "high", "medium"],
+        "note": ("Set here, the monitor alerts on this line. Cleared, it uses the "
+                 "relational model's own calibrated bands."),
+    }
+
+
+@app.put("/settings/thresholds", tags=["settings"])
+async def set_thresholds(body: dict, user: User = Depends(require_admin)):
+    """Move the line the monitor actually alerts on. Admin only, and audited."""
+    from backend import thresholds
+    from backend.auth import audit
+
+    previous = thresholds.current() or thresholds.DEFAULT_BANDS
+    bands = thresholds.set_bands(body.get("bands") or body, actor=user.username)
+    await audit("thresholds.set", actor=user.username, target="fused",
+                detail=f"{previous} -> {bands}")
+    return {"bands": bands, "source": "operator"}
+
+
+@app.delete("/settings/thresholds", tags=["settings"])
+async def clear_thresholds(user: User = Depends(require_admin)):
+    """Hand the operating point back to the model's calibration."""
+    from backend import thresholds
+    from backend.auth import audit
+
+    thresholds.clear(actor=user.username)
+    await audit("thresholds.cleared", actor=user.username, target="fused")
+    return {"bands": thresholds.DEFAULT_BANDS, "source": "model"}
+
+
 # ── One detector, on its own ─────────────────────────────────────────────────
 # The platform's whole argument is that three models see different things and
 # fusion reconciles them — which means the fused number is the only thing most
