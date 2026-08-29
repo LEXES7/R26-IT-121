@@ -28,10 +28,10 @@ import { Badge, Footer, Metric, Panel, SectionHeading } from '../components/Cons
  */
 
 const SEV = {
-  CRITICAL: { hex: '#ef4444', label: 'Critical', rank: 4 },
-  HIGH:     { hex: '#f97316', label: 'High',     rank: 3 },
-  MEDIUM:   { hex: '#eab308', label: 'Medium',   rank: 2 },
-  LOW:      { hex: '#22c55e', label: 'Low',      rank: 1 },
+  CRITICAL: { hex: 'rgb(var(--ds-sev-critical))', label: 'Critical', rank: 4 },
+  HIGH:     { hex: 'rgb(var(--ds-sev-high))', label: 'High',     rank: 3 },
+  MEDIUM:   { hex: 'rgb(var(--ds-sev-medium))', label: 'Medium',   rank: 2 },
+  LOW:      { hex: 'rgb(var(--ds-sev-low))', label: 'Low',      rank: 1 },
 }
 const ORDER = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
 
@@ -234,10 +234,13 @@ function CaseQueue() {
                   )}
                 >
                   <span className="h-7 w-[3px] shrink-0 rounded-full"
-                        style={{ background: SEV[c.classification]?.hex ?? '#64748b' }} />
+                        style={{ background: SEV[c.classification]?.hex ?? 'rgb(var(--ds-faint))' }} />
+                  {/* The selected row used a fixed near-white ink, which is
+                      invisible on the light theme's paper ground. */}
                   <span className="numeric w-12 shrink-0 text-sm"
-                        style={{ color: i === cursor ? '#f0ede7' : undefined }}>
-                    <span className={i === cursor ? '' : 'text-slate-300'}>{score(c.fused_score)}</span>
+                        style={{ color: i === cursor
+                          ? 'rgb(var(--ds-ink))' : 'rgb(var(--ds-muted))' }}>
+                    {score(c.fused_score)}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-xs text-slate-400">
@@ -294,7 +297,7 @@ function CaseQueue() {
 
 function Preview({ c, busy, onDecide }) {
   const navigate = useNavigate()
-  const sev = SEV[c.classification] ?? { hex: '#64748b', label: c.classification }
+  const sev = SEV[c.classification] ?? { hex: 'rgb(var(--ds-faint))', label: c.classification }
 
   return (
     <div>
@@ -431,7 +434,7 @@ function CaseDetail({ caseRef }) {
   if (error) return <div className="mx-auto max-w-3xl px-5 py-10"><Alert tone="error">{error}</Alert></div>
   if (!c) return <div className="mx-auto max-w-3xl px-5 py-10 text-sm text-slate-500">Loading…</div>
 
-  const sev = SEV[c.classification] ?? { hex: '#64748b', label: c.classification }
+  const sev = SEV[c.classification] ?? { hex: 'rgb(var(--ds-faint))', label: c.classification }
   const nodes = c.graph_evidence?.nodes?.length ?? 0
 
   return (

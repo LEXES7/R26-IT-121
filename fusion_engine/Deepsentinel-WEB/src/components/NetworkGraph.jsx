@@ -40,21 +40,23 @@ import { cx } from './ui'
 // hold bare RGB channels for Tailwind's `rgb(var(x) / a)` syntax — so neither
 // can be passed to SVG as `var(--x)`. These mirror the config exactly; if the
 // palette changes there, change it here too.
+// Roles sit on the same measured scale as severity, so a red node here and a
+// Critical badge elsewhere mean the same thing and are the same colour.
 const ROLE = {
-  SINK:          { fill: '#ef4444', label: 'Sink',          r: 21 },
-  MULE_CENTRAL:  { fill: '#ef4444', label: 'Central mule',  r: 21 },
-  MULE:          { fill: '#f97316', label: 'Mule',          r: 15 },
-  FRESH_SENDER:  { fill: '#eab308', label: 'Fresh sender',  r: 12 },
-  SENDER:        { fill: '#0f9b8e', label: 'Sender',        r: 12 },
-  INTERMEDIARY:  { fill: '#c2740a', label: 'Intermediary',  r: 14 },
-  LEGITIMATE:    { fill: '#6c655d', label: 'Not implicated', r: 11 },
+  SINK:          { fill: 'rgb(var(--ds-sev-critical))', label: 'Sink',          r: 21 },
+  MULE_CENTRAL:  { fill: 'rgb(var(--ds-sev-critical))', label: 'Central mule',  r: 21 },
+  MULE:          { fill: 'rgb(var(--ds-sev-high))',     label: 'Mule',          r: 15 },
+  INTERMEDIARY:  { fill: 'rgb(var(--ds-sev-medium))',   label: 'Intermediary',  r: 14 },
+  FRESH_SENDER:  { fill: 'rgb(var(--ds-warn))',         label: 'Fresh sender',  r: 12 },
+  SENDER:        { fill: 'rgb(var(--ds-sev-low))',      label: 'Sender',        r: 12 },
+  LEGITIMATE:    { fill: 'rgb(var(--ds-faint))',        label: 'Not implicated', r: 11 },
 }
-const FALLBACK = { fill: '#0f9b8e', label: 'Account', r: 12 }
+const FALLBACK = { fill: 'rgb(var(--ds-sev-low))', label: 'Account', r: 12 }
 const role = (n) => ROLE[n?.role] ?? FALLBACK
 
-const HAIR = 'rgb(148 163 184 / 0.22)'
-const LABEL = 'rgb(148 163 184)'
-const TRIGGER = '#2dd4bf'
+const HAIR = 'rgb(var(--ds-line))'
+const LABEL = 'rgb(var(--ds-muted))'
+const TRIGGER = 'rgb(var(--ds-accent-strong))'
 
 const money = (n) =>
   typeof n === 'number'
@@ -363,9 +365,9 @@ export default function NetworkGraph({ evidence, height = 420 }) {
                 opacity that reads as depth against near-black, the same wash
                 is a pink stain on paper. */}
             <radialGradient id="ng-vignette">
-              <stop offset="55%" stopColor="#ef4444"
+              <stop offset="55%" stopColor="rgb(var(--ds-sev-critical))"
                     stopOpacity={light ? 0.015 : 0.07} />
-              <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+              <stop offset="100%" stopColor="rgb(var(--ds-sev-critical))" stopOpacity="0" />
             </radialGradient>
             {edges.map((e, i) => {
               const a = pos[e.src]
@@ -515,7 +517,7 @@ export default function NetworkGraph({ evidence, height = 420 }) {
                 <circle
                   r={r} fill={rl.fill}
                   fillOpacity={isCentre ? 0.92 : 0.8}
-                  stroke={focused ? TRIGGER : 'rgb(13 12 11 / 0.55)'}
+                  stroke={focused ? TRIGGER : 'rgb(var(--ds-surface))'}
                   strokeWidth={focused ? 2.5 : 1.5}
                 />
 

@@ -29,9 +29,9 @@ import { Badge, Footer, Metric, Panel, Progress, SectionHeading } from '../compo
 
 const pct = (v) => (typeof v === 'number' ? `${(v * 100).toFixed(1)}%` : '—')
 const HUE = {
-  real: '#22c55e',      // caught, and it was fraud
-  false: '#eab308',     // caught, and it was not
-  missed: '#ef4444',    // not caught, and it was fraud
+  real: 'rgb(var(--ds-sev-low))',        // caught, and it was fraud
+  false: 'rgb(var(--ds-sev-high))',      // caught, and it was not
+  missed: 'rgb(var(--ds-sev-critical))', // not caught, and it was fraud
 }
 
 export default function Thresholds() {
@@ -267,9 +267,9 @@ function Curve({ curve, point, maxAlerts, hasLabels, onPick }) {
                       boundary and not a colour change. */}
                   <div style={{ height: `${Math.max(0, h - realPart)}%`,
                                 marginBottom: p.true_positives && p.false_positives ? 2 : 0,
-                                background: active ? HUE.false : 'rgb(234 179 8 / 0.5)' }} />
+                                background: active ? HUE.false : 'rgb(var(--ds-sev-high) / 0.5)' }} />
                   <div style={{ height: `${realPart}%`,
-                                background: active ? HUE.real : 'rgb(34 197 94 / 0.5)' }} />
+                                background: active ? HUE.real : 'rgb(var(--ds-sev-low) / 0.5)' }} />
                 </>
               ) : (
                 <div className={cx('rounded-t-sm', active ? 'bg-accent-400' : 'bg-modality-graph/45')}

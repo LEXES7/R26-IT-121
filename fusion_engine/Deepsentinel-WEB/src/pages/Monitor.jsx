@@ -22,7 +22,7 @@ import RuntimePanel from '../components/RuntimePanel'
  */
 
 const SEV_HEX = {
-  CRITICAL: '#ef4444', HIGH: '#f97316', MEDIUM: '#eab308', LOW: '#22c55e',
+  CRITICAL: 'rgb(var(--ds-sev-critical))', HIGH: 'rgb(var(--ds-sev-high))', MEDIUM: 'rgb(var(--ds-sev-medium))', LOW: 'rgb(var(--ds-sev-low))',
 }
 
 // Scores arrive already rounded by the server, so 0.9 and 0.8985 sit in the
@@ -253,7 +253,7 @@ export default function Monitor() {
                   <div key={a.transaction_id + a.at}
                        className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3">
                     <span className="h-7 w-[3px] shrink-0 rounded-full"
-                          style={{ background: SEV_HEX[a.severity] ?? '#64748b' }} />
+                          style={{ background: SEV_HEX[a.severity] ?? 'rgb(var(--ds-faint))' }} />
                     <span className="numeric w-14 shrink-0 text-sm text-slate-100">
                       {score3(a.fused_score)}
                     </span>
