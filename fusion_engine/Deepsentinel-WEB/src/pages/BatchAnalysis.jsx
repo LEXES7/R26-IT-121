@@ -204,6 +204,44 @@ export default function BatchAnalysis() {
     return a
   }, { alerted: 0, fraud: 0, caught: 0, missed: 0, falseAlarm: 0 })
 
+  /* What each component contributed, measured on this file.
+     The batch already returns every detector's own score per row, so each
+     model can be scored on its own against the same labels and compared with
+     the fused verdict. That is the difference between "the platform got 74%"
+     and "here is what my model did, and here is what fusion added on top". */
+  const ALERT_AT = 0.6
+  const perModel = useMemo(() => {
+    const labelled = rows.filter((r) => r.label === 0 || r.label === 1)
+    if (labelled.length === 0) return null
+    const score = (get) => {
+      let tp = 0, fp = 0, fn = 0, alerts = 0, scored = 0
+      labelled.forEach((r) => {
+        const v = get(r)
+        if (v === null || v === undefined) return
+        scored += 1
+        const flag = v >= ALERT_AT
+        if (flag) alerts += 1
+        if (flag && r.label === 1) tp += 1
+        else if (flag && r.label === 0) fp += 1
+        else if (!flag && r.label === 1) fn += 1
+      })
+      const precision = tp + fp ? tp / (tp + fp) : null
+      const recall = tp + fn ? tp / (tp + fn) : null
+      const f1 = precision && recall ? (2 * precision * recall) / (precision + recall) : null
+      return { alerts, precision, recall, f1, tp, fp, fn, scored }
+    }
+    return [
+      { key: 'graph', name: 'Edge-Enhanced GraphSAGE', owner: 'network',
+        ...score((r) => r.graph_score) },
+      { key: 'behavioural', name: 'Stratified VAE + DSAA', owner: 'behaviour',
+        ...score((r) => r.behavioral_score) },
+      { key: 'temporal', name: 'Transaction-Sequence TCN', owner: 'timing',
+        ...score((r) => r.temporal_score) },
+      { key: 'fused', name: 'Fusion engine', owner: 'all three, reconciled',
+        ...score((r) => r.score) },
+    ]
+  }, [rows])
+
   const progressPct = meta?.rows ? Math.round((rows.length / meta.rows) * 100) : 0
 
   const visible = useMemo(() => {
@@ -564,22 +602,118 @@ export default function BatchAnalysis() {
         </Panel>
       )}
 
+      {/* ── What each component contributed ── */}
+      {perModel && !scoring && (
+        <Panel className="ds-panel-pad">
+          <SectionHeading
+            label={`Each detector scored on its own · alert at ${ALERT_AT}`}
+            title="What each part of the system contributed"
+            action={<span className="ds-mono" style={{ fontSize: 10,
+                    color: 'rgb(var(--ds-muted))' }}>this file only</span>}
+          />
+          <div style={{ overflowX: 'auto' }}>
+            <table className="ds-table">
+              <thead>
+                <tr>
+                  <th>Component</th><th>Reads</th><th>Scored</th>
+                  <th>Alerts</th><th>Precision</th><th>Recall</th><th>F1</th>
+                </tr>
+              </thead>
+              <tbody>
+                {perModel.map((m) => (
+                  <tr key={m.key} style={{ background: m.key === 'fused'
+                        ? 'rgb(var(--ds-surface-2))' : undefined }}>
+                    <td style={{ fontWeight: m.key === 'fused' ? 600 : 400 }}>{m.name}</td>
+                    <td style={{ color: 'rgb(var(--ds-muted))' }}>{m.owner}</td>
+                    <td className="ds-mono">
+                      {m.scored ? m.scored : <span style={{ color: 'rgb(var(--ds-faint))' }}>
+                        did not answer</span>}
+                    </td>
+                    <td className="ds-mono">{m.scored ? m.alerts : '—'}</td>
+                    <td className="ds-mono">{pctOrDash(m.precision)}</td>
+                    <td className="ds-mono">{pctOrDash(m.recall)}</td>
+                    <td className="ds-mono" style={{ color: m.key === 'fused'
+                          ? 'rgb(var(--ds-accent-strong))' : undefined }}>
+                      {pctOrDash(m.f1)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p style={{ fontSize: 10, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
+                      marginTop: 12 }}>
+            {(() => {
+              const singles = perModel.filter((m) => m.key !== 'fused' && m.f1 !== null)
+              const fused = perModel.find((m) => m.key === 'fused')
+              if (!singles.length || !fused?.f1) {
+                return 'Not enough labelled rows answered by more than one detector to '
+                     + 'compare fusion against the individual models on this file.'
+              }
+              const best = singles.reduce((a, b) => (b.f1 > a.f1 ? b : a))
+              const delta = (fused.f1 - best.f1) * 100
+              return delta > 0.5
+                ? `Fusion beat the best single detector (${best.name}) by `
+                  + `${delta.toFixed(1)} F1 points on this file — which is the case for `
+                  + 'combining them rather than picking one.'
+                : delta < -0.5
+                  ? `On this file ${best.name} alone scored ${Math.abs(delta).toFixed(1)} F1 `
+                    + 'points higher than the fused verdict. Worth saying plainly rather '
+                    + 'than hiding: fusion is conservative when a detector is missing.'
+                  : `Fusion and the best single detector (${best.name}) are within half an `
+                    + 'F1 point on this file. Too few rows to separate them.'
+            })()}
+          </p>
+          <p style={{ fontSize: 9, lineHeight: 1.6, color: 'rgb(var(--ds-faint))',
+                      marginTop: 8 }}>
+            Each column is that detector's own raw score thresholded at {ALERT_AT},
+            against the labels in this file. A detector that never answered is
+            shown as such rather than scored at zero. These are figures for this
+            file, not a general accuracy claim.
+          </p>
+        </Panel>
+      )}
+
       {/* ── Narratives ── */}
       {narratives.length > 0 && (
-        <Panel className="ds-panel-pad">
-          <CardHeader
+        <Panel className="ds-panel-pad" data-print-region="forensic-report">
+          <SectionHeading
+            label="Retrieval-grounded, generated during this run"
             title="Forensic narratives"
-            description="Generated for the highest-scoring transactions only. Producing one per row would take seconds each."
+            action={
+              <span className="print:hidden" style={{ display: 'flex', gap: 8 }}>
+                <DsBadge tone="good">{narratives.length} generated</DsBadge>
+                <button className="ds-btn" onClick={() => window.print()}>Save as PDF</button>
+              </span>
+            }
           />
-          <div className="mt-4 space-y-3">
+          <p style={{ fontSize: 10, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
+                      marginBottom: 14 }}>
+            Written only for the highest-scoring rows — one per row would cost
+            seconds each. Each is constrained by Chain-of-Evidence prompting to
+            cite only the scores supplied and the one retrieved FATF typology,
+            so every figure below traces back to this run.
+          </p>
+          <div style={{ display: 'grid', gap: 12 }}>
             {narratives.map((n) => (
-              <div key={n.index} className="rounded-xl border border-subtle bg-surface p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs text-slate-500">row {n.index}</span>
-                  <Badge tone="critical">{(n.score * 100).toFixed(0)}%</Badge>
-                  <span className="text-xs text-slate-500">{n.typology}</span>
+              <div key={n.index} style={{ background: 'rgb(var(--ds-workspace))',
+                    borderRadius: 7, padding: 15 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10,
+                              alignItems: 'center', marginBottom: 10 }}>
+                  <span className="ds-mono" style={{ fontSize: 10,
+                        color: 'rgb(var(--ds-muted))' }}>row {n.index}</span>
+                  <span className="ds-mono" style={{ fontSize: 13,
+                        color: 'rgb(var(--ds-sev-critical))' }}>
+                    {n.score.toFixed(3)}
+                  </span>
+                  {n.typology && <DsBadge tone="warn">{n.typology}</DsBadge>}
+                  <span style={{ fontSize: 9, color: 'rgb(var(--ds-faint))',
+                                 marginLeft: 'auto' }}>
+                    cited, not invented
+                  </span>
                 </div>
-                <p className="mt-2.5 text-sm leading-relaxed text-slate-300">{n.report}</p>
+                <p style={{ fontSize: 11, lineHeight: 1.7, whiteSpace: 'pre-wrap',
+                            margin: 0 }}>{n.report}</p>
               </div>
             ))}
           </div>
@@ -805,4 +939,9 @@ function Stat({ label, value, tone }) {
       <p className="mt-0.5 text-xs capitalize text-slate-500">{label}</p>
     </div>
   )
+}
+
+/** A percentage, or an em dash when the figure could not be computed. */
+function pctOrDash(v) {
+  return typeof v === 'number' ? `${(v * 100).toFixed(1)}%` : '—'
 }
