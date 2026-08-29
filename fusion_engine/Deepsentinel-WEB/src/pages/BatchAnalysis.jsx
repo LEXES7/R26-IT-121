@@ -451,34 +451,89 @@ export default function BatchAnalysis() {
           )}
         </div>
 
-        <details className="mt-5">
-          <summary className="cursor-pointer text-xs text-slate-500 hover:text-slate-300">
-            Required columns
-          </summary>
-          <div className="mt-2.5 rounded-lg border border-subtle bg-surface p-3">
-            <p className="text-xs leading-relaxed text-slate-500">
-              <span className="text-slate-400">Required:</span>{' '}
-              <code className="font-mono text-[11px]">
-                step, type, amount, nameOrig, nameDest
-              </code>
-            </p>
-            <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
-              <span className="text-slate-400">Recommended:</span>{' '}
-              <code className="font-mono text-[11px]">
-                oldbalanceOrg, newbalanceOrig, oldbalanceDest, newbalanceDest
-              </code>
-            </p>
-            <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
-              <span className="text-slate-400">Optional:</span>{' '}
-              <code className="font-mono text-[11px]">isFraud</code> — read as
-              ground truth to score detection. It is never given to the models.
-            </p>
-            <p className="mt-2 text-[11px] text-slate-600">
-              Header names are matched case-insensitively, so name_orig and
-              nameOrig both work.
-            </p>
+        {/* The checks, stated up front rather than only when one trips. A
+            reviewer should be able to read what the file will be held to
+            before choosing one — and it makes the rules auditable, which
+            "we validate the input" on a slide does not. */}
+        <div style={{ marginTop: 18 }}>
+          <div className="ds-divider" style={{ marginBottom: 14 }} />
+          <SectionHeading
+            label="Applied in the browser the moment a file is chosen"
+            title="What every file is checked against"
+            action={<span className="ds-mono" style={{ fontSize: 9,
+                    color: 'rgb(var(--ds-faint))' }}>
+              mirrors backend/batch.py
+            </span>}
+          />
+
+          <div style={{ display: 'grid', gap: 14,
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
+            <div>
+              <div className="ds-section-label" style={{ color: 'rgb(var(--ds-signal))',
+                    marginBottom: 8 }}>
+                Blocking — the run is prevented
+              </div>
+              <ul style={{ margin: 0, padding: 0, listStyle: 'none',
+                           display: 'grid', gap: 7 }}>
+                {[
+                  ['Required columns present',
+                   'step, type, amount, nameOrig, nameDest'],
+                  ['No empty required values',
+                   'a transaction with no amount or counterparty cannot be scored, and imputing one would invent evidence'],
+                  ['Numeric columns are numeric',
+                   'amount and the four balance columns must parse as numbers'],
+                  ['Known transaction type',
+                   'TRANSFER, CASH_OUT, CASH_IN, PAYMENT, DEBIT — the behavioural model is trained per type'],
+                  ['Rows match the header',
+                   'one stray comma shifts every value after it'],
+                  ['At most 5,000 rows', 'larger files are split into batches'],
+                ].map(([t, d]) => (
+                  <li key={t} style={{ fontSize: 10, lineHeight: 1.55 }}>
+                    <span style={{ color: 'rgb(var(--ds-signal))', marginRight: 6 }}>✗</span>
+                    <span style={{ fontWeight: 600 }}>{t}</span>
+                    <div style={{ color: 'rgb(var(--ds-muted))', marginLeft: 16 }}>{d}</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <div className="ds-section-label" style={{ color: 'rgb(var(--ds-warn))',
+                    marginBottom: 8 }}>
+                Advisory — it runs, and says so
+              </div>
+              <ul style={{ margin: 0, padding: 0, listStyle: 'none',
+                           display: 'grid', gap: 7 }}>
+                {[
+                  ['isFraud column present',
+                   'without it alert volume can be measured but accuracy cannot'],
+                  ['Labels are readable',
+                   '0/1 or true/false; anything else is ignored when scoring'],
+                  ['At least one positive label',
+                   'with none, recall cannot exist — there is nothing to recall'],
+                  ['No negative amounts',
+                   'usually a reversal or an export artefact'],
+                  ['No duplicate transaction ids',
+                   'repeats are each scored separately'],
+                ].map(([t, d]) => (
+                  <li key={t} style={{ fontSize: 10, lineHeight: 1.55 }}>
+                    <span style={{ color: 'rgb(var(--ds-warn))', marginRight: 6 }}>!</span>
+                    <span style={{ fontWeight: 600 }}>{t}</span>
+                    <div style={{ color: 'rgb(var(--ds-muted))', marginLeft: 16 }}>{d}</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-        </details>
+
+          <p style={{ fontSize: 9, lineHeight: 1.6, color: 'rgb(var(--ds-faint))',
+                      marginTop: 14 }}>
+            Header names are matched case-insensitively, so name_orig and nameOrig
+            both work. Findings name the offending row numbers. This check is for
+            speed, not security — the server validates the upload independently
+            and applies the same rules.
+          </p>
+        </div>
       </Panel>
 
       {/* ── Progress ── */}
