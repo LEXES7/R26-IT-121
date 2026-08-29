@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  getMonitorRuntime, getMonitorState, listCases, startMonitor,
+  getMonitorRuntime, getMonitorState, listCases, startMonitor, reviewCase
 } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import NetworkGraph from '../components/NetworkGraph'
@@ -84,6 +84,7 @@ export default function Dashboard() {
   const [cases, setCases] = useState([])
   const [openCount, setOpenCount] = useState(null)
   const [starting, setStarting] = useState(false)
+  const [deciding, setDeciding] = useState(null)
 
   const refresh = useCallback(async () => {
     const [s, r, all, open] = await Promise.allSettled([
@@ -101,6 +102,34 @@ export default function Dashboard() {
     const t = setInterval(refresh, 5000)
     return () => clearInterval(t)
   }, [refresh])
+
+  // Only cases still open need a decision; the rest are history and belong on
+  // the Cases page, not on a surface whose whole job is "what needs me".
+  const awaiting = useMemo(() => {
+    const rank = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 }
+    return cases
+      .filter((x) => (x.review_status ?? 'open') === 'open')
+      // Severity first, then score, then recency. Ordered by arrival alone the
+      // list opens on whatever came last — usually a run of 0.000 LOWs — and
+      // the cases that actually need a person sit below the fold.
+      .sort((a, b) =>
+        (rank[b.classification] ?? 0) - (rank[a.classification] ?? 0)
+        || (b.fused_score ?? 0) - (a.fused_score ?? 0)
+        || Date.parse(b.detected_at) - Date.parse(a.detected_at))
+  }, [cases])
+
+  const decide = useCallback(async (x, verdict) => {
+    setDeciding(x.case_ref)
+    try {
+      await reviewCase(x.case_ref, verdict)
+      // Drop it locally rather than refetching, so the row the analyst just
+      // judged disappears immediately instead of on the next 5s poll.
+      setCases((list) => list.filter((r) => r.case_ref !== x.case_ref))
+      setOpenCount((n) => (typeof n === 'number' ? Math.max(n - 1, 0) : n))
+    } finally {
+      setDeciding(null)
+    }
+  }, [])
 
   const c = state?.counters ?? {}
   const queue = state?.queue ?? {}
@@ -240,15 +269,19 @@ export default function Dashboard() {
             labels — screened, escalated, alerts — are the pipeline's vocabulary,
             not the reader's, and none of them said which number mattered. */}
         <dl className="mt-7 grid grid-cols-2 gap-y-6 sm:grid-cols-3 lg:grid-cols-6">
-          <Figure value={openCount} label="Waiting for you" note="cases to review"
+          {/* `still`: the headline states this same number, and easing it up
+              from zero left the two disagreeing on screen — 139 above, 121
+              below — which reads as a bug even though both are right. */}
+          <Figure value={openCount} label="Waiting for you" note="cases to review" still
                   urgent={Boolean(openCount)} onClick={() => navigate('/cases')} />
           <Figure value={c.alerts} label="Alerts sent" note="someone was emailed" accent />
           <Figure value={c.screened} label="Checked" note="transactions seen" />
           <Figure value={c.escalated} label="Looked at closely" note="worth a second look" />
           <Figure value={queue.available ? queue.pending : null} label="Still to check"
                   note="waiting in the queue" />
-          <Figure value={liveCount} suffix="/3" label="Models online"
-                  note={liveCount < 3 ? 'one is not running' : 'all running'}
+          <Figure value={liveCount} suffix="/3" label="Models online" still
+                  note={liveCount === 3 ? 'all running'
+                    : `${3 - liveCount} not running`}
                   urgent={liveCount < 3} />
         </dl>
       </header>
@@ -284,7 +317,10 @@ export default function Dashboard() {
             </section>
           )}
 
-          <section>
+          {/* Collapsed when there is nothing in the window: an empty chart the
+              height of a real one reads as a loading failure, and it pushes
+              the case list below the fold for no information. */}
+          <section className={cx(activity.every((b) => b.total === 0) && 'hidden')}>
             <div className="hair-b flex items-baseline justify-between pb-2.5">
               <h2 className="text-sm font-semibold text-slate-100">What was caught, last 24 hours</h2>
               <span className="text-[11px] text-slate-500">
@@ -297,13 +333,16 @@ export default function Dashboard() {
 
           <section>
             <div className="hair-b flex items-baseline justify-between pb-2.5">
-              <h2 className="text-sm font-semibold text-slate-100">Latest flagged transactions</h2>
+              <h2 className="text-sm font-semibold text-slate-100">Waiting for a decision</h2>
+              <span className="ml-3 text-[11px] text-slate-600">most serious first</span>
               <Link to="/cases" className="text-xs text-accent-400 hover:text-accent-300">
                 All cases →
               </Link>
             </div>
-            {cases.length === 0 ? (
-              <p className="py-8 text-center text-sm text-slate-500">Nothing recorded yet.</p>
+            {awaiting.length === 0 ? (
+              <p className="py-8 text-center text-sm text-slate-500">
+                {cases.length ? 'Every recent case has been reviewed.' : 'Nothing recorded yet.'}
+              </p>
             ) : (
               <>
                 {/* The columns were unlabelled, so "0.885 · Critical · 2/3"
@@ -314,14 +353,18 @@ export default function Dashboard() {
                   <span className="w-20 shrink-0">how serious</span>
                   <span className="min-w-0 flex-1">pattern found</span>
                   <span className="hidden w-12 shrink-0 sm:block">models</span>
-                  <span className="w-16 shrink-0 text-right">when</span>
+                  <span className="w-14 shrink-0 text-right">when</span>
+                  <span className="w-24 shrink-0 text-right">decide</span>
                 </div>
               <div className="rows">
-                {cases.slice(0, 9).map((x) => (
-                  <button
+                {awaiting.slice(0, 9).map((x) => (
+                  <div
                     key={x.case_ref}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => navigate(`/cases/${x.case_ref}`)}
-                    className="flex w-full items-center gap-4 py-2.5 text-left transition-colors hover:bg-surface-raised"
+                    onKeyDown={(e) => e.key === 'Enter' && navigate(`/cases/${x.case_ref}`)}
+                    className="group flex w-full cursor-pointer items-center gap-4 py-2.5 text-left transition-colors hover:bg-surface-raised"
                   >
                     <span className="h-6 w-[3px] shrink-0 rounded-full"
                           style={{ background: SEV[x.classification]?.hex ?? '#64748b' }} />
@@ -337,10 +380,22 @@ export default function Dashboard() {
                     <span className="numeric hidden w-12 shrink-0 text-[11px] text-slate-600 sm:block">
                       {x.modalities_used}/3
                     </span>
-                    <span className="w-16 shrink-0 text-right text-[11px] text-slate-600">
+                    <span className="w-14 shrink-0 text-right text-[11px] text-slate-600">
                       {since(x.detected_at)}
                     </span>
-                  </button>
+                    {/* Decide here. The page opens by saying N cases need
+                        review, then used to make you navigate away to act on
+                        any of them; the two commonest verdicts now happen in
+                        the row. Revealed on hover so the list stays a list. */}
+                    <span className="flex w-24 shrink-0 justify-end gap-1 opacity-45 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                      <Verdict busy={deciding === x.case_ref}
+                               onClick={() => decide(x, 'confirmed_fraud')}
+                               title="Confirm fraud">✓</Verdict>
+                      <Verdict busy={deciding === x.case_ref}
+                               onClick={() => decide(x, 'false_positive')}
+                               title="False positive">✕</Verdict>
+                    </span>
+                  </div>
                 ))}
               </div>
               </>
@@ -447,8 +502,13 @@ export default function Dashboard() {
 
 /* ── pieces ──────────────────────────────────────────────────────── */
 
-function Figure({ value, label, note, suffix, accent, urgent, onClick }) {
-  const shown = useCountUp(typeof value === 'number' ? value : null)
+function Figure({ value, label, note, suffix, accent, urgent, onClick, still }) {
+  // `still` for anything that states system condition rather than volume.
+  // Easing "2" up from zero parks the figure on 1/3 for half a second, and
+  // 1-of-3-models-online is an alarm state — the dashboard was briefly
+  // reporting a fault that did not exist, every single load.
+  const eased = useCountUp(typeof value === 'number' && !still ? value : null)
+  const shown = still ? value : eased
   const Tag = onClick ? 'button' : 'div'
   return (
     <Tag onClick={onClick} className={cx('text-left', onClick && 'group')}>
@@ -513,5 +573,20 @@ function Rail({ title, note, children }) {
       </div>
       {children}
     </section>
+  )
+}
+
+/** A one-glyph verdict, sized for a dense row. */
+function Verdict({ onClick, busy, title, children }) {
+  return (
+    <button
+      title={title}
+      aria-label={title}
+      disabled={busy}
+      onClick={(e) => { e.stopPropagation(); onClick() }}
+      className="rounded px-1.5 py-0.5 text-[11px] text-slate-400 transition-colors hover:bg-surface-overlay hover:text-slate-100 disabled:opacity-40"
+    >
+      {children}
+    </button>
   )
 }
