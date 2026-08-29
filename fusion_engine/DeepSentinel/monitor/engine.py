@@ -226,6 +226,27 @@ class MonitorEngine:
 
         STATE.counters.screened += 1
 
+        # The sequence model is fed here, on every screened transaction, not
+        # inside the escalation branch with the others.
+        #
+        # It is not a per-transaction scorer: its answer depends on the window
+        # of transactions it has accumulated, and it was trained on a window of
+        # all traffic in arrival order. Calling it only on escalated
+        # transactions does not give it a smaller sample of the same thing — it
+        # gives it a different distribution, one where almost every entry is
+        # already suspicious, and the fraud-clustering signal it learned stops
+        # meaning what it meant in training. It also left the model warming up
+        # for the first 32 *escalations*, roughly twenty minutes of live
+        # traffic.
+        #
+        # The behavioural model has no such dependency — it reads one
+        # transaction against its own type — so it stays behind the gate.
+        STATE.set_stage("temporal", "active")
+        temporal_score, temporal_body = await self._call_upstream(
+            client, "temporal_api_base", "temporal_risk_score", payload
+        )
+        STATE.set_stage("temporal", "idle")
+
         if r.status_code == 404:
             STATE.publish("screened", {
                 "transaction_id": payload["transaction_id"], "outcome": "unknown_accounts",
@@ -260,12 +281,14 @@ class MonitorEngine:
             return
 
         await self._escalate(client, payload, result, sg,
-                             screening_ms=screening_ms, started=t0)
+                             screening_ms=screening_ms, started=t0,
+                             temporal=(temporal_score, temporal_body))
 
     # ── stage 2: escalate ────────────────────────────────────────────
     async def _escalate(self, client, payload: dict, graph_result: dict, sg: dict,
                         screening_ms: int | None = None,
-                        started: float | None = None) -> None:
+                        started: float | None = None,
+                        temporal: tuple | None = None) -> None:
         STATE.counters.escalated += 1
         txid = payload["transaction_id"]
         graph_score = float(graph_result.get("relational_risk_score") or 0.0)
@@ -287,9 +310,18 @@ class MonitorEngine:
         # opens the case for — dropping it here is why it never reached the
         # case record.
         bodies: dict[str, dict | None] = {}
+
+        # Already answered during screening; reuse it rather than calling
+        # again, which would push the same transaction into its window twice.
+        if temporal is not None:
+            scores["temporal"], bodies["temporal"] = temporal
+            STATE.publish("model", {
+                "transaction_id": txid, "model": "temporal",
+                "score": scores["temporal"],
+            })
+
         for name, key, base_key in (
             ("behavioural", "behavioral_risk_score", "behavioral_api_base"),
-            ("temporal", "temporal_risk_score", "temporal_api_base"),
         ):
             STATE.set_stage(name, "active")
             scores[name], bodies[name] = await self._call_upstream(
