@@ -11,6 +11,7 @@ import {
   SectionLabel,
   cx,
 } from '../components/ui'
+import { Footer, Panel } from '../components/ConsoleShell'
 
 /**
  * Batch analysis of an uploaded transaction file.
@@ -107,16 +108,12 @@ export default function BatchAnalysis() {
   }, [rows, filter])
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-10 sm:px-6">
-      <PageHeader
-        title="Batch analysis"
-        description="Upload a day's transactions as CSV or Excel. Every row is scored, and detection is measured against the file's own labels when it has them."
-      />
+        <div className="ds-fade-up" style={{ display: 'grid', gap: 15 }}>
 
       {error && <Alert tone="error" onDismiss={() => setError(null)}>{error}</Alert>}
 
       {/* ── Upload ── */}
-      <Card className="p-6">
+      <Panel className="ds-panel-pad">
         <div
           onDragOver={(e) => {
             e.preventDefault()
@@ -143,7 +140,6 @@ export default function BatchAnalysis() {
             className="hidden"
             onChange={(e) => pick(e.target.files?.[0])}
           />
-          <div className="text-3xl">{file ? '📄' : '📂'}</div>
           {file ? (
             <>
               <p className="mt-3 font-medium text-slate-200">{file.name}</p>
@@ -214,11 +210,11 @@ export default function BatchAnalysis() {
             </p>
           </div>
         </details>
-      </Card>
+      </Panel>
 
       {/* ── Progress ── */}
       {meta && (
-        <Card className="p-5">
+        <Panel className="ds-panel-pad">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-slate-200">{meta.filename}</p>
@@ -246,7 +242,7 @@ export default function BatchAnalysis() {
             {summary?.elapsed_ms != null &&
               ` · ${(summary.elapsed_ms / 1000).toFixed(1)}s`}
           </p>
-        </Card>
+        </Panel>
       )}
 
       {/* Model availability — shown prominently, because results computed with
@@ -279,7 +275,7 @@ export default function BatchAnalysis() {
       )}
 
       {summary?.unscored > 0 && summary.unscored === summary.analysed && (
-        <Card className="p-6">
+        <Panel className="ds-panel-pad">
           <CardHeader
             title="No results"
             description={`All ${summary.analysed.toLocaleString()} rows were read and validated successfully, but none could be scored because no model was reachable.`}
@@ -288,7 +284,7 @@ export default function BatchAnalysis() {
             The file parsed correctly, so nothing needs changing about it. Bring
             the model APIs up and upload it again.
           </p>
-        </Card>
+        </Panel>
       )}
 
       {/* ── Detection scorecard ── */}
@@ -297,7 +293,7 @@ export default function BatchAnalysis() {
       )}
 
       {summary && !summary.has_labels && summary.unscored !== summary.analysed && (
-        <Card className="p-5">
+        <Panel className="ds-panel-pad">
           <CardHeader
             title="Results"
             description="This file carried no isFraud column, so detection cannot be scored against ground truth."
@@ -309,12 +305,12 @@ export default function BatchAnalysis() {
               <Stat key={k} label={k.toLowerCase()} value={v} />
             ))}
           </div>
-        </Card>
+        </Panel>
       )}
 
       {/* ── Narratives ── */}
       {narratives.length > 0 && (
-        <Card className="p-6">
+        <Panel className="ds-panel-pad">
           <CardHeader
             title="Forensic narratives"
             description="Generated for the highest-scoring transactions only. Producing one per row would take seconds each."
@@ -331,12 +327,12 @@ export default function BatchAnalysis() {
               </div>
             ))}
           </div>
-        </Card>
+        </Panel>
       )}
 
       {/* ── Transactions ── */}
       {rows.length > 0 && (
-        <Card className="overflow-hidden">
+        <Panel style={{ overflow: 'hidden' }}>
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-subtle p-5">
             <SectionLabel>Transactions</SectionLabel>
             <div className="flex flex-wrap gap-1.5">
@@ -395,12 +391,12 @@ export default function BatchAnalysis() {
               </table>
             </div>
           )}
-        </Card>
+        </Panel>
       )}
 
       {!meta && !running && (
         <EmptyState
-          icon="📊"
+          icon="—"
           title="No file analysed yet"
           description="Upload a transaction file above to score it."
         />
@@ -470,7 +466,7 @@ function Scorecard({ metrics, summary }) {
   const pct = (v) => (v == null ? '—' : `${(v * 100).toFixed(1)}%`)
 
   return (
-    <Card className="p-6">
+    <Panel className="ds-panel-pad">
       <CardHeader
         title="Detection scorecard"
         description="Measured against the isFraud labels in the uploaded file."
@@ -513,7 +509,7 @@ function Scorecard({ metrics, summary }) {
         These figures describe this file only. They are not a general accuracy
         claim, which belongs to each model's held-out evaluation.
       </p>
-    </Card>
+    </Panel>
   )
 }
 
