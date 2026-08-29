@@ -82,67 +82,37 @@ export default function BatchAnalysis() {
     inspectFile(f)
   }
 
-  /* Read the header and a sample of rows locally. The same required columns
-     the server enforces, matched case-insensitively, so what the page reports
-     here is what the upload will actually accept. */
+  /* Validate the file in the browser, against the same rules the server
+     enforces, before anything is uploaded or any model is asked to score.
+
+     The rules are deliberately duplicated from backend/batch.py rather than
+     inferred: REQUIRED, VALID_TYPES and MAX_ROWS are the server's, so a file
+     this page accepts is one the upload will accept. If those change on the
+     server they must change here, and the mismatch shows up as a file that
+     passes here and fails there.
+
+     Findings are split into blocking and advisory. Blocking means the run
+     cannot produce a meaningful result; advisory means it can, with a caveat
+     worth stating out loud. */
   const inspectFile = (f) => {
     setInspecting(true)
     const reader = new FileReader()
     reader.onerror = () => {
       setInspecting(false)
-      setError('Could not read that file.')
+      setInspect({ fatal: 'The file could not be read.' })
     }
     reader.onload = () => {
       try {
-        const text = String(reader.result)
-        const lines = text.split(/\r?\n/).filter((l) => l.trim())
-        if (lines.length < 2) throw new Error('The file has no data rows.')
-        const delim = (lines[0].match(/\t/g) || []).length
-          > (lines[0].match(/,/g) || []).length ? '\t' : ','
-        const header = lines[0].split(delim).map((h) => h.trim().replace(/^"|"$/g, ''))
-        const key = header.map((h) => h.toLowerCase().replace(/[\s_]/g, ''))
-
-        const need = [
-          ['step', 'step'], ['type', 'type'], ['amount', 'amount'],
-          ['nameOrig', 'nameorig'], ['nameDest', 'namedest'],
-        ]
-        const mapped = need.map(([label, k]) => ({
-          label, found: header[key.indexOf(k)] ?? null,
-        }))
-        const labelCol = header[key.indexOf('isfraud')] ?? null
-
-        const body = lines.slice(1)
-        const preview = body.slice(0, 5).map((l) => {
-          const cells = l.split(delim).map((c) => c.trim().replace(/^"|"$/g, ''))
-          return Object.fromEntries(header.map((h, i) => [h, cells[i]]))
-        })
-        let labelled = 0
-        if (labelCol) {
-          const li = header.indexOf(labelCol)
-          body.forEach((l) => {
-            const v = (l.split(delim)[li] ?? '').trim()
-            if (v === '1' || v.toLowerCase() === 'true') labelled += 1
-          })
-        }
-
-        setInspect({
-          rows: body.length,
-          header,
-          mapped,
-          missing: mapped.filter((m) => !m.found).map((m) => m.label),
-          labelCol,
-          fraudLabelled: labelled,
-          preview,
-        })
+        setInspect(validateCsv(String(reader.result), f))
       } catch (e) {
-        setError(e.message ?? 'Could not read that file.')
+        setInspect({ fatal: e.message ?? 'The file could not be read.' })
       } finally {
         setInspecting(false)
       }
     }
-    // Only the head is needed to validate a schema; a large file should not be
-    // pulled into memory just to read its first six lines.
-    reader.readAsText(f.slice(0, 256 * 1024))
+    // 4 MB is well past a 5,000-row transaction file and keeps a mistakenly
+    // chosen large file from being pulled into memory whole.
+    reader.readAsText(f.slice(0, 4 * 1024 * 1024))
   }
 
   const start = useCallback(() => {
@@ -311,18 +281,31 @@ export default function BatchAnalysis() {
           </p>
         )}
 
-        {inspect && (
+        {inspect?.fatal && (
+          <div className="ds-fade-up" style={{ marginTop: 16, borderRadius: 6, padding: 13,
+                background: 'rgb(var(--ds-signal-soft))', color: 'rgb(var(--ds-signal))',
+                fontSize: 11, lineHeight: 1.6 }}>
+            <strong>This file cannot be read.</strong> {inspect.fatal}
+          </div>
+        )}
+
+        {inspect && !inspect.fatal && (
           <div className="ds-fade-up" style={{ marginTop: 16 }}>
             <div className="ds-divider" style={{ marginBottom: 15 }} />
             <SectionHeading
               label="Checked before anything is scored"
-              title={inspect.missing.length
+              title={inspect.blocked
                 ? 'This file cannot be scored yet'
-                : 'Ready for the pipeline'}
-              action={<DsBadge tone={inspect.missing.length ? 'alert' : 'good'}>
-                {inspect.missing.length
-                  ? `${inspect.missing.length} column${inspect.missing.length === 1 ? '' : 's'} missing`
-                  : 'schema ok'}
+                : inspect.findings.length
+                  ? 'Ready, with things worth knowing'
+                  : 'Ready for the pipeline'}
+              action={<DsBadge tone={inspect.blocked ? 'alert'
+                : inspect.findings.length ? 'warn' : 'good'}>
+                {inspect.blocked
+                  ? `${inspect.findings.filter((x) => x.level === 'block').length} blocking`
+                  : inspect.findings.length
+                    ? `${inspect.findings.length} to note`
+                    : 'all checks pass'}
               </DsBadge>}
             />
 
@@ -375,6 +358,39 @@ export default function BatchAnalysis() {
               </div>
             </div>
 
+            {inspect.findings.length > 0 && (
+              <div style={{ display: 'grid', gap: 8, marginBottom: 14 }}>
+                {inspect.findings.map((x, i) => {
+                  const bad = x.level === 'block'
+                  return (
+                    <div key={i} style={{ borderRadius: 6, padding: '10px 12px',
+                          borderLeft: `2px solid ${bad ? 'rgb(var(--ds-signal))'
+                            : 'rgb(var(--ds-warn))'}`,
+                          background: 'rgb(var(--ds-workspace))' }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                        <span className="ds-section-label" style={{
+                              color: bad ? 'rgb(var(--ds-signal))' : 'rgb(var(--ds-warn))' }}>
+                          {bad ? 'blocking' : 'advisory'}
+                        </span>
+                        <span style={{ fontSize: 11, fontWeight: 600 }}>{x.title}</span>
+                      </div>
+                      <div style={{ fontSize: 10, lineHeight: 1.6, marginTop: 5,
+                                    color: 'rgb(var(--ds-muted))' }}>
+                        {x.detail}
+                      </div>
+                      {x.rows?.length > 0 && (
+                        <div className="ds-mono" style={{ fontSize: 9, marginTop: 6,
+                              color: 'rgb(var(--ds-faint))' }}>
+                          row {x.rows.join(' · row ')}
+                          {x.rows.length >= 6 ? ' · …' : ''}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
             <p style={{ fontSize: 10, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
                         marginBottom: 14 }}>
               {inspect.missing.length
@@ -411,7 +427,7 @@ export default function BatchAnalysis() {
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <Button onClick={start}
-                  disabled={!file || scoring || !inspect || inspect.missing.length > 0}
+                  disabled={!file || scoring || !inspect || inspect.fatal || inspect.blocked}
                   loading={scoring}>
             {scoring ? 'Scoring…' : 'Run the pipeline'}
           </Button>
@@ -944,4 +960,170 @@ function Stat({ label, value, tone }) {
 /** A percentage, or an em dash when the figure could not be computed. */
 function pctOrDash(v) {
   return typeof v === 'number' ? `${(v * 100).toFixed(1)}%` : '—'
+}
+
+
+/* ── file validation ──────────────────────────────────────────────────────
+   Mirrors backend/batch.py. Kept in one function so the rules can be read in
+   one sitting and compared against the server's. */
+
+const REQUIRED = [
+  ['step', 'step'], ['type', 'type'], ['amount', 'amount'],
+  ['nameOrig', 'nameorig'], ['nameDest', 'namedest'],
+]
+const VALID_TYPES = ['TRANSFER', 'CASH_OUT', 'CASH_IN', 'PAYMENT', 'DEBIT']
+const MAX_ROWS = 5000
+const NUMERIC = ['amount', 'oldbalanceorg', 'newbalanceorig',
+                 'oldbalancedest', 'newbalancedest']
+
+function validateCsv(text, file) {
+  const findings = []
+  const block = (title, detail, rows) =>
+    findings.push({ level: 'block', title, detail, rows })
+  const warn = (title, detail, rows) =>
+    findings.push({ level: 'warn', title, detail, rows })
+
+  const lines = text.split(/\r?\n/).filter((l) => l.trim())
+  if (lines.length === 0) throw new Error('The file is empty.')
+  if (lines.length === 1) throw new Error('The file has a header but no data rows.')
+
+  // Tab or comma, whichever the header uses more of.
+  const delim = (lines[0].match(/\t/g) || []).length
+    > (lines[0].match(/,/g) || []).length ? '\t' : ','
+  const cut = (l) => l.split(delim).map((c) => c.trim().replace(/^"|"$/g, ''))
+
+  const header = cut(lines[0])
+  const key = header.map((h) => h.toLowerCase().replace(/[\s_]/g, ''))
+  if (header.length < 3 || key.every((k) => !k)) {
+    throw new Error('This does not look like a transaction file — no usable header row.')
+  }
+
+  const mapped = REQUIRED.map(([label, k]) => ({
+    label, k, idx: key.indexOf(k), found: header[key.indexOf(k)] ?? null,
+  }))
+  const missing = mapped.filter((m) => m.idx === -1)
+  if (missing.length) {
+    block('Required columns are missing',
+      `${missing.map((m) => m.label).join(', ')} — the models cannot score a `
+      + 'transaction without them.')
+  }
+
+  const labelIdx = key.indexOf('isfraud')
+  const body = lines.slice(1)
+
+  if (body.length > MAX_ROWS) {
+    block('Too many rows',
+      `${body.length.toLocaleString()} rows; the limit is ${MAX_ROWS.toLocaleString()}. `
+      + 'Split it into smaller batches.')
+  }
+
+  // ── row-level checks ──
+  const ragged = [], badType = [], badNum = [], blank = [], negative = [], dupes = []
+  const seen = new Set()
+  const typeIdx = key.indexOf('type')
+  const amtIdx = key.indexOf('amount')
+  const numIdx = NUMERIC.map((n) => [n, key.indexOf(n)]).filter(([, i]) => i !== -1)
+  const idIdx = key.indexOf('transactionid')
+
+  body.forEach((line, i) => {
+    const rowNo = i + 2                       // 1-indexed, header is row 1
+    const cells = cut(line)
+    if (cells.length !== header.length) { ragged.push(rowNo); return }
+
+    mapped.forEach((m) => {
+      if (m.idx !== -1 && !cells[m.idx]) blank.push(`${rowNo}:${m.label}`)
+    })
+    if (typeIdx !== -1) {
+      const t = (cells[typeIdx] || '').toUpperCase()
+      if (t && !VALID_TYPES.includes(t)) badType.push(`${rowNo}:${cells[typeIdx]}`)
+    }
+    numIdx.forEach(([name, idx]) => {
+      const raw = cells[idx]
+      if (raw === '' || raw === undefined) return
+      const v = Number(raw)
+      if (Number.isNaN(v)) badNum.push(`${rowNo}:${name}`)
+      else if (name === 'amount' && v < 0) negative.push(String(rowNo))
+    })
+    if (idIdx !== -1 && cells[idIdx]) {
+      if (seen.has(cells[idIdx])) dupes.push(String(rowNo))
+      else seen.add(cells[idIdx])
+    }
+  })
+
+  const some = (a, n = 6) => a.slice(0, n)
+
+  if (ragged.length) {
+    block('Rows do not match the header',
+      `${ragged.length} row(s) have a different number of cells than the header `
+      + `(${header.length}). An extra or missing comma shifts every value after it.`,
+      some(ragged))
+  }
+  if (blank.length) {
+    block('Required values are empty',
+      `${blank.length} required cell(s) are blank. A transaction with no amount or `
+      + 'no counterparty cannot be scored, and imputing one would invent evidence.',
+      some(blank))
+  }
+  if (badNum.length) {
+    block('Numeric columns contain text',
+      `${badNum.length} cell(s) could not be read as a number.`, some(badNum))
+  }
+  if (badType.length) {
+    block('Unrecognised transaction type',
+      `${badType.length} row(s) use a type outside ${VALID_TYPES.join(', ')}. `
+      + 'The behavioural model is trained per type and has no stratum for these.',
+      some(badType))
+  }
+  if (negative.length) {
+    warn('Negative amounts',
+      `${negative.length} row(s) have a negative amount. These will score, but a `
+      + 'negative transfer is usually a reversal or an export artefact.',
+      some(negative))
+  }
+  if (dupes.length) {
+    warn('Duplicate transaction ids',
+      `${dupes.length} row(s) repeat an id seen earlier. They will each be scored.`,
+      some(dupes))
+  }
+
+  // ── labels ──
+  let fraudLabelled = 0, badLabel = 0
+  if (labelIdx !== -1) {
+    body.forEach((l) => {
+      const v = (cut(l)[labelIdx] ?? '').trim().toLowerCase()
+      if (v === '1' || v === 'true') fraudLabelled += 1
+      else if (v !== '0' && v !== 'false' && v !== '') badLabel += 1
+    })
+    if (badLabel) {
+      warn('Unreadable labels',
+        `${badLabel} isFraud value(s) are neither 0/1 nor true/false and will be `
+        + 'ignored when scoring accuracy.')
+    }
+    if (fraudLabelled === 0) {
+      warn('No positive labels',
+        'Every row is labelled not-fraud, so recall cannot be computed — there is '
+        + 'nothing to recall.')
+    }
+  } else {
+    warn('No isFraud column',
+      'Alert volume can be measured but accuracy cannot. Add an isFraud column to '
+      + 'score detection against ground truth.')
+  }
+
+  const preview = body.slice(0, 5).map((l) => {
+    const cells = cut(l)
+    return Object.fromEntries(header.map((h, i) => [h, cells[i]]))
+  })
+
+  return {
+    rows: body.length,
+    header,
+    mapped: mapped.map((m) => ({ label: m.label, found: m.found })),
+    missing: missing.map((m) => m.label),
+    labelCol: labelIdx !== -1 ? header[labelIdx] : null,
+    fraudLabelled,
+    preview,
+    findings,
+    blocked: findings.some((x) => x.level === 'block'),
+  }
 }
