@@ -354,7 +354,7 @@ export default function Dashboard() {
 
         {/* ── ingestion ── */}
         <div style={{ display: 'grid', gap: 12,
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
           <Panel className="ds-panel-pad">
             <SectionHeading label="Ingestion" title="Incoming work"
               action={<Badge tone={queue.available ? 'good' : ''}>
@@ -392,20 +392,6 @@ export default function Dashboard() {
             <div style={{ fontSize: 10, color: 'rgb(var(--ds-muted))', marginTop: 8 }}>
               {state?.source === 'queue' ? 'Screening ingested traffic.'
                 : running ? 'Replaying sample transactions.' : 'Not screening.'}
-            </div>
-          </Panel>
-
-          <Panel className="ds-panel-pad">
-            <SectionHeading label="Go to" title="Common tasks" />
-            <div style={{ display: 'grid', gap: 2 }}>
-              {[['/analyzer', 'Analyse a transaction'], ['/cases', 'Review the queue'],
-                ['/thresholds', 'Tune the threshold'], ['/batch', 'Upload a batch']]
-                .map(([to, label]) => (
-                <button key={to} onClick={() => navigate(to)} className="ds-btn ds-btn-quiet"
-                        style={{ justifyContent: 'flex-start', width: '100%' }}>
-                  {label}
-                </button>
-              ))}
             </div>
           </Panel>
         </div>
