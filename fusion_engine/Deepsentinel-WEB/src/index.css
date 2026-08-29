@@ -374,30 +374,29 @@ html.theme-transition * {
    ────────────────────────────────────────────────────────────────────────── */
 
 .ds {
-  --ds-ink: 229 237 232;
-  --ds-muted: 157 173 167;
-  --ds-faint: 111 129 122;
-  --ds-line: 52 69 63;
-  --ds-workspace: 15 23 21;
-  --ds-surface: 22 32 29;
-  --ds-surface-2: 29 42 37;
-  --ds-surface-3: 39 54 47;
-  --ds-accent: 56 207 181;
-  --ds-accent-strong: 84 226 197;
-  --ds-accent-soft: 31 80 69;
-  --ds-signal: 241 112 95;
-  --ds-signal-soft: 87 43 40;
-  --ds-warn: 230 174 75;
-  --ds-warn-soft: 83 65 28;
-  --ds-lavender: 157 144 230;
+  --ds-ink: 226 232 236;
+  --ds-muted: 148 162 171;
+  --ds-faint: 104 118 127;
+  --ds-line: 42 50 56;
+  --ds-workspace: 14 17 19;
+  --ds-surface: 22 26 29;
+  --ds-surface-2: 29 34 38;
+  --ds-surface-3: 40 47 52;
+  --ds-accent: 45 212 191;
+  --ds-accent-strong: 94 231 213;
+  --ds-accent-soft: 22 66 61;
+  --ds-signal: 255 107 92;
+  --ds-signal-soft: 74 34 30;
+  --ds-warn: 255 180 84;
+  --ds-warn-soft: 71 52 22;
+  --ds-lavender: 179 166 245;
   --ds-shadow: 0 0 0;
-  --ds-grid: rgba(166, 215, 195, .045);
 
   /* Severity. Measured, not chosen by eye — see the note below the palette. */
-  --ds-sev-critical: 242 80 60;
-  --ds-sev-high:     255 174 77;
+  --ds-sev-critical: 255 107 92;
+  --ds-sev-high:     255 180 84;
   --ds-sev-medium:   179 166 245;
-  --ds-sev-low:      43 184 159;
+  --ds-sev-low:       74 222 128;
 
   color: rgb(var(--ds-ink));
   background: rgb(var(--ds-workspace));
@@ -405,31 +404,30 @@ html.theme-transition * {
 }
 
 [data-theme='light'] .ds {
-  --ds-ink: 27 35 34;
-  --ds-muted: 94 108 104;
-  --ds-faint: 122 134 130;
-  --ds-line: 211 219 214;
-  --ds-workspace: 242 243 239;
-  --ds-surface: 252 252 248;
-  --ds-surface-2: 233 238 233;
-  --ds-surface-3: 218 226 220;
-  --ds-accent: 11 142 125;
-  --ds-accent-strong: 6 111 99;
-  --ds-accent-soft: 207 239 231;
-  --ds-signal: 220 88 72;
-  --ds-signal-soft: 251 225 219;
-  --ds-warn: 190 126 23;
-  --ds-warn-soft: 249 235 201;
+  --ds-ink: 22 28 33;
+  --ds-muted: 88 100 110;
+  --ds-faint: 124 136 145;
+  --ds-line: 219 224 229;
+  --ds-workspace: 247 248 249;
+  --ds-surface: 255 255 255;
+  --ds-surface-2: 239 241 243;
+  --ds-surface-3: 226 230 234;
+  --ds-accent: 14 140 125;
+  --ds-accent-strong: 9 110 98;
+  --ds-accent-soft: 214 240 235;
+  --ds-signal: 190 40 30;
+  --ds-signal-soft: 252 228 225;
+  --ds-warn: 178 104 10;
+  --ds-warn-soft: 251 238 214;
   --ds-lavender: 108 93 177;
-  --ds-shadow: 23 44 38;
-  --ds-grid: rgba(32, 80, 70, .055);
+  --ds-shadow: 18 28 38;
 
-  /* Re-derived for paper, not dimmed: on a light ground the same hues fail
-     contrast — the old amber sat at 1.72:1, effectively invisible. */
-  --ds-sev-critical: 168 30 20;
-  --ds-sev-high:     204 107 10;
-  --ds-sev-medium:   108 93 177;
-  --ds-sev-low:      5 99 83;
+  /* Re-derived for paper, not dimmed: the same hues fail contrast on a light
+     ground — the old amber sat at 1.72:1, effectively invisible. */
+  --ds-sev-critical: 158 20  9;
+  --ds-sev-high:     194 112 10;
+  --ds-sev-medium:   108  93 177;
+  --ds-sev-low:       21 128 61;
 }
 
 .ds button, .ds input, .ds textarea, .ds select { font: inherit; }
@@ -437,11 +435,6 @@ html.theme-transition * {
 .ds ::selection { background: rgb(var(--ds-accent-soft)); color: rgb(var(--ds-ink)); }
 
 .ds-mono { font-family: 'DM Mono', ui-monospace, 'SFMono-Regular', monospace; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-.ds-grid-bg {
-  background-image: linear-gradient(var(--ds-grid) 1px, transparent 1px),
-                    linear-gradient(90deg, var(--ds-grid) 1px, transparent 1px);
-  background-size: 28px 28px;
-}
 .ds-fade-up { animation: ds-fade-up .5s ease both; }
 @keyframes ds-fade-up { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .ds-fade-up { animation: none; } }
@@ -545,6 +538,10 @@ html.theme-transition * {
 
      old, either theme   critical vs high   ΔE 10.4  — under the 15 floor for
                                                        ordinary colour vision
+     old, dark ground    accent vs low      ΔE  6.7  — the brand teal and the
+                                                       low-severity teal were
+                                                       one colour, on a green
+                                                       ground that tinted both
      old, either theme   high vs medium     ΔE  1.3  deuteranopic — orange and
                                                        amber were the same
                                                        colour to roughly one in

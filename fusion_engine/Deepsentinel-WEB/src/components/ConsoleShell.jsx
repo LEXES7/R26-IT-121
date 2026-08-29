@@ -199,7 +199,7 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
               </div>
             </div>
           </header>
-          <div className="ds-content ds-grid-bg">{children}</div>
+          <div className="ds-content">{children}</div>
         </main>
       </div>
     </div>
