@@ -153,7 +153,7 @@ export default function Dashboard() {
                   meta={openCount ? 'cases to review' : 'nothing to review'}
                   onClick={() => navigate('/cases')} />
           <Metric label="Transactions checked" value={num(c.screened)} tone="accent"
-                  meta={`${num(c.escalated) ?? '—'} looked at closely`} />
+                  meta={`${num(c.flagged) ?? '—'} worth a second look`} />
           <Metric label="Alerts sent" value={num(c.alerts)}
                   meta="someone was emailed" />
           <Metric label="Models ready" value={runtime ? `${liveCount}/3` : null}

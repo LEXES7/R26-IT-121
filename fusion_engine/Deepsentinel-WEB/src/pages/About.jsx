@@ -25,10 +25,12 @@ const MODALITY_TEXT = {
 const PIPELINE = [
   ['01', 'Transaction arrives',
    'Amount, counterparties and timing enter the pipeline. Nothing about the outcome is known.'],
-  ['02', 'The relational model screens everything',
-   'Every transaction is scored against the payment graph first, because it is the cheapest of the three. Only what looks structurally wrong costs the others.'],
+  ['02', 'All three detectors read it at once',
+   'The payment graph around the transaction, the account\u2019s own behaviour, and the run '
+   + 'of transactions it arrived in \u2014 scored in parallel, so the verdict costs whichever '
+   + 'detector is slowest rather than all three added together.'],
   ['03', 'Three detectors, scored independently',
-   'Network, behaviour and timing each return a probability and the reasoning behind it. A detector that cannot be reached abstains — it does not vote zero.'],
+   'Network, behaviour and timing each return a probability and the reasoning behind it, and none of them sees another\u2019s answer first. An earlier design ran the relational model as a gate on the other two; measured against a 400-transaction replay it cost half the frauds, because a gate in front of an independent detector cannot do better than the detector. A detector that cannot be reached abstains \u2014 it does not vote zero.'],
   ['04', 'Fusion, with an uncertainty penalty',
    'A meta-classifier combines what answered. When fewer than three contributed, the fused confidence is deliberately pulled toward the middle rather than reported as though nothing were missing.'],
   ['05', 'Retrieval anchors the narrative',

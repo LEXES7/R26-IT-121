@@ -23,8 +23,10 @@ MAX_ALERTS = 50
 
 @dataclass
 class Counters:
-    screened: int = 0            # transactions the graph model has seen
-    escalated: int = 0           # sent on to the other two detectors
+    screened: int = 0            # transactions every detector has seen
+    # Not "escalated" any more. Nothing is escalated: all three detectors run
+    # on everything and this counts what the fused verdict put above LOW.
+    flagged: int = 0             # fused verdicts above LOW
     alerts: int = 0              # fused verdicts at or above MEDIUM
     started_at: float = field(default_factory=time.time)
 
@@ -32,13 +34,13 @@ class Counters:
         elapsed = max(time.time() - self.started_at, 1e-6)
         return {
             "screened": self.screened,
-            "escalated": self.escalated,
+            "flagged": self.flagged,
             "alerts": self.alerts,
             "uptime_seconds": round(elapsed, 1),
             "throughput_per_min": round(self.screened / elapsed * 60, 1),
-            # The screening funnel is the story: a lot in, few escalated,
-            # fewer still alerted.
-            "escalation_rate": round(self.escalated / self.screened, 4) if self.screened else 0.0,
+            # The funnel is still the story, it just narrows in a different
+            # place: everything is screened, few are flagged, fewer alerted.
+            "flag_rate": round(self.flagged / self.screened, 4) if self.screened else 0.0,
         }
 
 

@@ -150,9 +150,9 @@ export default function Monitor() {
               )}
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-400">
-              The graph model screens every transaction as it arrives. Only what
-              looks structurally suspicious costs the behavioural and temporal
-              detectors, and only then is a verdict fused.
+              All three detectors read every transaction as it arrives, at the
+              same time, and their scores are fused into one verdict. None of
+              them waits on another&rsquo;s opinion.
             </p>
           </div>
 
@@ -200,8 +200,8 @@ export default function Monitor() {
         {/* the funnel */}
         <dl className="mt-7 grid grid-cols-2 gap-y-5 sm:grid-cols-3 lg:grid-cols-6">
           <Figure value={c.screened} label="Screened" note="every transaction" />
-          <Figure value={c.escalated} label="Escalated"
-                  note={`${((c.escalation_rate ?? 0) * 100).toFixed(1)}% of stream`} />
+          <Figure value={c.flagged} label="Flagged"
+                  note={`${((c.flag_rate ?? 0) * 100).toFixed(1)}% of stream`} />
           <Figure value={c.alerts} label="Alerts" note="fused, medium+" accent />
           <Figure value={c.throughput_per_min} label="Per minute" note="throughput" />
           <Figure value={alerts.length} label="Open" note="awaiting action"
@@ -309,7 +309,7 @@ export default function Monitor() {
                   </span>
                   <span className="min-w-0 flex-1 truncate text-slate-400">
                     {e.kind === 'screened' &&
-                      `${e.transaction_id} · ${e.risk_level} · ${e.graph_score}${e.escalated ? ' → escalate' : ''}`}
+                      `${e.transaction_id} · ${e.risk_level} · ${e.graph_score}${e.escalated ? ' → early flag' : ''}`}
                     {e.kind === 'escalated' &&
                       `${e.transaction_id} · ${e.pattern ?? '—'} · ${e.convergence ?? 0} senders`}
                     {e.kind === 'model' && `${e.transaction_id} · ${e.model} = ${e.score ?? 'unavailable'}`}

@@ -50,6 +50,20 @@ POLL_BATCH = 25            # transactions fetched per refill
 DEFAULT_INTERVAL = 1.2     # seconds between screenings
 
 
+# A detector that just failed is left alone for this long. Under the fan-out
+# every transaction pays for a dead service, so the breaker is what keeps one
+# unreachable model from setting the pace of the whole pipeline.
+DETECTOR_BREAKER_SECONDS = 15.0
+
+
+def _upstream_timeout() -> float:
+    """Per-detector call timeout, from config, in seconds."""
+    try:
+        return max(0.5, float(config.get("upstream", "timeout_ms")) / 1000.0)
+    except Exception:                                   # noqa: BLE001
+        return 5.0
+
+
 class MonitorEngine:
     def __init__(self) -> None:
         self.paused = False            # holds the loop without losing counters
@@ -61,6 +75,10 @@ class MonitorEngine:
         self.interval = DEFAULT_INTERVAL
         self.watch_threshold = DEFAULT_WATCH_THRESHOLD
         self._bands: dict[str, float] = {}
+        self._route: dict[str, str] = {}       # detector → the path that answers
+        self._down_until: dict[str, float] = {}  # detector → don't call before
+        self.upstream_timeout = _upstream_timeout()
+        self._background: set[asyncio.Task] = set()  # notifications in flight
 
     # ── lifecycle ────────────────────────────────────────────────────
     async def start(self, interval: float | None = None) -> None:
@@ -207,130 +225,174 @@ class MonitorEngine:
 
     # ── stage 1: screen ──────────────────────────────────────────────
     async def _screen(self, client, graph_base: str, txn: dict) -> None:
+        """Score one transaction on all three detectors at once.
+
+        This used to be a cascade: the relational model first, and the other
+        two only if it flagged something. The cascade was measured against a
+        400-transaction replay and it cost half the frauds in it. Four of the
+        eight it missed scored 0.011–0.107 on the relational model — far under
+        the 0.183 watch line, so the cascade could never have looked at them —
+        while the behavioural model scored those same four between 0.51 and
+        1.00. A gate in front of an independent detector cannot do better than
+        the detector; it can only hide it.
+
+        It was not buying speed either. The three calls were sequential
+        awaits, so a flagged transaction paid graph + timing + behavioural in
+        series. Fanned out they cost whichever of the three is slowest, once.
+
+        There is deliberately no "cost gate" option left behind. Any version
+        of it either starves the sequence model of the stream its window
+        depends on, or skips the behavioural model — which is where those four
+        frauds were found. Headroom comes from bounding how many transactions
+        are in flight and from the ingestion queue, not from deciding in
+        advance which detectors a transaction deserves.
+        """
         # row_id marks a claimed queue row; it is bookkeeping, not model input.
         row_id = txn.pop("row_id", None)
         payload = {k: v for k, v in txn.items() if not k.startswith("_")}
         self._label = txn.get("_is_fraud")
-        STATE.set_stage("graph", "active")
+        txid = payload["transaction_id"]
 
         # Measured here rather than estimated later. The case table has always
         # had screening_ms and total_ms columns and the case page has always
         # rendered them; nothing was ever writing them, so every case showed a
         # dash. Timing the calls is the whole fix.
         t0 = time.perf_counter()
+
+        # All three fired together. The relational task is awaited first
+        # because the early warning depends only on it, and there is no reason
+        # to make that email wait for the other two to come back.
+        for name in ("graph", "temporal", "behavioural"):
+            STATE.set_stage(name, "active")
+        graph_task = asyncio.create_task(self._score_graph(client, graph_base, payload))
+        temporal_task = asyncio.create_task(self._call_upstream(
+            client, "temporal_api_base", "temporal_risk_score", payload))
+        behavioural_task = asyncio.create_task(self._call_upstream(
+            client, "behavioral_api_base", "behavioral_risk_score", payload))
+
         try:
-            r = await client.post(f"{graph_base}/api/graph/analyze", json=payload)
+            status, result = await graph_task
         finally:
             STATE.set_stage("graph", "idle")
         screening_ms = int((time.perf_counter() - t0) * 1000)
-
         STATE.counters.screened += 1
 
-        # The sequence model is fed here, on every screened transaction, not
-        # inside the escalation branch with the others.
-        #
-        # It is not a per-transaction scorer: its answer depends on the window
-        # of transactions it has accumulated, and it was trained on a window of
-        # all traffic in arrival order. Calling it only on escalated
-        # transactions does not give it a smaller sample of the same thing — it
-        # gives it a different distribution, one where almost every entry is
-        # already suspicious, and the fraud-clustering signal it learned stops
-        # meaning what it meant in training. It also left the model warming up
-        # for the first 32 *escalations*, roughly twenty minutes of live
-        # traffic.
-        #
-        # The behavioural model has no such dependency — it reads one
-        # transaction against its own type — so it stays behind the gate.
-        STATE.set_stage("temporal", "active")
-        temporal_score, temporal_body = await self._call_upstream(
-            client, "temporal_api_base", "temporal_risk_score", payload
-        )
-        STATE.set_stage("temporal", "idle")
-
-        if r.status_code == 404:
+        if status != 200 or result is None:
+            # The other two are already in flight. They are awaited rather
+            # than cancelled: the sequence model has to see this transaction
+            # for its window to stay in step with the stream, whatever the
+            # relational model made of the accounts.
+            await self._await_stage("temporal", temporal_task)
+            await self._await_stage("behavioural", behavioural_task)
             STATE.publish("screened", {
-                "transaction_id": payload["transaction_id"], "outcome": "unknown_accounts",
+                "transaction_id": txid, "outcome": "unknown_accounts",
             })
             if row_id is not None:
                 from monitor import queue as ingest_queue
                 await ingest_queue.mark_done(row_id, escalated=False)
             return
-        r.raise_for_status()
-        result = r.json()
 
         score = float(result.get("relational_risk_score") or 0.0)
         level = result.get("risk_level", "LOW")
         sg = result.get("suspicious_subgraph") or {}
+        # No longer a gate. It still means something — the relational model
+        # saw structure it recognises — and it is still what the early warning
+        # goes out on, but nothing downstream is withheld because of it.
+        watch_flag = score >= self.watch_threshold
 
         STATE.publish("screened", {
-            "transaction_id": payload["transaction_id"],
+            "transaction_id": txid,
             "amount": payload["amount"],
             "from": payload["nameOrig"],
             "to": payload["nameDest"],
             "graph_score": round(score, 4),
             "risk_level": level,
-            "escalated": score >= self.watch_threshold,
+            "escalated": watch_flag,
         })
 
-        escalating = score >= self.watch_threshold
-        if row_id is not None:
-            from monitor import queue as ingest_queue
-            await ingest_queue.mark_done(row_id, escalated=escalating)
+        if watch_flag:
+            STATE.publish("escalated", {
+                "transaction_id": txid,
+                "graph_score": round(score, 4),
+                "pattern": sg.get("pattern"),
+                "sink_account": sg.get("sink_account"),
+                "convergence": (sg.get("structural_evidence") or {}).get("convergence_count"),
+            })
+            # Goes out now, while the other two detectors are still in
+            # flight — and it is not awaited. An SMTP handshake takes about
+            # 3.7 seconds on this connection, and awaiting it here put that
+            # into total_ms for every early-flagged transaction, so the case
+            # table was reporting mail latency as detection latency. The
+            # notification is a consequence of the verdict, not part of it.
+            self._spawn(self._notify_early(txid, payload, score, sg), "early warning")
 
-        if not escalating:
-            return
+        temporal = await self._await_stage("temporal", temporal_task)
+        behavioural = await self._await_stage("behavioural", behavioural_task)
 
-        await self._escalate(client, payload, result, sg,
-                             screening_ms=screening_ms, started=t0,
-                             temporal=(temporal_score, temporal_body))
+        await self._fuse(payload, sg, score,
+                         temporal=temporal, behavioural=behavioural,
+                         watch_flag=watch_flag, row_id=row_id,
+                         screening_ms=screening_ms, started=t0)
 
-    # ── stage 2: escalate ────────────────────────────────────────────
-    async def _escalate(self, client, payload: dict, graph_result: dict, sg: dict,
-                        screening_ms: int | None = None,
-                        started: float | None = None,
-                        temporal: tuple | None = None) -> None:
-        STATE.counters.escalated += 1
+    def _spawn(self, coro, what: str) -> None:
+        """Run something alongside the pipeline without holding it up.
+
+        The reference is kept until the task finishes: a bare create_task can
+        be collected mid-flight, which loses the work silently.
+        """
+        task = asyncio.create_task(coro)
+        self._background.add(task)
+        task.add_done_callback(self._background.discard)
+
+        def _log(t: asyncio.Task) -> None:
+            if not t.cancelled() and t.exception() is not None:
+                logger.warning(f"{what} failed: {t.exception()}")
+        task.add_done_callback(_log)
+
+    async def _score_graph(self, client, graph_base: str, payload: dict):
+        """The relational model. Returns `(status, body)`, body None on 404."""
+        r = await client.post(f"{graph_base}/api/graph/analyze", json=payload)
+        if r.status_code == 404:            # accounts not in the trained graph
+            return 404, None
+        r.raise_for_status()
+        return r.status_code, r.json()
+
+    async def _await_stage(self, name: str, task):
+        """Collect one detector's answer and put its lamp out.
+
+        A detector that raises abstains — `(None, None)` — rather than taking
+        the transaction down with it. Under the fan-out one unreachable
+        service must not cost the other two their verdict.
+        """
+        try:
+            return await task
+        except Exception as exc:                        # noqa: BLE001
+            logger.warning(f"{name} detector failed: {exc}")
+            return None, None
+        finally:
+            STATE.set_stage(name, "idle")
+
+    # ── stage 2: fuse ────────────────────────────────────────────────
+    async def _fuse(self, payload: dict, sg: dict, graph_score: float, *,
+                    temporal: tuple, behavioural: tuple, watch_flag: bool,
+                    row_id: int | None = None,
+                    screening_ms: int | None = None,
+                    started: float | None = None) -> None:
         txid = payload["transaction_id"]
-        graph_score = float(graph_result.get("relational_risk_score") or 0.0)
 
-        STATE.publish("escalated", {
-            "transaction_id": txid,
-            "graph_score": round(graph_score, 4),
-            "pattern": sg.get("pattern"),
-            "sink_account": sg.get("sink_account"),
-            "convergence": (sg.get("structural_evidence") or {}).get("convergence_count"),
-        })
-
-        # Early warning goes out now, before the slower detectors finish.
-        await self._notify_early(txid, payload, graph_score, sg)
-
-        scores: dict[str, float | None] = {"graph": graph_score}
         # The response bodies are kept, not just the scores. A detector answers
         # with its reasoning attached, and that reasoning is what a reviewer
         # opens the case for — dropping it here is why it never reached the
         # case record.
+        scores: dict[str, float | None] = {"graph": graph_score}
         bodies: dict[str, dict | None] = {}
-
-        # Already answered during screening; reuse it rather than calling
-        # again, which would push the same transaction into its window twice.
-        if temporal is not None:
-            scores["temporal"], bodies["temporal"] = temporal
-            STATE.publish("model", {
-                "transaction_id": txid, "model": "temporal",
-                "score": scores["temporal"],
-            })
-
-        for name, key, base_key in (
-            ("behavioural", "behavioral_risk_score", "behavioral_api_base"),
-        ):
-            STATE.set_stage(name, "active")
-            scores[name], bodies[name] = await self._call_upstream(
-                client, base_key, key, payload
-            )
-            STATE.set_stage(name, "idle")
-            STATE.publish("model", {
-                "transaction_id": txid, "model": name, "score": scores[name],
-            })
+        scores["temporal"], bodies["temporal"] = temporal
+        scores["behavioural"], bodies["behavioural"] = behavioural
+        for name in ("temporal", "behavioural"):
+            if scores[name] is not None:
+                STATE.publish("model", {
+                    "transaction_id": txid, "model": name, "score": scores[name],
+                })
 
         STATE.set_stage("fusion", "active")
         available = [v for v in scores.values() if v is not None]
@@ -360,6 +422,9 @@ class MonitorEngine:
         STATE.set_stage("fusion", "idle")
 
         severity = self._severity(fused)
+        if severity != "LOW":
+            STATE.counters.flagged += 1
+
         STATE.publish("fused", {
             "transaction_id": txid,
             "fused_score": round(fused, 4),
@@ -369,10 +434,20 @@ class MonitorEngine:
             "scores": {k: (round(v, 4) if v is not None else None) for k, v in scores.items()},
         })
 
-        # Record the case before the severity gate. A MEDIUM that was screened,
-        # fused and judged not worth an email is still something a reviewer may
-        # want to see later; dropping it would make the case table a record of
-        # alerts rather than of detections.
+        # The queue row is closed on the fused answer, not the relational one.
+        # It is the verdict the system actually stands behind.
+        if row_id is not None:
+            from monitor import queue as ingest_queue
+            await ingest_queue.mark_done(row_id, escalated=severity != "LOW")
+
+        # Everything is fused now, so recording everything would make the case
+        # table a log of traffic. A case is opened when the fused verdict is
+        # above LOW, or when the relational model raised the transaction even
+        # though fusion settled it — the second kind is a disagreement between
+        # detectors, which is exactly what a reviewer should see.
+        if severity == "LOW" and not watch_flag:
+            return
+
         from backend.adapters.upstream import behavioural_evidence
         from monitor import cases
 
@@ -427,6 +502,7 @@ class MonitorEngine:
         await self._notify_confirmed(alert, sg, case_ref)
         STATE.set_stage("report", "idle")
 
+
     async def _call_upstream(self, client, base_key: str, score_key: str, payload: dict):
         """Score one modality.
 
@@ -437,19 +513,42 @@ class MonitorEngine:
         A 200 without the score key is a contract violation rather than a
         measurement, so it falls through to the next path and ultimately
         counts as unavailable — the same reading the request adapters take.
+
+        Two things here exist only because of the fan-out. The working route
+        is remembered per detector, and a detector that has just failed is not
+        asked again for a few seconds. Probing both paths at full timeout used
+        to cost a dead service twenty seconds per transaction; that was
+        survivable when only the escalated few reached it and is not now that
+        every transaction does. The sequence model has been unloadable on this
+        machine for days, which is exactly the case this has to absorb.
         """
+        now = time.monotonic()
+        if now < self._down_until.get(base_key, 0.0):
+            return None, None
+
         base = str(config.get("upstream", base_key)).rstrip("/")
-        for path in ("/api/v1/classify", "/api/v1/behavioral/classify"):
+        known = self._route.get(base_key)
+        candidates = ("/api/v1/classify", "/api/v1/behavioral/classify")
+        paths = ([known] if known else []) + [p for p in candidates if p != known]
+
+        for path in paths:
             try:
-                r = await client.post(f"{base}{path}", json=payload, timeout=10.0)
+                r = await client.post(f"{base}{path}", json=payload,
+                                      timeout=self.upstream_timeout)
                 if r.status_code == 200:
                     data = r.json()
                     raw = data.get(score_key)
                     if raw is None:
                         continue
+                    self._route[base_key] = path
                     return float(raw), data
             except Exception:                           # noqa: BLE001
                 continue
+
+        # Forget the route as well as opening the breaker: a service that came
+        # back at a different path should be found again, not written off.
+        self._route.pop(base_key, None)
+        self._down_until[base_key] = now + DETECTOR_BREAKER_SECONDS
         return None, None
 
     def _severity(self, fused: float) -> str:
