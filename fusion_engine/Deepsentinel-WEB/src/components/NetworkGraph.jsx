@@ -248,6 +248,9 @@ export default function NetworkGraph({ evidence, height = 420 }) {
   const [clock, setClock] = useState(null)     // current step during playback
   const frame = useRef(null)
   const still = useMemo(reduceMotion, [])
+  // Read once at mount; the theme toggle re-renders the tree anyway.
+  const light = typeof document !== 'undefined'
+    && document.documentElement.dataset.theme === 'light'
 
   const nodes = evidence?.nodes ?? []
   const edges = evidence?.edges ?? []
@@ -356,8 +359,12 @@ export default function NetworkGraph({ evidence, height = 420 }) {
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
+            {/* Barely there on a dark ground, absent on a light one: at the
+                opacity that reads as depth against near-black, the same wash
+                is a pink stain on paper. */}
             <radialGradient id="ng-vignette">
-              <stop offset="55%" stopColor="#ef4444" stopOpacity="0.07" />
+              <stop offset="55%" stopColor="#ef4444"
+                    stopOpacity={light ? 0.015 : 0.07} />
               <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
             </radialGradient>
             {edges.map((e, i) => {

@@ -6,6 +6,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import ProtectedRoute from './components/ProtectedRoute'
 import Navbar from './components/Navbar'
+import ConsoleShell from './components/ConsoleShell'
 import Footer from './components/Footer'
 import ChatBot from './components/ChatBot'
 import Login from './pages/Login'
@@ -64,8 +65,8 @@ function Shell() {
   }, [])
 
   return (
-    <div className="flex min-h-screen flex-col bg-sentinel-950">
-      <Navbar />
+    <div className={isConsole ? '' : 'flex min-h-screen flex-col bg-sentinel-950'}>
+      {!isConsole && <Navbar />}
 
       <main className="flex-1">
         <ErrorBoundary>
@@ -87,23 +88,23 @@ function Shell() {
             />
 
             {/* Any signed-in user */}
-            <Route path="/monitor" element={<ProtectedRoute><Monitor /></ProtectedRoute>} />
-            <Route path="/analyzer" element={<ProtectedRoute><Analyzer /></ProtectedRoute>} />
-            <Route path="/thresholds" element={<ProtectedRoute><Thresholds /></ProtectedRoute>} />
-            <Route path="/cases" element={<ProtectedRoute><Cases /></ProtectedRoute>} />
+            <Route path="/monitor" element={<ProtectedRoute><Console><Monitor /></Console></ProtectedRoute>} />
+            <Route path="/analyzer" element={<ProtectedRoute><Console><Analyzer /></Console></ProtectedRoute>} />
+            <Route path="/thresholds" element={<ProtectedRoute><Console><Thresholds /></Console></ProtectedRoute>} />
+            <Route path="/cases" element={<ProtectedRoute><Console><Cases /></Console></ProtectedRoute>} />
             {/* Addressable so a case can be sent to a colleague. Still authenticated. */}
             <Route path="/cases/:caseRef" element={<ProtectedRoute><Cases /></ProtectedRoute>} />
-            <Route path="/batch" element={<ProtectedRoute><BatchAnalysis /></ProtectedRoute>} />
+            <Route path="/batch" element={<ProtectedRoute><Console><BatchAnalysis /></Console></ProtectedRoute>} />
             {/* Entitlement is enforced server-side; the page renders an upsell when not licensed. */}
-            <Route path="/assistant" element={<ProtectedRoute><Assistant /></ProtectedRoute>} />
-            <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+            <Route path="/assistant" element={<ProtectedRoute><Console><Assistant /></Console></ProtectedRoute>} />
+            <Route path="/account" element={<ProtectedRoute><Console><Account /></Console></ProtectedRoute>} />
 
             {/* Capability-gated */}
             <Route
               path="/settings"
               element={
                 <ProtectedRoute capability="canManageAlerts">
-                  <Settings />
+                  <Console><Settings /></Console>
                 </ProtectedRoute>
               }
             />
@@ -111,7 +112,7 @@ function Shell() {
               path="/users"
               element={
                 <ProtectedRoute capability="canManageUsers">
-                  <Users />
+                  <Console><Users /></Console>
                 </ProtectedRoute>
               }
             />
@@ -119,7 +120,7 @@ function Shell() {
               path="/audit-log"
               element={
                 <ProtectedRoute capability="canViewAuditLog">
-                  <AuditLog />
+                  <Console><AuditLog /></Console>
                 </ProtectedRoute>
               }
             />
@@ -129,7 +130,7 @@ function Shell() {
         </ErrorBoundary>
       </main>
 
-      {isConsole ? <ConsoleFooter /> : <Footer />}
+      {!isConsole && <Footer />}
 
       {/* Available on every page — reviewers read the showcase without signing in. */}
       <ChatBot />
@@ -137,19 +138,35 @@ function Shell() {
   )
 }
 
-/** One quiet line under the console — provenance, not a sitemap. */
-function ConsoleFooter() {
+/**
+ * Chrome for a console page.
+ *
+ * The shell lives here rather than inside each page so there is one place that
+ * decides what the signed-in application looks like. Dashboard is the
+ * exception — its title states how many cases are waiting, which only it
+ * knows — so it renders its own shell and is not wrapped again.
+ */
+const CONSOLE_PAGES = {
+  '/monitor':   ['Workspace / Observe', 'Live monitor', 'Every transaction, screened as it arrives.'],
+  '/analyzer':  ['Workspace / Observe', 'Analyzer', 'One transaction, through all five stages.'],
+  '/cases':     ['Workspace / Investigate', 'Cases', 'What the models caught, and what you decided.'],
+  '/thresholds':['Workspace / Investigate', 'Thresholds', 'Replay past decisions at a different line.'],
+  '/batch':     ['Workspace / Investigate', 'Batch upload', 'Score a file and measure it against its labels.'],
+  '/assistant': ['Workspace / Understand', 'Assistant', 'Ask about the system in plain language.'],
+  '/settings':  ['Workspace', 'Settings', 'Alerting, packages and upstream services.'],
+  '/users':     ['Workspace', 'Users', 'Who can sign in, and what they may do.'],
+  '/audit-log': ['Workspace', 'Audit log', 'Every configuration change and verdict, attributed.'],
+  '/account':   ['Workspace', 'Account', 'Your profile and password.'],
+}
+
+function Console({ children }) {
+  const { pathname } = useLocation()
+  const key = Object.keys(CONSOLE_PAGES).find((r) => pathname.startsWith(r))
+  const [eyebrow, title, subtitle] = CONSOLE_PAGES[key] ?? ['Workspace', 'DeepSentinel']
   return (
-    <footer className="mx-auto w-full max-w-[88rem] px-5 pb-8 sm:px-8">
-      <div className="hair-t flex flex-wrap items-center gap-x-5 gap-y-2 pt-5 text-[11px] text-slate-600">
-        <span>DeepSentinel</span>
-        <span>Scores are calibrated probabilities, not verdicts.</span>
-        <Link to="/about" className="ml-auto transition-colors hover:text-slate-400">
-          How it works
-        </Link>
-        <Link to="/faq" className="transition-colors hover:text-slate-400">FAQ</Link>
-      </div>
-    </footer>
+    <ConsoleShell eyebrow={eyebrow} title={title} subtitle={subtitle}>
+      {children}
+    </ConsoleShell>
   )
 }
 
