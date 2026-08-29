@@ -12,6 +12,7 @@ import ChatBot from './components/ChatBot'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import Analyzer from './pages/Analyzer'
+import Models from './pages/Models'
 import Thresholds from './pages/Thresholds'
 import Cases from './pages/Cases'
 import Dashboard from './pages/Dashboard'
@@ -45,7 +46,7 @@ import RequestAccess from './pages/RequestAccess'
  * quiet line instead.
  */
 const CONSOLE_ROUTES = [
-  '/monitor', '/analyzer', '/thresholds', '/cases', '/batch',
+  '/monitor', '/analyzer', '/thresholds', '/cases', '/batch', '/models',
   '/assistant', '/account', '/settings', '/users', '/audit-log',
 ]
 
@@ -96,6 +97,7 @@ function Shell() {
             <Route path="/cases/:caseRef" element={<ProtectedRoute><Cases /></ProtectedRoute>} />
             <Route path="/batch" element={<ProtectedRoute><Console><BatchAnalysis /></Console></ProtectedRoute>} />
             {/* Entitlement is enforced server-side; the page renders an upsell when not licensed. */}
+            <Route path="/models" element={<ProtectedRoute><Console><Models /></Console></ProtectedRoute>} />
             <Route path="/assistant" element={<ProtectedRoute><Console><Assistant /></Console></ProtectedRoute>} />
             <Route path="/account" element={<ProtectedRoute><Console><Account /></Console></ProtectedRoute>} />
 
@@ -152,6 +154,8 @@ const CONSOLE_PAGES = {
   '/cases':     ['Workspace / Investigate', 'Cases', 'What the models caught, and what you decided.'],
   '/thresholds':['Workspace / Investigate', 'Thresholds', 'Replay past decisions at a different line.'],
   '/batch':     ['Workspace / Investigate', 'Batch upload', 'Score a file and measure it against its labels.'],
+  '/models':    ['Workspace / Understand', 'Detectors',
+                 'Each model on its own — no fusion, no retrieval.'],
   '/assistant': ['Workspace / Understand', 'Assistant', 'Ask about the system in plain language.'],
   '/settings':  ['Workspace', 'Settings', 'Alerting, packages and upstream services.'],
   '/users':     ['Workspace', 'Users', 'Who can sign in, and what they may do.'],

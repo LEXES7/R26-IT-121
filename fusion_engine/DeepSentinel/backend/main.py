@@ -1417,6 +1417,105 @@ async def review_case(
     return _case_row(row)
 
 
+# ── One detector, on its own ─────────────────────────────────────────────────
+# The platform's whole argument is that three models see different things and
+# fusion reconciles them — which means the fused number is the only thing most
+# of the interface shows. That is right for an operator and wrong for anyone who
+# has to defend a single component: there was no way to run one detector alone
+# and look at what it, specifically, produced.
+
+
+DETECTORS = {
+    "graph": {
+        "label": "Edge-Enhanced GraphSAGE",
+        "owner": "relational",
+        "base": "graph_api_base",
+        "reads": "The payment network around this transaction.",
+    },
+    "behavioural": {
+        "label": "Stratified VAE with Dual-Signal Anomaly Attribution",
+        "owner": "behavioural",
+        "base": "behavioral_api_base",
+        "reads": "Whether this fits normal behaviour for its transaction type.",
+    },
+    "temporal": {
+        "label": "Transaction-Sequence TCN with fraud_attention",
+        "owner": "temporal",
+        "base": "temporal_api_base",
+        "reads": "The transactions immediately preceding this one.",
+    },
+}
+
+
+@app.post("/detectors/{name}", tags=["detectors"])
+async def score_one_detector(
+    name: str, body: dict, user: User = Depends(get_current_user)
+):
+    """Run a single detector and return exactly what it said.
+
+    No fusion, no retrieval, no report — one model, its raw response, and how
+    long it took. Nothing is imputed: a detector that does not answer is
+    reported as unavailable rather than given a neutral score.
+    """
+    import time as _time
+
+    from backend.adapters.upstream import (
+        behavioural_evidence, call_behavioral_api, call_graph_api, call_temporal_api,
+    )
+
+    if name not in DETECTORS:
+        raise HTTPException(
+            404, f"Unknown detector '{name}'. One of: {', '.join(DETECTORS)}.")
+
+    txn = body.get("transaction") or body
+    if not txn.get("amount"):
+        raise HTTPException(422, "Body must contain a transaction with an amount.")
+
+    meta = DETECTORS[name]
+    base = str(config.get("upstream", meta["base"])).rstrip("/")
+    caller = {"graph": call_graph_api, "behavioural": call_behavioral_api,
+              "temporal": call_temporal_api}[name]
+
+    import httpx
+
+    t0 = _time.perf_counter()
+    try:
+        # The adapters take the shared client and a timeout — this endpoint is
+        # a one-shot call, so it opens its own.
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            res = await caller(client, base, txn, 30.0)
+    except Exception as exc:                                  # noqa: BLE001
+        raise HTTPException(
+            503, f"{meta['label']} could not be reached at {base} "
+                 f"({type(exc).__name__}).")
+    elapsed = int((_time.perf_counter() - t0) * 1000)
+
+    evidence = None
+    if name == "graph":
+        evidence = (res.extra or {}).get("suspicious_subgraph")
+    elif name == "behavioural":
+        evidence = behavioural_evidence(res.extra or {})
+    elif name == "temporal":
+        evidence = (res.extra or {}).get("temporal_evidence")
+
+    return {
+        "detector": name,
+        "label": meta["label"],
+        "reads": meta["reads"],
+        "endpoint": base,
+        "available": res.available,
+        # The score only when the detector actually answered. Reporting a
+        # number for a model that did not run is the bug this whole endpoint
+        # exists to make impossible to hide.
+        "score": res.score if res.available else None,
+        "summary": res.fraud_signal_summary,
+        "typology_hint": res.typology_hint,
+        "evidence": evidence,
+        "raw": res.extra or {},
+        "latency_ms": elapsed,
+    }
+
+
 # ── Picking a specific transaction to analyse ────────────────────────────────
 # Analysing a randomly pulled transaction proves the pipeline runs. Analysing
 # the transaction behind a case you are looking at proves something an

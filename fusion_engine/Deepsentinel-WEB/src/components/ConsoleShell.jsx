@@ -68,8 +68,9 @@ const GROUPS = [
     ['/batch', 'Batch upload', I.upload],
   ]],
   ['Understand', [
+    ['/models', 'Detectors', I.network],
     ['/assistant', 'Assistant', I.brain],
-    ['/about', 'Architecture', I.network],
+    ['/about', 'Architecture', I.log],
   ]],
 ]
 
