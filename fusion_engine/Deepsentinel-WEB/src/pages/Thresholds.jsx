@@ -3,6 +3,7 @@ import { simulateThresholds } from '../services/api'
 import { usePackage } from '../hooks/usePackage'
 import Locked from '../components/Locked'
 import { Alert, cx } from '../components/ui'
+import { Badge, Footer, Metric, Panel, Progress, SectionHeading } from '../components/ConsoleShell'
 
 /**
  * Move the decision threshold and see what it would have done.
@@ -28,9 +29,9 @@ import { Alert, cx } from '../components/ui'
 
 const pct = (v) => (typeof v === 'number' ? `${(v * 100).toFixed(1)}%` : '—')
 const HUE = {
-  real: '#22c55e',      // caught, and it was fraud
-  false: '#eab308',     // caught, and it was not
-  missed: '#ef4444',    // not caught, and it was fraud
+  real: 'rgb(var(--ds-sev-low))',        // caught, and it was fraud
+  false: 'rgb(var(--ds-sev-high))',      // caught, and it was not
+  missed: 'rgb(var(--ds-sev-critical))', // not caught, and it was fraud
 }
 
 export default function Thresholds() {
@@ -58,47 +59,20 @@ export default function Thresholds() {
   const empty = data && data.sample_size === 0
 
   return (
-    <div className="mx-auto max-w-[88rem] px-5 pb-16 pt-8 sm:px-8">
+    <div className="ds-fade-up" style={{ display: 'grid', gap: 16 }}>
 
-      {/* ═══ the statement — it moves with the slider ══════════════════ */}
-      <header className="hair-b pb-7">
-        <p className="eyebrow text-slate-500">Threshold tuning</p>
-        <div className="mt-3 flex flex-wrap items-end justify-between gap-6">
-          <h1 className="display max-w-2xl text-[2.75rem] text-slate-100 sm:text-[3.5rem]">
-            {empty ? (
-              <>Nothing has been <span className="display-italic text-slate-500">scored yet.</span></>
-            ) : point ? (
-              <>
-                At {t.toFixed(2)},{' '}
-                <span className="display-italic text-accent-400">
-                  {point.alerts} alert{point.alerts === 1 ? '' : 's'}.
-                </span>
-              </>
-            ) : (
-              <>Replaying <span className="display-italic text-slate-500">history…</span></>
-            )}
-          </h1>
-          <p className="max-w-sm text-sm leading-relaxed text-slate-400">
-            {empty
-              ? 'Run the monitor or analyse a few transactions, and the curve fills in from what the platform has already decided.'
-              : hasLabels && point
-                ? <>Of those, <b className="text-slate-200">{point.true_positives}</b> were
-                    real fraud and <b className="text-slate-200">{point.false_positives}</b> were
-                    not — while <b className="text-slate-200">{point.false_negatives}</b> got
-                    through. Every transaction the platform has already scored, replayed at this line.</>
-                : 'Every transaction the platform has already scored, replayed at the line you choose. Historical, not a forecast.'}
-          </p>
-        </div>
-
-        <dl className="mt-7 grid grid-cols-2 gap-y-5 sm:grid-cols-3 lg:grid-cols-6">
-          <Figure value={point?.alerts} label="Alerts raised" accent />
-          <Figure value={hasLabels ? point?.precision : null} label="Precision" percent />
-          <Figure value={hasLabels ? point?.recall : null} label="Recall" percent />
-          <Figure value={hasLabels ? point?.f1 : null} label="F1" percent />
-          <Figure value={data?.sample_size} label="Scored" />
-          <Figure value={data?.labelled} label="Labelled" />
-        </dl>
-      </header>
+      {/* What the chosen line would have done, stated before the controls. */}
+      <div style={{ display: 'grid', gap: 11,
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
+        <Metric label="Alerts at this line" value={point?.alerts ?? null} tone="accent"
+                meta={`threshold ${t.toFixed(2)}`} />
+        <Metric label="Precision" value={hasLabels ? pct(point?.precision) : null}
+                meta={hasLabels ? 'of alerts, how many were real' : 'no labels in this history'} />
+        <Metric label="Recall" value={hasLabels ? pct(point?.recall) : null} tone="alert"
+                meta={hasLabels ? 'of real fraud, how much was caught' : 'no labels in this history'} />
+        <Metric label="Scored" value={data?.sample_size ?? null}
+                meta={`${data?.labelled ?? 0} carry a label`} />
+      </div>
 
       <Locked
         feature="threshold_sim"
@@ -111,22 +85,19 @@ export default function Thresholds() {
           {error && <div className="mt-6"><Alert tone="error">{error}</Alert></div>}
 
           {empty ? (
-            <section className="hair mt-8 rounded-xl border border-dashed px-8 py-16 text-center">
-              <p className="display text-2xl text-slate-300">The curve is empty.</p>
-              <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500">
-                This page replays decisions the platform has already made. Ingest
-                a file with the Query Runner, or analyse a transaction, and it
-                fills in.
-              </p>
-            </section>
+            <div className="ds-empty">
+              This page replays decisions the platform has already made. Ingest a
+              file with the Query Runner, or analyse a transaction, and it fills in.
+            </div>
           ) : (
-            <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
-              <div className="min-w-0 space-y-8">
+            <div style={{ display: 'grid', gap: 12,
+                          gridTemplateColumns: 'minmax(0, 1.5fr) minmax(280px, .72fr)' }}>
+              <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
 
                 {/* ── the curve ── */}
-                <section>
+                <Panel className="ds-panel-pad">
                   <div className="hair-b flex flex-wrap items-baseline justify-between gap-3 pb-2.5">
-                    <h2 className="text-sm font-semibold text-slate-100">
+                    <h2 className="ds-section-title">
                       Alert volume across every threshold
                     </h2>
                     <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500">
@@ -168,11 +139,11 @@ export default function Thresholds() {
                       <span>1.00 — alert on nothing</span>
                     </div>
                   </div>
-                </section>
+                </Panel>
 
                 {/* ── what the decision costs ── */}
                 {hasLabels && point && (
-                  <section>
+                  <Panel className="ds-panel-pad">
                     <div className="hair-b flex items-baseline justify-between pb-2.5">
                       <h2 className="text-sm font-semibold text-slate-100">
                         What this line costs
@@ -182,7 +153,7 @@ export default function Thresholds() {
                       </span>
                     </div>
                     <Outcomes point={point} />
-                  </section>
+                  </Panel>
                 )}
 
                 {!hasLabels && (
@@ -196,8 +167,8 @@ export default function Thresholds() {
               </div>
 
               {/* ═══ the rail ═══ */}
-              <aside className="space-y-7 lg:hair-l lg:pl-7">
-                <section>
+              <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
+                <Panel className="ds-panel-pad">
                   <div className="flex items-baseline justify-between">
                     <h3 className="text-xs font-semibold text-slate-200">Chosen threshold</h3>
                   </div>
@@ -207,10 +178,10 @@ export default function Thresholds() {
                   <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
                     Everything scored at or above this raises an alert.
                   </p>
-                </section>
+                </Panel>
 
                 {data?.best && (
-                  <section>
+                  <Panel className="ds-panel-pad">
                     <h3 className="text-xs font-semibold text-slate-200">Best measured F1</h3>
                     <div className="rows mt-2">
                       <Row label="Threshold" value={data.best.threshold.toFixed(2)} />
@@ -224,20 +195,20 @@ export default function Thresholds() {
                       right operating point — that depends on how much an analyst
                       hour costs against a missed case.
                     </p>
-                  </section>
+                  </Panel>
                 )}
 
                 {data?.message && (
-                  <section>
+                  <Panel className="ds-panel-pad">
                     <h3 className="text-xs font-semibold text-risk-medium">Read with care</h3>
                     <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
                       {data.message}
                     </p>
-                  </section>
+                  </Panel>
                 )}
 
-                <section>
-                  <h3 className="text-xs font-semibold text-slate-200">Why this is honest</h3>
+                <Panel className="ds-panel-pad">
+                  <h3 className="ds-section-title">Why this is honest</h3>
                   <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
                     A replay of decisions already made, on transactions already
                     seen. It says what <i>would have</i> happened, not what will —
@@ -249,12 +220,14 @@ export default function Thresholds() {
                     error from 0.80 to 0.024, so 0.40 means &ldquo;40% likely&rdquo;
                     and keeps that meaning as the models change.
                   </p>
-                </section>
-              </aside>
+                </Panel>
+              </div>
             </div>
           )}
         </>
       </Locked>
+
+      <Footer left="A replay of decisions already made — historical, not a forecast." />
     </div>
   )
 }
@@ -294,9 +267,9 @@ function Curve({ curve, point, maxAlerts, hasLabels, onPick }) {
                       boundary and not a colour change. */}
                   <div style={{ height: `${Math.max(0, h - realPart)}%`,
                                 marginBottom: p.true_positives && p.false_positives ? 2 : 0,
-                                background: active ? HUE.false : 'rgb(234 179 8 / 0.5)' }} />
+                                background: active ? HUE.false : 'rgb(var(--ds-sev-high) / 0.5)' }} />
                   <div style={{ height: `${realPart}%`,
-                                background: active ? HUE.real : 'rgb(34 197 94 / 0.5)' }} />
+                                background: active ? HUE.real : 'rgb(var(--ds-sev-low) / 0.5)' }} />
                 </>
               ) : (
                 <div className={cx('rounded-t-sm', active ? 'bg-accent-400' : 'bg-modality-graph/45')}

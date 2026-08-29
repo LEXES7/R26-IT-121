@@ -1,6 +1,6 @@
 /* @import must come first — CSS drops any @import that follows another rule,
    which is why the font previously failed to load. */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -350,4 +350,218 @@ html.theme-transition * {
 
    Nothing about the token names changed, so every existing page inherits this
    without edits.
+   ────────────────────────────────────────────────────────────────────────── */
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   The console design system  (`ds-*`)
+   ---------------------------------------------------------------------------
+   The signed-in application uses this; the public site keeps the editorial
+   treatment it already has. The two are deliberately different: a landing page
+   is read once and has to argue, a console is read all day and has to get out
+   of the way.
+
+   Ported from the Replit design study, with two changes.
+
+   Light and dark are wired to the app's existing `[data-theme]` attribute
+   rather than a local `.dark` class, so the toggle in the header keeps working
+   and a signed-in user does not get a second, disagreeing theme control.
+
+   Page titles keep Instrument Serif. Everything else — labels, tables,
+   controls — is Space Grotesk, and every figure is DM Mono. The serif is the
+   one thing carried over from the public site, so the product still sounds
+   like itself the moment someone signs in.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.ds {
+  --ds-ink: 229 237 232;
+  --ds-muted: 157 173 167;
+  --ds-faint: 111 129 122;
+  --ds-line: 52 69 63;
+  --ds-workspace: 15 23 21;
+  --ds-surface: 22 32 29;
+  --ds-surface-2: 29 42 37;
+  --ds-surface-3: 39 54 47;
+  --ds-accent: 56 207 181;
+  --ds-accent-strong: 84 226 197;
+  --ds-accent-soft: 31 80 69;
+  --ds-signal: 241 112 95;
+  --ds-signal-soft: 87 43 40;
+  --ds-warn: 230 174 75;
+  --ds-warn-soft: 83 65 28;
+  --ds-lavender: 157 144 230;
+  --ds-shadow: 0 0 0;
+  --ds-grid: rgba(166, 215, 195, .045);
+
+  /* Severity. Measured, not chosen by eye — see the note below the palette. */
+  --ds-sev-critical: 242 80 60;
+  --ds-sev-high:     255 174 77;
+  --ds-sev-medium:   179 166 245;
+  --ds-sev-low:      43 184 159;
+
+  color: rgb(var(--ds-ink));
+  background: rgb(var(--ds-workspace));
+  font-family: 'Space Grotesk', 'Trebuchet MS', sans-serif;
+}
+
+[data-theme='light'] .ds {
+  --ds-ink: 27 35 34;
+  --ds-muted: 94 108 104;
+  --ds-faint: 122 134 130;
+  --ds-line: 211 219 214;
+  --ds-workspace: 242 243 239;
+  --ds-surface: 252 252 248;
+  --ds-surface-2: 233 238 233;
+  --ds-surface-3: 218 226 220;
+  --ds-accent: 11 142 125;
+  --ds-accent-strong: 6 111 99;
+  --ds-accent-soft: 207 239 231;
+  --ds-signal: 220 88 72;
+  --ds-signal-soft: 251 225 219;
+  --ds-warn: 190 126 23;
+  --ds-warn-soft: 249 235 201;
+  --ds-lavender: 108 93 177;
+  --ds-shadow: 23 44 38;
+  --ds-grid: rgba(32, 80, 70, .055);
+
+  /* Re-derived for paper, not dimmed: on a light ground the same hues fail
+     contrast — the old amber sat at 1.72:1, effectively invisible. */
+  --ds-sev-critical: 168 30 20;
+  --ds-sev-high:     204 107 10;
+  --ds-sev-medium:   108 93 177;
+  --ds-sev-low:      5 99 83;
+}
+
+.ds button, .ds input, .ds textarea, .ds select { font: inherit; }
+.ds button { cursor: pointer; }
+.ds ::selection { background: rgb(var(--ds-accent-soft)); color: rgb(var(--ds-ink)); }
+
+.ds-mono { font-family: 'DM Mono', ui-monospace, 'SFMono-Regular', monospace; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.ds-grid-bg {
+  background-image: linear-gradient(var(--ds-grid) 1px, transparent 1px),
+                    linear-gradient(90deg, var(--ds-grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.ds-fade-up { animation: ds-fade-up .5s ease both; }
+@keyframes ds-fade-up { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .ds-fade-up { animation: none; } }
+
+/* shell */
+.ds-shell { min-height: 100dvh; display: flex; background: rgb(var(--ds-workspace)); color: rgb(var(--ds-ink)); }
+.ds-sidebar { width: 232px; border-right: 1px solid rgb(var(--ds-line)); background: rgb(var(--ds-surface)); display: flex; flex-direction: column; flex: 0 0 auto; }
+.ds-brand { height: 78px; padding: 20px 19px; border-bottom: 1px solid rgb(var(--ds-line)); display: flex; align-items: center; gap: 10px; }
+.ds-brand-name { font-size: 15px; font-weight: 700; letter-spacing: -.04em; }
+.ds-brand-sub { font-size: 9px; color: rgb(var(--ds-faint)); letter-spacing: .12em; text-transform: uppercase; margin-top: 2px; }
+.ds-nav { padding: 17px 11px; flex: 1; overflow-y: auto; }
+.ds-nav-label { font-size: 9px; text-transform: uppercase; letter-spacing: .16em; color: rgb(var(--ds-faint)); padding: 0 9px 9px; }
+.ds-nav-btn { width: 100%; display: flex; align-items: center; gap: 10px; border: 0; background: transparent; color: rgb(var(--ds-muted)); padding: 9px 10px; border-radius: 6px; font-size: 12px; text-align: left; text-decoration: none; transition: background .18s ease, color .18s ease, transform .18s ease; }
+.ds-nav-btn:hover { background: rgb(var(--ds-surface-2)); color: rgb(var(--ds-ink)); transform: translateX(2px); }
+.ds-nav-btn.active { background: rgb(var(--ds-accent-soft)); color: rgb(var(--ds-accent-strong)); font-weight: 600; }
+.ds-nav-btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.ds-sidebar-foot { padding: 13px 16px 15px; border-top: 1px solid rgb(var(--ds-line)); }
+.ds-statusline { display: flex; align-items: center; justify-content: space-between; color: rgb(var(--ds-muted)); font-size: 10px; }
+.ds-status-dot { width: 7px; height: 7px; border-radius: 50%; background: rgb(var(--ds-accent)); box-shadow: 0 0 0 3px rgb(var(--ds-accent-soft)); flex: 0 0 auto; }
+.ds-status-dot.off { background: rgb(var(--ds-faint)); box-shadow: 0 0 0 3px rgb(var(--ds-surface-3)); }
+.ds-status-dot.warn { background: rgb(var(--ds-warn)); box-shadow: 0 0 0 3px rgb(var(--ds-warn-soft)); }
+
+.ds-main { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.ds-topbar { min-height: 78px; padding: 17px 30px; border-bottom: 1px solid rgb(var(--ds-line)); display: flex; align-items: center; justify-content: space-between; gap: 16px; background: rgb(var(--ds-workspace)); }
+.ds-eyebrow { color: rgb(var(--ds-accent-strong)); font-size: 10px; text-transform: uppercase; letter-spacing: .17em; font-weight: 600; }
+/* The one thing kept from the public site's voice. */
+.ds-page-title { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: clamp(24px, 2.4vw, 34px); letter-spacing: -.015em; line-height: 1.02; margin-top: 6px; }
+.ds-page-title em { font-style: italic; color: rgb(var(--ds-accent-strong)); }
+.ds-page-sub { font-size: 11px; color: rgb(var(--ds-muted)); margin-top: 6px; }
+.ds-top-actions { display: flex; align-items: center; gap: 8px; }
+.ds-icon-btn { width: 31px; height: 31px; border: 1px solid rgb(var(--ds-line)); color: rgb(var(--ds-muted)); background: rgb(var(--ds-surface)); border-radius: 6px; display: grid; place-items: center; transition: border .18s ease, color .18s ease, transform .18s ease; }
+.ds-icon-btn:hover { color: rgb(var(--ds-accent-strong)); border-color: rgb(var(--ds-accent)); transform: translateY(-1px); }
+.ds-user { display: flex; align-items: center; gap: 8px; margin-left: 7px; padding-left: 12px; border-left: 1px solid rgb(var(--ds-line)); font-size: 11px; color: rgb(var(--ds-muted)); }
+.ds-avatar { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; background: rgb(var(--ds-surface-3)); color: rgb(var(--ds-accent-strong)); font-size: 10px; font-weight: 700; flex: 0 0 auto; }
+.ds-content { padding: 28px 30px 40px; max-width: 1560px; width: 100%; margin: 0 auto; }
+
+/* pieces */
+.ds-panel { background: rgb(var(--ds-surface)); border: 1px solid rgb(var(--ds-line)); border-radius: 8px; box-shadow: 0 4px 20px rgba(var(--ds-shadow), .035); }
+.ds-panel-pad { padding: 19px; }
+.ds-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: .13em; color: rgb(var(--ds-faint)); }
+.ds-section-title { font-size: 14px; font-weight: 600; letter-spacing: -.025em; }
+.ds-divider { height: 1px; background: rgb(var(--ds-line)); }
+.ds-btn { border: 1px solid rgb(var(--ds-line)); background: rgb(var(--ds-surface)); color: rgb(var(--ds-ink)); border-radius: 5px; padding: 8px 12px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px; transition: transform .18s ease, border .18s ease, background .18s ease; }
+.ds-btn:hover:not(:disabled) { transform: translateY(-1px); border-color: rgb(var(--ds-accent)); }
+.ds-btn:disabled { opacity: .5; cursor: not-allowed; }
+.ds-btn-primary { background: rgb(var(--ds-accent)); color: rgb(8 44 39); border-color: rgb(var(--ds-accent)); }
+.ds-btn-primary:hover:not(:disabled) { background: rgb(var(--ds-accent-strong)); }
+.ds-btn-quiet { background: transparent; border-color: transparent; color: rgb(var(--ds-muted)); }
+.ds-btn-quiet:hover:not(:disabled) { background: rgb(var(--ds-surface-2)); border-color: transparent; color: rgb(var(--ds-ink)); }
+.ds-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 99px; border: 1px solid rgb(var(--ds-line)); padding: 3px 7px; color: rgb(var(--ds-muted)); font-size: 10px; white-space: nowrap; }
+.ds-badge.good { color: rgb(var(--ds-accent-strong)); background: rgb(var(--ds-accent-soft)); border-color: transparent; }
+.ds-badge.alert { color: rgb(var(--ds-signal)); background: rgb(var(--ds-signal-soft)); border-color: transparent; }
+.ds-badge.warn { color: rgb(var(--ds-warn)); background: rgb(var(--ds-warn-soft)); border-color: transparent; }
+.ds-kpi { padding: 16px 17px; min-height: 112px; }
+.ds-kpi-value { margin-top: 12px; font-size: 27px; font-weight: 600; letter-spacing: -.07em; line-height: 1; }
+.ds-kpi-meta { font-size: 10px; color: rgb(var(--ds-muted)); margin-top: 8px; }
+.ds-kpi-accent { border-top: 2px solid rgb(var(--ds-accent)); }
+.ds-kpi-alert { border-top: 2px solid rgb(var(--ds-signal)); }
+.ds-kpi-warn { border-top: 2px solid rgb(var(--ds-warn)); }
+.ds-progress { height: 6px; background: rgb(var(--ds-surface-3)); border-radius: 99px; overflow: hidden; }
+.ds-progress > span { display: block; height: 100%; background: rgb(var(--ds-accent)); border-radius: inherit; transition: width .4s ease; }
+.ds-field { width: 100%; border: 1px solid rgb(var(--ds-line)); background: rgb(var(--ds-workspace)); color: rgb(var(--ds-ink)); border-radius: 5px; padding: 9px 10px; outline: none; font-size: 11px; transition: border .18s ease, box-shadow .18s ease; }
+.ds-field:focus { border-color: rgb(var(--ds-accent)); box-shadow: 0 0 0 3px rgb(var(--ds-accent-soft)); }
+.ds-empty { border: 1px dashed rgb(var(--ds-line)); border-radius: 7px; padding: 29px; text-align: center; color: rgb(var(--ds-muted)); background: rgb(var(--ds-workspace)); font-size: 11px; }
+.ds-footer { border-top: 1px solid rgb(var(--ds-line)); padding-top: 13px; color: rgb(var(--ds-faint)); font-size: 10px; display: flex; justify-content: space-between; gap: 12px; }
+.ds-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.ds-table th { color: rgb(var(--ds-faint)); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; font-weight: 500; text-align: left; padding: 10px 12px; border-bottom: 1px solid rgb(var(--ds-line)); }
+.ds-table td { padding: 12px; border-bottom: 1px solid rgb(var(--ds-line)); vertical-align: middle; }
+.ds-table tbody tr { transition: background .18s ease; }
+.ds-table tbody tr:hover { background: rgb(var(--ds-surface-2)); }
+.ds-mobile-menu { display: none; }
+
+@media (max-width: 860px) {
+  .ds-sidebar { width: 64px; }
+  .ds-brand { padding: 20px 17px; }
+  .ds-brand-copy, .ds-nav-label, .ds-nav-btn span, .ds-sidebar-foot .ds-statusline span { display: none; }
+  .ds-nav-btn { justify-content: center; padding: 11px 8px; }
+  .ds-sidebar-foot { padding: 15px 9px; }
+  .ds-statusline { justify-content: center; }
+  .ds-topbar { padding: 16px 20px; }
+  .ds-content { padding: 22px 20px 34px; }
+}
+@media (max-width: 640px) {
+  .ds-sidebar { display: none; }
+  .ds-sidebar.open { display: flex; position: fixed; inset: 0 auto 0 0; z-index: 30; width: 232px; box-shadow: 12px 0 30px rgba(var(--ds-shadow), .16); }
+  .ds-sidebar.open .ds-brand-copy, .ds-sidebar.open .ds-nav-label, .ds-sidebar.open .ds-nav-btn span, .ds-sidebar.open .ds-sidebar-foot .ds-statusline span { display: block; }
+  .ds-sidebar.open .ds-nav-btn { justify-content: flex-start; padding: 9px 10px; }
+  .ds-topbar { min-height: 72px; padding: 13px 15px; }
+  .ds-content { padding: 18px 15px 28px; }
+  .ds-top-actions .ds-user { display: none; }
+  .ds-mobile-menu { display: grid; }
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Why the severity colours are what they are
+   ---------------------------------------------------------------------------
+   These were Tailwind's stock red/orange/yellow/green, and they were measurably
+   wrong rather than merely dated. Measured in OKLab against each theme's own
+   surface, with deuteranopia and protanopia simulated:
+
+     old, either theme   critical vs high   ΔE 10.4  — under the 15 floor for
+                                                       ordinary colour vision
+     old, either theme   high vs medium     ΔE  1.3  deuteranopic — orange and
+                                                       amber were the same
+                                                       colour to roughly one in
+                                                       twelve men
+     old, light theme    three of four failed 3:1 contrast on paper; the amber
+                         sat at 1.72:1
+
+   Red, orange and amber cannot be told apart without colour vision, however
+   they are tuned — the hue difference is exactly what deuteranopia removes. So
+   MEDIUM takes the palette's lavender, which was already defined and unused.
+   It costs the traffic-light convention at one step and buys four levels that
+   are actually distinguishable; CRITICAL stays red, which is the association
+   that carries the weight.
+
+   Every adjacent pair now clears ΔE 15 in normal vision and ΔE 8 under both
+   simulations, and every swatch clears 3:1 against its own surface. Severity
+   also always carries a text label, so colour is the secondary encoding — but
+   the severity distribution bar is colour alone, which is why the separation
+   had to hold on its own.
    ────────────────────────────────────────────────────────────────────────── */

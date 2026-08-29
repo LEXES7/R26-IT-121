@@ -137,7 +137,7 @@ export default function AuditLog() {
           </div>
         ) : filtered.length === 0 ? (
           <EmptyState
-            icon="🗒"
+            icon="—"
             title={entries.length === 0 ? 'No activity recorded yet' : 'Nothing matches these filters'}
             description={
               entries.length === 0

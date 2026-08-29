@@ -210,6 +210,10 @@ export const getStoredTransaction = (transactionId) =>
   client.get(`/transactions/${encodeURIComponent(transactionId)}`)
     .then((r) => r.data)
 
+/** Run one detector alone and return exactly what it said. */
+export const scoreOneDetector = (name, transaction) =>
+  client.post(`/detectors/${name}`, { transaction }).then((r) => r.data)
+
 export const listCases = (params = {}) =>
   client.get('/cases', { params }).then((r) => r.data)
 

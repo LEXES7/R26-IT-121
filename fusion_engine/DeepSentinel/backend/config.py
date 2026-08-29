@@ -26,7 +26,26 @@ from typing import Any, Callable, Optional
 
 logger = logging.getLogger(__name__)
 
-CONFIG_FILE = Path(os.getenv("DEEPSENTINEL_CONFIG", "./config.ini"))
+# Anchored to the service directory, not the working directory.
+#
+# This was "./config.ini", which configparser resolves against wherever the
+# process happens to have been started from — and configparser.read() ignores
+# a file it cannot find rather than raising. Started from any other directory,
+# the service therefore came up silently on *defaults*: SQLite instead of the
+# team's Postgres, no SMTP credentials, no API keys — with nothing in the log
+# to say so beyond one warning that is easy to miss. That is a bad failure for
+# something deployed in a container, where the working directory is whatever
+# the image says it is.
+#
+# DEEPSENTINEL_CONFIG still overrides, and is resolved from the cwd if given
+# as a relative path, because that is an explicit choice by whoever set it.
+_SERVICE_ROOT = Path(__file__).resolve().parent.parent
+
+CONFIG_FILE = (
+    Path(os.environ["DEEPSENTINEL_CONFIG"])
+    if os.getenv("DEEPSENTINEL_CONFIG")
+    else _SERVICE_ROOT / "config.ini"
+)
 
 
 @dataclass(frozen=True)
@@ -149,10 +168,18 @@ def _load_parser() -> configparser.ConfigParser:
     if CONFIG_FILE.exists():
         parser.read(CONFIG_FILE, encoding="utf-8")
         logger.info(f"Loaded configuration from {CONFIG_FILE}")
+    elif os.getenv("DEEPSENTINEL_CONFIG"):
+        # Explicitly pointed at a file that is not there. Never quietly fall
+        # back — someone naming a config file means to use it.
+        raise FileNotFoundError(
+            f"DEEPSENTINEL_CONFIG points at {CONFIG_FILE}, which does not exist."
+        )
     else:
         logger.warning(
             f"{CONFIG_FILE} not found — using environment variables and defaults. "
-            f"Copy config.example.ini to config.ini to customise."
+            f"Every secret and the database URL will fall back to their built-in "
+            f"values, which means SQLite and no credentials. Copy "
+            f"config.example.ini to config.ini to customise."
         )
     _parser = parser
     return parser

@@ -6,6 +6,7 @@ import {
 import {
   Alert, Badge, Card, CardHeader, EmptyState, PageHeader, Spinner, cx,
 } from '../components/ui'
+import { Footer, Panel } from '../components/ConsoleShell'
 
 /**
  * Operator assistant — Professional package.
@@ -88,7 +89,7 @@ export default function Assistant() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-16 text-center">
+          <div className="ds-fade-up" style={{ display: 'grid', gap: 15 }}>
         <Spinner className="mx-auto h-6 w-6" />
       </div>
     )
@@ -97,34 +98,19 @@ export default function Assistant() {
   if (!caps?.available) {
     return (
       <div className="mx-auto max-w-4xl px-6 py-10">
-        <PageHeader
-          title="AI assistant"
-          description="Ask questions about live transactions, fraud rings and case history."
-        />
-        <Card className="mt-6">
+        <Panel className="ds-panel-pad">
           <EmptyState
             icon="◆"
             title="Not included in your package"
             description={caps?.reason || 'The AI assistant is not enabled for this account.'}
           />
-        </Card>
+        </Panel>
       </div>
     )
   }
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
-      <PageHeader
-        title="AI assistant"
-        description="Acts on live platform data — scores transactions, inspects fraud rings, searches case history."
-        action={
-          caps.llm_configured ? (
-            <Badge tone="low">Model connected</Badge>
-          ) : (
-            <Badge tone="medium">No model configured</Badge>
-          )
-        }
-      />
 
       {!caps.llm_configured && (
         <Alert tone="warning" title="Running without a language model" className="mt-4">
@@ -134,7 +120,7 @@ export default function Assistant() {
         </Alert>
       )}
 
-      <Card className="mt-6 flex h-[min(32rem,65vh)] flex-col overflow-hidden p-0">
+      <Panel className="flex h-[min(32rem,65vh)] flex-col overflow-hidden">
         <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-5">
           {messages.length === 0 && (
             <div className="space-y-2">
@@ -195,7 +181,7 @@ export default function Assistant() {
             Ask
           </button>
         </form>
-      </Card>
+      </Panel>
     </div>
   )
 }

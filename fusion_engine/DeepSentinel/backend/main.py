@@ -677,9 +677,17 @@ async def analyze_batch(
                 "unscored": not scored_at_all,
                 "label": row.is_fraud_label,
                 "typology_label": row.typology_label,
-                "graph_score": fusion.graph_score,
-                "behavioral_score": fusion.behavioral_score,
-                "temporal_score": fusion.temporal_score,
+                # Only report a detector's score when that detector answered.
+                # Fusion imputes 0.5 for a missing modality — correct for the
+                # arithmetic, since it is the neutral prior the uncertainty
+                # penalty is then applied to — but emitting it here put a
+                # number that no model produced in the same column as ones
+                # that did. A detector that did not run reports null.
+                "graph_score": fusion.graph_score if fusion.graph_available else None,
+                "behavioral_score": (fusion.behavioral_score
+                                     if fusion.behavioral_available else None),
+                "temporal_score": (fusion.temporal_score
+                                   if fusion.temporal_available else None),
                 "modalities_used": fusion.modalities_used,
             }
             scored.append(record)
@@ -1116,6 +1124,11 @@ async def list_analyses(
     records = await list_recent_analyses(limit=limit, classification=classification)
     return [
         {
+            # The row's own id. Without it the history list is a dead end:
+            # every per-analysis route — /analyses/{id}/sar, /explain — is
+            # keyed on it, so the UI could list a record and then had no way
+            # to open anything about it.
+            "id": r.id,
             "transaction_id": r.transaction_id,
             "created_at": as_utc(r.created_at),
             "fraud_confidence_score": r.fraud_confidence_score,
@@ -1402,6 +1415,105 @@ async def review_case(
     await audit(f"case.{status}", actor=user.username, target=case_ref,
                 detail=body.get("note"))
     return _case_row(row)
+
+
+# ── One detector, on its own ─────────────────────────────────────────────────
+# The platform's whole argument is that three models see different things and
+# fusion reconciles them — which means the fused number is the only thing most
+# of the interface shows. That is right for an operator and wrong for anyone who
+# has to defend a single component: there was no way to run one detector alone
+# and look at what it, specifically, produced.
+
+
+DETECTORS = {
+    "graph": {
+        "label": "Edge-Enhanced GraphSAGE",
+        "owner": "relational",
+        "base": "graph_api_base",
+        "reads": "The payment network around this transaction.",
+    },
+    "behavioural": {
+        "label": "Stratified VAE with Dual-Signal Anomaly Attribution",
+        "owner": "behavioural",
+        "base": "behavioral_api_base",
+        "reads": "Whether this fits normal behaviour for its transaction type.",
+    },
+    "temporal": {
+        "label": "Transaction-Sequence TCN with fraud_attention",
+        "owner": "temporal",
+        "base": "temporal_api_base",
+        "reads": "The transactions immediately preceding this one.",
+    },
+}
+
+
+@app.post("/detectors/{name}", tags=["detectors"])
+async def score_one_detector(
+    name: str, body: dict, user: User = Depends(get_current_user)
+):
+    """Run a single detector and return exactly what it said.
+
+    No fusion, no retrieval, no report — one model, its raw response, and how
+    long it took. Nothing is imputed: a detector that does not answer is
+    reported as unavailable rather than given a neutral score.
+    """
+    import time as _time
+
+    from backend.adapters.upstream import (
+        behavioural_evidence, call_behavioral_api, call_graph_api, call_temporal_api,
+    )
+
+    if name not in DETECTORS:
+        raise HTTPException(
+            404, f"Unknown detector '{name}'. One of: {', '.join(DETECTORS)}.")
+
+    txn = body.get("transaction") or body
+    if not txn.get("amount"):
+        raise HTTPException(422, "Body must contain a transaction with an amount.")
+
+    meta = DETECTORS[name]
+    base = str(config.get("upstream", meta["base"])).rstrip("/")
+    caller = {"graph": call_graph_api, "behavioural": call_behavioral_api,
+              "temporal": call_temporal_api}[name]
+
+    import httpx
+
+    t0 = _time.perf_counter()
+    try:
+        # The adapters take the shared client and a timeout — this endpoint is
+        # a one-shot call, so it opens its own.
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            res = await caller(client, base, txn, 30.0)
+    except Exception as exc:                                  # noqa: BLE001
+        raise HTTPException(
+            503, f"{meta['label']} could not be reached at {base} "
+                 f"({type(exc).__name__}).")
+    elapsed = int((_time.perf_counter() - t0) * 1000)
+
+    evidence = None
+    if name == "graph":
+        evidence = (res.extra or {}).get("suspicious_subgraph")
+    elif name == "behavioural":
+        evidence = behavioural_evidence(res.extra or {})
+    elif name == "temporal":
+        evidence = (res.extra or {}).get("temporal_evidence")
+
+    return {
+        "detector": name,
+        "label": meta["label"],
+        "reads": meta["reads"],
+        "endpoint": base,
+        "available": res.available,
+        # The score only when the detector actually answered. Reporting a
+        # number for a model that did not run is the bug this whole endpoint
+        # exists to make impossible to hide.
+        "score": res.score if res.available else None,
+        "summary": res.fraud_signal_summary,
+        "typology_hint": res.typology_hint,
+        "evidence": evidence,
+        "raw": res.extra or {},
+        "latency_ms": elapsed,
+    }
 
 
 # ── Picking a specific transaction to analyse ────────────────────────────────

@@ -248,7 +248,7 @@ export default function Users() {
             ))}
           </div>
         ) : users.length === 0 ? (
-          <EmptyState icon="👤" title="No users yet" description="Add the first account above." />
+          <EmptyState icon="—" title="No users yet" description="Add the first account above." />
         ) : (
           <div className="divide-y divide-white/[0.05]">
             {users.map((u) => {

@@ -1,7 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import PipelineDiagram from '../components/PipelineDiagram'
-import ScoreGauge from '../components/ScoreGauge'
-import RiskBadge from '../components/RiskBadge'
 import AblationComparison from '../components/AblationComparison'
 import TransactionForm from '../components/TransactionForm'
 import GraphEvidence from '../components/GraphEvidence'
@@ -11,22 +8,22 @@ import TemporalEvidence from '../components/TemporalEvidence'
 import ForensicReport from '../components/ForensicReport'
 import SarDraft from '../components/SarDraft'
 import Locked from '../components/Locked'
+import PipelineDiagram from '../components/PipelineDiagram'
+import { Badge, Footer, Panel, Progress, SectionHeading } from '../components/ConsoleShell'
 import { usePackage } from '../hooks/usePackage'
 import { useAnalysisStream } from '../hooks/useAnalysisStream'
 import { getSampleTransaction, getStoredTransaction, searchTransactions } from '../services/api'
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  CardHeader,
-  PageHeader,
-  SectionLabel,
-  cx,
-} from '../components/ui'
 
-// No emoji. A row of pictographs is the fastest way to make a research tool
-// look like a template — the label and the one-line description carry it.
+/**
+ * One transaction, through every stage.
+ *
+ * Laid out as record → evidence → verdict, which is the order an investigator
+ * reads in: what arrived, what each detector made of it, and what the platform
+ * concluded. Nothing here is illustrative — a figure appears only once a run
+ * has produced it, and a detector that did not answer says so rather than
+ * showing a neutral score that looks like a measurement.
+ */
+
 const SCENARIOS = [
   { value: 'mule_network', label: 'Mule network', short: 'Hub-and-spoke fund routing' },
   { value: 'layering', label: 'Layering', short: 'Multi-hop transfer chain' },
@@ -36,441 +33,338 @@ const SCENARIOS = [
   { value: 'legitimate', label: 'Legitimate', short: 'Normal customer activity' },
 ]
 
-const RESULT_HEX = {
-  CRITICAL: '#ef4444', HIGH: '#f97316', MEDIUM: '#eab308', LOW: '#22c55e',
+const SEV = {
+  CRITICAL: { tone: 'alert', hex: 'rgb(var(--ds-signal))', label: 'Critical activity' },
+  HIGH:     { tone: 'warn',  hex: 'rgb(var(--ds-warn))',   label: 'High risk' },
+  MEDIUM:   { tone: 'warn',  hex: 'rgb(var(--ds-warn))',   label: 'Medium risk' },
+  LOW:      { tone: 'good',  hex: 'rgb(var(--ds-accent-strong))', label: 'Low risk' },
 }
-
-const CLASSIFICATION_STYLE = {
-  CRITICAL: { bg: 'bg-risk-critical/8', border: 'border-risk-critical/30', text: 'text-risk-critical' },
-  HIGH: { bg: 'bg-risk-high/8', border: 'border-risk-high/30', text: 'text-risk-high' },
-  MEDIUM: { bg: 'bg-risk-medium/8', border: 'border-risk-medium/30', text: 'text-risk-medium' },
-  LOW: { bg: 'bg-risk-low/8', border: 'border-risk-low/30', text: 'text-risk-low' },
-}
-
-// Full class strings, never interpolated: Tailwind extracts class names by
-// scanning source text, so a template-literal class would never be generated.
-const MODALITIES = [
-  ['graph', 'Graph network', 'bg-modality-graph'],
-  ['behavioral', 'Behavioural', 'bg-modality-behavioral'],
-  ['temporal', 'Temporal', 'bg-modality-temporal'],
-]
 
 const money = (n) =>
   typeof n === 'number' ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'
 
 export default function Analyzer() {
-  // 'pick' is the default: analysing a chosen transaction is reproducible and
-  // lets an investigator re-run the case actually in front of them. A random
-  // pull only ever demonstrates that the pipeline runs.
-  const [mode, setMode] = useState('pick') // 'pick' | 'live' | 'manual' | 'scenario'
+  const [mode, setMode] = useState('pick')
   const [scenario, setScenario] = useState('mule_network')
   const [includeBaseline, setIncludeBaseline] = useState(false)
-
-  const [liveTxn, setLiveTxn] = useState(null)
+  const [txn, setTxn] = useState(null)
   const [pulling, setPulling] = useState(false)
-  const [pullError, setPullError] = useState(null)
-
-  // Picking a stored transaction.
+  const [error, setError] = useState(null)
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState([])
-  const [searching, setSearching] = useState(false)
-  const [searchError, setSearchError] = useState(null)
+  const [open, setOpen] = useState('')
 
-  const { stages, result, running, error, run, cancel } = useAnalysisStream()
+  const { stages, result, running, run } = useAnalysisStream()
   const { has, upsells } = usePackage()
 
-  const pull = useCallback(async () => {
-    setPulling(true)
-    setPullError(null)
-    try {
-      const { transaction } = await getSampleTransaction()
-      setLiveTxn(transaction)
-    } catch (e) {
-      setPullError(
-        e?.response?.data?.detail ??
-          'Could not reach the graph service. Is it running on its configured port?',
-      )
-    } finally {
-      setPulling(false)
-    }
-  }, [])
-
-  // Debounced so typing an account number does not fire a query per keystroke.
   useEffect(() => {
     if (mode !== 'pick') return undefined
-    let cancelled = false
-    setSearching(true)
+    let dead = false
     const t = setTimeout(() => {
       searchTransactions(query)
-        .then((d) => { if (!cancelled) { setHits(d.transactions ?? []); setSearchError(null) } })
-        .catch((e) => {
-          if (!cancelled) {
-            setHits([])
-            setSearchError(e?.response?.data?.detail
-              ?? 'Could not read stored transactions.')
-          }
-        })
-        .finally(() => { if (!cancelled) setSearching(false) })
+        .then((d) => !dead && (setHits(d.transactions ?? []), setError(null)))
+        .catch((e) => !dead && setError(e?.response?.data?.detail ?? 'Could not read stored transactions.'))
     }, 250)
-    return () => { cancelled = true; clearTimeout(t) }
+    return () => { dead = true; clearTimeout(t) }
   }, [query, mode])
 
-  const choose = useCallback(async (transactionId) => {
-    setPullError(null)
+  const choose = useCallback(async (id) => {
+    setError(null)
     try {
-      const { transaction } = await getStoredTransaction(transactionId)
-      setLiveTxn(transaction)
+      const { transaction } = await getStoredTransaction(id)
+      setTxn(transaction)
     } catch (e) {
-      setPullError(e?.response?.data?.detail ?? 'Could not load that transaction.')
+      setError(e?.response?.data?.detail ?? 'Could not load that transaction.')
     }
   }, [])
 
-  const runLive = () => liveTxn && run({ transaction: liveTxn, include_baseline: includeBaseline })
-  const runScenario = () =>
-    run({ use_mock: true, mock_scenario: scenario, include_baseline: includeBaseline })
-  const runManual = (transaction) => run({ transaction, include_baseline: includeBaseline })
+  const pull = useCallback(async () => {
+    setPulling(true); setError(null)
+    try {
+      const { transaction } = await getSampleTransaction()
+      setTxn(transaction)
+    } catch (e) {
+      setError(e?.response?.data?.detail ?? 'Could not reach the graph service.')
+    } finally { setPulling(false) }
+  }, [])
 
-  const hasRun =
-    Boolean(result) || running || Object.values(stages).some((s) => s.status !== 'idle')
+  const go = () => txn && run({ transaction: txn, include_baseline: includeBaseline })
+  const hasRun = Boolean(result) || running || Object.values(stages).some((s) => s.status !== 'idle')
+  const sev = result ? (SEV[result.classification] ?? SEV.LOW) : null
+
+  /* Each detector, with the score it actually returned. A detector that did
+     not answer is stated as such — never imputed to a neutral 0.5, which
+     would sit in the same column as a real measurement. */
+  const detectors = result ? [
+    ['Network', result.graph_score, result.graph_available,
+     'Edge-Enhanced GraphSAGE', 'Who pays whom — mule rings, funnels, layering chains.'],
+    ['Behaviour', result.behavioral_score, result.behavioral_available,
+     'Stratified VAE with Dual-Signal Attribution',
+     'Whether this fits normal behaviour for its transaction type.'],
+    ['Timing', result.temporal_score, result.temporal_available,
+     'Transaction-Sequence TCN',
+     'Reads the transactions immediately before this one.'],
+  ] : []
 
   return (
-    <div className="mx-auto max-w-[88rem] px-5 pb-16 pt-8 sm:px-8">
+    <div className="ds-fade-up" style={{ display: 'grid', gap: 16 }}>
 
-      {/* The page states what it is doing, and what it has to work with. Before
-          a run there is nothing measured, and it says so rather than filling
-          the space with example figures. */}
-      <header className="hair-b pb-6">
-        <p className="eyebrow text-slate-500">Single transaction</p>
-        <h1 className="display mt-3 text-[2.5rem] text-slate-100 sm:text-[3rem]">
-          {result ? (
-            <>
-              Scored{' '}
-              <span className="numeric" style={{ color: RESULT_HEX[result.classification] ?? '#a39c92' }}>
-                {result.fraud_confidence_score?.toFixed(3)}
-              </span>
-              <span className="display-italic text-slate-500">
-                {' '}on {result.modalities_used} of 3.
-              </span>
-            </>
-          ) : running ? (
-            <>Running <span className="display-italic text-slate-500">the pipeline.</span></>
-          ) : liveTxn ? (
-            <>Ready. <span className="display-italic text-slate-500">Nothing scored yet.</span></>
-          ) : (
-            <>Pick a transaction <span className="display-italic text-slate-500">to begin.</span></>
-          )}
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-400">
-          {result
-            ? `Every figure below was produced by this run. ${result.modalities_used < 3
-                ? 'Fewer than three detectors answered, so an uncertainty penalty was applied and the confidence is deliberately conservative.'
-                : 'All three detectors contributed.'}`
-            : 'One transaction, through all five stages, with each stage timed as it completes. '
-              + 'Nothing on this page is illustrative — figures appear only once a run produces them.'}
-        </p>
-      </header>
+      {/* ── choose what to analyse ── */}
+      <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', alignItems: 'center' }}>
+        {[['pick', 'Choose'], ['live', 'Random'], ['manual', 'Manual'], ['scenario', 'Scenario']]
+          .map(([v, label]) => (
+          <button key={v} onClick={() => setMode(v)}
+                  className={`ds-btn ${mode === v ? 'ds-btn-primary' : 'ds-btn-quiet'}`}>
+            {label}
+          </button>
+        ))}
+        <span style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+          <label style={{ fontSize: 10, color: 'rgb(var(--ds-muted))',
+                          display: 'flex', gap: 6, alignItems: 'center' }}>
+            <input type="checkbox" checked={includeBaseline}
+                   onChange={(e) => setIncludeBaseline(e.target.checked)} />
+            Also run without retrieval
+          </label>
+          <button className="ds-btn ds-btn-primary" onClick={go} disabled={!txn || running}>
+            {running ? 'Running…' : 'Analyse transaction'}
+          </button>
+        </span>
+      </div>
 
-      {error && <div className="mt-5"><Alert tone="error">{error}</Alert></div>}
+      {error && (
+        <div style={{ background: 'rgb(var(--ds-signal-soft))', color: 'rgb(var(--ds-signal))',
+                      borderRadius: 6, padding: 11, fontSize: 11 }}>
+          {error}
+        </div>
+      )}
 
-      <div className="mt-7 grid gap-8 lg:grid-cols-[20rem_1fr] lg:items-start">
-        {/* ── Controls ── */}
-        <div className="space-y-4 print:hidden">
-          <Card className="p-5">
-            <div className="flex gap-1 rounded-lg border border-subtle bg-surface p-1">
-              {[
-                ['pick', 'Choose'],
-                ['live', 'Random'],
-                ['manual', 'Manual'],
-                ['scenario', 'Scenario'],
-              ].map(([value, label]) => (
-                <button
-                  key={value}
-                  onClick={() => setMode(value)}
-                  className={cx(
-                    'flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-                    mode === value
-                      ? 'bg-surface-overlay text-slate-200'
-                      : 'text-slate-500 hover:text-slate-300',
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+      <div style={{ display: 'grid', gap: 12,
+                    gridTemplateColumns: 'minmax(0, 1.24fr) minmax(330px, .9fr)' }}>
+        <div style={{ display: 'grid', gap: 12 }}>
+
+          {/* ── the record ── */}
+          <Panel className="ds-panel-pad">
+            <SectionHeading
+              label="Incoming record"
+              title={txn?.transaction_id ?? 'No transaction loaded'}
+              action={result && <Badge tone={sev.tone}>
+                {result.classification?.toLowerCase()} · {result.fraud_confidence_score?.toFixed(3)}
+              </Badge>}
+            />
 
             {mode === 'pick' && (
-              <div className="mt-5 space-y-4">
-                <p className="text-xs leading-relaxed text-slate-500">
-                  Search transactions the platform has ingested, by transaction
-                  id or by either account. A row that already has a case shows
-                  the verdict it was given — pick it to re-run that exact
-                  transaction through every deployed model.
-                </p>
-
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Transaction id or account…"
-                  aria-label="Search stored transactions"
-                  className="w-full rounded-lg border border-subtle bg-surface-raised px-3 py-2 text-xs text-slate-200 placeholder-slate-600 focus:border-accent-500 focus:outline-none"
-                />
-
-                {searchError && <Alert tone="error">{searchError}</Alert>}
-                {pullError && <Alert tone="error">{pullError}</Alert>}
-
-                {!searchError && (
-                  <div className="rows max-h-72 overflow-y-auto">
-                    {hits.length === 0 && !searching && (
-                      <p className="py-6 text-center text-xs text-slate-600">
-                        {query
-                          ? 'Nothing matches that.'
-                          : 'No ingested transactions yet — upload a file with the Query Runner.'}
-                      </p>
-                    )}
-                    {hits.map((t) => {
-                      const chosen = liveTxn?.transaction_id === t.transaction_id
-                      return (
-                        <button
-                          key={t.transaction_id}
-                          onClick={() => choose(t.transaction_id)}
-                          className={cx(
-                            'flex w-full items-center gap-2 py-2 pl-2 pr-1 text-left transition-colors',
-                            chosen ? 'bg-surface-raised' : 'hover:bg-surface',
-                          )}
-                        >
-                          <span
-                            className="h-6 w-[3px] shrink-0 rounded-full"
-                            style={{ background: t.case_ref
-                              ? (RESULT_HEX[t.classification] ?? '#6c655d')
-                              : 'rgb(var(--surface-overlay))' }}
-                          />
-                          <span className="min-w-0 flex-1">
-                            <span className="numeric block truncate text-[11px] text-slate-300">
-                              {t.transaction_id}
-                            </span>
-                            <span className="block truncate text-[10px] text-slate-600">
-                              {t.type} · {money(t.amount)} · {t.nameOrig} → {t.nameDest}
-                            </span>
-                          </span>
-                          {t.case_ref ? (
-                            <span
-                              className="numeric shrink-0 text-[10px]"
-                              style={{ color: RESULT_HEX[t.classification] ?? '#a39c92' }}
-                            >
-                              {typeof t.fused_score === 'number' ? t.fused_score.toFixed(3) : '—'}
-                            </span>
-                          ) : (
-                            <span className="shrink-0 text-[10px] text-slate-600">not scored</span>
-                          )}
-                          {t.label_is_fraud !== null && t.label_is_fraud !== undefined && (
-                            <span
-                              className={cx('h-1.5 w-1.5 shrink-0 rounded-full',
-                                t.label_is_fraud ? 'bg-risk-critical' : 'bg-slate-700')}
-                              title={t.label_is_fraud ? 'labelled fraud' : 'labelled clean'}
-                            />
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-
-                {liveTxn && <LoadedTransaction txn={liveTxn} />}
-
-                <Button
-                  onClick={runLive}
-                  loading={running}
-                  disabled={!liveTxn}
-                  className="w-full"
-                >
-                  {running ? 'Running…' : liveTxn ? 'Analyse this transaction' : 'Choose a transaction'}
-                </Button>
-              </div>
+              <>
+                <input className="ds-field" value={query} placeholder="Transaction id or account…"
+                       onChange={(e) => setQuery(e.target.value)} style={{ marginBottom: 10 }} />
+                <div className="ds-scroll" style={{ maxHeight: 168, overflowY: 'auto', marginBottom: 4 }}>
+                  {hits.length === 0 ? (
+                    <div style={{ fontSize: 10, color: 'rgb(var(--ds-faint))', padding: '8px 0' }}>
+                      {query ? 'Nothing matches that.'
+                        : 'No ingested transactions yet — upload a file with the Query Runner.'}
+                    </div>
+                  ) : hits.map((t) => (
+                    <button key={t.transaction_id} onClick={() => choose(t.transaction_id)}
+                            style={{ all: 'unset', cursor: 'pointer', display: 'flex', width: '100%',
+                                     gap: 10, alignItems: 'center', padding: '7px 6px', borderRadius: 5,
+                                     background: txn?.transaction_id === t.transaction_id
+                                       ? 'rgb(var(--ds-surface-2))' : undefined }}>
+                      <span className="ds-mono" style={{ fontSize: 10, flex: 1, minWidth: 0,
+                                                         overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {t.transaction_id}
+                      </span>
+                      <span style={{ fontSize: 9, color: 'rgb(var(--ds-muted))' }}>
+                        {t.type} · {money(t.amount)}
+                      </span>
+                      <span className="ds-mono" style={{ fontSize: 9, flex: '0 0 auto',
+                              minWidth: 62, textAlign: 'right', whiteSpace: 'nowrap',
+                              color: t.case_ref ? 'rgb(var(--ds-signal))' : 'rgb(var(--ds-faint))' }}>
+                        {typeof t.fused_score === 'number' ? t.fused_score.toFixed(3) : 'not scored'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
 
             {mode === 'live' && (
-              <div className="mt-5 space-y-4">
-                <p className="text-xs leading-relaxed text-slate-500">
-                  Pulls a genuine transaction from the graph service — the same
-                  source the live monitor screens — and sends it to every
-                  deployed model.
-                </p>
-
-                {pullError && <Alert tone="error">{pullError}</Alert>}
-
-                {liveTxn ? (
-                  <LoadedTransaction txn={liveTxn} />
-                ) : (
-                  <div className="rounded-xl border border-dashed border-subtle p-5 text-center text-xs text-slate-600">
-                    No transaction loaded yet.
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    onClick={pull}
-                    loading={pulling}
-                    className="flex-1"
-                  >
-                    {liveTxn ? 'Pull another' : 'Pull transaction'}
-                  </Button>
-                  <Button
-                    onClick={runLive}
-                    loading={running}
-                    disabled={!liveTxn}
-                    className="flex-1"
-                  >
-                    {running ? 'Running…' : 'Analyse'}
-                  </Button>
-                </div>
-              </div>
+              <button className="ds-btn" onClick={pull} disabled={pulling}
+                      style={{ marginBottom: 12 }}>
+                {pulling ? 'Pulling…' : txn ? 'Pull another' : 'Pull a transaction'}
+              </button>
             )}
 
             {mode === 'manual' && (
-              <div className="mt-5 space-y-4">
-                <p className="text-xs leading-relaxed text-slate-500">
-                  Enter a transaction by hand. It is sent to all three model
-                  APIs; any that are unreachable are imputed and the confidence
-                  penalised.
-                </p>
-                <TransactionForm onSubmit={runManual} loading={running} />
+              <div style={{ marginBottom: 10 }}>
+                <TransactionForm onSubmit={(t) => run({ transaction: t, include_baseline: includeBaseline })}
+                                 loading={running} />
               </div>
             )}
 
             {mode === 'scenario' && (
-              <div className="mt-5 space-y-4">
-                <Alert tone="warning">
-                  Scenario mode <strong>simulates</strong> the three model
-                  scores. Use it to exercise fusion, retrieval and report
-                  generation when the models are not reachable — not to
-                  demonstrate detection.
-                </Alert>
-                <div>
-                  <SectionLabel>Choose a scenario</SectionLabel>
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    {SCENARIOS.map((s) => (
-                      <button
-                        key={s.value}
-                        onClick={() => setScenario(s.value)}
-                        className={cx(
-                          'rounded-xl border p-3 text-left transition-all',
-                          scenario === s.value
-                            ? 'border-accent-500/40 bg-accent-500/10 ring-1 ring-accent-500/30'
-                            : 'border-subtle bg-surface hover:border-strong',
-                        )}
-                      >
-                        <p
-                          className={cx(
-                            'text-xs font-semibold',
-                            scenario === s.value ? 'text-accent-400' : 'text-slate-300',
-                          )}
-                        >
-                          {s.label}
-                        </p>
-                        <p className="mt-0.5 text-[10px] leading-tight text-slate-600">
-                          {s.short}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
+              <>
+                <div style={{ background: 'rgb(var(--ds-warn-soft))', color: 'rgb(var(--ds-warn))',
+                              borderRadius: 6, padding: 10, fontSize: 10, marginBottom: 11 }}>
+                  Scenario mode <strong>simulates</strong> the three detector scores. It exercises
+                  fusion, retrieval and reporting — the scores are not measurements.
                 </div>
-                <Button onClick={runScenario} loading={running} className="w-full" size="lg">
-                  {running ? 'Running…' : '▶  Run simulation'}
-                </Button>
+                <div style={{ display: 'grid', gap: 5,
+                              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+                  {SCENARIOS.map((s) => (
+                    <button key={s.value} onClick={() => setScenario(s.value)}
+                            className={`ds-btn ${scenario === s.value ? 'ds-btn-primary' : ''}`}
+                            style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+                      <span>{s.label}</span>
+                      <span style={{ fontSize: 9, opacity: .8, fontWeight: 400 }}>{s.short}</span>
+                    </button>
+                  ))}
+                </div>
+                <button className="ds-btn ds-btn-primary" style={{ marginTop: 10 }}
+                        disabled={running}
+                        onClick={() => run({ use_mock: true, mock_scenario: scenario,
+                                             include_baseline: includeBaseline })}>
+                  {running ? 'Running…' : 'Run scenario'}
+                </button>
+              </>
+            )}
+
+            {txn && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                            gap: '15px 24px', padding: '13px 0 2px',
+                            borderTop: '1px solid rgb(var(--ds-line))', marginTop: 4 }}>
+                {[['amount', money(txn.amount)], ['type', txn.type],
+                  ['sender', txn.nameOrig], ['beneficiary', txn.nameDest],
+                  ['step', txn.step], ['balance after', money(txn.newbalanceOrig)]].map(([k, v]) => (
+                  <div key={k}>
+                    <div className="ds-section-label">{k}</div>
+                    <div className="ds-mono" style={{ fontSize: 11, marginTop: 5 }}>{v ?? '—'}</div>
+                  </div>
+                ))}
               </div>
             )}
-          </Card>
+          </Panel>
 
-          <Card className="p-5">
-            <label className="flex cursor-pointer items-start gap-3">
-              <input
-                type="checkbox"
-                checked={includeBaseline}
-                onChange={(e) => setIncludeBaseline(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0"
+          {/* ── evidence stack ── */}
+          <Panel style={{ overflow: 'hidden' }}>
+            <div style={{ padding: '17px 19px 3px' }}>
+              <SectionHeading
+                label="Evidence stack"
+                title={result ? 'What each detector found' : 'Nothing has run yet'}
+                action={result && <span className="ds-mono" style={{ fontSize: 10 }}>
+                  {result.modalities_used} / 3 contributed
+                </span>}
               />
-              <span>
-                <span className="block text-sm font-medium text-slate-200">
-                  Ablation comparison
-                </span>
-                <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">
-                  Also generate a report without retrieved context, to show what
-                  grounding actually changes. Roughly doubles the run time.
-                </span>
-              </span>
-            </label>
-          </Card>
+            </div>
+            {!result ? (
+              <div style={{ padding: '0 19px 19px' }}>
+                <div className="ds-empty">
+                  Choose a transaction and analyse it. Each detector's score and reasoning
+                  appears here once it has actually run.
+                </div>
+              </div>
+            ) : detectors.map(([name, score, available, model, blurb]) => {
+              const tone = !available ? 'faint'
+                : score >= 0.7 ? 'signal' : score >= 0.4 ? 'warn' : 'accent'
+              const colour = { faint: 'rgb(var(--ds-faint))', signal: 'rgb(var(--ds-signal))',
+                               warn: 'rgb(var(--ds-warn))', accent: 'rgb(var(--ds-accent-strong))' }[tone]
+              return (
+                <div key={name} onClick={() => setOpen(open === name ? '' : name)}
+                     style={{ padding: '15px 19px', borderTop: '1px solid rgb(var(--ds-line))',
+                              cursor: 'pointer' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ flex: 1, fontSize: 12, fontWeight: 600 }}>{name}</div>
+                    <span className="ds-mono" style={{ color: colour }}>
+                      {available && typeof score === 'number' ? score.toFixed(3) : 'not deployed'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between',
+                                gap: 15, margin: '8px 0', alignItems: 'center' }}>
+                    <div className="ds-progress" style={{ flex: 1 }}>
+                      <span style={{ width: available && typeof score === 'number'
+                                       ? `${score * 100}%` : '0%', background: colour }} />
+                    </div>
+                    <span style={{ fontSize: 9, color: 'rgb(var(--ds-muted))' }}>{model}</span>
+                  </div>
+                  {open === name && (
+                    <div className="ds-fade-up" style={{ fontSize: 10, lineHeight: 1.55,
+                                                         color: 'rgb(var(--ds-muted))', paddingTop: 3 }}>
+                      {available ? blurb
+                        : 'This detector did not answer, so it abstained. Fusion applied an '
+                          + 'uncertainty penalty rather than treating silence as innocence.'}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </Panel>
 
-          {running && (
-            <Button variant="ghost" onClick={cancel} className="w-full" size="sm">
-              Cancel run
-            </Button>
+          {/* ── attribution, gated ── */}
+          {(result?.graph_evidence || result?.behavioral_evidence || result?.temporal_evidence) && (
+            <Locked feature="attribution_panels" has={has} upsells={upsells}
+                    title="Detailed attribution is not included in your package">
+              <div style={{ display: 'grid', gap: 12 }}>
+                {result?.graph_evidence && <NetworkGraph evidence={result.graph_evidence} />}
+                {result?.graph_evidence && <GraphEvidence evidence={result.graph_evidence} />}
+                {result?.behavioral_evidence && <BehaviouralEvidence evidence={result.behavioral_evidence} />}
+                {result?.temporal_evidence && <TemporalEvidence evidence={result.temporal_evidence} />}
+              </div>
+            </Locked>
           )}
         </div>
 
-        {/* ── Results ── */}
-        <div className="space-y-5">
-          <Card className="p-5 sm:p-6 print:hidden">
-            <CardHeader
-              title="Pipeline"
-              description={
-                hasRun
-                  ? 'Live — each stage reports its own measured duration.'
-                  : 'Select a stage to read what happens there, or run the pipeline to watch it live.'
-              }
-              action={
-                running ? (
-                  <Badge tone="medium">Running</Badge>
-                ) : result ? (
-                  <Badge tone="low">Complete</Badge>
-                ) : null
-              }
-            />
-            <div className="mt-5">
-              <PipelineDiagram stages={hasRun ? stages : null} running={running} live={hasRun} />
-            </div>
-          </Card>
-
-          {result && <ResultSummary result={result} />}
-          {result && <ModalityPanel result={result} />}
-
-          {/* Attribution, the report and SAR drafting are Professional
-              features. The score and classification above never are. */}
-          {(result?.graph_evidence || result?.behavioral_evidence
-            || result?.temporal_evidence) && (
-            <Locked
-              feature="attribution_panels"
-              has={has}
-              upsells={upsells}
-              title="Detailed attribution is not included in your package"
-            >
+        {/* ── verdict rail ── */}
+        <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
+          <Panel className="ds-panel-pad"
+                 style={{ borderTop: `3px solid ${result ? sev.hex : 'rgb(var(--ds-line))'}` }}>
+            <div className="ds-section-label">Fused verdict</div>
+            {result ? (
               <>
-                {/* The picture first: an investigator reasons about the shape of
-                    the ring before reading the numbers behind it. */}
-                {result?.graph_evidence && (
-                  <NetworkGraph evidence={result.graph_evidence} />
-                )}
-                {result?.graph_evidence && (
-                  <GraphEvidence evidence={result.graph_evidence} />
-                )}
-                {result?.behavioral_evidence && (
-                  <BehaviouralEvidence evidence={result.behavioral_evidence} />
-                )}
-                {result?.temporal_evidence && (
-                  <TemporalEvidence evidence={result.temporal_evidence} />
+                <div style={{ display: 'flex', alignItems: 'end',
+                              justifyContent: 'space-between', marginTop: 9, gap: 10 }}>
+                  <div style={{ fontSize: 22, letterSpacing: '-.06em', fontWeight: 600 }}>
+                    {sev.label}
+                  </div>
+                  <div className="ds-mono" style={{ fontSize: 24, color: sev.hex }}>
+                    {result.fraud_confidence_score?.toFixed(3)}
+                  </div>
+                </div>
+                <p style={{ fontSize: 11, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
+                            margin: '13px 0 0' }}>
+                  {result.modalities_used < 3
+                    ? `Only ${result.modalities_used} of 3 detectors contributed, so an
+                       uncertainty penalty was applied — this confidence is deliberately
+                       conservative.`
+                    : 'All three detectors contributed. The fused score is the meta-classifier’s '
+                      + 'calibrated probability, not an average.'}
+                </p>
+                {result.retrieval?.typology_name && (
+                  <div style={{ marginTop: 14, paddingTop: 13,
+                                borderTop: '1px solid rgb(var(--ds-line))' }}>
+                    <div className="ds-section-label">Matched typology</div>
+                    <div style={{ fontSize: 11, marginTop: 5 }}>
+                      {result.retrieval.typology_name}
+                      <span className="ds-mono" style={{ color: 'rgb(var(--ds-muted))', marginLeft: 7 }}>
+                        {result.retrieval.typology_id}
+                      </span>
+                    </div>
+                    <div className="ds-mono" style={{ fontSize: 9, color: 'rgb(var(--ds-faint))',
+                                                      marginTop: 5 }}>
+                      {(result.retrieval.similarity_score * 100).toFixed(1)}% similarity ·
+                      retrieved, not generated
+                    </div>
+                  </div>
                 )}
               </>
-            </Locked>
-          )}
+            ) : (
+              <div style={{ fontSize: 11, color: 'rgb(var(--ds-muted))', marginTop: 10,
+                            lineHeight: 1.6 }}>
+                No verdict yet. Figures appear here only once a run produces them.
+              </div>
+            )}
+          </Panel>
 
           {(result || running) && (
-            <Locked
-              feature="forensic_report"
-              has={has}
-              upsells={upsells}
-              title="Forensic reporting is not included in your package"
-            >
+            <Locked feature="forensic_report" has={has} upsells={upsells}
+                    title="Forensic reporting is not included in your package">
               <ForensicReport
                 report={result?.forensic_report}
                 loading={running && !result?.forensic_report}
@@ -481,153 +375,31 @@ export default function Analyzer() {
             </Locked>
           )}
 
+          {result?.baseline_report && (
+            <AblationComparison grounded={result.forensic_report}
+                                baseline={result.baseline_report} />
+          )}
+
           {result?.analysis_id && (
-            <Locked
-              feature="sar_draft"
-              has={has}
-              upsells={upsells}
-              title="Regulatory report drafting is not included in your package"
-            >
-              <SarDraft
-                analysisId={result.analysis_id}
-                classification={result.classification}
-              />
+            <Locked feature="sar_draft" has={has} upsells={upsells}
+                    title="SAR drafting is not included in your package">
+              <SarDraft analysisId={result.analysis_id} />
             </Locked>
           )}
-
-          {result?.baseline_report && (
-            <Card className="border-modality-graph/25 p-5 print:hidden">
-              <AblationComparison
-                baselineReport={result.baseline_report}
-                groundedReport={result.forensic_report}
-              />
-            </Card>
-          )}
         </div>
       </div>
-    </div>
-  )
-}
 
-function ResultSummary({ result }) {
-  const style = CLASSIFICATION_STYLE[result.classification] ?? CLASSIFICATION_STYLE.LOW
-
-  return (
-    <Card className={cx('animate-slide-up p-5 sm:p-6', style.bg, style.border)}>
-      <div className="flex flex-wrap items-center justify-between gap-5">
-        <div className="min-w-0">
-          <p className="truncate font-mono text-xs text-slate-500">{result.transaction_id}</p>
-          <p className={cx('mt-1 text-xl font-bold', style.text)}>
-            {result.classification} RISK
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-            <Badge>{result.modalities_used} of 3 models</Badge>
-            {result.mock_scenario && <Badge tone="medium">simulated scores</Badge>}
-            <RiskBadge classification={result.retrieval.risk_level} />
-          </div>
+      {/* Full width: the pipeline reads left to right, and squeezing it into a
+          330px rail made it overflow its own panel. */}
+      <Panel className="ds-panel-pad">
+        <SectionHeading label="Pipeline"
+                        title={hasRun ? 'Stages, as they ran' : 'Five stages, input to report'} />
+        <div style={{ overflowX: 'auto' }}>
+          <PipelineDiagram stages={hasRun ? stages : null} running={running} live={hasRun} />
         </div>
+      </Panel>
 
-        <div className="flex items-center gap-6">
-          <div className="text-right">
-            <p className="text-xs text-slate-500">FATF match</p>
-            <p className="mt-0.5 max-w-[14rem] truncate text-sm font-medium text-slate-200">
-              {result.retrieval.typology_name}
-            </p>
-            <p className="mt-0.5 font-mono text-xs text-slate-500">
-              {(result.retrieval.similarity_score * 100).toFixed(1)}% similarity
-            </p>
-          </div>
-          <ScoreGauge score={result.fraud_confidence_score} label="Confidence" size={104} />
-        </div>
-      </div>
-    </Card>
-  )
-}
-
-/**
- * Says plainly which models answered and which did not.
- *
- * An unreachable model is imputed at 0.5 and the fused confidence penalised —
- * showing that number without saying where it came from would misrepresent a
- * placeholder as a measurement.
- */
-function ModalityPanel({ result }) {
-  const missing = MODALITIES.filter(([k]) => !result[`${k}_available`])
-
-  return (
-    <Card className="p-5 sm:p-6">
-      <CardHeader
-        title="Model contributions"
-        description="Which detectors answered for this transaction."
-      />
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
-        {MODALITIES.map(([key, label, tone]) => {
-          const available = result[`${key}_available`]
-          const score = result[`${key}_score`]
-          const signal = result[`${key}_signal`]
-          return (
-            <div
-              key={key}
-              className={cx(
-                'rounded-xl border p-4',
-                available ? 'border-subtle bg-surface-raised' : 'border-dashed border-subtle',
-              )}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-medium text-slate-300">{label}</p>
-                <span className={cx('h-1.5 w-1.5 rounded-full', available ? tone : 'bg-slate-600')} />
-              </div>
-              {available ? (
-                <>
-                  <p className="mt-2 font-mono text-2xl font-semibold text-slate-200">
-                    {(score ?? 0).toFixed(3)}
-                  </p>
-                  {signal && (
-                    <p className="mt-2 text-[11px] leading-relaxed text-slate-500">{signal}</p>
-                  )}
-                </>
-              ) : (
-                <>
-                  <p className="mt-2 text-sm font-medium text-slate-500">Not deployed</p>
-                  <p className="mt-2 text-[11px] leading-relaxed text-slate-600">
-                    Imputed at 0.5 and excluded from the fused score.
-                  </p>
-                </>
-              )}
-            </div>
-          )
-        })}
-      </div>
-
-      {missing.length > 0 && (
-        <p className="mt-4 text-xs leading-relaxed text-slate-500">
-          {missing.length} of 3 detectors {missing.length === 1 ? 'is' : 'are'} not
-          currently deployed, so an uncertainty penalty has been applied to the
-          fused confidence. The figure above is deliberately conservative.
-        </p>
-      )}
-    </Card>
-  )
-}
-
-/** The transaction currently loaded, shown identically however it was chosen. */
-function LoadedTransaction({ txn }) {
-  return (
-    <div className="rounded-xl border border-subtle bg-surface-raised p-4">
-      <div className="flex items-start justify-between gap-2">
-        <SectionLabel>Loaded transaction</SectionLabel>
-        <Badge tone="low">{txn.type}</Badge>
-      </div>
-      <p className="numeric mt-2 text-[11px] text-slate-500">{txn.transaction_id}</p>
-      <p className="numeric mt-2 text-lg font-semibold text-slate-200">{money(txn.amount)}</p>
-      <dl className="mt-3 space-y-1 text-[11px]">
-        {[['From', txn.nameOrig], ['To', txn.nameDest], ['Step', txn.step]].map(([k, v]) => (
-          <div key={k} className="flex justify-between gap-3">
-            <dt className="text-slate-500">{k}</dt>
-            <dd className="numeric truncate text-slate-400">{v ?? '—'}</dd>
-          </div>
-        ))}
-      </dl>
+      <Footer left="Analysis is reproducible: the same transaction gives the same run." />
     </div>
   )
 }
