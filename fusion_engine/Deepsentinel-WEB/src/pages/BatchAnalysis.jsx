@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { analyzeBatch } from '../services/api'
 import {
   Alert,
@@ -11,7 +11,7 @@ import {
   SectionLabel,
   cx,
 } from '../components/ui'
-import { Footer, Panel } from '../components/ConsoleShell'
+import { Badge as DsBadge, Footer, Panel, SectionHeading } from '../components/ConsoleShell'
 
 /**
  * Batch analysis of an uploaded transaction file.
@@ -48,12 +48,25 @@ export default function BatchAnalysis() {
   const [running, setRunning] = useState(false)
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState('all')
+  // Scoring 50 rows takes about three seconds, so every row lands inside one
+  // blink and the run reads as a frozen page followed by a finished table.
+  // Rows are queued and drained on a timer instead: the scoring is untouched,
+  // only the rate at which results are painted.
+  const [queue, setQueue] = useState([])
+  const [demoPace, setDemoPace] = useState(false)
+  // The file is read and checked in the browser the moment it is chosen, so
+  // the schema, the row count and whether it carries labels are known before
+  // anything is uploaded or any model is asked to score. Running the pipeline
+  // is then a separate, deliberate step.
+  const [inspect, setInspect] = useState(null)
+  const [inspecting, setInspecting] = useState(false)
   const abortRef = useRef(null)
   const inputRef = useRef(null)
 
   const reset = () => {
     setMeta(null)
     setRows([])
+    setQueue([])
     setSummary(null)
     setNarratives([])
     setUpstreamNotices([])
@@ -65,6 +78,71 @@ export default function BatchAnalysis() {
     if (!f) return
     setFile(f)
     reset()
+    setInspect(null)
+    inspectFile(f)
+  }
+
+  /* Read the header and a sample of rows locally. The same required columns
+     the server enforces, matched case-insensitively, so what the page reports
+     here is what the upload will actually accept. */
+  const inspectFile = (f) => {
+    setInspecting(true)
+    const reader = new FileReader()
+    reader.onerror = () => {
+      setInspecting(false)
+      setError('Could not read that file.')
+    }
+    reader.onload = () => {
+      try {
+        const text = String(reader.result)
+        const lines = text.split(/\r?\n/).filter((l) => l.trim())
+        if (lines.length < 2) throw new Error('The file has no data rows.')
+        const delim = (lines[0].match(/\t/g) || []).length
+          > (lines[0].match(/,/g) || []).length ? '\t' : ','
+        const header = lines[0].split(delim).map((h) => h.trim().replace(/^"|"$/g, ''))
+        const key = header.map((h) => h.toLowerCase().replace(/[\s_]/g, ''))
+
+        const need = [
+          ['step', 'step'], ['type', 'type'], ['amount', 'amount'],
+          ['nameOrig', 'nameorig'], ['nameDest', 'namedest'],
+        ]
+        const mapped = need.map(([label, k]) => ({
+          label, found: header[key.indexOf(k)] ?? null,
+        }))
+        const labelCol = header[key.indexOf('isfraud')] ?? null
+
+        const body = lines.slice(1)
+        const preview = body.slice(0, 5).map((l) => {
+          const cells = l.split(delim).map((c) => c.trim().replace(/^"|"$/g, ''))
+          return Object.fromEntries(header.map((h, i) => [h, cells[i]]))
+        })
+        let labelled = 0
+        if (labelCol) {
+          const li = header.indexOf(labelCol)
+          body.forEach((l) => {
+            const v = (l.split(delim)[li] ?? '').trim()
+            if (v === '1' || v.toLowerCase() === 'true') labelled += 1
+          })
+        }
+
+        setInspect({
+          rows: body.length,
+          header,
+          mapped,
+          missing: mapped.filter((m) => !m.found).map((m) => m.label),
+          labelCol,
+          fraudLabelled: labelled,
+          preview,
+        })
+      } catch (e) {
+        setError(e.message ?? 'Could not read that file.')
+      } finally {
+        setInspecting(false)
+      }
+    }
+    // Only the head is needed to validate a schema; a large file should not be
+    // pulled into memory just to read its first six lines.
+    reader.readAsText(f.slice(0, 256 * 1024))
   }
 
   const start = useCallback(() => {
@@ -75,7 +153,7 @@ export default function BatchAnalysis() {
     abortRef.current = analyzeBatch(file, {
       onEvent: (name, data) => {
         if (name === 'meta') setMeta(data)
-        else if (name === 'progress') setRows((prev) => [...prev, data])
+        else if (name === 'progress') setQueue((prev) => [...prev, data])
         else if (name === 'narrative') setNarratives((prev) => [...prev, data])
         else if (name === 'summary') setSummary(data)
         else if (name === 'upstream')
@@ -96,6 +174,35 @@ export default function BatchAnalysis() {
     abortRef.current?.()
     setRunning(false)
   }
+
+  // Drain one row per tick. Fast enough to finish promptly, slow enough that
+  // a person can see transactions arriving one at a time.
+  useEffect(() => {
+    if (queue.length === 0) return undefined
+    const step = demoPace ? 220 : 45
+    const t = setTimeout(() => {
+      setQueue((q) => {
+        if (q.length === 0) return q
+        const [head, ...rest] = q
+        setRows((prev) => [...prev, head])
+        return rest
+      })
+    }, step)
+    return () => clearTimeout(t)
+  }, [queue, demoPace])
+
+  const scoring = running || queue.length > 0
+  const latest = rows[rows.length - 1] ?? null
+
+  // Tallies as the run goes, rather than only in the scorecard at the end.
+  const live = rows.reduce((a, r) => {
+    if (r.alerted) a.alerted += 1
+    if (r.label === 1) a.fraud += 1
+    if (r.alerted && r.label === 1) a.caught += 1
+    if (!r.alerted && r.label === 1) a.missed += 1
+    if (r.alerted && r.label === 0) a.falseAlarm += 1
+    return a
+  }, { alerted: 0, fraud: 0, caught: 0, missed: 0, falseAlarm: 0 })
 
   const progressPct = meta?.rows ? Math.round((rows.length / meta.rows) * 100) : 0
 
@@ -159,21 +266,129 @@ export default function BatchAnalysis() {
           )}
         </div>
 
+        {/* ── step 2: what the file actually contains ── */}
+        {inspecting && (
+          <p style={{ marginTop: 14, fontSize: 11, color: 'rgb(var(--ds-muted))' }}>
+            Reading the file…
+          </p>
+        )}
+
+        {inspect && (
+          <div className="ds-fade-up" style={{ marginTop: 16 }}>
+            <div className="ds-divider" style={{ marginBottom: 15 }} />
+            <SectionHeading
+              label="Checked before anything is scored"
+              title={inspect.missing.length
+                ? 'This file cannot be scored yet'
+                : 'Ready for the pipeline'}
+              action={<DsBadge tone={inspect.missing.length ? 'alert' : 'good'}>
+                {inspect.missing.length
+                  ? `${inspect.missing.length} column${inspect.missing.length === 1 ? '' : 's'} missing`
+                  : 'schema ok'}
+              </DsBadge>}
+            />
+
+            <div style={{ display: 'grid', gap: 12, marginBottom: 15,
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))' }}>
+              <div>
+                <div className="ds-mono" style={{ fontSize: 19 }}>{inspect.rows.toLocaleString()}</div>
+                <div className="ds-section-label" style={{ marginTop: 4 }}>Rows</div>
+              </div>
+              <div>
+                <div className="ds-mono" style={{ fontSize: 19 }}>{inspect.header.length}</div>
+                <div className="ds-section-label" style={{ marginTop: 4 }}>Columns</div>
+              </div>
+              <div>
+                <div className="ds-mono" style={{ fontSize: 19,
+                      color: inspect.labelCol ? 'rgb(var(--ds-accent-strong))'
+                        : 'rgb(var(--ds-faint))' }}>
+                  {inspect.labelCol ? inspect.fraudLabelled : '—'}
+                </div>
+                <div className="ds-section-label" style={{ marginTop: 4 }}>Labelled fraud</div>
+              </div>
+              <div>
+                <div className="ds-mono" style={{ fontSize: 19 }}>
+                  {(file.size / 1024).toFixed(0)}<span style={{ fontSize: 11 }}> KB</span>
+                </div>
+                <div className="ds-section-label" style={{ marginTop: 4 }}>Size</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gap: 8, marginBottom: 14,
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+              {inspect.mapped.map((m) => (
+                <div key={m.label} style={{ display: 'flex', gap: 8, alignItems: 'baseline',
+                      fontSize: 10, padding: '7px 9px', borderRadius: 5,
+                      background: 'rgb(var(--ds-workspace))' }}>
+                  <span className="ds-mono" style={{ flex: 1 }}>{m.label}</span>
+                  <span style={{ color: m.found ? 'rgb(var(--ds-accent-strong))'
+                                                : 'rgb(var(--ds-sev-critical))' }}>
+                    {m.found ? `→ ${m.found}` : 'missing'}
+                  </span>
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', fontSize: 10,
+                    padding: '7px 9px', borderRadius: 5, background: 'rgb(var(--ds-workspace))' }}>
+                <span className="ds-mono" style={{ flex: 1 }}>isFraud</span>
+                <span style={{ color: inspect.labelCol ? 'rgb(var(--ds-accent-strong))'
+                                                       : 'rgb(var(--ds-warn))' }}>
+                  {inspect.labelCol ? `→ ${inspect.labelCol}` : 'not present'}
+                </span>
+              </div>
+            </div>
+
+            <p style={{ fontSize: 10, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
+                        marginBottom: 14 }}>
+              {inspect.missing.length
+                ? `Add ${inspect.missing.join(', ')} and choose the file again.`
+                : inspect.labelCol
+                  ? `${inspect.fraudLabelled} of ${inspect.rows} rows are labelled fraud. `
+                    + 'Labels are read as ground truth to score detection — they are '
+                    + 'never given to the models.'
+                  : 'No isFraud column, so alert volume can be measured but accuracy cannot.'}
+            </p>
+
+            <div style={{ overflowX: 'auto', marginBottom: 4 }}>
+              <table className="ds-table">
+                <thead>
+                  <tr>{inspect.header.slice(0, 7).map((h) => <th key={h}>{h}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {inspect.preview.map((r, i) => (
+                    <tr key={i}>
+                      {inspect.header.slice(0, 7).map((h) => (
+                        <td key={h} className="ds-mono" style={{ fontSize: 10 }}>{r[h]}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p style={{ fontSize: 9, color: 'rgb(var(--ds-faint))' }}>
+              First {inspect.preview.length} rows, read locally. Nothing has been
+              uploaded or scored yet.
+            </p>
+          </div>
+        )}
+
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <Button onClick={start} disabled={!file || running} loading={running}>
-            {running ? 'Analyzing…' : 'Analyze file'}
+          <Button onClick={start}
+                  disabled={!file || scoring || !inspect || inspect.missing.length > 0}
+                  loading={scoring}>
+            {scoring ? 'Scoring…' : 'Run the pipeline'}
           </Button>
-          {running && (
+          {scoring && (
             <Button variant="ghost" onClick={cancel} size="sm">
               Cancel
             </Button>
           )}
-          {file && !running && (
+          {file && !scoring && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
                 setFile(null)
+            setInspect(null)
                 reset()
               }}
             >
@@ -225,17 +440,58 @@ export default function BatchAnalysis() {
                   : ' · no labels, detection cannot be scored'}
               </p>
             </div>
-            <Badge tone={running ? 'medium' : 'low'}>
-              {running ? `${progressPct}%` : 'Complete'}
+            <Badge tone={scoring ? 'warn' : 'good'}>
+              {scoring ? `${progressPct}%` : 'Complete'}
             </Badge>
           </div>
 
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-raised">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-accent-500 to-accent-500 transition-all duration-200"
-              style={{ width: `${progressPct}%` }}
-            />
+          <div className="ds-progress" style={{ marginTop: 12, height: 8 }}>
+            <span style={{ width: `${progressPct}%` }} />
           </div>
+
+          {/* The transaction being scored right now. Without this the run is a
+              bar filling and a table appearing — nothing shows the system
+              actually working through the file one record at a time. */}
+          {scoring && latest && (
+            <div className="ds-fade-up" style={{ display: 'flex', flexWrap: 'wrap', gap: 14,
+                  alignItems: 'center', marginTop: 14, padding: '11px 13px', borderRadius: 6,
+                  background: 'rgb(var(--ds-workspace))' }}>
+              <span className="ds-section-label" style={{ flex: '0 0 auto' }}>Scoring</span>
+              <span className="ds-mono" style={{ fontSize: 11, flex: '1 1 220px', minWidth: 0 }}>
+                {latest.nameOrig} → {latest.nameDest}
+              </span>
+              <span style={{ fontSize: 10, color: 'rgb(var(--ds-muted))' }}>{latest.type}</span>
+              <span className="ds-mono" style={{ fontSize: 11 }}>
+                {Number(latest.amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </span>
+              <span className="ds-mono" style={{ fontSize: 13, minWidth: 52, textAlign: 'right',
+                    color: latest.alerted ? 'rgb(var(--ds-sev-critical))'
+                      : 'rgb(var(--ds-accent-strong))' }}>
+                {typeof latest.score === 'number' ? latest.score.toFixed(3) : '—'}
+              </span>
+              <span className="ds-mono" style={{ fontSize: 10, color: 'rgb(var(--ds-faint))' }}>
+                {latest.modalities_used}/3
+              </span>
+            </div>
+          )}
+
+          {/* Tallies that move while the file runs, not only in the scorecard. */}
+          {rows.length > 0 && (
+            <div style={{ display: 'grid', gap: 12, marginTop: 14,
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))' }}>
+              {[
+                ['Alerted', live.alerted, 'rgb(var(--ds-sev-critical))'],
+                ['Caught', live.caught, 'rgb(var(--ds-sev-low))'],
+                ['Missed', live.missed, 'rgb(var(--ds-sev-high))'],
+                ['False alarms', live.falseAlarm, 'rgb(var(--ds-sev-medium))'],
+              ].map(([label, value, colour]) => (
+                <div key={label}>
+                  <div className="ds-mono" style={{ fontSize: 19, color: colour }}>{value}</div>
+                  <div className="ds-section-label" style={{ marginTop: 4 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <p className="mt-2 text-xs text-slate-600">
             {rows.length.toLocaleString()} of {meta.rows.toLocaleString()} scored
@@ -394,7 +650,7 @@ export default function BatchAnalysis() {
         </Panel>
       )}
 
-      {!meta && !running && (
+      {!meta && !scoring && (
         <EmptyState
           icon="—"
           title="No file analysed yet"
