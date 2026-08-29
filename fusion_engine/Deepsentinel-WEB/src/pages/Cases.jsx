@@ -288,7 +288,7 @@ function CaseQueue() {
         </Panel>
       </div>
 
-      <Footer left="Decisions here feed the retraining set, so they are attributed." />
+      <Footer left="Decisions are attributed and audited." />
     </div>
   )
 }
@@ -401,7 +401,7 @@ function ModalityStrip({ c }) {
       {c.uncertainty_penalty_applied && (
         <p className="text-[10px] leading-relaxed text-slate-500 sm:col-span-3">
           Only {c.modalities_used} of 3 detectors contributed, so an uncertainty
-          penalty was applied — this confidence is deliberately conservative.
+          penalty was applied.
         </p>
       )}
     </div>

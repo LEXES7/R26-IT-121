@@ -255,8 +255,7 @@ export default function Dashboard() {
                   <span className="ds-mono" style={{ color: 'rgb(var(--ds-warn))' }}>
                     UNCERTAINTY PENALTY APPLIED
                   </span><br />
-                  With a model missing, scores are deliberately kept low rather
-                  than pretending the missing one agreed.
+                  Confidence is reduced while a model is missing.
                 </>
               )}
             </div>

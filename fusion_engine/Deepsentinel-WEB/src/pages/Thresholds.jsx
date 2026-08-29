@@ -166,11 +166,9 @@ export default function Thresholds() {
               </div>
               <p style={{ padding: '11px 19px 15px', fontSize: 9, lineHeight: 1.6,
                           color: 'rgb(var(--ds-faint))', margin: 0 }}>
-                A detector that never answered on this history has no curve and
-                cannot be tuned — it is shown greyed rather than given a flat
-                line that would look like a measurement. Moving a line here
-                replays stored decisions; it does not change what the running
-                services do.
+                A detector with no history on this window cannot be tuned.
+                Changes here are simulated against past decisions and do not
+                affect the running services.
               </p>
             </Panel>
 
@@ -287,27 +285,13 @@ export default function Thresholds() {
 
                 {data?.message && (
                   <Panel className="ds-panel-pad">
-                    <h3 className="text-xs font-semibold text-risk-medium">Read with care</h3>
-                    <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+                    <p style={{ fontSize: 11, lineHeight: 1.6,
+                                color: 'rgb(var(--ds-warn))', margin: 0 }}>
                       {data.message}
                     </p>
                   </Panel>
                 )}
 
-                <Panel className="ds-panel-pad">
-                  <h3 className="ds-section-title">Why this is honest</h3>
-                  <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-                    A replay of decisions already made, on transactions already
-                    seen. It says what <i>would have</i> happened, not what will —
-                    alert volume moves with traffic.
-                  </p>
-                  <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-                    It is meaningful at all because the scores are calibrated
-                    probabilities: isotonic calibration took expected calibration
-                    error from 0.80 to 0.024, so 0.40 means &ldquo;40% likely&rdquo;
-                    and keeps that meaning as the models change.
-                  </p>
-                </Panel>
               </div>
             </div>
             </>
@@ -315,7 +299,7 @@ export default function Thresholds() {
         </>
       </Locked>
 
-      <Footer left="A replay of decisions already made — historical, not a forecast." />
+      <Footer left="Replayed against past decisions. Alert volume moves with traffic." />
     </div>
   )
 }

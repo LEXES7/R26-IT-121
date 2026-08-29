@@ -278,7 +278,7 @@ export default function Models() {
         </div>
       </Panel>
 
-      <Footer left="One model at a time, with nothing fused and nothing imputed." />
+      <Footer left="Each detector scored independently." />
     </div>
   )
 }

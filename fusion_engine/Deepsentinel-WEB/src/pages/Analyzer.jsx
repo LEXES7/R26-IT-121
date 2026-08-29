@@ -331,10 +331,8 @@ export default function Analyzer() {
                             margin: '13px 0 0' }}>
                   {result.modalities_used < 3
                     ? `Only ${result.modalities_used} of 3 detectors contributed, so an
-                       uncertainty penalty was applied — this confidence is deliberately
-                       conservative.`
-                    : 'All three detectors contributed. The fused score is the meta-classifier’s '
-                      + 'calibrated probability, not an average.'}
+                       uncertainty penalty was applied.`
+                    : 'All three detectors contributed.'}
                 </p>
                 {result.retrieval?.typology_name && (
                   <div style={{ marginTop: 14, paddingTop: 13,
@@ -399,7 +397,7 @@ export default function Analyzer() {
         </div>
       </Panel>
 
-      <Footer left="Analysis is reproducible: the same transaction gives the same run." />
+      <Footer left="Model versions and citations travel with every verdict." />
     </div>
   )
 }
