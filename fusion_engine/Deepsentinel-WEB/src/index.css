@@ -469,10 +469,10 @@ html.theme-transition * {
 .ds-icon-btn:hover { color: rgb(var(--ds-accent-strong)); border-color: rgb(var(--ds-accent)); transform: translateY(-1px); }
 .ds-user { display: flex; align-items: center; gap: 8px; margin-left: 7px; padding-left: 12px; border-left: 1px solid rgb(var(--ds-line)); font-size: 11px; color: rgb(var(--ds-muted)); }
 .ds-avatar { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; background: rgb(var(--ds-surface-3)); color: rgb(var(--ds-accent-strong)); font-size: 10px; font-weight: 700; flex: 0 0 auto; }
-.ds-content { padding: 28px 30px 40px; max-width: 1560px; width: 100%; margin: 0 auto; }
+.ds-content { padding: 26px 30px 44px; max-width: 1560px; width: 100%; margin: 0 auto; }
 
 /* pieces */
-.ds-panel { background: rgb(var(--ds-surface)); border: 1px solid rgb(var(--ds-line)); border-radius: 8px; box-shadow: 0 4px 20px rgba(var(--ds-shadow), .035); }
+.ds-panel { align-self: start; background: rgb(var(--ds-surface)); border: 1px solid rgb(var(--ds-line)); border-radius: 8px; box-shadow: 0 4px 20px rgba(var(--ds-shadow), .035); }
 .ds-panel-pad { padding: 19px; }
 .ds-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: .13em; color: rgb(var(--ds-faint)); }
 .ds-section-title { font-size: 14px; font-weight: 600; letter-spacing: -.025em; }
@@ -488,9 +488,9 @@ html.theme-transition * {
 .ds-badge.good { color: rgb(var(--ds-accent-strong)); background: rgb(var(--ds-accent-soft)); border-color: transparent; }
 .ds-badge.alert { color: rgb(var(--ds-signal)); background: rgb(var(--ds-signal-soft)); border-color: transparent; }
 .ds-badge.warn { color: rgb(var(--ds-warn)); background: rgb(var(--ds-warn-soft)); border-color: transparent; }
-.ds-kpi { padding: 16px 17px; min-height: 112px; }
-.ds-kpi-value { margin-top: 12px; font-size: 27px; font-weight: 600; letter-spacing: -.07em; line-height: 1; }
-.ds-kpi-meta { font-size: 10px; color: rgb(var(--ds-muted)); margin-top: 8px; }
+.ds-kpi { padding: 15px 17px 16px; }
+.ds-kpi-value { margin-top: 9px; font-size: 34px; font-weight: 600; letter-spacing: -.055em; line-height: 1; }
+.ds-kpi-meta { font-size: 10px; color: rgb(var(--ds-muted)); margin-top: 7px; }
 .ds-kpi-accent { border-top: 2px solid rgb(var(--ds-accent)); }
 .ds-kpi-alert { border-top: 2px solid rgb(var(--ds-signal)); }
 .ds-kpi-warn { border-top: 2px solid rgb(var(--ds-warn)); }
