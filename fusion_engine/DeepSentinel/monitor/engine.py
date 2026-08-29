@@ -349,7 +349,7 @@ class MonitorEngine:
         # already knows how to render.
         b_body = bodies.get("behavioural")
 
-        await cases.record(
+        case_ref = await cases.record(
             transaction_id=txid,
             classification=severity,
             fused_score=fused,
@@ -359,7 +359,13 @@ class MonitorEngine:
             payload=payload,
             graph_evidence=sg,
             behavioral_evidence=behavioural_evidence(b_body) if b_body else None,
-            alert_sent=(severity != "LOW"),
+            # False, always. This runs before the email is attempted, so any
+            # other value here is a claim about something that has not
+            # happened yet. _notify_confirmed updates it with what actually
+            # occurred — the table previously said "sent" for every non-LOW
+            # case, including the eight in a row where the SMTP handshake
+            # timed out and nothing was delivered.
+            alert_sent=False,
             label_is_fraud=self._label,
             screening_ms=screening_ms,
             total_ms=(int((time.perf_counter() - started) * 1000)
@@ -386,7 +392,7 @@ class MonitorEngine:
         STATE.add_alert(alert)
 
         STATE.set_stage("report", "active")
-        await self._notify_confirmed(alert, sg)
+        await self._notify_confirmed(alert, sg, case_ref)
         STATE.set_stage("report", "idle")
 
     async def _call_upstream(self, client, base_key: str, score_key: str, payload: dict):
@@ -443,7 +449,8 @@ class MonitorEngine:
             "transaction_id": txid, "stage": "early", "sent": sent,
         })
 
-    async def _notify_confirmed(self, alert: dict, sg: dict) -> None:
+    async def _notify_confirmed(self, alert: dict, sg: dict,
+                                case_ref: str | None = None) -> None:
         body = (
             f"CONFIRMED {alert['severity']} — fused verdict\n"
             f"{'=' * 44}\n"
@@ -467,6 +474,13 @@ class MonitorEngine:
         sent = await self._send(
             f"[{alert['severity']}] Fraud alert {alert['transaction_id']}", body
         )
+        # Record what happened, not what was intended. An operator reading a
+        # case needs to know whether anyone was actually told.
+        if case_ref:
+            from monitor import cases as _cases
+
+            await _cases.mark_alerted(case_ref, sent)
+
         STATE.publish("notification", {
             "transaction_id": alert["transaction_id"],
             "stage": "confirmed", "severity": alert["severity"], "sent": sent,

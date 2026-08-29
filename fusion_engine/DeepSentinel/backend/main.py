@@ -677,9 +677,17 @@ async def analyze_batch(
                 "unscored": not scored_at_all,
                 "label": row.is_fraud_label,
                 "typology_label": row.typology_label,
-                "graph_score": fusion.graph_score,
-                "behavioral_score": fusion.behavioral_score,
-                "temporal_score": fusion.temporal_score,
+                # Only report a detector's score when that detector answered.
+                # Fusion imputes 0.5 for a missing modality — correct for the
+                # arithmetic, since it is the neutral prior the uncertainty
+                # penalty is then applied to — but emitting it here put a
+                # number that no model produced in the same column as ones
+                # that did. A detector that did not run reports null.
+                "graph_score": fusion.graph_score if fusion.graph_available else None,
+                "behavioral_score": (fusion.behavioral_score
+                                     if fusion.behavioral_available else None),
+                "temporal_score": (fusion.temporal_score
+                                   if fusion.temporal_available else None),
                 "modalities_used": fusion.modalities_used,
             }
             scored.append(record)
@@ -1116,6 +1124,11 @@ async def list_analyses(
     records = await list_recent_analyses(limit=limit, classification=classification)
     return [
         {
+            # The row's own id. Without it the history list is a dead end:
+            # every per-analysis route — /analyses/{id}/sar, /explain — is
+            # keyed on it, so the UI could list a record and then had no way
+            # to open anything about it.
+            "id": r.id,
             "transaction_id": r.transaction_id,
             "created_at": as_utc(r.created_at),
             "fraud_confidence_score": r.fraud_confidence_score,
