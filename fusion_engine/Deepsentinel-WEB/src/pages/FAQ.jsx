@@ -60,7 +60,7 @@ const FAQS = [
       },
       {
         q: 'What is the Ablation Study toggle?',
-        a: 'The ablation study runs the same fraud scenario through two versions simultaneously: the Baseline LLM (no RAG — receives only the raw scores and generates freely) and DeepSentinel (full RAG-grounded system). Side by side, you can see the baseline hallucinating fraud patterns it was not told about, while DeepSentinel anchors every claim to the retrieved FATF definition. This is the core proof of the research novelty.',
+        a: 'The ablation study runs the same fraud scenario through two versions simultaneously: the Baseline LLM (no RAG — receives only the raw scores and generates freely) and DeepSentinel (full RAG-grounded system). Side by side, you can see the baseline hallucinating fraud patterns it was not told about, while DeepSentinel anchors every claim to the retrieved FATF definition. It is how you check that a report is grounded rather than invented.',
       },
       {
         q: 'What does the cosine similarity score on the FATF match mean?',

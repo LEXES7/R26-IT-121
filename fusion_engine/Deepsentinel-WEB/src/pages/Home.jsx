@@ -9,22 +9,12 @@ import { useAuth } from '../context/AuthContext'
 import { Badge, cx } from '../components/ui'
 import { COMPONENTS as COMPONENT_DATA, COMPONENT_ORDER } from '../data/components'
 
-// Every figure here is measured, and labelled with the protocol that produced
-// it.
-//
-// This list previously advertised "0.988 fusion F1 score — meta-classifier,
-// held-out set". That number is the meta-classifier's cross-validation on
-// synthetic data it generated itself; it is a fit diagnostic, not a detection
-// result, and "held-out set" implied an evaluation that never happened. The
-// honest figure is 0.406 under a leakage-free protocol, and it is the one worth
-// defending: 0.41 with no leakage is a stronger claim than 0.99 with it.
-const STATS = [
-  { value: '3', label: 'detection models', detail: 'network, behaviour, timing' },
-  { value: '0.406', label: 'relational F1', detail: 'leakage-free, 5 seeds, p=0.045' },
-  { value: '0.024', label: 'calibration error', detail: 'isotonic; 0.80 uncalibrated' },
-  { value: '6.3M', label: 'transactions', detail: 'PaySim, fully synthetic' },
-]
-
+// The hero used to end in a row of research figures — F1, calibration error,
+// seed counts, a p-value. They were all honest and all measured, and they were
+// still wrong here: this is the front door of a product, and someone arriving
+// at it wants to know what the thing does, not how its evaluation was
+// designed. The numbers still exist where they belong, on the component pages
+// and in the console.
 const PROBLEM = [
   {
     Icon: IconBlackBox,
@@ -129,21 +119,6 @@ export default function Home() {
               </a>
             </div>
 
-            {/* Measured figures, each carrying the protocol that produced it.
-                The detail line is not decoration — a number without its method
-                is a claim, and this page should not make claims. */}
-            <dl className="glass mt-14 grid grid-cols-2 gap-x-8 gap-y-7 rounded-2xl p-6 sm:grid-cols-4">
-              {STATS.map((s, i) => (
-                <div key={s.label} className="stat-hover enter enter--soft"
-                     style={{ '--d': `${1.02 + i * 0.09}s` }}>
-                  <dd className="stat-value numeric text-[2rem] leading-none text-slate-100">
-                    {s.value}
-                  </dd>
-                  <dt className="eyebrow mt-2.5 text-accent-400">{s.label}</dt>
-                  <p className="mt-1 text-[10px] leading-tight text-slate-600">{s.detail}</p>
-                </div>
-              ))}
-            </dl>
           </div>
 
           {/* Right — the globe, as an object rather than a backdrop */}
