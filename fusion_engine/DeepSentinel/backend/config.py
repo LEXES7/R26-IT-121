@@ -140,6 +140,13 @@ SETTINGS: tuple[Setting, ...] = (
     Setting("secrets", "admin_bootstrap_password", "ADMIN_BOOTSTRAP_PASSWORD", "admin123",
             secret=True,
             description="Password for the admin account created on first run"),
+    Setting("secrets", "team_bootstrap_password", "TEAM_BOOTSTRAP_PASSWORD", "",
+            secret=True,
+            description="Password for the shared riskmanager and analyst accounts. "
+                        "Blank by default and deliberately so: this repository is "
+                        "public, and a default here would be a working password in "
+                        "every clone. Set it in config.ini to seed those accounts; "
+                        "they are never seeded in production regardless"),
     Setting("secrets", "gemini_api_key", "GEMINI_API_KEY", "", secret=True,
             description="Google AI Studio API key"),
     Setting("secrets", "chatbot_gemini_api_key", "CHATBOT_GEMINI_API_KEY", "",
