@@ -7,7 +7,7 @@ import BehaviouralEvidence from '../components/BehaviouralEvidence'
 import TemporalEvidence from '../components/TemporalEvidence'
 import ModalityVerdict from '../components/ModalityVerdict'
 import CaseMechanism from '../components/CaseMechanism'
-import { Alert, cx } from '../components/ui'
+import { Alert, Severity, cx } from '../components/ui'
 import { Badge, Footer, Metric, Panel, SectionHeading } from '../components/ConsoleShell'
 
 /**
@@ -233,8 +233,10 @@ function CaseQueue() {
                     i === cursor ? 'bg-surface-raised' : 'hover:bg-surface',
                   )}
                 >
-                  <span className="h-7 w-[3px] shrink-0 rounded-full"
-                        style={{ background: SEV[c.classification]?.hex ?? 'rgb(var(--ds-faint))' }} />
+                  {/* Rank, not just hue. The stripe alone was invisible on a
+                      projector and gone entirely in a printed case list. */}
+                  <Severity level={c.classification} showLabel={false}
+                            className="shrink-0" />
                   {/* The selected row used a fixed near-white ink, which is
                       invisible on the light theme's paper ground. */}
                   <span className="numeric w-12 shrink-0 text-sm"
@@ -303,9 +305,9 @@ function Preview({ c, busy, onDecide }) {
     <div>
       <div className="hair-b flex flex-wrap items-end justify-between gap-4 pb-4">
         <div className="min-w-0">
-          <p className="eyebrow text-slate-500">
-            <span style={{ color: sev.hex }}>{sev.label}</span>
-            <span className="text-slate-600"> · {when(c.detected_at)}</span>
+          <p className="eyebrow flex items-center gap-2 text-slate-500">
+            <Severity level={c.classification} />
+            <span className="text-slate-600">· {when(c.detected_at)}</span>
           </p>
           <p className="display mt-2 text-[2rem] leading-none text-slate-100">
             {score(c.fused_score)}

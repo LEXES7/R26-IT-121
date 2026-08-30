@@ -58,7 +58,29 @@ function Icon({ d, size = 15 }) {
 /* Grouped by the job being done, not by which service answers. */
 const ADMIN_ROUTES = ['/settings', '/users', '/audit-log', '/account']
 
-const GROUPS = [
+/* Two consoles, one shell.
+ *
+ * An administrator runs the system and does not see case data; everyone else
+ * works the cases and cannot touch the pipeline's controls. Keeping the two
+ * navigations as separate tables — rather than one table with per-item
+ * conditions — makes it obvious at a glance what each role is offered, which
+ * is the thing that has to stay correct. */
+const ADMIN_NAV = [
+  ['Operate', [
+    ['/', 'System', I.gauge],
+    ['/monitor', 'Live monitor', I.activity],
+    ['/models', 'Detectors', I.network],
+  ]],
+  ['Configure', [
+    ['/thresholds', 'Thresholds', I.sliders],
+    ['/settings', 'Administration', I.settings],
+  ]],
+  ['Understand', [
+    ['/about', 'Architecture', I.log],
+  ]],
+]
+
+const OPS_NAV = [
   ['Observe', [
     ['/', 'Overview', I.gauge],
     ['/monitor', 'Live monitor', I.activity],
@@ -66,18 +88,20 @@ const GROUPS = [
   ]],
   ['Investigate', [
     ['/cases', 'Cases', I.archive],
-    ['/thresholds', 'Thresholds', I.sliders],
     ['/batch', 'Batch upload', I.upload],
   ]],
   ['Understand', [
-    ['/models', 'Detectors', I.network],
     ['/assistant', 'Assistant', I.brain],
     ['/about', 'Architecture', I.log],
+  ]],
+  // Administration is an administrator's; the account inside it is everyone's.
+  ['Workspace', [
+    ['/account', 'Account', I.settings],
   ]],
 ]
 
 export default function ConsoleShell({ eyebrow, title, subtitle, actions, children }) {
-  const { user, signOut, canManageUsers, canManageAlerts, canViewAuditLog } = useAuth()
+  const { user, signOut, isAdmin } = useAuth()
   const { theme, toggle } = useTheme()
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -104,10 +128,6 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
     .replace(/deepsentinel/i, '').trim()
     .split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?'
 
-  // One entry, not four. Alerting, people, audit and account are tabs on a
-  // single Administration page — the same screens, a quarter of the navigation.
-  const admin = [['/settings', 'Administration', I.settings]]
-
   const allUp = ready && ready.up === ready.total
 
   return (
@@ -120,41 +140,32 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
             </span>
             <div className="ds-brand-copy">
               <div className="ds-brand-name">DeepSentinel</div>
-              <div className="ds-brand-sub">Fraud operations</div>
+              <div className="ds-brand-sub">
+                {isAdmin ? 'System administration' : 'Fraud operations'}
+              </div>
             </div>
           </div>
 
           <nav className="ds-nav">
-            {GROUPS.map(([label, items]) => (
+            {(isAdmin ? ADMIN_NAV : OPS_NAV).map(([label, items]) => (
               <div key={label} style={{ marginBottom: 19 }}>
                 <div className="ds-nav-label">{label}</div>
                 {items.map(([to, text, d]) => (
                   <NavLink
                     key={to} to={to} end={to === '/'}
                     onClick={() => setOpen(false)}
-                    className={({ isActive }) => `ds-nav-btn ${isActive ? 'active' : ''}`}
+                    // Administration owns four routes; its entry stays lit on
+                    // all of them, not only the one it links to.
+                    className={({ isActive }) => `ds-nav-btn ${
+                      (to === '/settings'
+                        ? ADMIN_ROUTES.some((r) => pathname.startsWith(r))
+                        : isActive) ? 'active' : ''}`}
                   >
                     <Icon d={d} /><span>{text}</span>
                   </NavLink>
                 ))}
               </div>
             ))}
-            {admin.length > 0 && (
-              <div>
-                <div className="ds-nav-label">Workspace</div>
-                {admin.map(([to, text, d]) => (
-                  <NavLink
-                    key={to} to={to} onClick={() => setOpen(false)}
-                    // Administration owns four routes; the entry stays lit on
-                    // all of them, not only the one it links to.
-                    className={() => `ds-nav-btn ${
-                      ADMIN_ROUTES.some((r) => pathname.startsWith(r)) ? 'active' : ''}`}
-                  >
-                    <Icon d={d} /><span>{text}</span>
-                  </NavLink>
-                ))}
-              </div>
-            )}
           </nav>
 
           <div className="ds-sidebar-foot">

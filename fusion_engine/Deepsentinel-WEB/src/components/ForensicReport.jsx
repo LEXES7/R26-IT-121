@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { explainPlainly } from '../services/api'
-import { Alert, Badge, Button, Card, CardHeader, cx } from './ui'
+import { Alert, Badge, Button, Card, CardHeader } from './ui'
 
 /**
  * Renders the generated forensic report as a document rather than a text dump.
@@ -162,7 +162,7 @@ export default function ForensicReport({
               hide
             </button>
           </div>
-          <p className="mt-2 text-sm leading-relaxed text-slate-300">
+          <p className="ds-prose ds-prose--tight mt-2">
             {plain.plain_english}
           </p>
           {/* Said plainly, because a reader must not mistake this for a second
@@ -204,23 +204,32 @@ export default function ForensicReport({
           </dl>
         )}
 
-        <div className="mt-5 space-y-5">
+        {/* Set as prose, not as UI. This is the longest thing the product
+            writes and the one a compliance officer reads end to end; at 14px
+            muted grey across a ninety-character measure it was formatted like
+            a tooltip. */}
+        <div className="ds-prose mt-6">
+          {/* Flat rather than wrapped in <section>: the rhythm rules key off
+              direct children, so nesting would silently drop the spacing that
+              keeps a heading attached to the paragraph it introduces. */}
           {sections.map((s, i) => (
-            <section key={i}>
+            <Fragment key={i}>
               {s.title && (
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-accent-400">
-                  {s.n ? `${s.n}. ` : ''}
+                <h3>
+                  {s.n && (
+                    <span className="mr-2 font-mono text-[0.78em] text-accent-400">
+                      {s.n}
+                    </span>
+                  )}
                   {s.title}
                 </h3>
               )}
-              <div className={cx('space-y-2.5', s.title && 'mt-2')}>
-                {s.body.map((para, j) => (
-                  <p key={j} className="text-sm leading-relaxed text-slate-400">
-                    <RichText text={para} />
-                  </p>
-                ))}
-              </div>
-            </section>
+              {s.body.map((para, j) => (
+                <p key={j}>
+                  <RichText text={para} />
+                </p>
+              ))}
+            </Fragment>
           ))}
         </div>
 

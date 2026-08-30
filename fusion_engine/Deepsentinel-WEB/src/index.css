@@ -562,3 +562,150 @@ html.theme-transition * {
    the severity distribution bar is colour alone, which is why the separation
    had to hold on its own.
    ────────────────────────────────────────────────────────────────────────── */
+
+/* ── prose ───────────────────────────────────────────────────────────
+   Long-form text was being set with UI styles: 14px, muted grey, and a
+   measure over ninety characters wide. That is fine for a label beside a
+   number and wrong for anything anyone has to actually read — and the two
+   longest things this product produces, the forensic report and the SAR
+   draft, are documents a compliance officer reads end to end.
+
+   So reading text gets its own scale, its own colour, and a measure. Nothing
+   here touches UI chrome; it applies only inside .ds-prose. */
+
+.ds-prose {
+  --measure: 64ch;
+  max-width: var(--measure);
+  font-size: 16px;
+  line-height: 1.68;
+  /* Body copy carries ink, not the muted tone the surrounding UI uses.
+     A document whose text is quieter than its labels reads as a caption. */
+  color: rgb(var(--ds-ink) / 0.86);
+  text-wrap: pretty;
+}
+.ds-prose--wide { --measure: 74ch; }
+.ds-prose--tight { font-size: 15px; line-height: 1.62; }
+
+/* Vertical rhythm comes from the flow, not from per-element margins that
+   collapse differently depending on what precedes them. */
+.ds-prose > * + * { margin-top: 0.9em; }
+.ds-prose > * { margin-bottom: 0; }
+
+.ds-prose h2,
+.ds-prose h3,
+.ds-prose h4 {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  color: rgb(var(--ds-ink));
+  text-wrap: balance;
+  line-height: 1.28;
+  letter-spacing: -0.011em;
+}
+.ds-prose h2 { font-size: 1.32em; font-weight: 600; }
+.ds-prose h3 { font-size: 1.12em; font-weight: 600; }
+.ds-prose h4 {
+  font-size: 0.72em; font-weight: 600; letter-spacing: 0.11em;
+  text-transform: uppercase; color: rgb(var(--ds-faint));
+}
+/* A heading belongs to what follows it, so it sits closer to that than to
+   the paragraph it follows. */
+.ds-prose > * + h2 { margin-top: 1.9em; }
+.ds-prose > * + h3 { margin-top: 1.6em; }
+.ds-prose > * + h4 { margin-top: 1.7em; }
+.ds-prose > h2 + *,
+.ds-prose > h3 + *,
+.ds-prose > h4 + * { margin-top: 0.45em; }
+
+.ds-prose strong { color: rgb(var(--ds-ink)); font-weight: 600; }
+.ds-prose em { font-style: italic; }
+.ds-prose a {
+  color: rgb(var(--ds-accent));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  text-decoration-color: rgb(var(--ds-accent) / 0.4);
+}
+.ds-prose a:hover { text-decoration-color: rgb(var(--ds-accent)); }
+
+.ds-prose ul, .ds-prose ol { padding-left: 1.35em; }
+.ds-prose li + li { margin-top: 0.35em; }
+.ds-prose li::marker { color: rgb(var(--ds-faint)); }
+
+.ds-prose code {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.87em;
+  background: rgb(var(--ds-surface-2));
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  color: rgb(var(--ds-ink));
+}
+
+.ds-prose blockquote {
+  border-left: 2px solid rgb(var(--ds-accent) / 0.5);
+  padding-left: 1em;
+  color: rgb(var(--ds-muted));
+}
+
+/* Figures and tables are allowed past the measure — a table squeezed into a
+   reading column is unreadable in a different way. */
+.ds-prose > figure,
+.ds-prose > .ds-prose-wide {
+  max-width: none;
+  width: min(100%, 74rem);
+}
+
+/* Numerals in running prose should not jitter between lines. */
+.ds-prose .numeric,
+.ds-prose td.num { font-variant-numeric: tabular-nums; }
+
+/* A lead paragraph, for the one sentence that frames a document. */
+.ds-prose .lead {
+  font-size: 1.14em;
+  line-height: 1.55;
+  color: rgb(var(--ds-muted));
+}
+
+/* ── severity, encoded as form as well as colour ─────────────────────
+   The palette is CVD-safe and was measured, but colour alone still fails on a
+   projector, in greyscale, and for anyone who has turned contrast up. Each
+   level therefore also has a filled-segment count, which survives all three. */
+.ds-sev {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-variant-numeric: tabular-nums;
+}
+.ds-sev-meter {
+  display: inline-grid;
+  grid-template-columns: repeat(4, 3px);
+  gap: 2px;
+  align-items: end;
+  height: 11px;
+}
+.ds-sev-meter i {
+  display: block;
+  width: 3px;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.22;
+}
+.ds-sev-meter i.on { opacity: 1; }
+.ds-sev-meter i:nth-child(1) { height: 4px; }
+.ds-sev-meter i:nth-child(2) { height: 6px; }
+.ds-sev-meter i:nth-child(3) { height: 8.5px; }
+.ds-sev-meter i:nth-child(4) { height: 11px; }
+
+/* Visible only when focused — a keyboard user's first stop on every page. */
+.ds-skip {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 100;
+  border-radius: 8px;
+  background: rgb(var(--ds-ink));
+  color: rgb(var(--ds-workspace));
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: top .18s ease;
+}
+.ds-skip:focus { top: 12px; }
