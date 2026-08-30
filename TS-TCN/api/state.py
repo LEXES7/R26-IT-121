@@ -94,11 +94,16 @@ def _predecessor_signal(row: dict) -> str:
 
 
 def _risk_level(score: float) -> str:
-    # Matches the traffic-light bands in the proposal's dashboard mockup
-    # (Appendix B.1): green <=0.3, amber 0.3-0.7, red >=0.7.
+    # SUSPICIOUS starts at THRESHOLD (0.4545), the Stage 6 Best-F1 boundary
+    # that outputs/stage6_evaluation/tstcn_test_metrics.json's F1=0.851 was
+    # measured at -- not the proposal dashboard mockup's arbitrary 0.3. A
+    # score that flips this label to SUSPICIOUS is exactly the score the
+    # tuned model calls fraud; a fixed 0.3 would report a boundary nobody
+    # validated. CRITICAL keeps the mockup's 0.7 as a high-confidence band
+    # above that.
     if score >= 0.7:
         return "CRITICAL"
-    if score >= 0.3:
+    if score >= THRESHOLD:
         return "SUSPICIOUS"
     return "NORMAL"
 
