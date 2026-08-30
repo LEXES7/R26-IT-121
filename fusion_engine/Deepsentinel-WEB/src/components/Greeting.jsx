@@ -23,12 +23,15 @@ import { useEffect, useRef, useState } from 'react'
 // Apple's boot sequence, near enough. Lowercase throughout — that is most of
 // the look; capitalising them turns a greeting into a label.
 //
-// Sinhala and Tamil are not in Apple's set. They are here because that is
-// where this was built, and they lead after English for the same reason.
+// The first three always show, in this order. Sinhala and Tamil are not in
+// Apple's set; they are here because that is where this was built, and being
+// pinned rather than shuffled is the point — leaving them to the draw meant
+// the project's own languages appeared on roughly half of visits.
+const ALWAYS = 3
 const GREETINGS = [
   'hello',        // English
-  'ආයුබෝවන්',      // Sinhala
-  'வணக்கம்',       // Tamil
+  'ආයුබෝවන්',      // Sinhala  — ayubowan
+  'வணக்கம்',       // Tamil    — vanakkam
   'olá',          // Portuguese
   '你好',           // Chinese
   'bonjour',      // French
@@ -74,12 +77,13 @@ export default function Greeting() {
   // words on every state change and turn the sequence into noise.
   const words = useRef(null)
   if (words.current === null) {
-    const [first, ...rest] = GREETINGS
+    const pinned = GREETINGS.slice(0, ALWAYS)
+    const rest = GREETINGS.slice(ALWAYS)
     for (let i = rest.length - 1; i > 0; i -= 1) {
       const j = Math.floor(Math.random() * (i + 1))
       ;[rest[i], rest[j]] = [rest[j], rest[i]]
     }
-    words.current = [first, ...rest.slice(0, SHOWN - 1)]
+    words.current = [...pinned, ...rest.slice(0, Math.max(0, SHOWN - ALWAYS))]
   }
 
   useEffect(() => {
