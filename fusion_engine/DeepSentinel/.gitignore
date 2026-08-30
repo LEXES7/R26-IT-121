@@ -49,3 +49,6 @@ Thumbs.db
 
 # Disposable test database
 tests/_test.db
+
+# Run logs — dated per-component output, regenerated on every run
+logs/
