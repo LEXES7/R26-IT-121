@@ -24,6 +24,7 @@
   --sentinel-700: 44 40 37;
   --sentinel-600: 51 65 85;
 
+  --slate-100: 251 250 247;
   --slate-200: 240 237 231;
   --slate-300: 214 209 201;
   --slate-400: 163 156 146;
@@ -63,6 +64,7 @@
   --sentinel-700: 226 220 211;
   --sentinel-600: 200 200 196;
 
+  --slate-100: 12 11 10;
   --slate-200: 26 24 21;
   --slate-300: 30 41 59;
   --slate-400: 90 83 75;
@@ -180,13 +182,6 @@ html.theme-transition * {
 
 /* Faint isometric grid. Gives large dark sections depth without competing
    with content — visible enough to read as texture, never as pattern. */
-.grid-bg {
-  background-image:
-    linear-gradient(rgb(var(--grid-line)) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(var(--grid-line)) 1px, transparent 1px);
-  background-size: 56px 56px;
-}
-
 /* ── Print / Save as PDF ──────────────────────────────────────────────────────
  * "Save as PDF" on the forensic report routes through the browser's own print
  * pipeline rather than a canvas screenshot library, so the resulting file has
@@ -709,3 +704,626 @@ html.theme-transition * {
   transition: top .18s ease;
 }
 .ds-skip:focus { top: 12px; }
+
+/* ── entrance and hover, public site only ────────────────────────────
+   Taken from the motion references, rebuilt on this product's own type and
+   palette rather than imported wholesale — the choreography is the reusable
+   part, the liquid-chrome look belongs to somebody else's brand.
+
+   One rule from those references is worth keeping exactly: the resting state
+   is visible. `animation-fill-mode: both` hides the element during its delay
+   and reveals it on play, so if animations never run — reduced motion, a
+   print, an old engine — the content is simply there rather than blank.
+
+   Easing is a single decelerating curve everywhere. Nothing here uses `ease`
+   or `linear`: motion that starts fast and settles reads as physical, motion
+   at constant speed reads as a slideshow. */
+
+:root {
+  --ease-settle: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-hover: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.enter {
+  animation-duration: 1.05s;
+  animation-fill-mode: both;
+  animation-timing-function: var(--ease-settle);
+  animation-delay: var(--d, 0.06s);
+}
+.enter--soft { animation-name: enter-soft; }
+.enter--mask { animation-name: enter-mask; }
+.enter--pop  { animation-name: enter-pop; }
+.enter--rise { animation-name: enter-rise; }
+.enter--side { animation-name: enter-side; }
+
+@keyframes enter-soft { from { opacity: 0; transform: translateY(14px); } }
+@keyframes enter-mask { from { opacity: 0; transform: translateY(42%); } }
+@keyframes enter-side { from { opacity: 0; transform: translateX(20px); } }
+@keyframes enter-rise { from { opacity: 0; transform: translateY(18px) scale(0.96); } }
+@keyframes enter-pop {
+  0%   { opacity: 0; transform: scale(0.9); }
+  70%  { opacity: 1; transform: scale(1.03); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* A headline line that rises out of its own edge. The clip is the effect —
+   the overflow on this wrapper is what makes the text appear from nothing
+   rather than merely fade. */
+.line-mask { display: block; overflow: hidden; padding: 0.04em 0.12em 0.16em; }
+
+/* The italic clause resolves last, from soft to sharp. It is the promise in
+   the sentence, so it is the word the eye should land on. */
+.enter-focus { animation: enter-focus 1.3s var(--ease-settle) 0.78s both; }
+@keyframes enter-focus {
+  from { opacity: 0.3; filter: blur(5px); }
+  to   { opacity: 1; filter: blur(0); }
+}
+
+/* ── hover ──────────────────────────────────────────────────────── */
+
+/* A light sweeping across a surface as the pointer arrives. */
+.shine { position: relative; isolation: isolate; overflow: hidden; }
+.shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 22%,
+              rgb(255 255 255 / 0.55) 48%, transparent 74%);
+  transform: translateX(-135%);
+  transition: transform 0.7s var(--ease-hover);
+}
+.shine:hover::after, .shine:focus-visible::after { transform: translateX(135%); }
+
+/* Lift, and a shadow tinted with the page's own accent instead of black —
+   a neutral drop shadow on a coloured ground reads as dirt. */
+.lift {
+  transition: transform 0.32s var(--ease-hover), box-shadow 0.32s var(--ease-hover),
+              border-color 0.32s var(--ease-hover), background-color 0.32s var(--ease-hover);
+}
+.lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 34px -18px rgb(var(--accent-500) / 0.45),
+              0 3px 12px -6px rgb(0 0 0 / 0.35);
+}
+/* Pressing something should feel like pressing something. */
+.lift:active { transform: translateY(-1px) scale(0.994); transition-duration: 0.09s; }
+
+/* Cards that acknowledge the pointer without moving the page under it. */
+.card-hover {
+  transition: border-color 0.3s var(--ease-hover), background-color 0.3s var(--ease-hover),
+              transform 0.3s var(--ease-hover);
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgb(var(--accent-400) / 0.4);
+  background-color: rgb(255 255 255 / 0.03);
+}
+
+/* The arrow leads before the reader does. */
+.arrow-slide svg, .arrow-slide .arrow {
+  transition: transform 0.3s var(--ease-hover);
+}
+.arrow-slide:hover svg, .arrow-slide:hover .arrow { transform: translateX(4px); }
+
+/* A figure that brightens as you read it. */
+.stat-hover { transition: color 0.3s var(--ease-hover); }
+.stat-hover:hover .stat-value { color: rgb(var(--accent-400)); }
+.stat-value { transition: color 0.3s var(--ease-hover); }
+
+@media (prefers-reduced-motion: reduce) {
+  .enter, .enter-focus { animation: none !important; }
+  .shine::after { display: none; }
+  .lift:hover, .card-hover:hover, .lift:active { transform: none; }
+  .arrow-slide:hover svg, .arrow-slide:hover .arrow { transform: none; }
+}
+
+/* ── glass ───────────────────────────────────────────────────────────
+   The iOS treatment: a translucent pane that blurs and saturates what is
+   behind it, lit along its top edge by a one-pixel inset highlight, sitting
+   on a wide soft shadow.
+
+   Three details separate this from "add a blur and hope":
+
+   1. `saturate()` alongside the blur. Real frosted glass concentrates colour;
+      blur alone just makes things grey and the pane looks like fog.
+   2. The inset top highlight. That single bright line is what reads as a
+      polished edge catching the light — without it the panel looks flat and
+      cheap no matter how much blur is on it.
+   3. Something worth refracting behind it. Glass over a flat background is
+      invisible, so the hero carries colour fields for it to pick up.
+
+   Both themes are written out. Light glass is not dark glass inverted: it is
+   white and mostly opaque, with the highlight nearly solid and the shadow
+   tinted cool rather than black. */
+
+.glass {
+  position: relative;
+  isolation: isolate;
+  background: rgb(255 255 255 / 0.05);
+  backdrop-filter: blur(24px) saturate(185%) brightness(1.04);
+  -webkit-backdrop-filter: blur(24px) saturate(185%) brightness(1.04);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.12),
+    0 20px 44px -26px rgb(0 0 0 / 0.75);
+}
+/* The same refracting rim the controls carry, so a panel and a button read as
+   the one material rather than two that happen to both be translucent. */
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: conic-gradient(from 210deg,
+    rgb(255 255 255 / 0.4) 0deg,
+    rgb(150 210 255 / 0.22) 70deg,
+    rgb(255 255 255 / 0.34) 150deg,
+    rgb(255 190 205 / 0.18) 250deg,
+    rgb(255 255 255 / 0.4) 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+[data-theme='light'] .glass {
+  border-color: rgb(16 30 40 / 0.08);
+  background: rgb(255 255 255 / 0.55);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.95),
+    0 20px 44px -28px rgb(16 34 46 / 0.3);
+}
+[data-theme='light'] .glass::before {
+  background: conic-gradient(from 210deg,
+    rgb(255 255 255 / 0.95) 0deg,
+    rgb(120 190 255 / 0.4) 70deg,
+    rgb(255 255 255 / 0.85) 150deg,
+    rgb(255 160 190 / 0.32) 250deg,
+    rgb(255 255 255 / 0.95) 360deg);
+}
+
+/* The navigation bar and anything else pinned over scrolling content, where
+   the blur has to be heavier to keep text legible as things pass under it. */
+.glass-bar {
+  background: rgb(13 12 11 / 0.62);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-bottom: 1px solid rgb(255 255 255 / 0.07);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+[data-theme='light'] .glass-bar {
+  background: rgb(247 248 249 / 0.72);
+  border-bottom-color: rgb(16 30 40 / 0.08);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9);
+}
+
+/* ── liquid glass ────────────────────────────────────────────────────
+   A lens, not a gel.
+
+   The difference matters. The old glossy language painted a light gradient
+   over the top half of a solid fill — the material was opaque and the shine
+   was drawn on. Liquid glass is transparent and *refracts*: what you see is
+   the page behind, displaced and concentrated, with light caught along the
+   whole rim rather than pooled at the top.
+
+   Three layers make it:
+
+   1. The pane itself — heavy blur, strong saturation, a touch of brightness.
+      Saturation is what stops it reading as fog; brightness is what stops it
+      reading as a smudge.
+   2. `::before` — a one-pixel rim drawn as a conic gradient and masked to the
+      border only. It varies around the perimeter and carries a faint cool and
+      warm shift at opposite edges. That chromatic drift is the whole trick:
+      real glass disperses light at its edges, and a flat white hairline is
+      what makes CSS glass look like a rectangle with a border.
+   3. `::after` — a specular bloom that follows the pointer. Set from JS as
+      --mx/--my; centred and invisible until hovered, so it costs nothing
+      until someone reaches for it. */
+
+.liquid {
+  position: relative;
+  isolation: isolate;
+  background: rgb(255 255 255 / 0.055);
+  backdrop-filter: blur(26px) saturate(190%) brightness(1.06);
+  -webkit-backdrop-filter: blur(26px) saturate(190%) brightness(1.06);
+  /* A plain hairline sits under the conic rim. mask-composite is well
+     supported but not universally, and an edgeless control is a worse
+     failure than a slightly plainer one. */
+  border: 1px solid rgb(255 255 255 / 0.13);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.14),
+    inset 0 -1px 1px rgb(255 255 255 / 0.05),
+    0 10px 30px -14px rgb(0 0 0 / 0.55);
+  transition: transform 0.38s var(--ease-hover), box-shadow 0.38s var(--ease-hover),
+              background 0.38s var(--ease-hover);
+}
+
+/* The refracting rim. Masked to the border so the fill stays clear. */
+.liquid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: conic-gradient(from 210deg,
+    rgb(255 255 255 / 0.5) 0deg,
+    rgb(150 210 255 / 0.3) 70deg,
+    rgb(255 255 255 / 0.42) 150deg,
+    rgb(255 190 205 / 0.24) 250deg,
+    rgb(255 255 255 / 0.5) 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+/* The specular bloom, following the pointer. */
+.liquid::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(14rem circle at var(--mx, 50%) var(--my, 0%),
+              rgb(255 255 255 / 0.2), transparent 62%);
+  transition: opacity 0.4s var(--ease-hover);
+}
+.liquid:hover::after, .liquid:focus-visible::after { opacity: 1; }
+
+.liquid:hover {
+  transform: translateY(-2px);
+  background: rgb(255 255 255 / 0.085);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.2),
+    inset 0 -1px 1px rgb(255 255 255 / 0.07),
+    0 18px 40px -16px rgb(0 0 0 / 0.6),
+    0 0 30px -10px rgb(var(--accent-400) / 0.3);
+}
+.liquid:active { transform: translateY(0) scale(0.988); transition-duration: 0.09s; }
+
+[data-theme='light'] .liquid {
+  border-color: rgb(16 30 40 / 0.09);
+  background: rgb(255 255 255 / 0.5);
+  backdrop-filter: blur(26px) saturate(180%) brightness(1.02);
+  -webkit-backdrop-filter: blur(26px) saturate(180%) brightness(1.02);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.9),
+    inset 0 -1px 1px rgb(16 30 40 / 0.04),
+    0 10px 30px -16px rgb(16 34 46 / 0.28);
+}
+[data-theme='light'] .liquid::before {
+  background: conic-gradient(from 210deg,
+    rgb(255 255 255 / 0.95) 0deg,
+    rgb(120 190 255 / 0.5) 70deg,
+    rgb(255 255 255 / 0.9) 150deg,
+    rgb(255 160 190 / 0.4) 250deg,
+    rgb(255 255 255 / 0.95) 360deg);
+}
+[data-theme='light'] .liquid::after {
+  background: radial-gradient(14rem circle at var(--mx, 50%) var(--my, 0%),
+              rgb(255 255 255 / 0.85), transparent 62%);
+}
+[data-theme='light'] .liquid:hover { background: rgb(255 255 255 / 0.72); }
+
+/* A filled control that is still a lens at its edges — the rim and the
+   pointer bloom are the same, only the body is opaque. */
+.liquid-solid {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(180deg, #fdfdfd 0%, #eff1f2 100%);
+  /* Literal, not a token. The body of this control is white in both themes,
+     so its label must be dark in both — and --sentinel-950 flips, which made
+     the text vanish into the button under the light theme. */
+  color: #14181a;
+  border: 1px solid rgb(255 255 255 / 0.85);
+  box-shadow:
+    inset 0 1px 1.5px rgb(255 255 255 / 1),
+    inset 0 -1.5px 1px rgb(16 30 40 / 0.1),
+    0 10px 28px -14px rgb(0 0 0 / 0.5);
+  transition: transform 0.38s var(--ease-hover), box-shadow 0.38s var(--ease-hover),
+              background 0.38s var(--ease-hover);
+}
+.liquid-solid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: conic-gradient(from 210deg,
+    rgb(255 255 255 / 0.95) 0deg,
+    rgb(150 210 255 / 0.55) 80deg,
+    rgb(255 255 255 / 0.9) 160deg,
+    rgb(255 190 205 / 0.5) 250deg,
+    rgb(255 255 255 / 0.95) 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.liquid-solid::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(12rem circle at var(--mx, 50%) var(--my, 0%),
+              rgb(190 235 228 / 0.55), transparent 60%);
+  transition: opacity 0.4s var(--ease-hover);
+}
+.liquid-solid:hover::after { opacity: 1; }
+.liquid-solid:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 1.5px rgb(255 255 255 / 1),
+    inset 0 -1.5px 1px rgb(16 30 40 / 0.08),
+    0 20px 42px -16px rgb(0 0 0 / 0.5),
+    0 0 32px -10px rgb(var(--accent-400) / 0.45);
+}
+.liquid-solid:active { transform: translateY(0) scale(0.988); transition-duration: 0.09s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid:hover, .liquid-solid:hover, .liquid:active, .liquid-solid:active { transform: none; }
+}
+
+/* Colour fields for the glass to pick up. Without something behind it, a
+   frosted pane blurs nothing and reads as flat grey. */
+.ambient { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.ambient::before, .ambient::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(110px);
+}
+.ambient::before {
+  width: 40rem; height: 40rem; top: -14rem; left: -12rem;
+  background: rgb(var(--accent-500) / 0.16);
+}
+.ambient::after {
+  width: 34rem; height: 34rem; bottom: -16rem; right: -8rem;
+  background: rgb(var(--modality-behavioral) / 0.1);
+}
+[data-theme='light'] .ambient::before { background: rgb(var(--accent-500) / 0.13); }
+[data-theme='light'] .ambient::after  { background: rgb(var(--modality-behavioral) / 0.07); }
+
+@media (prefers-reduced-motion: reduce) {
+}
+
+/* ── opening curtain ─────────────────────────────────────────────────
+   Lifts from the bottom edge upward, uncovering the page rather than fading
+   over it. The page underneath is already painted and already running its own
+   entrance, so what you see as the curtain clears is a live page, not a
+   snapshot waiting to start.
+
+   The travel is 1.05s on a long decelerating curve, and the panel keeps a
+   rounded leading edge as it goes — a hard horizontal line reads as a
+   scene change, a curved one reads as something physically lifting away. */
+
+.greeting {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  background: rgb(var(--sentinel-950));
+  transform: translateY(0);
+  transition: transform 0.8s cubic-bezier(0.76, 0, 0.24, 1),
+              border-radius 0.8s cubic-bezier(0.76, 0, 0.24, 1);
+  will-change: transform;
+}
+.greeting--lifting {
+  transform: translateY(-100%);
+  border-bottom-left-radius: 42% 22%;
+  border-bottom-right-radius: 42% 22%;
+}
+
+.greeting-inner {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+}
+
+/* A small mark that holds the eye while the words change behind it. */
+.greeting-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgb(var(--accent-400));
+  transform: translateY(-0.15em);
+  animation: greeting-pulse 1.5s ease-in-out infinite;
+}
+@keyframes greeting-pulse {
+  0%, 100% { opacity: 1; transform: translateY(-0.15em) scale(1); }
+  50%      { opacity: 0.45; transform: translateY(-0.15em) scale(0.82); }
+}
+
+/* Each greeting is keyed, so React swaps the node and the animation restarts.
+   The script fallbacks matter: Sinhala and Tamil have no coverage in the
+   Latin display face, and without them the first two greetings would be
+   boxes. */
+.greeting-word {
+  font-family: 'Instrument Serif',
+               'Noto Serif Sinhala', 'Iskoola Pota',          /* Sinhala  */
+               'Noto Serif Tamil', 'Latha',                    /* Tamil    */
+               'Noto Serif Devanagari', 'Nirmala UI',          /* Hindi    */
+               'Noto Serif Hebrew', 'David',                   /* Hebrew   */
+               'Noto Serif Thai', 'Leelawadee UI',             /* Thai     */
+               'Apple SD Gothic Neo', 'Malgun Gothic',         /* Korean   */
+               'Hiragino Mincho ProN', 'Yu Mincho',            /* Japanese */
+               'Songti SC', 'SimSun',                          /* Chinese  */
+               Georgia, serif;
+  font-size: clamp(2.6rem, 7vw, 4.6rem);
+  line-height: 1;
+  color: rgb(var(--slate-200));
+  animation: greeting-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes greeting-in {
+  from { opacity: 0; transform: translateY(0.32em); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .greeting { display: none; }
+}
+
+/* ── the console, in the same material ───────────────────────────────
+   The public site's glass, brought in with a lighter hand.
+
+   A console is scanned and operated, not read through once, so the material
+   is dialled back where it would cost legibility. Panels and controls become
+   lenses; table rows and dense text do not — text over blurred, shifting
+   content is harder to read, and this is a surface people work in for hours.
+
+   The workspace also gets a faint colour field, because glass over a flat
+   ground refracts nothing and reads as grey plastic. It is kept very low:
+   enough for the panel edges to catch, not enough to tint a chart. */
+
+.ds-shell { position: relative; isolation: isolate; }
+.ds-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(48rem 32rem at 8% -6%, rgb(var(--ds-accent) / 0.07), transparent 70%),
+    radial-gradient(42rem 30rem at 104% 104%, rgb(var(--ds-signal) / 0.05), transparent 70%);
+}
+
+.ds-panel {
+  position: relative;
+  isolation: isolate;
+  background: rgb(var(--ds-surface) / 0.72);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  border-color: rgb(var(--ds-line) / 0.9);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.045),
+    0 10px 28px -18px rgba(var(--ds-shadow), 0.5);
+}
+/* The rim, quieter than the public site's — a wall of panels each with a
+   bright chromatic edge would be noise rather than material. */
+.ds-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(150deg,
+    rgb(255 255 255 / 0.13) 0%,
+    rgb(150 210 255 / 0.06) 40%,
+    transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+[data-theme='light'] .ds-panel {
+  background: rgb(var(--ds-surface) / 0.78);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    0 10px 28px -20px rgba(var(--ds-shadow), 0.22);
+}
+[data-theme='light'] .ds-panel::before {
+  background: linear-gradient(150deg,
+    rgb(255 255 255 / 0.95) 0%,
+    rgb(120 190 255 / 0.16) 40%,
+    transparent 70%);
+}
+
+/* A figure worth reading is worth acknowledging when you point at it. */
+.ds-kpi {
+  transition: transform 0.3s var(--ease-hover), box-shadow 0.3s var(--ease-hover),
+              background 0.3s var(--ease-hover);
+}
+.ds-kpi:hover {
+  transform: translateY(-2px);
+  background: rgb(var(--ds-surface) / 0.9);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.07),
+    0 16px 34px -20px rgba(var(--ds-shadow), 0.6);
+}
+
+.ds-sidebar, .ds-topbar {
+  background: rgb(var(--ds-surface) / 0.7);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+}
+.ds-topbar { background: rgb(var(--ds-workspace) / 0.72); }
+
+/* Controls, cut from the same glass. */
+.ds-btn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: rgb(var(--ds-surface) / 0.8);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07);
+  transition: transform 0.24s var(--ease-hover), border-color 0.24s var(--ease-hover),
+              background 0.24s var(--ease-hover), box-shadow 0.24s var(--ease-hover);
+}
+.ds-btn:hover:not(:disabled) {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.13),
+    0 8px 20px -12px rgba(var(--ds-shadow), 0.6);
+}
+.ds-btn:active:not(:disabled) { transform: translateY(0) scale(0.985); transition-duration: 0.08s; }
+.ds-btn-primary { box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28); backdrop-filter: none; }
+.ds-btn-quiet { backdrop-filter: none; box-shadow: none; }
+
+/* Panels arriving. A short, shallow stagger — the console is opened dozens of
+   times a day, so this has to be over almost before it is noticed. Anything
+   longer becomes a toll on every navigation. */
+.ds-main .ds-panel { animation: ds-panel-in 0.42s var(--ease-settle) both; }
+@keyframes ds-panel-in {
+  from { opacity: 0; transform: translateY(7px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-main .ds-panel { animation: none; }
+  .ds-kpi:hover, .ds-btn:active:not(:disabled) { transform: none; }
+}
+
+/* ── scroll-revealed text ────────────────────────────────────────────
+   Words resolve as the block travels through the viewport, left to right at
+   reading pace.
+
+   Driven by `animation-timeline: view()`, so the browser ties progress to the
+   scroll position itself. Nothing listens to scroll, nothing runs on the main
+   thread, and it tracks backwards correctly when the reader scrolls up — which
+   a one-way IntersectionObserver reveal cannot do.
+
+   Each word takes a slice of the block's progress from its index, so the
+   stagger comes from the timeline rather than from delays. Delays do not mean
+   anything on a scroll timeline: there is no clock to be late against. */
+
+.reveal-text { --dim: 0.16; }
+.reveal-word { display: inline-block; will-change: opacity, filter; }
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal-word {
+      opacity: var(--dim);
+      filter: blur(2px);
+      animation: reveal-word linear both;
+      animation-timeline: view();
+      /* Word i brightens over a window that starts a little later than word
+         i-1. The spread is deliberately less than the full range so the last
+         word is resolved well before the block leaves the screen. */
+      animation-range:
+        entry calc(12% + (var(--i) / var(--n)) * 34%)
+        entry calc(46% + (var(--i) / var(--n)) * 34%);
+    }
+  }
+}
+
+@keyframes reveal-word {
+  to { opacity: 1; filter: blur(0); }
+}

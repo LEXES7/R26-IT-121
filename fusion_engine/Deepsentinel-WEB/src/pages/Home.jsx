@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { ArrowLink, Display, Eyebrow } from '../components/Editorial'
 import Globe from '../components/Globe'
 import Reveal from '../components/Reveal'
+import ScrollRevealText from '../components/ScrollRevealText'
 import TransactionStory from '../components/TransactionStory'
 import { IconBlackBox, IconHallucination, IconLink } from '../components/Icons'
 import PipelineDiagram from '../components/PipelineDiagram'
@@ -9,22 +10,12 @@ import { useAuth } from '../context/AuthContext'
 import { Badge, cx } from '../components/ui'
 import { COMPONENTS as COMPONENT_DATA, COMPONENT_ORDER } from '../data/components'
 
-// Every figure here is measured, and labelled with the protocol that produced
-// it.
-//
-// This list previously advertised "0.988 fusion F1 score — meta-classifier,
-// held-out set". That number is the meta-classifier's cross-validation on
-// synthetic data it generated itself; it is a fit diagnostic, not a detection
-// result, and "held-out set" implied an evaluation that never happened. The
-// honest figure is 0.406 under a leakage-free protocol, and it is the one worth
-// defending: 0.41 with no leakage is a stronger claim than 0.99 with it.
-const STATS = [
-  { value: '3', label: 'detection models', detail: 'network, behaviour, timing' },
-  { value: '0.406', label: 'relational F1', detail: 'leakage-free, 5 seeds, p=0.045' },
-  { value: '0.024', label: 'calibration error', detail: 'isotonic; 0.80 uncalibrated' },
-  { value: '6.3M', label: 'transactions', detail: 'PaySim, fully synthetic' },
-]
-
+// The hero used to end in a row of research figures — F1, calibration error,
+// seed counts, a p-value. They were all honest and all measured, and they were
+// still wrong here: this is the front door of a product, and someone arriving
+// at it wants to know what the thing does, not how its evaluation was
+// designed. The numbers still exist where they belong, on the component pages
+// and in the console.
 const PROBLEM = [
   {
     Icon: IconBlackBox,
@@ -73,26 +64,40 @@ export default function Home() {
           right. Centring the copy over a faint backdrop made both compete and
           neither land. */}
       <section className="relative overflow-hidden border-b border-subtle">
-        <div aria-hidden className="pointer-events-none absolute inset-0 grid-bg" />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -left-40 top-0 h-[32rem] w-[32rem] rounded-full bg-accent-500/10 blur-[120px]"
-        />
+        <div aria-hidden className="ambient" />
 
         <div className="relative mx-auto grid max-w-[88rem] items-center gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_minmax(0,36rem)] lg:gap-10 lg:py-28">
           {/* Left — the argument */}
+          {/* The hero arrives in reading order: what this is, the claim, the
+              qualification, then what you can do about it. Each step is a
+              beat behind the last, so the eye is led rather than presented
+              with everything at once. */}
           <div>
-            <Eyebrow>Multi-modal fraud detection</Eyebrow>
+            <div className="enter enter--soft" style={{ '--d': '0.06s' }}>
+              <Eyebrow>Multi-modal fraud detection</Eyebrow>
+            </div>
 
             {/* Serif, not the bold sans every product page uses. The italic
-                clause is the promise; the roman half is the commodity. */}
+                clause is the promise; the roman half is the commodity. Each
+                line rises out of its own edge — the clip is what makes the
+                words appear from nothing instead of merely fading. */}
             <h1 className="display mt-5 text-[3.5rem] text-slate-100 sm:text-[4.75rem]">
-              Detect the fraud.
-              <br />
-              <span className="display-italic text-accent-400">Then prove it.</span>
+              <span className="line-mask">
+                <span className="enter enter--mask block" style={{ '--d': '0.2s' }}>
+                  Detect the fraud.
+                </span>
+              </span>
+              <span className="line-mask">
+                <span className="enter enter--mask block" style={{ '--d': '0.38s' }}>
+                  <span className="display-italic enter-focus text-accent-400">
+                    Then prove it.
+                  </span>
+                </span>
+              </span>
             </h1>
 
-            <p className="mt-6 max-w-xl text-base leading-relaxed text-slate-400">
+            <p className="enter enter--soft mt-6 max-w-xl text-base leading-relaxed text-slate-400"
+               style={{ '--d': '0.62s' }}>
               Three deep learning models examine a transaction from different
               angles. A retrieval layer grounds the explanation in FATF typology.
               What comes out is not a score — it is a{' '}
@@ -102,29 +107,18 @@ export default function Home() {
             <div className="mt-9 flex flex-wrap items-center gap-5">
               <Link
                 to={isAuthenticated ? '/' : '/login'}
-                className="rounded-xl bg-white px-7 py-3.5 text-sm font-semibold text-sentinel-950 transition hover:bg-slate-200"
+                className="liquid-solid enter enter--rise inline-flex items-center rounded-xl px-7 py-3.5 text-sm font-semibold"
+                style={{ '--d': '0.78s' }}
               >
                 {isAuthenticated ? 'Open the analyzer' : 'Sign in to run it'}
               </Link>
-              <a href="#pipeline">
+              <a href="#pipeline"
+                 className="liquid arrow-slide enter enter--side inline-flex items-center rounded-xl px-6 py-3.5 text-sm text-slate-200"
+                 style={{ '--d': '0.9s' }}>
                 <ArrowLink>See how it works</ArrowLink>
               </a>
             </div>
 
-            {/* Measured figures, each carrying the protocol that produced it.
-                The detail line is not decoration — a number without its method
-                is a claim, and this page should not make claims. */}
-            <dl className="hair-t mt-14 grid grid-cols-2 gap-x-8 gap-y-7 pt-8 sm:grid-cols-4">
-              {STATS.map((s) => (
-                <div key={s.label}>
-                  <dd className="numeric text-[2rem] leading-none text-slate-100">
-                    {s.value}
-                  </dd>
-                  <dt className="eyebrow mt-2.5 text-accent-400">{s.label}</dt>
-                  <p className="mt-1 text-[10px] leading-tight text-slate-600">{s.detail}</p>
-                </div>
-              ))}
-            </dl>
           </div>
 
           {/* Right — the globe, as an object rather than a backdrop */}
@@ -151,7 +145,7 @@ export default function Home() {
         <Reveal className="max-w-2xl">
           <Eyebrow>The problem</Eyebrow>
           <h2 className="display mt-4 text-[2.5rem] text-slate-100 sm:text-[3.25rem]">
-            Fraud detection has{' '}
+            <ScrollRevealText as="span">Fraud detection has</ScrollRevealText>{' '}
             <span className="display-italic text-accent-400">an explanation problem.</span>
           </h2>
         </Reveal>
@@ -159,7 +153,7 @@ export default function Home() {
         <div className="hair-t mt-14 grid gap-x-10 gap-y-12 pt-12 md:grid-cols-3">
           {PROBLEM.map((p, i) => (
             <Reveal key={p.title} delay={i * 110}>
-              <article className={cx('h-full', i > 0 && 'md:hair-l md:pl-10')}>
+              <article className={cx('glass card-hover h-full rounded-2xl p-6', i > 0 && 'md:pl-6')}>
                 <div className="flex items-baseline gap-4">
                   <span className="display text-[2.5rem] leading-none text-slate-700">
                     0{i + 1}
@@ -169,7 +163,9 @@ export default function Home() {
                 <h3 className="mt-5 text-lg font-semibold leading-snug text-slate-100">
                   {p.title}
                 </h3>
-                <p className="mt-3 text-sm leading-relaxed text-slate-400">{p.body}</p>
+                <ScrollRevealText className="mt-3 text-sm leading-relaxed text-slate-400">
+                  {p.body}
+                </ScrollRevealText>
               </article>
             </Reveal>
           ))}
@@ -219,7 +215,8 @@ export default function Home() {
             <Reveal key={c.slug} delay={i * 80}>
               <Link
                 to={`/components/${c.slug}`}
-                className="group grid items-baseline gap-x-8 gap-y-2 py-7 transition-colors hover:bg-surface md:grid-cols-[3rem_9rem_minmax(0,22rem)_minmax(0,1fr)_5rem]"
+                className="group arrow-slide grid items-baseline gap-x-8 gap-y-2 rounded-xl border border-transparent px-4 py-7 -mx-4 transition-[background-color,transform,border-color,box-shadow] duration-300 hover:translate-x-1 hover:border-white/10 hover:bg-white/[0.04] hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.09)] md:grid-cols-[3rem_9rem_minmax(0,22rem)_minmax(0,1fr)_5rem]"
+                style={{ transitionTimingFunction: 'var(--ease-hover)' }}
               >
                 <span className="display text-[2rem] leading-none text-slate-700 transition-colors group-hover:text-slate-500">
                   0{i + 1}
@@ -237,7 +234,7 @@ export default function Home() {
                   {c.question}
                 </span>
                 <span className="text-xs text-slate-600 transition-colors group-hover:text-accent-400 md:text-right">
-                  Explore &rarr;
+                  Explore <span className="arrow inline-block">&rarr;</span>
                 </span>
               </Link>
             </Reveal>
@@ -273,15 +270,15 @@ export default function Home() {
             <div className="mt-8 flex flex-wrap items-center gap-6">
               <Link
                 to={isAuthenticated ? '/' : '/login'}
-                className="rounded-lg bg-accent-500 px-5 py-2.5 text-sm font-medium text-[#04231f] transition-colors hover:bg-accent-400"
+                className="liquid-solid inline-flex items-center rounded-xl px-5 py-2.5 text-sm font-semibold"
               >
                 {isAuthenticated ? 'Run the analyzer' : 'Sign in to run it'}
               </Link>
               <Link
                 to="/about"
-                className="hair border-b pb-1 text-sm text-slate-300 transition-colors hover:text-slate-100"
+                className="arrow-slide hair border-b pb-1 text-sm text-slate-300 transition-colors hover:text-slate-100"
               >
-                Read the architecture &rarr;
+                Read the architecture <span className="arrow inline-block">&rarr;</span>
               </Link>
             </div>
           </Reveal>
