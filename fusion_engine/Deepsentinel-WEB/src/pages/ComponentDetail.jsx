@@ -4,6 +4,7 @@ import { Badge, cx } from '../components/ui'
 import { ArrowLink, Display, Eyebrow, Tag } from '../components/Editorial'
 import Reveal from '../components/Reveal'
 import SystemLens from '../components/SystemLens'
+import useCapabilities, { compact } from '../hooks/useCapabilities'
 
 /** Component slugs to the lens they own. Fusion owns none — it owns all three. */
 const LENS_FOR = {
@@ -53,8 +54,39 @@ const ACCENT = {
   },
 }
 
+/**
+ * Where a metric's value comes from live, keyed by component and label.
+ *
+ * The figures in components.js stay as the fallback. A marketing page that
+ * blanks because a detector is restarting is worse than one showing a number
+ * that is a minute stale, so live values overwrite and never remove.
+ */
+const LIVE = {
+  network: {
+    'Accounts mapped': (d) => compact(d.accounts),
+    'Transfers mapped': (d) => compact(d.transfers),
+    Neighbourhood: (d) => (d.hops ? `${d.hops} hops` : null),
+  },
+  behavioural: {
+    Models: (d) => (d.strata ? String(d.strata) : null),
+    Response: (d) => (d.latency_ms ? `~${Number(d.latency_ms).toFixed(1)} ms` : null),
+  },
+  temporal: {
+    Context: (d) => (d.window ? String(d.window) : null),
+  },
+  fusion: {
+    'Signals combined': (d) => (d.signals ? String(d.signals) : null),
+    'Typologies indexed': (d) => (d.typologies ? String(d.typologies) : null),
+  },
+}
+
 export default function ComponentDetail() {
   const { slug } = useParams()
+  // Called before the early return below — a hook after a conditional return
+  // is a hook that sometimes does not run, which React will not forgive.
+  const caps = useCapabilities() ?? {}
+  const live = LIVE[slug]
+
   const c = COMPONENTS[slug]
   if (!c) return <Navigate to="/" replace />
 
@@ -66,7 +98,6 @@ export default function ComponentDetail() {
     <div className="pb-20">
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden border-b border-subtle bg-sentinel-950">
-        <div aria-hidden className="pointer-events-none absolute inset-0 grid-bg" />
         <div
           aria-hidden
           className={cx(
@@ -77,7 +108,7 @@ export default function ComponentDetail() {
         <div className="relative mx-auto max-w-5xl px-4 py-20 sm:px-6 sm:py-24">
           <Link
             to="/"
-            className="group inline-flex items-center gap-2 text-xs text-slate-500 transition hover:text-slate-300"
+            className="group arrow-slide inline-flex items-center gap-2 text-xs text-slate-500 transition hover:text-slate-300"
           >
             <span aria-hidden className="transition-transform group-hover:-translate-x-1">←</span>
             All components
@@ -87,7 +118,7 @@ export default function ComponentDetail() {
             <Eyebrow>{c.modality}</Eyebrow>
           </div>
 
-          <Display as="h1" lead={c.title} accent={c.tagline} className="mt-4" />
+          <Display as="h1" stack lead={c.title} accent={c.tagline} className="mt-4" />
 
           <p className="mt-6 max-w-2xl text-base leading-relaxed text-slate-400">{c.intro}</p>
 
@@ -109,7 +140,7 @@ export default function ComponentDetail() {
             {c.metrics.map((m, i) => (
               <Reveal key={m.label} delay={i * 90} className="bg-sentinel-950"><div className="bg-sentinel-950 px-2 py-8">
                 <p className="text-4xl font-bold tracking-tight text-slate-200 tabular-nums">
-                  {m.value}
+                  {live?.[m.label]?.(caps[c.slug] ?? {}) ?? m.value}
                 </p>
                 <p className="mt-2 text-sm font-semibold text-accent-500">{m.label}</p>
                 <p className="mt-0.5 text-[11px] text-slate-600">{m.note}</p>
@@ -160,7 +191,7 @@ export default function ComponentDetail() {
           {c.detects.map(([name, desc], i) => (
             <Reveal key={name} delay={i * 80}>
             <div
-              className="group flex h-full gap-3 rounded-2xl border border-subtle bg-surface p-4 transition-colors duration-300 hover:border-accent-500/40 hover:bg-surface-raised"
+              className="group glass card-hover flex h-full gap-3 rounded-2xl p-4 hover:border-accent-500/40"
             >
               <span aria-hidden className={cx('mt-1.5 h-2 w-2 shrink-0 rounded-full', a.dot)} />
               <div>
@@ -175,10 +206,10 @@ export default function ComponentDetail() {
 
       {/* ── Findings ─────────────────────────────────────────────────────── */}
       <section className="mx-auto max-w-5xl px-4 pt-12 sm:px-6">
-        <Eyebrow>{c.status === 'delivered' ? 'What we learned' : 'Design decisions'}</Eyebrow>
+        <Eyebrow>How it behaves</Eyebrow>
         <div className="mt-4 space-y-3">
           {c.findings.map((f, i) => (
-            <Reveal key={f.title} delay={i * 100}><div className="rounded-2xl border border-subtle bg-surface p-5">
+            <Reveal key={f.title} delay={i * 100}><div className="glass card-hover h-full rounded-2xl p-5">
               <div className="flex items-baseline gap-3">
                 <span className="text-sm font-bold tabular-nums text-accent-500">
                   {String(i + 1).padStart(2, '0')}
@@ -202,7 +233,7 @@ export default function ComponentDetail() {
 
         <Link
           to={`/components/${next.slug}`}
-          className="group mt-6 flex items-center justify-between rounded-2xl border border-subtle bg-surface p-5 transition hover:border-strong hover:bg-surface-raised"
+          className="group arrow-slide glass card-hover mt-6 flex items-center justify-between rounded-2xl p-5 hover:border-strong"
         >
           <div>
             <p className="text-[10px] uppercase tracking-wider text-slate-600">Next component</p>

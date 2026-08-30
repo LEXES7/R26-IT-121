@@ -101,7 +101,7 @@ export default function Navbar() {
   return (
     <nav
       ref={navRef}
-      className="hair-b sticky top-0 z-50 bg-sentinel-950/80 backdrop-blur-xl"
+      className="glass-bar sticky top-0 z-50"
     >
       <div className="mx-auto flex h-[3.75rem] max-w-[88rem] items-center justify-between gap-6 px-5 sm:px-8">
         <Link to="/" className="shrink-0" aria-label="DeepSentinel home">

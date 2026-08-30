@@ -1,5 +1,5 @@
 import Logo from './Logo'
-import FooterScene from './FooterScene'
+import DotField from './DotField'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { cx } from './ui'
@@ -59,10 +59,7 @@ export default function Footer() {
 
   return (
     <footer className="relative mt-20 overflow-hidden border-t border-subtle">
-      {/* Scenery sits behind and below the columns, bleeding to both edges. */}
-      <FooterScene className="pointer-events-none absolute inset-x-0 bottom-0 h-56 w-full" />
-
-      <div className="relative mx-auto max-w-7xl px-4 pb-40 pt-12 sm:px-6">
+      <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-12 sm:px-6">
         <div className="grid gap-10 lg:grid-cols-[1.4fr_repeat(4,1fr)]">
           {/* Identity */}
           <div className="space-y-4">
@@ -146,28 +143,17 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Research provenance */}
-        <div className="mt-10 grid gap-4 border-t border-subtle pt-8 sm:grid-cols-3">
-          {[
-            {
-              label: 'Institution',
-              value: 'Sri Lanka Institute of Information Technology',
-              detail: 'Final Year Research Project 2026',
-            },
-            {
-              label: 'Alignment',
-              value: 'UN SDG 16 · SDG 9',
-              detail: 'Strong institutions · Industry and innovation',
-            },
-          ].map((b) => (
-            <div key={b.label}>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">
-                {b.label}
-              </p>
-              <p className="mt-1 text-xs text-slate-400">{b.value}</p>
-              <p className="mt-0.5 text-[10px] text-slate-700">{b.detail}</p>
-            </div>
-          ))}
+        {/* Its own band under the columns, rather than a wash behind them.
+            Behind the content its threads drew straight across "API reference",
+            and a background that competes with text has stopped being one. */}
+        <div className="relative mt-12 h-44 overflow-hidden rounded-2xl sm:h-52">
+          <DotField
+            leader
+            drift={false}
+            spacing={40}
+            dots="255 255 255"
+            accent="255 138 58"
+          />
         </div>
 
         <div
@@ -176,10 +162,10 @@ export default function Footer() {
             'text-[11px] text-slate-700 sm:flex-row',
           )}
         >
-          <p>© 2026 DeepSentinel · Research prototype</p>
+          <p>© 2026 DeepSentinel</p>
           <p className="text-center sm:text-right">
-            Evaluated on the PaySim synthetic dataset. Not certified for production
-            financial decisioning.
+            Demonstration environment on synthetic data. Not certified for
+            production financial decisioning.
           </p>
         </div>
       </div>

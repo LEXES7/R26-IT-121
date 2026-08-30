@@ -133,8 +133,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="DeepSentinel — Fusion Engine & Generative Explainability",
     description=(
-        "Weighted ensemble meta-classifier + RAG-grounded LLM forensic reporting "
-        "for the DeepSentinel multi-modal fraud detection platform. Member 4 — IT22192882."
+        "Multi-modal fraud detection. Three detectors score every transaction "
+        "in parallel — the payment graph around it, how it fits its transaction "
+        "type, and the run it arrived in — and a meta-classifier fuses them into "
+        "one verdict with a cited forensic narrative.\n\n"
+        "`/public/capabilities` needs no credentials and reports which detectors "
+        "are answering. Everything else requires a bearer token from `/auth/login`."
     ),
     version="1.0.0",
     lifespan=lifespan,
@@ -1420,6 +1424,239 @@ async def review_case(
 # ── The operating point ──────────────────────────────────────────────────────
 
 
+class NetworkCapability(BaseModel):
+    accounts: Optional[int] = Field(None, description="Accounts in the payment graph")
+    transfers: Optional[int] = Field(None, description="Directed transfers between them")
+    hops: Optional[int] = Field(None, description="Neighbourhood depth read per transaction")
+    live: bool = Field(..., description="Whether the model is loaded and can score")
+
+
+class BehaviouralCapability(BaseModel):
+    strata: Optional[int] = Field(None, description="Models held, one per transaction type")
+    latency_ms: Optional[float] = Field(None, description="Mean scoring time in milliseconds")
+    live: bool = Field(..., description="Whether the service is answering")
+
+
+class TemporalCapability(BaseModel):
+    window: Optional[int] = Field(None, description="Preceding transactions read with each one")
+    live: bool = Field(..., description="Whether the model is loaded and can score")
+
+
+class FusionCapability(BaseModel):
+    signals: int = Field(..., description="Detector scores combined into the verdict")
+    typologies: Optional[int] = Field(None, description="Laundering methods indexed for retrieval")
+    live: bool = Field(..., description="Whether fusion and retrieval are both available")
+
+
+class Capabilities(BaseModel):
+    """What each detector is and whether it is currently answering."""
+
+    network: NetworkCapability
+    behavioural: BehaviouralCapability
+    temporal: TemporalCapability
+    fusion: FusionCapability
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "network": {"accounts": 3277509, "transfers": 2770409, "hops": 2, "live": True},
+                "behavioural": {"strata": 4, "latency_ms": 3.41, "live": True},
+                "temporal": {"window": 32, "live": False},
+                "fusion": {"signals": 3, "typologies": 10, "live": True},
+            },
+        },
+    }
+
+
+def _typology_count() -> int | None:
+    """How many laundering methods are indexed, straight from the store."""
+    try:
+        return knowledge_base.get_collection().count()
+    except Exception:                                   # noqa: BLE001
+        return None
+
+
+_CAPS_CACHE: dict = {"at": 0.0, "body": None}
+_CAPS_TTL = 60.0
+
+
+class SimulationReset(BaseModel):
+    """Confirmation for clearing simulation data."""
+
+    confirm: str = Field(
+        ...,
+        description="Must be exactly 'reset simulation'. A destructive call "
+                    "should not be one stray click or a bare curl away.",
+    )
+    dry_run: bool = Field(
+        True,
+        description="Report what would be removed without removing it. Defaults "
+                    "to true so the harmless call is the easy one.",
+    )
+
+
+# Everything a simulation produces, and nothing else. The exclusions matter
+# more than the list: users, risk-manager recipients, alerting settings and the
+# audit log are configuration and history, not test output. Wiping those would
+# lock the team out of a shared database and erase the record of who did it.
+SIMULATION_TABLES = (
+    "transactions_live",      # the ingestion queue the Query Runner writes
+    "transactions_archive",   # payloads kept for case reconstruction
+    "fraud_cases",            # what the monitor raised
+    "analysis_records",       # what the analyzer scored
+    "sar_drafts",             # filings drafted from those analyses
+)
+
+
+@app.post(
+    "/simulation/reset",
+    tags=["simulation"],
+    summary="Clear simulation data from the shared database",
+)
+async def reset_simulation(body: SimulationReset, user: User = Depends(require_admin)):
+    """Remove the transactions and cases a test run produced.
+
+    For testing only. Several people share one database, so a run leaves
+    traffic and cases behind that the next person then has to read around —
+    this is how you hand the database back in the state you found it.
+
+    Deliberately narrow. It empties the five tables a simulation writes and
+    touches nothing else: accounts, alert recipients, thresholds and the audit
+    trail all survive, because losing those costs the team far more than a
+    dirty queue does.
+
+    Defaults to a dry run. Pass `dry_run: false` to actually delete, and the
+    deletion is itself written to the audit log — a reset that leaves no trace
+    of who reset it is how a shared environment becomes unaccountable.
+    """
+    from sqlalchemy import text as _text
+
+    from backend.auth import audit
+    from backend.db.session import get_session
+
+    if body.confirm != "reset simulation":
+        raise HTTPException(
+            422,
+            "Set confirm to exactly 'reset simulation' to proceed. "
+            "This clears shared test data for everyone.",
+        )
+
+    counts: dict[str, int] = {}
+    async with get_session() as db:
+        for table in SIMULATION_TABLES:
+            try:
+                counts[table] = int(
+                    (await db.execute(_text(f'SELECT COUNT(*) FROM "{table}"'))).scalar() or 0)
+            except Exception:                           # noqa: BLE001
+                counts[table] = -1                      # table absent on this database
+
+    if body.dry_run:
+        return {
+            "dry_run": True,
+            "would_remove": counts,
+            "total": sum(v for v in counts.values() if v > 0),
+            "preserved": ["users", "risk_managers", "alert_settings", "audit_log"],
+            "note": "Nothing was deleted. Send dry_run false to proceed.",
+        }
+
+    removed: dict[str, int] = {}
+    async with get_session() as db:
+        for table in SIMULATION_TABLES:
+            if counts.get(table, -1) < 0:
+                continue
+            try:
+                await db.execute(_text(f'DELETE FROM "{table}"'))
+                removed[table] = counts[table]
+            except Exception as exc:                    # noqa: BLE001
+                logger.warning(f"Could not clear {table}: {exc}")
+                removed[table] = -1
+
+    total = sum(v for v in removed.values() if v > 0)
+    await audit("simulation.reset", actor=user.username, target="shared database",
+                detail=f"cleared {total} row(s): "
+                       + ", ".join(f"{k}={v}" for k, v in removed.items()))
+    logger.info(f"Simulation data cleared by {user.username}: {removed}")
+
+    return {
+        "dry_run": False,
+        "removed": removed,
+        "total": total,
+        "preserved": ["users", "risk_managers", "alert_settings", "audit_log"],
+    }
+
+
+@app.get(
+    "/public/capabilities",
+    tags=["public"],
+    response_model=Capabilities,
+    summary="Detector status — which models are live",
+    responses={200: {"description": "Live status and capability of each detector."}},
+)
+async def public_capabilities():
+    """Which detectors are answering, and what each one is.
+
+    No credentials required — this is the endpoint to open in Swagger or
+    Postman to show the state of the models.
+
+    Deliberately not /api/monitor/runtime with the auth taken off. That
+    endpoint answers "is the system healthy" and carries things an anonymous
+    caller has no business with — the alert sending address, how many alerts
+    went undelivered, queue depth, and upstream stack traces. This is a
+    curated subset: sizes, capabilities and whether each detector is
+    answering. Nothing here reveals internal addresses, failures or volumes.
+
+    Cached for a minute, because it is reachable without a session and each
+    miss probes three internal services.
+    """
+    import time as _t
+
+    import httpx
+
+    from backend import config
+
+    now = _t.monotonic()
+    if _CAPS_CACHE["body"] is not None and now - _CAPS_CACHE["at"] < _CAPS_TTL:
+        return _CAPS_CACHE["body"]
+
+    async def probe(key: str, path: str = "/health") -> dict:
+        base = str(config.get("upstream", key)).rstrip("/")
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as c:
+                r = await c.get(f"{base}{path}")
+            return r.json() if r.status_code == 200 else {}
+        except Exception:                               # noqa: BLE001
+            return {}
+
+    graph = await probe("graph_api_base", "/api/graph/runtime")
+    behav = await probe("behavioral_api_base")
+    temp = await probe("temporal_api_base")
+
+    body = {
+        "network": {
+            "accounts": (graph.get("precomputed") or {}).get("accounts"),
+            "transfers": (graph.get("precomputed") or {}).get("transactions"),
+            "hops": (graph.get("model") or {}).get("k_hop"),
+            "live": bool((graph.get("model") or {}).get("loaded")),
+        },
+        "behavioural": {
+            "strata": len(behav.get("strata_loaded") or []) or None,
+            "latency_ms": behav.get("mean_latency_ms"),
+            "live": behav.get("status") == "ok",
+        },
+        "temporal": {
+            "window": temp.get("window_size"),
+            "live": bool(temp.get("status") == "ok" and not temp.get("load_error")),
+        },
+        "fusion": {
+            "signals": 3,
+            "typologies": _typology_count(),
+            "live": meta_classifier is not None and retriever is not None,
+        },
+    }
+    _CAPS_CACHE.update(at=now, body=body)
+    return body
+
+
 @app.get("/settings/thresholds", tags=["settings"])
 async def get_thresholds(user: User = Depends(get_current_user)):
     """The fused operating point, and where it came from."""
@@ -1487,6 +1724,77 @@ DETECTORS = {
         "reads": "The transactions immediately preceding this one.",
     },
 }
+
+
+class DetectorInfo(BaseModel):
+    """One detector: what it is, where it lives, and whether it can score."""
+
+    name: str = Field(..., description="Identifier to pass to POST /detectors/{name}")
+    label: str = Field(..., description="Model name")
+    reads: str = Field(..., description="What this detector looks at")
+    live: bool = Field(..., description="Reachable and able to score right now")
+    status: str = Field(..., description="serving | warming_up | unreachable | error")
+    detail: Optional[str] = Field(None, description="Why it cannot score, when it cannot")
+    model_version: Optional[str] = None
+    docs_url: Optional[str] = Field(
+        None, description="This detector's own OpenAPI docs, served by its own process")
+
+    model_config = {"protected_namespaces": ()}
+
+
+@app.get(
+    "/detectors",
+    tags=["detectors"],
+    response_model=list[DetectorInfo],
+    summary="List the detectors and whether each one can score",
+)
+async def list_detectors(user: User = Depends(get_current_user)):
+    """Every detector, its status, and a link to its own API docs.
+
+    Each model runs as its own service with its own OpenAPI page; this is the
+    index across all three, so one request answers "what is deployed and what
+    is answering" without visiting three ports.
+    """
+    import httpx
+
+    out: list[dict] = []
+    for name, meta in DETECTORS.items():
+        base = str(config.get("upstream", meta["base"])).rstrip("/")
+        probe = "/api/graph/runtime" if name == "graph" else "/health"
+        info = {
+            "name": name,
+            "label": meta["label"],
+            "reads": meta["reads"],
+            "docs_url": f"{base}/docs",
+            "live": False,
+            "status": "unreachable",
+            "detail": "The service did not respond.",
+            "model_version": None,
+        }
+        try:
+            async with httpx.AsyncClient(timeout=4.0) as c:
+                r = await c.get(f"{base}{probe}")
+            body = r.json() if r.status_code == 200 else {}
+            info["model_version"] = body.get("model_version") or (
+                body.get("model") or {}).get("stage")
+
+            if body.get("load_error"):
+                info.update(status="error", detail=body["load_error"])
+            elif body.get("warming_up"):
+                filled, size = body.get("buffer_filled", 0), body.get("window_size", 0)
+                info.update(
+                    status="warming_up",
+                    detail=f"Needs a full window before it can score — {filled} of {size}.")
+            elif name == "graph" and not (body.get("model") or {}).get("loaded"):
+                info.update(status="error", detail="Reachable, but no model is loaded.")
+            elif r.status_code == 200:
+                info.update(live=True, status="serving", detail=None)
+            else:
+                info.update(status="error", detail=f"Health probe returned {r.status_code}.")
+        except Exception as exc:                        # noqa: BLE001
+            info["detail"] = f"{type(exc).__name__} contacting the service."
+        out.append(info)
+    return out
 
 
 @app.post("/detectors/{name}", tags=["detectors"])

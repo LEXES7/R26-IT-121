@@ -120,7 +120,6 @@ export default function TransactionStory() {
 
   return (
     <section ref={root} className="relative overflow-hidden border-y border-subtle bg-sentinel-950">
-      <div aria-hidden className="pointer-events-none absolute inset-0 grid-bg" />
 
       <div className="relative mx-auto grid min-h-screen max-w-6xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:gap-16">
         {/* ── Left: the story, one step at a time ─────────────────────── */}

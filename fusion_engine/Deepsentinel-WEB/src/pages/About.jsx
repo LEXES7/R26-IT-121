@@ -72,7 +72,6 @@ export default function About() {
 
       {/* ── the statement ──────────────────────────────────────────────── */}
       <section className="hair-b relative overflow-hidden">
-        <div aria-hidden className="pointer-events-none absolute inset-0 grid-bg" />
         <div className="relative mx-auto max-w-[88rem] px-5 py-24 sm:px-8">
           <Reveal className="max-w-3xl">
             <Eyebrow>Architecture</Eyebrow>
@@ -112,7 +111,8 @@ export default function About() {
             <Reveal key={c.slug} delay={i * 80}>
               <Link
                 to={`/components/${c.slug}`}
-                className="group grid items-baseline gap-x-8 gap-y-2 py-7 transition-colors hover:bg-surface md:grid-cols-[3rem_8rem_minmax(0,20rem)_minmax(0,1fr)_5rem]"
+                className="group arrow-slide grid items-baseline gap-x-8 gap-y-2 rounded-xl border border-transparent px-4 py-7 -mx-4 transition-[background-color,transform,border-color,box-shadow] duration-300 hover:translate-x-1 hover:border-white/10 hover:bg-white/[0.04] hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.09)] md:grid-cols-[3rem_8rem_minmax(0,20rem)_minmax(0,1fr)_5rem]"
+                style={{ transitionTimingFunction: 'var(--ease-hover)' }}
               >
                 <span className="display text-[2rem] leading-none text-slate-700 transition-colors group-hover:text-slate-500">
                   0{i + 1}
@@ -127,7 +127,7 @@ export default function About() {
                   {c.question}
                 </span>
                 <span className="text-xs text-slate-600 transition-colors group-hover:text-accent-400 md:text-right">
-                  Explore &rarr;
+                  Explore <span className="arrow inline-block">&rarr;</span>
                 </span>
               </Link>
             </Reveal>

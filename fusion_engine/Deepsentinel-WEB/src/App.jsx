@@ -10,6 +10,8 @@ import ConsoleShell from './components/ConsoleShell'
 import Footer from './components/Footer'
 import ChatBot from './components/ChatBot'
 import NotFound from './pages/NotFound'
+import useLiquidPointer from './hooks/useLiquidPointer'
+import Greeting from './components/Greeting'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import Analyzer from './pages/Analyzer'
@@ -54,6 +56,7 @@ const CONSOLE_ROUTES = [
 ]
 
 function Shell() {
+  useLiquidPointer()
   const { isAuthenticated } = useAuth()
   const { pathname } = useLocation()
   // "/" is the dashboard once signed in, so it is a console route only then.
@@ -71,6 +74,8 @@ function Shell() {
   return (
     <div className={isConsole ? '' : 'flex min-h-screen flex-col bg-sentinel-950'}>
       {!isConsole && <Navbar />}
+
+      <Greeting />
 
       {/* First thing in the tab order, visible only once focused: a keyboard
           user should not have to walk the whole nav on every page. */}
@@ -168,18 +173,21 @@ function Shell() {
  * exception — its title states how many cases are waiting, which only it
  * knows — so it renders its own shell and is not wrapped again.
  */
+// The breadcrumb has to name the group the sidebar files the page under, or
+// the two disagree in front of the reader. Thresholds and Detectors moved when
+// the console split in two; these followed them.
 const CONSOLE_PAGES = {
   '/monitor':   ['Workspace / Observe', 'Live monitor', 'Every transaction, screened as it arrives.'],
   '/analyzer':  ['Workspace / Observe', 'Analyzer', 'One transaction, through all five stages.'],
   '/cases':     ['Workspace / Investigate', 'Cases', 'What the models caught, and what you decided.'],
-  '/thresholds':['Workspace / Investigate', 'Thresholds', 'Replay past decisions at a different line.'],
+  '/thresholds':['Workspace / Configure', 'Thresholds', 'Replay past decisions at a different line.'],
   '/batch':     ['Workspace / Investigate', 'Batch upload', 'Score a file and measure it against its labels.'],
-  '/models':    ['Workspace / Understand', 'Detectors',
+  '/models':    ['Workspace / Operate', 'Detectors',
                  'Each model on its own — no fusion, no retrieval.'],
   '/assistant': ['Workspace / Understand', 'Assistant', 'Ask about the system in plain language.'],
-  '/settings':  ['Workspace', 'Administration', 'Alerting, people, audit and your account.'],
-  '/users':     ['Workspace', 'Administration', 'Alerting, people, audit and your account.'],
-  '/audit-log': ['Workspace', 'Administration', 'Alerting, people, audit and your account.'],
+  '/settings':  ['Workspace / Configure', 'Administration', 'Alerting, people, audit and your account.'],
+  '/users':     ['Workspace / Configure', 'Administration', 'Alerting, people, audit and your account.'],
+  '/audit-log': ['Workspace / Configure', 'Administration', 'Alerting, people, audit and your account.'],
   '/account':   ['Workspace', 'Administration', 'Alerting, people, audit and your account.'],
 }
 
