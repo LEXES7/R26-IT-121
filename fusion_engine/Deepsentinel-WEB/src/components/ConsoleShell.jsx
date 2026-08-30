@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { getMonitorRuntime } from '../services/api'
@@ -56,6 +56,8 @@ function Icon({ d, size = 15 }) {
 }
 
 /* Grouped by the job being done, not by which service answers. */
+const ADMIN_ROUTES = ['/settings', '/users', '/audit-log', '/account']
+
 const GROUPS = [
   ['Observe', [
     ['/', 'Overview', I.gauge],
@@ -78,6 +80,7 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
   const { user, signOut, canManageUsers, canManageAlerts, canViewAuditLog } = useAuth()
   const { theme, toggle } = useTheme()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const [open, setOpen] = useState(false)
   const [ready, setReady] = useState(null)
 
@@ -101,12 +104,9 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
     .replace(/deepsentinel/i, '').trim()
     .split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?'
 
-  const admin = [
-    canManageAlerts && ['/settings', 'Settings', I.settings],
-    canManageUsers && ['/users', 'Users', I.users],
-    canViewAuditLog && ['/audit-log', 'Audit log', I.log],
-    ['/account', 'Account', I.user],
-  ].filter(Boolean)
+  // One entry, not four. Alerting, people, audit and account are tabs on a
+  // single Administration page — the same screens, a quarter of the navigation.
+  const admin = [['/settings', 'Administration', I.settings]]
 
   const allUp = ready && ready.up === ready.total
 
@@ -145,7 +145,10 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
                 {admin.map(([to, text, d]) => (
                   <NavLink
                     key={to} to={to} onClick={() => setOpen(false)}
-                    className={({ isActive }) => `ds-nav-btn ${isActive ? 'active' : ''}`}
+                    // Administration owns four routes; the entry stays lit on
+                    // all of them, not only the one it links to.
+                    className={() => `ds-nav-btn ${
+                      ADMIN_ROUTES.some((r) => pathname.startsWith(r)) ? 'active' : ''}`}
                   >
                     <Icon d={d} /><span>{text}</span>
                   </NavLink>
@@ -196,7 +199,7 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
               </div>
             </div>
           </header>
-          <div className="ds-content ds-grid-bg">{children}</div>
+          <div className="ds-content">{children}</div>
         </main>
       </div>
     </div>

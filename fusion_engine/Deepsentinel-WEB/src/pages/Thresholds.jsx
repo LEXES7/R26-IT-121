@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { simulateThresholds } from '../services/api'
+import {
+  applyThresholds, getThresholds, resetThresholds, simulateThresholds,
+} from '../services/api'
 import { usePackage } from '../hooks/usePackage'
 import Locked from '../components/Locked'
 import { Alert, cx } from '../components/ui'
@@ -38,7 +40,23 @@ export default function Thresholds() {
   const { has, upsells } = usePackage()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
-  const [t, setT] = useState(0.5)
+  // One line per detector plus the fused verdict. They are genuinely separate
+  // questions: the detectors disagree, and their scores are not on a shared
+  // scale, so a single number cannot stand in for all four.
+  const [selected, setSelected] = useState('fused')
+  // The line the monitor is actually alerting on right now, as distinct from
+  // the line being explored on this page.
+  const [live, setLive] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [lines, setLines] = useState({
+    fused: 0.5, graph: 0.5, behavioural: 0.5, temporal: 0.5,
+  })
+  const t = lines[selected] ?? 0.5
+  const setT = (v) => setLines((p) => ({ ...p, [selected]: v }))
+
+  useEffect(() => {
+    getThresholds().then(setLive).catch(() => {})
+  }, [])
 
   useEffect(() => {
     simulateThresholds()
@@ -46,7 +64,15 @@ export default function Thresholds() {
       .catch((e) => setError(e?.response?.data?.detail ?? 'Could not load history.'))
   }, [])
 
-  const curve = data?.curve ?? []
+  const DETECTORS = [
+    ['fused', 'Fused verdict', 'all three, reconciled'],
+    ['graph', 'Edge-Enhanced GraphSAGE', 'network structure'],
+    ['behavioural', 'Stratified VAE + DSAA', 'account behaviour'],
+    ['temporal', 'Transaction-Sequence TCN', 'timing and order'],
+  ]
+  const forKey = (k) => (k === 'fused' ? data : data?.detectors?.[k])
+  const active = forKey(selected)
+  const curve = active?.curve ?? []
   const point = useMemo(() => {
     if (!curve.length) return null
     return curve.reduce((best, p) =>
@@ -55,7 +81,7 @@ export default function Thresholds() {
   }, [curve, t])
 
   const maxAlerts = Math.max(...curve.map((p) => p.alerts), 1)
-  const hasLabels = (data?.labelled ?? 0) > 0
+  const hasLabels = (active?.labelled ?? 0) > 0
   const empty = data && data.sample_size === 0
 
   return (
@@ -65,13 +91,13 @@ export default function Thresholds() {
       <div style={{ display: 'grid', gap: 11,
                     gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
         <Metric label="Alerts at this line" value={point?.alerts ?? null} tone="accent"
-                meta={`threshold ${t.toFixed(2)}`} />
+                meta={`${DETECTORS.find(([k]) => k === selected)?.[1]} · ${t.toFixed(2)}`} />
         <Metric label="Precision" value={hasLabels ? pct(point?.precision) : null}
                 meta={hasLabels ? 'of alerts, how many were real' : 'no labels in this history'} />
         <Metric label="Recall" value={hasLabels ? pct(point?.recall) : null} tone="alert"
                 meta={hasLabels ? 'of real fraud, how much was caught' : 'no labels in this history'} />
-        <Metric label="Scored" value={data?.sample_size ?? null}
-                meta={`${data?.labelled ?? 0} carry a label`} />
+        <Metric label="Scored" value={active?.sample_size ?? null}
+                meta={`${active?.labelled ?? 0} carry a label`} />
       </div>
 
       <Locked
@@ -90,6 +116,72 @@ export default function Thresholds() {
               file with the Query Runner, or analyse a transaction, and it fills in.
             </div>
           ) : (
+            <>
+            {/* One row per detector. Selecting a row is what the slider and
+                the curve below are then tuning — the platform's line and each
+                model's own line are different decisions. */}
+            <Panel style={{ overflow: 'hidden' }}>
+              <div style={{ padding: '17px 19px 4px' }}>
+                <SectionHeading
+                  label="Every line, on the same history"
+                  title="Choose which threshold to tune"
+                  action={<span className="ds-mono" style={{ fontSize: 10,
+                          color: 'rgb(var(--ds-muted))' }}>
+                    {data?.sample_size ?? 0} scored
+                  </span>}
+                />
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="ds-table">
+                  <thead>
+                    <tr>
+                      <th>Detector</th><th>Reads</th><th>Line</th>
+                      <th>Alerts</th><th>Precision</th><th>Recall</th>
+                      <th>F1</th><th>Best F1 at</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {DETECTORS.map(([key, name, reads]) => {
+                      const d = forKey(key)
+                      const line = lines[key] ?? 0.5
+                      const pt = d?.curve?.length
+                        ? d.curve.reduce((best, q) =>
+                            Math.abs(q.threshold - line) < Math.abs(best.threshold - line) ? q : best)
+                        : null
+                      const on = selected === key
+                      return (
+                        <tr key={key}
+                            onClick={() => d?.curve?.length && setSelected(key)}
+                            style={{ cursor: d?.curve?.length ? 'pointer' : 'not-allowed',
+                                     opacity: d?.curve?.length ? 1 : 0.45,
+                                     background: on ? 'rgb(var(--ds-surface-2))' : undefined }}>
+                          <td style={{ fontWeight: on ? 600 : 400 }}>{name}</td>
+                          <td style={{ color: 'rgb(var(--ds-muted))' }}>{reads}</td>
+                          <td className="ds-mono" style={{ color: on
+                                ? 'rgb(var(--ds-accent-strong))' : undefined }}>
+                            {d?.curve?.length ? line.toFixed(2) : '—'}
+                          </td>
+                          <td className="ds-mono">{pt ? pt.alerts : '—'}</td>
+                          <td className="ds-mono">{pct(pt?.precision)}</td>
+                          <td className="ds-mono">{pct(pt?.recall)}</td>
+                          <td className="ds-mono">{pct(pt?.f1)}</td>
+                          <td className="ds-mono" style={{ color: 'rgb(var(--ds-muted))' }}>
+                            {d?.best ? d.best.threshold.toFixed(2) : '—'}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p style={{ padding: '11px 19px 15px', fontSize: 9, lineHeight: 1.6,
+                          color: 'rgb(var(--ds-faint))', margin: 0 }}>
+                A detector with no history on this window cannot be tuned.
+                Changes here are simulated against past decisions and do not
+                affect the running services.
+              </p>
+            </Panel>
+
             <div style={{ display: 'grid', gap: 12,
                           gridTemplateColumns: 'minmax(0, 1.5fr) minmax(280px, .72fr)' }}>
               <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
@@ -98,7 +190,8 @@ export default function Thresholds() {
                 <Panel className="ds-panel-pad">
                   <div className="hair-b flex flex-wrap items-baseline justify-between gap-3 pb-2.5">
                     <h2 className="ds-section-title">
-                      Alert volume across every threshold
+                      {DETECTORS.find(([k]) => k === selected)?.[1]} — alert volume
+                      across every threshold
                     </h2>
                     <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500">
                       {hasLabels ? (
@@ -128,12 +221,12 @@ export default function Thresholds() {
                     />
                     <div className="mt-1 flex justify-between text-[10px] text-slate-600">
                       <span>0.00 — alert on everything</span>
-                      {data?.best && (
+                      {active?.best && (
                         <button
-                          onClick={() => setT(data.best.threshold)}
+                          onClick={() => setT(active.best.threshold)}
                           className="text-accent-400 transition-colors hover:text-accent-300"
                         >
-                          best F1 at {data.best.threshold.toFixed(2)} →
+                          best F1 at {active.best.threshold.toFixed(2)} →
                         </button>
                       )}
                       <span>1.00 — alert on nothing</span>
@@ -149,7 +242,7 @@ export default function Thresholds() {
                         What this line costs
                       </h2>
                       <span className="text-[11px] text-slate-500">
-                        at {point.threshold.toFixed(2)}, over {data.labelled} labelled records
+                        at {point.threshold.toFixed(2)}, over {active.labelled} labelled records
                       </span>
                     </div>
                     <Outcomes point={point} />
@@ -170,7 +263,9 @@ export default function Thresholds() {
               <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
                 <Panel className="ds-panel-pad">
                   <div className="flex items-baseline justify-between">
-                    <h3 className="text-xs font-semibold text-slate-200">Chosen threshold</h3>
+                    <h3 className="ds-section-title">
+                    {DETECTORS.find(([k]) => k === selected)?.[1]}
+                  </h3>
                   </div>
                   <p className="numeric mt-3 text-[2.5rem] leading-none text-accent-400">
                     {t.toFixed(2)}
@@ -178,17 +273,70 @@ export default function Thresholds() {
                   <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
                     Everything scored at or above this raises an alert.
                   </p>
+
+                  {/* The fused line is settable: the monitor reads it and
+                      alerts on it. Per-detector lines belong to the services
+                      that own them, so those stay simulated. */}
+                  {selected === 'fused' && live && (
+                    <div style={{ marginTop: 14, paddingTop: 13,
+                                  borderTop: '1px solid rgb(var(--ds-line))' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between',
+                                    fontSize: 10, marginBottom: 4 }}>
+                        <span style={{ color: 'rgb(var(--ds-muted))' }}>Monitor is using</span>
+                        <span className="ds-mono">
+                          {Number(live.bands?.critical ?? 0).toFixed(2)}
+                          <span style={{ color: 'rgb(var(--ds-faint))' }}> critical</span>
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 9, color: 'rgb(var(--ds-faint))',
+                                    marginBottom: 11 }}>
+                        {live.source === 'operator'
+                          ? 'set here previously'
+                          : "the relational model's own calibration"}
+                      </div>
+                      <div style={{ display: 'flex', gap: 7 }}>
+                        <button className="ds-btn ds-btn-primary" disabled={saving}
+                          onClick={async () => {
+                            setSaving(true)
+                            try {
+                              // One slider, three bands: high and medium keep
+                              // their spacing below the chosen critical line so
+                              // the ladder stays ordered.
+                              setLive(await applyThresholds({
+                                critical: Number(t.toFixed(3)),
+                                high: Number((t * 0.46).toFixed(3)),
+                                medium: Number((t * 0.23).toFixed(3)),
+                              }))
+                            } catch (e) {
+                              setError(e?.response?.data?.detail ?? 'Could not apply.')
+                            } finally { setSaving(false) }
+                          }}>
+                          {saving ? 'Applying…' : 'Alert on this line'}
+                        </button>
+                        {live.source === 'operator' && (
+                          <button className="ds-btn ds-btn-quiet" disabled={saving}
+                            onClick={async () => {
+                              setSaving(true)
+                              try { setLive(await resetThresholds()) }
+                              finally { setSaving(false) }
+                            }}>
+                            Reset
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </Panel>
 
                 {data?.best && (
                   <Panel className="ds-panel-pad">
                     <h3 className="text-xs font-semibold text-slate-200">Best measured F1</h3>
                     <div className="rows mt-2">
-                      <Row label="Threshold" value={data.best.threshold.toFixed(2)} />
-                      <Row label="F1" value={pct(data.best.f1)} />
-                      <Row label="Precision" value={pct(data.best.precision)} />
-                      <Row label="Recall" value={pct(data.best.recall)} />
-                      <Row label="Alerts" value={data.best.alerts} />
+                      <Row label="Threshold" value={active.best.threshold.toFixed(2)} />
+                      <Row label="F1" value={pct(active.best.f1)} />
+                      <Row label="Precision" value={pct(active.best.precision)} />
+                      <Row label="Recall" value={pct(active.best.recall)} />
+                      <Row label="Alerts" value={active.best.alerts} />
                     </div>
                     <p className="mt-3 text-[10px] leading-relaxed text-slate-600">
                       The optimum on this history. It is not automatically the
@@ -200,34 +348,21 @@ export default function Thresholds() {
 
                 {data?.message && (
                   <Panel className="ds-panel-pad">
-                    <h3 className="text-xs font-semibold text-risk-medium">Read with care</h3>
-                    <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+                    <p style={{ fontSize: 11, lineHeight: 1.6,
+                                color: 'rgb(var(--ds-warn))', margin: 0 }}>
                       {data.message}
                     </p>
                   </Panel>
                 )}
 
-                <Panel className="ds-panel-pad">
-                  <h3 className="ds-section-title">Why this is honest</h3>
-                  <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-                    A replay of decisions already made, on transactions already
-                    seen. It says what <i>would have</i> happened, not what will —
-                    alert volume moves with traffic.
-                  </p>
-                  <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-                    It is meaningful at all because the scores are calibrated
-                    probabilities: isotonic calibration took expected calibration
-                    error from 0.80 to 0.024, so 0.40 means &ldquo;40% likely&rdquo;
-                    and keeps that meaning as the models change.
-                  </p>
-                </Panel>
               </div>
             </div>
+            </>
           )}
         </>
       </Locked>
 
-      <Footer left="A replay of decisions already made — historical, not a forecast." />
+      <Footer left="Replayed against past decisions. Alert volume moves with traffic." />
     </div>
   )
 }

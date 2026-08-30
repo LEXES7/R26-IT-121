@@ -153,7 +153,7 @@ export default function Dashboard() {
                   meta={openCount ? 'cases to review' : 'nothing to review'}
                   onClick={() => navigate('/cases')} />
           <Metric label="Transactions checked" value={num(c.screened)} tone="accent"
-                  meta={`${num(c.escalated) ?? '—'} looked at closely`} />
+                  meta={`${num(c.flagged) ?? '—'} worth a second look`} />
           <Metric label="Alerts sent" value={num(c.alerts)}
                   meta="someone was emailed" />
           <Metric label="Models ready" value={runtime ? `${liveCount}/3` : null}
@@ -162,8 +162,8 @@ export default function Dashboard() {
         </div>
 
         {/* ── the case on the desk, and system health beside it ── */}
-        <div style={{ display: 'grid', gap: 12,
-                      gridTemplateColumns: 'minmax(0, 1.65fr) minmax(270px, .8fr)' }}
+        <div style={{ display: 'grid', gap: 12, alignItems: 'start',
+                      gridTemplateColumns: 'minmax(0, 1.65fr) minmax(280px, .8fr)' }}
              className="ds-split">
           <Panel className="ds-panel-pad">
             <SectionHeading
@@ -208,6 +208,7 @@ export default function Dashboard() {
             )}
           </Panel>
 
+          <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
           <Panel className="ds-panel-pad">
             <SectionHeading label="Runtime health" title="Models in service"
               action={<span className="ds-mono" style={{ fontSize: 10, color: 'rgb(var(--ds-muted))' }}>
@@ -255,13 +256,14 @@ export default function Dashboard() {
                   <span className="ds-mono" style={{ color: 'rgb(var(--ds-warn))' }}>
                     UNCERTAINTY PENALTY APPLIED
                   </span><br />
-                  With a model missing, scores are deliberately kept low rather
-                  than pretending the missing one agreed.
+                  Confidence is reduced while a model is missing.
                 </>
               )}
             </div>
-            <div className="ds-divider" style={{ margin: '16px 0 13px' }} />
-            <div className="ds-section-label" style={{ marginBottom: 9 }}>Severity, last {cases.length}</div>
+          </Panel>
+
+          <Panel className="ds-panel-pad">
+            <SectionHeading label={`Last ${cases.length} cases`} title="Severity mix" />
             {cases.length === 0 ? (
               <div style={{ fontSize: 10, color: 'rgb(var(--ds-faint))' }}>No cases recorded.</div>
             ) : (
@@ -284,6 +286,46 @@ export default function Dashboard() {
               </>
             )}
           </Panel>
+            <Panel className="ds-panel-pad">
+              <SectionHeading label="Ingestion" title="Incoming work"
+                action={<Badge tone={queue.available ? 'good' : ''}>
+                  {queue.available ? 'connected' : 'not connected'}
+                </Badge>} />
+              {queue.available ? (
+                <div style={{ display: 'flex', gap: 30 }}>
+                  <div>
+                    <div className="ds-mono" style={{ fontSize: 21 }}>{queue.pending ?? 0}</div>
+                    <div className="ds-section-label" style={{ marginTop: 5 }}>Pending</div>
+                  </div>
+                  <div>
+                    <div className="ds-mono" style={{ fontSize: 21, color: 'rgb(var(--ds-muted))' }}>
+                      {queue.screened ?? 0}
+                    </div>
+                    <div className="ds-section-label" style={{ marginTop: 5 }}>Screened</div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ fontSize: 10, lineHeight: 1.6, color: 'rgb(var(--ds-muted))' }}>
+                  Point this service and the Query Runner at the same database to
+                  screen real arrivals.
+                </div>
+              )}
+            </Panel>
+
+            <Panel className="ds-panel-pad">
+              <SectionHeading label="Throughput" title="Rate right now" />
+              <div className="ds-mono" style={{ fontSize: 21 }}>
+                {typeof c.throughput_per_min === 'number' ? c.throughput_per_min : '—'}
+                <span style={{ fontSize: 10, color: 'rgb(var(--ds-muted))', marginLeft: 8 }}>
+                  per minute
+                </span>
+              </div>
+              <div style={{ fontSize: 10, color: 'rgb(var(--ds-muted))', marginTop: 8 }}>
+                {state?.source === 'queue' ? 'Screening ingested traffic.'
+                  : running ? 'Replaying sample transactions.' : 'Not screening.'}
+              </div>
+            </Panel>
+          </div>
         </div>
 
         {/* ── decide here ── */}
@@ -352,64 +394,6 @@ export default function Dashboard() {
             </div>
           )}
         </Panel>
-
-        {/* ── ingestion ── */}
-        <div style={{ display: 'grid', gap: 12,
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
-          <Panel className="ds-panel-pad">
-            <SectionHeading label="Ingestion" title="Incoming work"
-              action={<Badge tone={queue.available ? 'good' : ''}>
-                {queue.available ? 'connected' : 'not connected'}
-              </Badge>} />
-            {queue.available ? (
-              <div style={{ display: 'flex', gap: 30 }}>
-                <div>
-                  <div className="ds-mono" style={{ fontSize: 21 }}>{queue.pending ?? 0}</div>
-                  <div className="ds-section-label" style={{ marginTop: 5 }}>Pending</div>
-                </div>
-                <div>
-                  <div className="ds-mono" style={{ fontSize: 21, color: 'rgb(var(--ds-muted))' }}>
-                    {queue.screened ?? 0}
-                  </div>
-                  <div className="ds-section-label" style={{ marginTop: 5 }}>Screened</div>
-                </div>
-              </div>
-            ) : (
-              <div style={{ fontSize: 10, lineHeight: 1.6, color: 'rgb(var(--ds-muted))' }}>
-                Point this service and the Query Runner at the same database to
-                screen real arrivals.
-              </div>
-            )}
-          </Panel>
-
-          <Panel className="ds-panel-pad">
-            <SectionHeading label="Throughput" title="Rate right now" />
-            <div className="ds-mono" style={{ fontSize: 21 }}>
-              {typeof c.throughput_per_min === 'number' ? c.throughput_per_min : '—'}
-              <span style={{ fontSize: 10, color: 'rgb(var(--ds-muted))', marginLeft: 8 }}>
-                per minute
-              </span>
-            </div>
-            <div style={{ fontSize: 10, color: 'rgb(var(--ds-muted))', marginTop: 8 }}>
-              {state?.source === 'queue' ? 'Screening ingested traffic.'
-                : running ? 'Replaying sample transactions.' : 'Not screening.'}
-            </div>
-          </Panel>
-
-          <Panel className="ds-panel-pad">
-            <SectionHeading label="Go to" title="Common tasks" />
-            <div style={{ display: 'grid', gap: 2 }}>
-              {[['/analyzer', 'Analyse a transaction'], ['/cases', 'Review the queue'],
-                ['/thresholds', 'Tune the threshold'], ['/batch', 'Upload a batch']]
-                .map(([to, label]) => (
-                <button key={to} onClick={() => navigate(to)} className="ds-btn ds-btn-quiet"
-                        style={{ justifyContent: 'flex-start', width: '100%' }}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          </Panel>
-        </div>
 
         <Footer left="Scores are calibrated probabilities, not verdicts." />
       </div>

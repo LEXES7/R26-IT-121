@@ -13,6 +13,7 @@ import Login from './pages/Login'
 import Home from './pages/Home'
 import Analyzer from './pages/Analyzer'
 import Models from './pages/Models'
+import Workspace from './pages/Workspace'
 import Thresholds from './pages/Thresholds'
 import Cases from './pages/Cases'
 import Dashboard from './pages/Dashboard'
@@ -99,14 +100,14 @@ function Shell() {
             {/* Entitlement is enforced server-side; the page renders an upsell when not licensed. */}
             <Route path="/models" element={<ProtectedRoute><Console><Models /></Console></ProtectedRoute>} />
             <Route path="/assistant" element={<ProtectedRoute><Console><Assistant /></Console></ProtectedRoute>} />
-            <Route path="/account" element={<ProtectedRoute><Console><Account /></Console></ProtectedRoute>} />
+            <Route path="/account" element={<ProtectedRoute><Console><Workspace /></Console></ProtectedRoute>} />
 
             {/* Capability-gated */}
             <Route
               path="/settings"
               element={
                 <ProtectedRoute capability="canManageAlerts">
-                  <Console><Settings /></Console>
+                  <Console><Workspace /></Console>
                 </ProtectedRoute>
               }
             />
@@ -114,7 +115,7 @@ function Shell() {
               path="/users"
               element={
                 <ProtectedRoute capability="canManageUsers">
-                  <Console><Users /></Console>
+                  <Console><Workspace /></Console>
                 </ProtectedRoute>
               }
             />
@@ -122,7 +123,7 @@ function Shell() {
               path="/audit-log"
               element={
                 <ProtectedRoute capability="canViewAuditLog">
-                  <Console><AuditLog /></Console>
+                  <Console><Workspace /></Console>
                 </ProtectedRoute>
               }
             />
@@ -157,10 +158,10 @@ const CONSOLE_PAGES = {
   '/models':    ['Workspace / Understand', 'Detectors',
                  'Each model on its own — no fusion, no retrieval.'],
   '/assistant': ['Workspace / Understand', 'Assistant', 'Ask about the system in plain language.'],
-  '/settings':  ['Workspace', 'Settings', 'Alerting, packages and upstream services.'],
-  '/users':     ['Workspace', 'Users', 'Who can sign in, and what they may do.'],
-  '/audit-log': ['Workspace', 'Audit log', 'Every configuration change and verdict, attributed.'],
-  '/account':   ['Workspace', 'Account', 'Your profile and password.'],
+  '/settings':  ['Workspace', 'Administration', 'Alerting, people, audit and your account.'],
+  '/users':     ['Workspace', 'Administration', 'Alerting, people, audit and your account.'],
+  '/audit-log': ['Workspace', 'Administration', 'Alerting, people, audit and your account.'],
+  '/account':   ['Workspace', 'Administration', 'Alerting, people, audit and your account.'],
 }
 
 function Console({ children }) {

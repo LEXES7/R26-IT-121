@@ -528,10 +528,8 @@ export default function BatchAnalysis() {
 
           <p style={{ fontSize: 9, lineHeight: 1.6, color: 'rgb(var(--ds-faint))',
                       marginTop: 14 }}>
-            Header names are matched case-insensitively, so name_orig and nameOrig
-            both work. Findings name the offending row numbers. This check is for
-            speed, not security — the server validates the upload independently
-            and applies the same rules.
+            Header names are matched case-insensitively. Findings name the
+            offending rows. The upload is validated again server-side.
           </p>
         </div>
       </Panel>
@@ -724,23 +722,19 @@ export default function BatchAnalysis() {
               const best = singles.reduce((a, b) => (b.f1 > a.f1 ? b : a))
               const delta = (fused.f1 - best.f1) * 100
               return delta > 0.5
-                ? `Fusion beat the best single detector (${best.name}) by `
-                  + `${delta.toFixed(1)} F1 points on this file — which is the case for `
-                  + 'combining them rather than picking one.'
+                ? `Fusion scored ${delta.toFixed(1)} F1 points above the best single `
+                  + `detector (${best.name}) on this file.`
                 : delta < -0.5
-                  ? `On this file ${best.name} alone scored ${Math.abs(delta).toFixed(1)} F1 `
-                    + 'points higher than the fused verdict. Worth saying plainly rather '
-                    + 'than hiding: fusion is conservative when a detector is missing.'
-                  : `Fusion and the best single detector (${best.name}) are within half an `
-                    + 'F1 point on this file. Too few rows to separate them.'
+                  ? `${best.name} alone scored ${Math.abs(delta).toFixed(1)} F1 points `
+                    + 'above the fused verdict on this file. Fusion is conservative '
+                    + 'while a detector is missing.'
+                  : `Fusion and ${best.name} are within half an F1 point on this file.`
             })()}
           </p>
           <p style={{ fontSize: 9, lineHeight: 1.6, color: 'rgb(var(--ds-faint))',
                       marginTop: 8 }}>
-            Each column is that detector's own raw score thresholded at {ALERT_AT},
-            against the labels in this file. A detector that never answered is
-            shown as such rather than scored at zero. These are figures for this
-            file, not a general accuracy claim.
+            Each detector's own score at {ALERT_AT}, against the labels in this
+            file. Figures describe this file only.
           </p>
         </Panel>
       )}

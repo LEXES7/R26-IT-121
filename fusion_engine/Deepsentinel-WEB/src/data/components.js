@@ -30,7 +30,7 @@ export const COMPONENTS = {
       { label: 'Test F1', value: '0.406', note: 'leakage-free, 5 seeds' },
       { label: 'PR-AUC', value: '0.448', note: '9× the 4.7% base rate' },
       { label: 'Seed variance', value: '33× lower', note: 'vs the baseline' },
-      { label: 'Response time', value: '<150 ms', note: 'p95, 500 ms budget' },
+      { label: 'Serving', value: 'precomputed', note: 'no forward pass over 3.3M nodes at request time' },
     ],
     findings: [
       {
