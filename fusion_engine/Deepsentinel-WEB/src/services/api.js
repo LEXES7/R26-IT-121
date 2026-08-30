@@ -406,6 +406,22 @@ export const restartMonitor = (interval) =>
  *  Clears the view, not the record — the cases stay in the database. */
 export const clearMonitor = () => client.post('/api/monitor/clear').then((r) => r.data)
 
+/** The forensic report's look. Preview is open to anyone signed in; choosing
+ *  is for admins and risk managers, and enforced server-side. */
+export const getReportStyles = () =>
+  client.get('/report-styles').then((r) => r.data)
+
+export const chooseReportStyle = (style) =>
+  client.put('/report-styles/selected', { style }).then((r) => r.data)
+
+/** The preview as a blob URL. Fetched through the client rather than pointed
+ *  at with an <iframe src>, because an iframe cannot carry the bearer token
+ *  and the endpoint requires one. Caller must revokeObjectURL when done. */
+export const reportStylePreviewUrl = (style) =>
+  client.get(`/report-styles/${style}/preview`, { responseType: 'blob' })
+    .then((r) => URL.createObjectURL(
+      new Blob([r.data], { type: 'application/pdf' })))
+
 /** Loop state plus each detector's own runtime — "is the platform working". */
 export const getMonitorRuntime = () =>
   client.get('/api/monitor/runtime').then((r) => r.data)

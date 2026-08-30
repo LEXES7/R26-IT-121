@@ -111,6 +111,7 @@ function Shell() {
             <Route path="/monitor" element={<ProtectedRoute><Console><Monitor /></Console></ProtectedRoute>} />
             <Route path="/models" element={<ProtectedRoute><Console><Models /></Console></ProtectedRoute>} />
             <Route path="/account" element={<ProtectedRoute><Console><Workspace /></Console></ProtectedRoute>} />
+            <Route path="/report-style" element={<ProtectedRoute><Console><Workspace /></Console></ProtectedRoute>} />
 
             {/* Case work. Not an administrator's: on a deployment that role is
                 the client's IT department, and financial-crime cases are not

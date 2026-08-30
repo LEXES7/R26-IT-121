@@ -52,3 +52,6 @@ tests/_test.db
 
 # Run logs — dated per-component output, regenerated on every run
 logs/
+
+# Runtime state, set through the console — not source
+report_style.json
