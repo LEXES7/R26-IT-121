@@ -1571,15 +1571,31 @@ async def reset_simulation(body: SimulationReset, user: User = Depends(require_a
                 logger.warning(f"Could not clear {table}: {exc}")
                 removed[table] = -1
 
+    # The monitor's alerts, activity feed and counters live in this process,
+    # not in any of those tables. Clearing the rows without clearing these left
+    # the dashboard listing alerts whose cases no longer existed — and, because
+    # the same file had been replayed a few times, listing them repeatedly. A
+    # reset that leaves the screen showing the old run has not reset anything
+    # the user can actually see.
+    live: dict[str, int] = {}
+    try:
+        from monitor.state import STATE
+
+        live = STATE.clear_live(actor=user.username)
+    except Exception as exc:                            # noqa: BLE001
+        logger.warning(f"Could not clear the monitor's live state: {exc}")
+
     total = sum(v for v in removed.values() if v > 0)
     await audit("simulation.reset", actor=user.username, target="shared database",
                 detail=f"cleared {total} row(s): "
-                       + ", ".join(f"{k}={v}" for k, v in removed.items()))
-    logger.info(f"Simulation data cleared by {user.username}: {removed}")
+                       + ", ".join(f"{k}={v}" for k, v in removed.items())
+                       + f"; live alerts={live.get('alerts', 0)}")
+    logger.info(f"Simulation data cleared by {user.username}: {removed}, live={live}")
 
     return {
         "dry_run": False,
         "removed": removed,
+        "cleared_live": live,
         "total": total,
         "preserved": ["users", "risk_managers", "alert_settings", "audit_log"],
     }

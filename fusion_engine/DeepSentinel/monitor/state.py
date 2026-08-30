@@ -87,6 +87,27 @@ class MonitorState:
         self.counters.alerts += 1
         self.publish("alert", alert)
 
+    def clear_live(self, actor: str = "system") -> dict:
+        """Drop the alerts, the event log and the counters.
+
+        This state lives in the process, not the database, which is exactly why
+        it needs clearing separately: emptying `fraud_cases` left the dashboard
+        showing alerts from runs whose rows no longer existed, and the only way
+        out was restarting the backend.
+
+        `running`, `paused` and the stage lamps are deliberately kept. This
+        clears what has been *seen*, not what the monitor is *doing*, so
+        clearing mid-run is safe — the next transaction repopulates.
+        """
+        removed = {"alerts": len(self.alerts), "events": len(self.events)}
+        self.alerts.clear()
+        self.events.clear()
+        self.counters = Counters()
+        # Published after the clear, so a dashboard reacting to this event
+        # cannot re-read a snapshot from the state it is about to drop.
+        self.publish("cleared", {"by": actor, "removed": removed})
+        return removed
+
     def snapshot(self, events: int = 40) -> dict:
         return {
             "running": self.running,
