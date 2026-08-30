@@ -1,5 +1,5 @@
 import Logo from './Logo'
-import FooterScene from './FooterScene'
+import DotField from './DotField'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { cx } from './ui'
@@ -59,10 +59,7 @@ export default function Footer() {
 
   return (
     <footer className="relative mt-20 overflow-hidden border-t border-subtle">
-      {/* Scenery sits behind and below the columns, bleeding to both edges. */}
-      <FooterScene className="pointer-events-none absolute inset-x-0 bottom-0 h-56 w-full" />
-
-      <div className="relative mx-auto max-w-7xl px-4 pb-40 pt-12 sm:px-6">
+      <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-12 sm:px-6">
         <div className="grid gap-10 lg:grid-cols-[1.4fr_repeat(4,1fr)]">
           {/* Identity */}
           <div className="space-y-4">
@@ -144,6 +141,19 @@ export default function Footer() {
               </ul>
             </div>
           ))}
+        </div>
+
+        {/* Its own band under the columns, rather than a wash behind them.
+            Behind the content its threads drew straight across "API reference",
+            and a background that competes with text has stopped being one. */}
+        <div className="relative mt-12 h-44 overflow-hidden rounded-2xl sm:h-52">
+          <DotField
+            leader
+            drift={false}
+            density={0.00012}
+            dots="255 255 255"
+            accent="255 138 58"
+          />
         </div>
 
         <div
