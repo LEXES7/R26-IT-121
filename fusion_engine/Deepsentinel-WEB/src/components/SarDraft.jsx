@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useState } from 'react'
 import {
   createSarDraft,
   decideSarDraft,
@@ -175,23 +175,26 @@ export default function SarDraft({ analysisId, classification }) {
                 className="mt-4 w-full rounded-lg border border-subtle bg-surface p-3 font-mono text-xs leading-relaxed text-slate-200"
               />
             ) : (
-              <div className="mt-4 space-y-5">
+              <div className="ds-prose mt-5">
+                {/* A regulatory filing, set as one. Flat children so the
+                    prose rhythm applies — the spacing rules key off direct
+                    children, so a <section> wrapper would drop them. */}
                 {sections.map((s, i) => (
-                  <section key={i}>
+                  <Fragment key={i}>
                     {s.title && (
-                      <h3 className="text-xs font-semibold uppercase tracking-wider text-accent-400">
-                        {s.n ? `${s.n}. ` : ''}
+                      <h3>
+                        {s.n && (
+                          <span className="mr-2 font-mono text-[0.78em] text-accent-400">
+                            {s.n}
+                          </span>
+                        )}
                         {s.title}
                       </h3>
                     )}
-                    <div className={cx('space-y-2', s.title && 'mt-2')}>
-                      {s.body.map((para, j) => (
-                        <p key={j} className="text-sm leading-relaxed text-slate-400">
-                          {para}
-                        </p>
-                      ))}
-                    </div>
-                  </section>
+                    {s.body.map((para, j) => (
+                      <p key={j}>{para}</p>
+                    ))}
+                  </Fragment>
                 ))}
               </div>
             )}
