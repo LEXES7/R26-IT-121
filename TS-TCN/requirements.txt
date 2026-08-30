@@ -25,6 +25,8 @@ seaborn==0.13.1
 fastapi==0.109.2
 uvicorn[standard]==0.27.0
 pydantic==2.5.3
+# Hard import at api/state.py:22 — loads the fitted scaler beside the model.
+joblib==1.3.2
 
 # ── Development ───────────────────────────────────────────────────────
 jupyter==1.0.0

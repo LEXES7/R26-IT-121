@@ -89,11 +89,11 @@ async def lifespan(app: FastAPI):
     logger.info(config.describe())
 
     logger.info("Connecting to database...")
-    from backend.auth import ensure_bootstrap_admin
+    from backend.auth import ensure_bootstrap_users
     from backend.db.session import init_db
 
     await init_db()
-    await ensure_bootstrap_admin()
+    await ensure_bootstrap_users()
 
     logger.info("Initializing FATF Knowledge Base...")
     knowledge_base = FATFKnowledgeBase(
