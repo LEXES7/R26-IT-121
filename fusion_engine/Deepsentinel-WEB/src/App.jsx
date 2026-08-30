@@ -168,18 +168,21 @@ function Shell() {
  * exception — its title states how many cases are waiting, which only it
  * knows — so it renders its own shell and is not wrapped again.
  */
+// The breadcrumb has to name the group the sidebar files the page under, or
+// the two disagree in front of the reader. Thresholds and Detectors moved when
+// the console split in two; these followed them.
 const CONSOLE_PAGES = {
   '/monitor':   ['Workspace / Observe', 'Live monitor', 'Every transaction, screened as it arrives.'],
   '/analyzer':  ['Workspace / Observe', 'Analyzer', 'One transaction, through all five stages.'],
   '/cases':     ['Workspace / Investigate', 'Cases', 'What the models caught, and what you decided.'],
-  '/thresholds':['Workspace / Investigate', 'Thresholds', 'Replay past decisions at a different line.'],
+  '/thresholds':['Workspace / Configure', 'Thresholds', 'Replay past decisions at a different line.'],
   '/batch':     ['Workspace / Investigate', 'Batch upload', 'Score a file and measure it against its labels.'],
-  '/models':    ['Workspace / Understand', 'Detectors',
+  '/models':    ['Workspace / Operate', 'Detectors',
                  'Each model on its own — no fusion, no retrieval.'],
   '/assistant': ['Workspace / Understand', 'Assistant', 'Ask about the system in plain language.'],
-  '/settings':  ['Workspace', 'Administration', 'Alerting, people, audit and your account.'],
-  '/users':     ['Workspace', 'Administration', 'Alerting, people, audit and your account.'],
-  '/audit-log': ['Workspace', 'Administration', 'Alerting, people, audit and your account.'],
+  '/settings':  ['Workspace / Configure', 'Administration', 'Alerting, people, audit and your account.'],
+  '/users':     ['Workspace / Configure', 'Administration', 'Alerting, people, audit and your account.'],
+  '/audit-log': ['Workspace / Configure', 'Administration', 'Alerting, people, audit and your account.'],
   '/account':   ['Workspace', 'Administration', 'Alerting, people, audit and your account.'],
 }
 
