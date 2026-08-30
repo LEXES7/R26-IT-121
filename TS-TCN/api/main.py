@@ -61,20 +61,18 @@ def create_app(service: Optional[state.TSTCNService] = None) -> FastAPI:
             # Fail visible, not fail hard: /health reports "error" with the
             # reason rather than the process refusing to start, so ops can
             # see why via curl instead of reading container logs.
-            # Relative paths: /health is read over the network, and the
+            #
+            # Relative paths: /health is read over the network, and the raw
             # exception text carries the absolute path of whoever's machine
             # this is running on.
             missing = svc.missing_artifacts()
-            # Relative paths: /health is read over the network, and the
-            # exception text carries the absolute path of whoever's machine
-            # this is running on.
             svc.load_error = (
                 "Model artefacts are not present on this instance: "
                 + ", ".join(missing)
                 if missing
                 else f"Model could not be loaded: {type(e).__name__}: {e}"
             )
-            logger.error(f"TS-TCN artefacts missing at startup: {e}")
+            logger.error(f"TS-TCN failed to start: {svc.load_error}")
         yield
 
     app = FastAPI(
