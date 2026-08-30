@@ -88,6 +88,8 @@ SETTINGS: tuple[Setting, ...] = (
             description="M2 Ewaduge — Edge-Enhanced GraphSAGE"),
     Setting("upstream", "temporal_api_base", "TEMPORAL_API_BASE", "http://localhost:8003",
             description="M3 Pathirana — TCN/TSCFD"),
+    Setting("upstream", "console_url", "CONSOLE_URL", "http://localhost:5173",
+            description="Where the operator console is served; alert emails link to it"),
     Setting("upstream", "timeout_ms", "UPSTREAM_TIMEOUT_MS", 5000, cast=int,
             description="Per-call timeout for upstream model inference"),
 

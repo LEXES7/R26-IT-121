@@ -534,9 +534,13 @@ class MonitorEngine:
         }
         STATE.add_alert(alert)
 
-        STATE.set_stage("report", "active")
-        await self._notify_confirmed(alert, sg, case_ref)
-        STATE.set_stage("report", "idle")
+        # Not awaited. This now generates the forensic narrative and renders the
+        # subgraph before it sends, which is tens of seconds of LLM and SMTP —
+        # none of it part of the verdict, all of it previously charged to the
+        # pipeline. The stage lamp is set inside so the monitor still shows it
+        # working.
+        self._spawn(self._report_and_notify(alert, sg, case_ref, scores),
+                    "confirmed alert")
 
 
     async def _call_upstream(self, client, base_key: str, score_key: str, payload: dict):
@@ -625,31 +629,118 @@ class MonitorEngine:
             "transaction_id": txid, "stage": "early", "sent": sent,
         })
 
-    async def _notify_confirmed(self, alert: dict, sg: dict,
-                                case_ref: str | None = None) -> None:
-        body = (
-            f"CONFIRMED {alert['severity']} — fused verdict\n"
-            f"{'=' * 44}\n"
-            f"Transaction : {alert['transaction_id']}\n"
-            f"Fused score : {alert['fused_score']:.4f} "
-            f"({alert['modalities_used']} of 3 detectors available)\n"
-            f"Graph score : {alert['graph_score']:.4f}\n"
-            f"Pattern     : {alert['pattern'] or 'n/a'}\n"
-            f"Sink        : {alert['sink_account'] or 'n/a'}\n"
-            f"Amount      : {alert['amount']:,.2f}\n"
-            f"From → To   : {alert['from']} → {alert['to']}\n"
-        )
-        ev = sg.get("structural_evidence") or {}
-        if ev:
-            body += (
-                f"\nStructural evidence\n"
-                f"  senders converging : {ev.get('convergence_count')}\n"
-                f"  brand-new senders  : {ev.get('fresh_sender_ratio')}\n"
-                f"  mules in subgraph  : {ev.get('mules_in_subgraph')}\n"
+    async def _report_and_notify(self, alert: dict, sg: dict,
+                                 case_ref: str | None, scores: dict) -> None:
+        STATE.set_stage("report", "active")
+        try:
+            await self._notify_confirmed(alert, sg, case_ref, scores)
+        finally:
+            STATE.set_stage("report", "idle")
+
+    async def _forensic_report(self, alert: dict, scores: dict) -> str | None:
+        """Generate the case narrative, or None if it cannot be produced.
+
+        Built from what the pipeline already has rather than by re-running it:
+        calling run_pipeline here would score the transaction a second time and
+        push it into the sequence model's window twice, which would corrupt the
+        very window that model depends on.
+
+        Best-effort by design. It is one LLM call on a shared quota, and an
+        alert that arrives without its narrative is far better than one that
+        does not arrive.
+        """
+        try:
+            from backend import main as backend_main
+            from backend.rag.prompt_builder import build_chain_of_evidence_prompt
+
+            reporter, retriever = backend_main.forensic_reporter, backend_main.retriever
+            if reporter is None or retriever is None:
+                return None
+
+            g = scores.get("graph") or 0.0
+            b = scores.get("behavioural")
+            t = scores.get("temporal")
+            hits = await asyncio.wait_for(
+                asyncio.to_thread(retriever.retrieve, g, b or 0.0, t or 0.0,
+                                  float(alert["fused_score"])),
+                timeout=20.0,
             )
-        sent = await self._send(
-            f"[{alert['severity']}] Fraud alert {alert['transaction_id']}", body
+            if not hits:
+                return None
+
+            package = build_chain_of_evidence_prompt(
+                transaction_id=alert["transaction_id"],
+                graph_score=g,
+                behavioral_score=b if b is not None else 0.0,
+                temporal_score=t if t is not None else 0.0,
+                confidence_score=float(alert["fused_score"]),
+                graph_available=scores.get("graph") is not None,
+                behavioral_available=b is not None,
+                temporal_available=t is not None,
+                retrieval=hits[0],
+                classification=alert["severity"],
+            )
+            return await asyncio.wait_for(
+                asyncio.to_thread(reporter.generate_report, package), timeout=45.0
+            )
+        except Exception as exc:                        # noqa: BLE001
+            logger.info(f"No forensic report for {alert['transaction_id']}: {exc}")
+            return None
+
+    async def _notify_confirmed(self, alert: dict, sg: dict,
+                                case_ref: str | None = None,
+                                scores: dict | None = None) -> None:
+        from backend.email_service import _send_rich
+        from monitor import alert_email
+        from monitor.alert_render import render_subgraph
+
+        scores = scores or {"graph": alert.get("graph_score")}
+
+        # The narrative and the diagram are produced together, before the send,
+        # because both belong in the same message.
+        report = await self._forensic_report(alert, scores)
+        try:
+            png = await asyncio.to_thread(render_subgraph, sg)
+        except Exception as exc:                        # noqa: BLE001
+            logger.info(f"Subgraph diagram failed: {exc}")
+            png = None
+
+        attachments = []
+        if report:
+            doc = _report_document(alert, report)
+            attachments.append((
+                "text", "html",
+                f"forensic-report-{alert['transaction_id']}.html",
+                doc.encode("utf-8"),
+            ))
+
+        from backend import thresholds
+
+        html = alert_email.build(
+            alert=alert, sg=sg, scores=scores,
+            bands=thresholds.current() or FUSED_BANDS,
+            has_image=png is not None, case_ref=case_ref,
+            console_url=str(config.get("upstream", "console_url")).rstrip("/"),
+            report_attached=bool(report),
         )
+        text = alert_email.build_text(alert, sg, scores, bool(report))
+
+        from backend.settings import list_risk_managers
+
+        managers = await list_risk_managers()
+        recipients = [m.email for m in managers if getattr(m, "enabled", True)]
+        if not recipients:
+            logger.info("No alert recipients configured; nothing sent.")
+            sent = False
+        else:
+            sent = await asyncio.to_thread(
+                _send_rich,
+                f"[{alert['severity']}] Fraud alert {alert['transaction_id']}",
+                text, html, recipients,
+                {"subgraph": png} if png else None,
+                attachments or None,
+            )
+
         # Record what happened, not what was intended. An operator reading a
         # case needs to know whether anyone was actually told.
         if case_ref:
@@ -688,6 +779,91 @@ class MonitorEngine:
         except Exception as exc:                        # noqa: BLE001
             logger.warning(f"Monitor notification failed: {exc}")
             return False
+
+
+def _report_document(alert: dict, report: str) -> str:
+    """Wrap the narrative in a printable standalone page.
+
+    An HTML file rather than a PDF: there is no PDF library in this service,
+    and a styled page a compliance officer can open and print to PDF is worth
+    more than a plain-text attachment they have to reformat.
+    """
+    import html as _html
+    import re as _re
+
+    # The reporter returns its sections with the heading run together with the
+    # first sentence — "SECTION 2 — MULTI-MODAL EVIDENCE ANALYSIS The Graph
+    # Network Analysis Score is..." — and wraps the whole thing in --- fences.
+    # Left alone that prints as a wall of text, so the headings are lifted out
+    # here rather than by asking the model to format itself, which it does not
+    # do reliably.
+    heading = _re.compile(
+        r"^(SECTION\s+\d+\s*[\u2014\u2013-]\s*"
+        r"(?:[A-Z][A-Z\-/&.]*(?:\s+|$)){1,6})"          # up to six all-caps words
+    )
+    label = _re.compile(r"^(Transaction ID|Classification|FATF Typology Match):\s*", _re.M)
+
+    body = []
+    for para in _re.split(r"\n\s*\n", report.replace("---", "").strip()):
+        para = para.strip()
+        if not para:
+            continue
+        m = heading.match(para)
+        if m:
+            body.append(f"<h2>{_html.escape(m.group(1).strip().title())}</h2>")
+            para = para[m.end():].strip()
+        # The preamble repeats the facts already tabulated above it.
+        if label.search(para) or para.upper().startswith("CASE INVESTIGATION REPORT"):
+            kept = [ln for ln in _re.split(r"(?<=[a-z0-9%)])\s+(?=[A-Z][a-z]+ [A-Z])", para)
+                    if ln.strip().startswith("FATF Typology Match")]
+            para = " ".join(kept).strip()
+            if not para:
+                continue
+        if para:
+            body.append(f"<p>{_html.escape(para)}</p>")
+    body = "".join(body)
+    sev = _html.escape(alert["severity"])
+    txid = _html.escape(str(alert["transaction_id"]))
+    return f"""<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Forensic report {txid}</title>
+<style>
+  @page {{ size: A4; margin: 20mm; }}
+  body {{ max-width: 44em; margin: 40px auto; padding: 0 24px;
+         font: 16px/1.65 Georgia, 'Times New Roman', serif; color: #2E3739;
+         background: #fff; }}
+  .tag {{ font: 600 11px/1 ui-monospace, monospace; letter-spacing: .13em;
+         color: #B0392C; }}
+  h1 {{ font-size: 30px; line-height: 1.15; margin: 10px 0 4px; color: #14181A;
+       font-weight: 600; }}
+  .sub {{ font: 13px ui-monospace, monospace; color: #5E696C;
+         padding-bottom: 20px; border-bottom: 1px solid #DCE3E3; }}
+  dl {{ display: grid; grid-template-columns: 210px 1fr; gap: 8px 20px;
+       margin: 22px 0 30px; font-size: 14px; }}
+  dt {{ color: #5E696C; }}
+  dd {{ margin: 0; font-family: ui-monospace, monospace; color: #14181A; }}
+  h2 {{ font: 600 13px/1.3 ui-monospace, monospace; letter-spacing: .06em;
+        color: #14181A; margin: 28px 0 9px; }}
+  p {{ margin: 0 0 15px; }}
+  footer {{ margin-top: 34px; padding-top: 16px; border-top: 1px solid #DCE3E3;
+           font: 12px/1.6 system-ui, sans-serif; color: #8A9497; }}
+</style></head><body>
+<div class="tag">{sev} &middot; CHAIN-OF-EVIDENCE FORENSIC REPORT</div>
+<h1>Transaction {txid}</h1>
+<div class="sub">Fused confidence {alert['fused_score']:.4f} &middot;
+  {alert.get('modalities_used', 0)} of 3 detectors available</div>
+<dl>
+  <dt>Amount</dt><dd>{alert['amount']:,.2f}</dd>
+  <dt>From</dt><dd>{_html.escape(str(alert['from']))}</dd>
+  <dt>To</dt><dd>{_html.escape(str(alert['to']))}</dd>
+  <dt>Pattern</dt><dd>{_html.escape(str(alert.get('pattern') or '—'))}</dd>
+  <dt>Collection account</dt><dd>{_html.escape(str(alert.get('sink_account') or '—'))}</dd>
+</dl>
+{body}
+<footer>Generated by DeepSentinel from the scores and the retrieved typology on
+record for this transaction. Every claim above traces to one of them; nothing
+in it is inferred beyond what was measured. Review before acting.</footer>
+</body></html>"""
 
 
 ENGINE = MonitorEngine()
