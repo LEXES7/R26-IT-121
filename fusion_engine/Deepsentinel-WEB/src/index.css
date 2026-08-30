@@ -1095,3 +1095,72 @@ html.theme-transition * {
 
 @media (prefers-reduced-motion: reduce) {
 }
+
+/* ── opening curtain ─────────────────────────────────────────────────
+   Lifts from the bottom edge upward, uncovering the page rather than fading
+   over it. The page underneath is already painted and already running its own
+   entrance, so what you see as the curtain clears is a live page, not a
+   snapshot waiting to start.
+
+   The travel is 1.05s on a long decelerating curve, and the panel keeps a
+   rounded leading edge as it goes — a hard horizontal line reads as a
+   scene change, a curved one reads as something physically lifting away. */
+
+.greeting {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  background: rgb(var(--sentinel-950));
+  transform: translateY(0);
+  transition: transform 1.25s cubic-bezier(0.76, 0, 0.24, 1),
+              border-radius 1.25s cubic-bezier(0.76, 0, 0.24, 1);
+  will-change: transform;
+}
+.greeting--lifting {
+  transform: translateY(-100%);
+  border-bottom-left-radius: 42% 22%;
+  border-bottom-right-radius: 42% 22%;
+}
+
+.greeting-inner {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+}
+
+/* A small mark that holds the eye while the words change behind it. */
+.greeting-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgb(var(--accent-400));
+  transform: translateY(-0.15em);
+  animation: greeting-pulse 1.5s ease-in-out infinite;
+}
+@keyframes greeting-pulse {
+  0%, 100% { opacity: 1; transform: translateY(-0.15em) scale(1); }
+  50%      { opacity: 0.45; transform: translateY(-0.15em) scale(0.82); }
+}
+
+/* Each greeting is keyed, so React swaps the node and the animation restarts.
+   The script fallbacks matter: Sinhala and Tamil have no coverage in the
+   Latin display face, and without them the first two greetings would be
+   boxes. */
+.greeting-word {
+  font-family: 'Instrument Serif', 'Noto Serif Sinhala', 'Iskoola Pota',
+               'Nirmala UI', 'Noto Serif Tamil', 'Latha', Georgia, serif;
+  font-size: clamp(2.6rem, 7vw, 4.6rem);
+  line-height: 1;
+  color: rgb(var(--slate-200));
+  animation: greeting-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes greeting-in {
+  from { opacity: 0; transform: translateY(0.32em); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .greeting { display: none; }
+}

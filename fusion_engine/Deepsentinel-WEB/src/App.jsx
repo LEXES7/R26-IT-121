@@ -11,6 +11,7 @@ import Footer from './components/Footer'
 import ChatBot from './components/ChatBot'
 import NotFound from './pages/NotFound'
 import useLiquidPointer from './hooks/useLiquidPointer'
+import Greeting from './components/Greeting'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import Analyzer from './pages/Analyzer'
@@ -73,6 +74,8 @@ function Shell() {
   return (
     <div className={isConsole ? '' : 'flex min-h-screen flex-col bg-sentinel-950'}>
       {!isConsole && <Navbar />}
+
+      <Greeting />
 
       {/* First thing in the tab order, visible only once focused: a keyboard
           user should not have to walk the whole nav on every page. */}
