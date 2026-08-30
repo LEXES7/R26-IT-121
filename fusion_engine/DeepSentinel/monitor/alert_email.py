@@ -14,6 +14,8 @@ a text-only client loses the styling and nothing else.
 """
 from __future__ import annotations
 
+from monitor import assets
+
 SEVERITY = {
     "CRITICAL": ("#B0392C", "#FAEBE8"),
     "HIGH":     ("#A66A08", "#FBF0DF"),
@@ -146,6 +148,31 @@ def build(alert: dict, sg: dict, scores: dict, bands: dict,
             f'</td></tr><tr><td style="height:18px;"></td></tr>'
         )
 
+    # The severity strip across the top, and the mark beside the wordmark.
+    #
+    # Both are rendered only when the file is actually there. An inbox that
+    # blocks images then falls back to the alt text and the coloured rule
+    # below, so the severity is still legible with nothing loaded — which is
+    # how a good number of recipients will first see it.
+    banner_block = ""
+    if assets.banner(sev):
+        banner_block = (
+            f'<tr><td style="font-size:0;line-height:0;">'
+            f'<img src="cid:{assets.BANNER_CID}" width="{assets.BANNER_WIDTH}" '
+            f'alt="{sev.title()} severity" '
+            f'style="display:block;width:100%;max-width:600px;height:auto;border:0;">'
+            f'</td></tr>'
+        )
+
+    logo_img = ""
+    if assets.logo():
+        logo_img = (
+            f'<img src="cid:{assets.LOGO_CID}" width="{assets.LOGO_WIDTH}" '
+            f'height="{assets.LOGO_WIDTH}" alt="" '
+            f'style="vertical-align:middle;margin-right:7px;border:0;'
+            f'width:{assets.LOGO_WIDTH}px;height:{assets.LOGO_WIDTH}px;">'
+        )
+
     image_block = ""
     if has_image:
         image_block = (
@@ -207,6 +234,7 @@ def build(alert: dict, sg: dict, scores: dict, bands: dict,
        style="width:100%;max-width:600px;background:{PAPER};border:1px solid {RULE};
               border-radius:10px;border-collapse:separate;overflow:hidden;">
 
+  {banner_block}
   <tr><td style="height:4px;background:{colour};font-size:0;line-height:0;">&nbsp;</td></tr>
 
   <tr><td style="padding:22px 26px 0;">
@@ -215,7 +243,9 @@ def build(alert: dict, sg: dict, scores: dict, bands: dict,
         <td style="font:700 11px {MONO};color:{colour};letter-spacing:.13em;">
           {sev} &nbsp;&middot;&nbsp; FUSED VERDICT
         </td>
-        <td style="font:11px {MONO};color:{FAINT};text-align:right;">DeepSentinel</td>
+        <td style="text-align:right;white-space:nowrap;font:11px {MONO};color:{FAINT};">
+          {logo_img}DeepSentinel
+        </td>
       </tr>
     </table>
   </td></tr>

@@ -890,6 +890,7 @@ class MonitorEngine:
                                 scores: dict | None = None) -> None:
         from backend.email_service import _send_rich
         from monitor import alert_email
+        from monitor import assets as alert_assets
         from monitor.alert_render import render_subgraph
 
         scores = scores or {"graph": alert.get("graph_score")}
@@ -949,7 +950,11 @@ class MonitorEngine:
                     _send_rich,
                     f"[{alert['severity']}] Fraud alert {txid}",
                     text, html, recipients,
-                    {"subgraph": png} if png else None,
+                    # The severity banner and the mark travel with the
+                    # subgraph as CID parts. Built from what is on disk, so a
+                    # missing file drops that one image and nothing else.
+                    {**alert_assets.inline_for(alert["severity"]),
+                     **({"subgraph": png} if png else {})} or None,
                     attachments or None,
                 )
                 # Whether it was accepted, not whether it was attempted. The

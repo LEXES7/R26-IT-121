@@ -502,7 +502,13 @@ def _send_rich(
     if inline_images:
         html_part = message.get_payload()[-1]
         for cid, data in inline_images.items():
-            html_part.add_related(data, maintype="image", subtype="png", cid=f"<{cid}>")
+            # Sniff the format rather than declaring PNG for everything. The
+            # subgraph diagram is a PNG, but the severity banners are JPEG, and
+            # a JPEG served as image/png renders as a broken box in some
+            # clients and is silently dropped by others.
+            subtype = "jpeg" if data[:3] == b"\xff\xd8\xff" else "png"
+            html_part.add_related(data, maintype="image", subtype=subtype,
+                                  cid=f"<{cid}>")
 
     for maintype, subtype, filename, data in (attachments or []):
         message.add_attachment(data, maintype=maintype, subtype=subtype,
