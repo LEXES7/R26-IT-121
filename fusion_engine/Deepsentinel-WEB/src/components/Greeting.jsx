@@ -48,9 +48,16 @@ const GREETINGS = [
   'xin chào',     // Vietnamese
 ]
 
-// Fast enough that the words flick rather than linger.
-const STEP_MS = 118
-const FLOOR_MS = GREETINGS.length * STEP_MS + 300
+// The whole curtain lasts about 1.3 seconds, which is not long enough to show
+// twenty greetings at a pace anyone can read. So it shows eight of them,
+// drawn at random, after the fixed opening 'hello'.
+//
+// Cutting the list instead would have been the obvious fix and the worse one:
+// a different handful every visit is more variety than a fixed ten, not less,
+// and it costs nothing.
+const SHOWN = 9
+const STEP_MS = 112
+const FLOOR_MS = SHOWN * STEP_MS + 190
 // The ceiling has to clear the floor comfortably, or a slow font request
 // would race the guard that exists to protect against it.
 const CEILING_MS = 6000
@@ -63,6 +70,18 @@ export default function Greeting() {
   const [index, setIndex] = useState(0)
   const started = useRef(Date.now())
 
+  // Chosen once, on mount. Recomputing during render would reshuffle the
+  // words on every state change and turn the sequence into noise.
+  const words = useRef(null)
+  if (words.current === null) {
+    const [first, ...rest] = GREETINGS
+    for (let i = rest.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[rest[i], rest[j]] = [rest[j], rest[i]]
+    }
+    words.current = [first, ...rest.slice(0, SHOWN - 1)]
+  }
+
   useEffect(() => {
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       setPhase('gone')
@@ -71,7 +90,7 @@ export default function Greeting() {
 
     document.body.style.overflow = 'hidden'
     const tick = setInterval(
-      () => setIndex((i) => (i + 1) % GREETINGS.length),
+      () => setIndex((i) => (i + 1) % words.current.length),
       STEP_MS,
     )
 
@@ -125,7 +144,7 @@ export default function Greeting() {
       <div className="greeting-inner">
         <span className="greeting-dot" aria-hidden="true" />
         <span key={index} className="greeting-word" aria-hidden="true">
-          {GREETINGS[index]}
+          {words.current[index]}
         </span>
       </div>
     </div>
