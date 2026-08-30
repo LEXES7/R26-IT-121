@@ -126,14 +126,15 @@ def test_warming_up_returns_structured_503():
 
 
 def test_model_artifacts_missing_returns_structured_503():
-    # 503, not 500: the service is healthy and correctly configured, it just
-    # has no weights on disk yet — a deployment state, not a bug in this
-    # request. Distinct from WarmingUp (also 503) via the "error" label.
+    """503, not 500 — the endpoint's own comment and docs/api_contract.md both
+    say so. Missing weights is a deployment state, not a fault in this request:
+    the fusion adapter treats 503 as "abstain for this call" and keeps going,
+    where a 500 is recorded as a platform failure and trips the circuit."""
     app = create_app(service=FakeService(raise_on_classify=state.ModelArtifactsMissing("no checkpoint")))
     with TestClient(app) as client:
         r = client.post("/api/v1/classify", json=_tx(1))
         assert r.status_code == 503
-        assert r.json()["error"] == "ModelUnavailable"
+        assert r.json()["error"] == "MODEL_UNAVAILABLE"
 
 
 def test_unexpected_exception_returns_structured_500_not_a_trace():

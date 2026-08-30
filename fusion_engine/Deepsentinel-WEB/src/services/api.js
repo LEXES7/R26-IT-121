@@ -210,6 +210,20 @@ export const getStoredTransaction = (transactionId) =>
   client.get(`/transactions/${encodeURIComponent(transactionId)}`)
     .then((r) => r.data)
 
+/** Run one detector alone and return exactly what it said. */
+export const scoreOneDetector = (name, transaction) =>
+  client.post(`/detectors/${name}`, { transaction }).then((r) => r.data)
+
+/** The fused operating point the monitor actually alerts on. */
+export const getThresholds = () =>
+  client.get('/settings/thresholds').then((r) => r.data)
+
+export const applyThresholds = (bands) =>
+  client.put('/settings/thresholds', { bands }).then((r) => r.data)
+
+export const resetThresholds = () =>
+  client.delete('/settings/thresholds').then((r) => r.data)
+
 export const listCases = (params = {}) =>
   client.get('/cases', { params }).then((r) => r.data)
 

@@ -280,8 +280,10 @@ async def _live_activity(**kwargs) -> dict:
         "recent_escalations": escalations,
         "note": (
             "Counters are since the monitor last started. An alert is a fused "
-            "verdict at MEDIUM or above; an escalation is the graph model "
-            "tripping its watch threshold."
+            "verdict at MEDIUM or above. An escalation is the graph model "
+            "tripping its watch threshold — an early relational flag that "
+            "goes out ahead of the verdict, not a gate: all three detectors "
+            "score every transaction."
         ),
     }
 

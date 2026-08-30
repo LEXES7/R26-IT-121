@@ -207,6 +207,29 @@ async def record(
         return None
 
 
+async def mark_alerted(case_ref: str, sent: bool) -> None:
+    """Record whether an alert email actually went out for this case.
+
+    Called after the send is attempted, so `alert_sent` means "someone was
+    told" rather than "we meant to tell someone". The distinction matters: a
+    case marked alerted that nobody received is worse than one marked not
+    alerted, because it stops anyone looking.
+    """
+    from datetime import datetime, timezone
+
+    try:
+        async with get_session() as db:
+            await db.execute(
+                text("UPDATE fraud_cases SET alert_sent = :s, alerted_at = :at "
+                     "WHERE case_ref = :r"),
+                {"s": bool(sent),
+                 "at": datetime.now(timezone.utc) if sent else None,
+                 "r": case_ref},
+            )
+    except Exception as exc:                                  # noqa: BLE001
+        logger.warning(f"Could not record alert outcome for {case_ref}: {exc}")
+
+
 async def _archive_if_absent(transaction_id: str, payload: dict | None) -> None:
     """Store a replayed sample transaction so its case can be re-analysed.
 

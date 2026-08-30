@@ -222,10 +222,33 @@ export default function BehaviouralEvidence({ evidence }) {
             one, so this is the model&rsquo;s own statement of what it could not
             rebuild.
           </p>
-          <ShareBars
-            items={shownFeatures.map((x) => [x.feature, x.share])}
-            tone="bg-modality-behavioral"
-          />
+          {shownFeatures.some(hasGap) ? (
+            <>
+              <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-slate-500">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-modality-behavioral" />
+                  what arrived
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full border border-slate-500" />
+                  what the model rebuilt
+                </span>
+                <span className="text-slate-600">
+                  each feature on its own range — the bar is comparable, the pair is not
+                </span>
+              </p>
+              <div className="mt-4 space-y-4">
+                {shownFeatures.map((x) => (
+                  <ReconstructionRow key={x.feature} item={x} />
+                ))}
+              </div>
+            </>
+          ) : (
+            <ShareBars
+              items={shownFeatures.map((x) => [x.feature, x.share])}
+              tone="bg-modality-behavioral"
+            />
+          )}
           {s1.length > 5 && (
             <button
               onClick={() => setShowAllFeatures((v) => !v)}
@@ -345,6 +368,109 @@ function ShareBars({ items, tone }) {
           </span>
         </div>
       ))}
+    </div>
+  )
+}
+
+/** A share carries a readable pair only where the model could invert its scaler. */
+function hasGap(x) {
+  return typeof x?.observed === 'number' && typeof x?.reconstructed === 'number'
+}
+
+const sig = (v) => (Math.abs(v) >= 100 ? v.toFixed(1) : v.toFixed(4))
+
+/**
+ * One feature, as it arrived and as the model rebuilt it.
+ *
+ * The share alone asserts that a feature carried the error. This shows it: the
+ * value that came in, the value the decoder produced instead, and the distance
+ * between them — which is the whole of what a variational autoencoder does,
+ * and the only part of it a reader can check.
+ *
+ * The bar is the share and is comparable across rows. The pair is not: each
+ * feature is drawn against its own local range, because a log amount and an
+ * hour-of-day share no scale. So the pair is placed to be read, and every
+ * number is printed next to its mark rather than inferred from position.
+ */
+function ReconstructionRow({ item }) {
+  const { feature, share, observed, reconstructed } = item
+
+  if (!hasGap(item)) {
+    return (
+      <div>
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="font-mono text-xs text-slate-300">{feature}</span>
+          <span className="font-mono text-xs text-slate-500">
+            {(share * 100).toFixed(0)}%
+          </span>
+        </div>
+        <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-surface-overlay">
+          <div
+            className="h-full rounded-full bg-modality-behavioral"
+            style={{ width: `${Math.max(2, share * 100)}%` }}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  const lo = Math.min(observed, reconstructed)
+  const hi = Math.max(observed, reconstructed)
+  const span = hi - lo || Math.abs(hi) || 1
+  const pad = span * 0.35
+  const pct = (v) => ((v - (lo - pad)) / (span + pad * 2)) * 100
+  const expectedLower = reconstructed < observed
+
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="font-mono text-xs text-slate-300">{feature}</span>
+        <span className="font-mono text-xs text-slate-500">
+          {(share * 100).toFixed(0)}%
+        </span>
+      </div>
+
+      <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-surface-overlay">
+        <div
+          className="h-full rounded-full bg-modality-behavioral"
+          style={{ width: `${Math.max(2, share * 100)}%` }}
+        />
+      </div>
+
+      {/* the pair, on this feature's own range */}
+      <div className="relative mt-3.5 h-3">
+        <div
+          className="absolute inset-x-0 top-1.5 h-px"
+          style={{ background: 'var(--hair-strong)' }}
+        />
+        <div
+          className="absolute top-1.5 h-px bg-modality-behavioral/60"
+          style={{
+            left: `${Math.min(pct(observed), pct(reconstructed))}%`,
+            width: `${Math.abs(pct(observed) - pct(reconstructed))}%`,
+          }}
+        />
+        {/* hollow: what the model expected. solid: what actually arrived. */}
+        <span
+          className="absolute top-0.5 -ml-[3px] h-1.5 w-1.5 rounded-full border border-slate-500 bg-transparent"
+          style={{ left: `${pct(reconstructed)}%` }}
+          title={`rebuilt as ${sig(reconstructed)}`}
+        />
+        <span
+          className="absolute top-0 -ml-1 h-2.5 w-2.5 rounded-full bg-modality-behavioral"
+          style={{ left: `${pct(observed)}%` }}
+          title={`observed ${sig(observed)}`}
+        />
+      </div>
+
+      <p className="mt-2 font-mono text-[10px] text-slate-500">
+        {sig(observed)}
+        <span className="mx-1.5 text-slate-600">→</span>
+        {sig(reconstructed)}
+        <span className="ml-2 font-sans text-slate-600">
+          rebuilt {expectedLower ? 'lower' : 'higher'} than it arrived
+        </span>
+      </p>
     </div>
   )
 }

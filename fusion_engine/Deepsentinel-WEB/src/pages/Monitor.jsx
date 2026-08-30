@@ -5,6 +5,7 @@ import {
   resumeMonitor, startMonitor, stopMonitor, streamMonitor,
 } from '../services/api'
 import { Alert, cx } from '../components/ui'
+import { useAuth } from '../context/AuthContext'
 import PipelineLive from '../components/PipelineLive'
 import RuntimePanel from '../components/RuntimePanel'
 
@@ -22,7 +23,7 @@ import RuntimePanel from '../components/RuntimePanel'
  */
 
 const SEV_HEX = {
-  CRITICAL: '#ef4444', HIGH: '#f97316', MEDIUM: '#eab308', LOW: '#22c55e',
+  CRITICAL: 'rgb(var(--ds-sev-critical))', HIGH: 'rgb(var(--ds-sev-high))', MEDIUM: 'rgb(var(--ds-sev-medium))', LOW: 'rgb(var(--ds-sev-low))',
 }
 
 // Scores arrive already rounded by the server, so 0.9 and 0.8985 sit in the
@@ -38,6 +39,7 @@ export default function Monitor() {
   const [feed, setFeed] = useState([])
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
+  const { canControlPipeline, canViewCases, canRunAnalysis, canConfigureSystem } = useAuth()
   const [escalating, setEscalating] = useState(false)
   const [runtime, setRuntime] = useState(null)
   const stopRef = useRef(null)
@@ -150,9 +152,9 @@ export default function Monitor() {
               )}
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-400">
-              The graph model screens every transaction as it arrives. Only what
-              looks structurally suspicious costs the behavioural and temporal
-              detectors, and only then is a verdict fused.
+              All three detectors read every transaction as it arrives, at the
+              same time, and their scores are fused into one verdict. None of
+              them waits on another&rsquo;s opinion.
             </p>
           </div>
 
@@ -175,9 +177,15 @@ export default function Monitor() {
               </p>
             </div>
 
-            {/* Pause keeps the session; stop tears it down. Both are offered
-                because an analyst reading an alert wants the first. */}
-            {!running ? (
+            {/* Whether the institution is screening at all is an
+                administrator's decision. Everyone else watches. The buttons
+                are hidden here as a courtesy; require_admin on the monitor
+                routes is what actually enforces it. */}
+            {!canControlPipeline ? (
+              <p className="max-w-[15rem] text-right text-[11px] leading-relaxed text-slate-500">
+                Screening is controlled by an administrator.
+              </p>
+            ) : !running ? (
               <button
                 onClick={() => control(() => startMonitor(1.2))}
                 disabled={busy}
@@ -200,8 +208,8 @@ export default function Monitor() {
         {/* the funnel */}
         <dl className="mt-7 grid grid-cols-2 gap-y-5 sm:grid-cols-3 lg:grid-cols-6">
           <Figure value={c.screened} label="Screened" note="every transaction" />
-          <Figure value={c.escalated} label="Escalated"
-                  note={`${((c.escalation_rate ?? 0) * 100).toFixed(1)}% of stream`} />
+          <Figure value={c.flagged} label="Flagged"
+                  note={`${((c.flag_rate ?? 0) * 100).toFixed(1)}% of stream`} />
           <Figure value={c.alerts} label="Alerts" note="fused, medium+" accent />
           <Figure value={c.throughput_per_min} label="Per minute" note="throughput" />
           <Figure value={alerts.length} label="Open" note="awaiting action"
@@ -226,7 +234,7 @@ export default function Monitor() {
           </span>
         </div>
         <div className="mt-5">
-          <PipelineLive stages={snap?.stages} escalating={escalating} />
+          <PipelineLive stages={snap?.stages} escalating={escalating} counters={c} />
         </div>
       </section>
 
@@ -253,7 +261,7 @@ export default function Monitor() {
                   <div key={a.transaction_id + a.at}
                        className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3">
                     <span className="h-7 w-[3px] shrink-0 rounded-full"
-                          style={{ background: SEV_HEX[a.severity] ?? '#64748b' }} />
+                          style={{ background: SEV_HEX[a.severity] ?? 'rgb(var(--ds-faint))' }} />
                     <span className="numeric w-14 shrink-0 text-sm text-slate-100">
                       {score3(a.fused_score)}
                     </span>
@@ -309,7 +317,7 @@ export default function Monitor() {
                   </span>
                   <span className="min-w-0 flex-1 truncate text-slate-400">
                     {e.kind === 'screened' &&
-                      `${e.transaction_id} · ${e.risk_level} · ${e.graph_score}${e.escalated ? ' → escalate' : ''}`}
+                      `${e.transaction_id} · ${e.risk_level} · ${e.graph_score}${e.escalated ? ' → early flag' : ''}`}
                     {e.kind === 'escalated' &&
                       `${e.transaction_id} · ${e.pattern ?? '—'} · ${e.convergence ?? 0} senders`}
                     {e.kind === 'model' && `${e.transaction_id} · ${e.model} = ${e.score ?? 'unavailable'}`}
@@ -345,9 +353,16 @@ export default function Monitor() {
           <section>
             <h3 className="text-xs font-semibold text-slate-200">Go to</h3>
             <div className="rows mt-1">
-              {[['/cases', 'Review the queue'], ['/analyzer', 'Analyse a transaction'],
-                ['/thresholds', 'Tune the threshold'], ['/assistant', 'Ask the assistant']]
-                .map(([to, label]) => (
+              {/* Both consoles land here, so the list is filtered to what the
+                  reader's role can open — a link to "Access restricted" is
+                  worse than no link. */}
+              {[
+                canViewCases && ['/cases', 'Review the queue'],
+                canRunAnalysis && ['/analyzer', 'Analyse a transaction'],
+                canConfigureSystem && ['/thresholds', 'Tune the threshold'],
+                canViewCases && ['/assistant', 'Ask the assistant'],
+                canControlPipeline && ['/models', 'Test each detector'],
+              ].filter(Boolean).map(([to, label]) => (
                 <Link key={to} to={to}
                       className="block py-2 text-xs text-slate-400 transition-colors hover:text-slate-100">
                   {label}

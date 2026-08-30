@@ -54,21 +54,11 @@ async def _rows(days: int | None = None) -> list[tuple[float, bool | None]]:
     falls back to `analysis_records` — which has scores but usually no labels,
     so volume can still be estimated even when accuracy cannot.
     """
-    async with get_session() as db:
-        try:
-            q = ("SELECT fused_score, label_is_fraud FROM fraud_cases "
-                 "WHERE fused_score IS NOT NULL")
-            if days:
-                q += " AND detected_at >= :cutoff"
-            rows = (await db.execute(
-                text(q),
-                {"cutoff": _cutoff(days)} if days else {},
-            )).all()
-            if rows:
-                return [(float(r[0]), None if r[1] is None else bool(r[1])) for r in rows]
-        except Exception:                                     # noqa: BLE001
-            pass
+    per = await _detector_rows(days)
+    if per["fused"]:
+        return per["fused"]
 
+    async with get_session() as db:
         try:
             rows = (await db.execute(
                 text("SELECT fraud_confidence_score, NULL FROM analysis_records "
@@ -77,6 +67,46 @@ async def _rows(days: int | None = None) -> list[tuple[float, bool | None]]:
             return [(float(r[0]), None) for r in rows]
         except Exception:                                     # noqa: BLE001
             return []
+
+
+async def _detector_rows(days: int | None = None) -> dict[str, list]:
+    """(score, label) per detector as well as fused.
+
+    Every case stores what each detector said, so each one can be swept against
+    the same history independently. That is the difference between "the
+    platform's line is here" and "here is where my model's line should be" —
+    and the four are genuinely different questions, because the detectors do
+    not agree and their scores are not on a shared scale.
+
+    A detector that never answered contributes no rows rather than a neutral
+    score, so its curve is honestly empty instead of quietly flat.
+    """
+    out: dict[str, list] = {k: [] for k in ("graph", "behavioural", "temporal", "fused")}
+    cols = {
+        "graph": "graph_score",
+        "behavioural": "behavioral_score",
+        "temporal": "temporal_score",
+        "fused": "fused_score",
+    }
+    try:
+        async with get_session() as db:
+            q = ("SELECT fused_score, graph_score, behavioral_score, temporal_score, "
+                 "label_is_fraud FROM fraud_cases WHERE fused_score IS NOT NULL")
+            if days:
+                q += " AND detected_at >= :cutoff"
+            rows = (await db.execute(
+                text(q), {"cutoff": _cutoff(days)} if days else {},
+            )).all()
+    except Exception:                                         # noqa: BLE001
+        return out
+
+    for fused, g, b, t, label in rows:
+        lab = None if label is None else bool(label)
+        for key, value in (("fused", fused), ("graph", g),
+                           ("behavioural", b), ("temporal", t)):
+            if value is not None:
+                out[key].append((float(value), lab))
+    return out
 
 
 def _cutoff(days: int):
@@ -159,11 +189,33 @@ async def sweep(days: int | None = None, points: int = 41) -> dict:
             f"but are not yet stable — {MIN_SAMPLE} is the minimum worth reading."
         )
 
+    # Each detector swept on its own, so the page can offer a line per model
+    # rather than one line for the platform.
+    per = await _detector_rows(days)
+    detectors = {}
+    for key, drows in per.items():
+        if key == "fused" or not drows:
+            continue
+        dcurve = [_score_at(drows, i / (points - 1)) for i in range(points)]
+        dlabelled = sum(1 for _, l in drows if l is not None)
+        dbest = None
+        if dlabelled >= MIN_SAMPLE:
+            scored_d = [p for p in dcurve if p.f1 is not None and p.threshold > 0.0]
+            if scored_d:
+                dbest = max(scored_d, key=lambda p: p.f1)
+        detectors[key] = {
+            "sample_size": len(drows),
+            "labelled": dlabelled,
+            "curve": [p.__dict__ for p in dcurve],
+            "best": dbest.__dict__ if dbest else None,
+        }
+
     return {
         "sample_size": len(rows),
         "labelled": labelled,
         "curve": [p.__dict__ for p in curve],
         "best": best.__dict__ if best else None,
+        "detectors": detectors,
         "message": message,
     }
 

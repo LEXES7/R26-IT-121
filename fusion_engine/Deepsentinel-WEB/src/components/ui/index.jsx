@@ -251,6 +251,54 @@ export function Badge({ tone = 'neutral', children, className }) {
   )
 }
 
+// ── Severity ─────────────────────────────────────────────────────────────────
+
+/**
+ * One severity level, encoded twice: by hue and by how many segments are lit.
+ *
+ * The palette is CVD-safe and was measured against deuteranopia and
+ * protanopia, but colour alone still fails in the cases that matter most for
+ * this product — a projector in a bright room, a printed case file, a
+ * screenshot pasted into a report. The four-segment meter survives all of
+ * them, and it reads as a rank rather than as a category, which is what
+ * severity actually is.
+ *
+ * `SEVERITY` is exported so pages sort and colour from one table instead of
+ * each keeping their own.
+ */
+export const SEVERITY = {
+  CRITICAL: { rank: 4, label: 'Critical', token: '--ds-sev-critical' },
+  HIGH:     { rank: 3, label: 'High',     token: '--ds-sev-high' },
+  MEDIUM:   { rank: 2, label: 'Medium',   token: '--ds-sev-medium' },
+  LOW:      { rank: 1, label: 'Low',      token: '--ds-sev-low' },
+}
+export const SEVERITY_ORDER = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
+
+export function Severity({ level, showLabel = true, className, title }) {
+  const key = String(level || 'LOW').toUpperCase()
+  const sev = SEVERITY[key] ?? SEVERITY.LOW
+  const colour = `rgb(var(${sev.token}))`
+  return (
+    <span
+      className={cx('ds-sev', className)}
+      style={{ color: colour }}
+      title={title ?? `${sev.label} severity`}
+    >
+      <span className="ds-sev-meter" aria-hidden="true">
+        {[1, 2, 3, 4].map((i) => (
+          <i key={i} className={i <= sev.rank ? 'on' : undefined} />
+        ))}
+      </span>
+      {showLabel && (
+        <span className="text-[11px] font-semibold uppercase tracking-[0.09em]">
+          {sev.label}
+        </span>
+      )}
+      <span className="sr-only">{sev.label} severity</span>
+    </span>
+  )
+}
+
 export function EmptyState({ icon = '○', title, description, action }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-subtle py-16 px-6 text-center">
