@@ -10,15 +10,19 @@ import { cx } from './ui'
  *     transaction three different ways is only worth having when they can
  *     disagree. A case where one detector is alone in calling it is the case
  *     worth opening first — and it is invisible in a column of numbers.
- *   * **where the confidence went.** With a detector missing the fusion
- *     applies a deliberate penalty, so the number shown is lower than the
- *     evidence alone produced. Printing the result without the subtraction
- *     invites the reader to mistake a conservative score for a weak signal.
+ *   * **how much evidence the number rests on.** A verdict from two detectors
+ *     is not the same claim as one from three, and the fusion says so by
+ *     shrinking the result toward uncertainty. Printing the figure without
+ *     that invites a reader to treat a thinly-evidenced verdict as a settled
+ *     one.
  *
- * Nothing here is recomputed from the models. The scores, the availability
- * flags and the penalty flag are all read from the stored case; the penalty
- * itself is the fusion's own rule — 0.10 for every detector that did not
- * answer — so the arithmetic is shown rather than asserted.
+ * Every figure below is read from the stored case. This panel deliberately
+ * does not reproduce the fusion's arithmetic: an earlier version restated the
+ * rule as a subtraction of 0.10 per absent detector, the rule was later
+ * replaced by a shrink in log-odds space, and the panel went on displaying a
+ * step that no longer happened. A display that re-derives a backend rule is
+ * wrong the moment that rule moves, so this one reports the inputs, the
+ * result, and how many detectors stood behind it — and nothing in between.
  */
 
 const MODALITIES = [
@@ -26,9 +30,6 @@ const MODALITIES = [
   ['Behavioural', 'behavioral_score', 'behavioral_available', 'var(--modality-behavioral)'],
   ['Temporal', 'temporal_score', 'temporal_available', 'var(--modality-temporal)'],
 ]
-
-/** The fusion's own rule: 0.10 of confidence for each detector that was absent. */
-const PENALTY_PER_MISSING = 0.1
 
 /** Below this spread the detectors are reading the transaction the same way. */
 const AGREEMENT_BAND = 0.15
@@ -71,8 +72,9 @@ function reading(live) {
       tone: 'none',
       headline: `Only the ${live[0].label.toLowerCase()} detector answered.`,
       detail:
-        'With one opinion there is nothing to cross-check it against. The fused '
-        + 'confidence is this score, made conservative by the uncertainty penalty.',
+        'With one opinion there is nothing to cross-check it against, so the '
+        + 'fused confidence is pulled toward the middle — held as unsettled '
+        + 'rather than read as either a finding or an all-clear.',
     }
   }
 
@@ -140,18 +142,11 @@ export default function ModalityVerdict({ c }) {
   const live = rows.filter((m) => m.available && typeof m.value === 'number')
   const verdict = reading(live)
 
-  const missing = 3 - (c.modalities_used ?? live.length)
-  const penalty = c.uncertainty_penalty_applied
-    ? PENALTY_PER_MISSING * Math.max(0, missing)
-    : 0
+  const used = c.modalities_used ?? live.length
+  const missing = Math.max(0, 3 - used)
+  const shrunk = Boolean(c.uncertainty_penalty_applied) && missing > 0
 
   const fused = typeof c.fused_score === 'number' ? c.fused_score : null
-
-  // The penalty is a subtraction the fusion already made, so the value before
-  // it is recoverable exactly — except where the result was clamped at zero,
-  // in which case the original is genuinely unknown and is not guessed at.
-  const clamped = fused === 0 && penalty > 0
-  const beforePenalty = fused !== null && penalty > 0 && !clamped ? fused + penalty : null
 
   return (
     <section>
@@ -218,49 +213,45 @@ export default function ModalityVerdict({ c }) {
             key={m.label}
             label={m.label}
             hue={m.hue}
-            value={m.available ? m.value : 0.5}
+            value={m.available ? m.value : null}
             muted={!m.available}
             note={
               m.available
                 ? null
-                : 'imputed at the neutral value — this detector did not answer'
+                : 'did not answer — imputed so that it votes neither way'
             }
           />
         ))}
 
-        <div className="hair-t !mt-4 pt-3">
-          {beforePenalty !== null && (
-            <Line label="Before penalty" value={beforePenalty} derived />
-          )}
-          {penalty > 0 && (
-            <Line
-              label="Uncertainty penalty"
-              value={-penalty}
-              signed
-              muted
-              note={`${missing} detector${missing === 1 ? '' : 's'} did not answer`}
-            />
-          )}
-        </div>
-
-        <div className="hair-t !mt-3 flex items-baseline justify-between pt-3">
+        <div className="hair-t !mt-4 flex items-baseline justify-between pt-3">
           <dt className="text-xs font-semibold text-slate-200">Fused confidence</dt>
           <dd className="numeric text-sm font-semibold text-slate-100">{fmt(fused)}</dd>
         </div>
       </dl>
 
-      {clamped && (
-        <p className="mt-3 text-[10px] leading-relaxed text-slate-600">
-          The penalty took this score to zero, so the value before it cannot be
-          recovered from the stored case and is not shown.
-        </p>
-      )}
+      {/* How much evidence stands behind that number. The amount of the
+          adjustment is the fusion's to state, not this panel's to re-derive —
+          only the fact of it, and which way it runs, are read from the case. */}
+      <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
+        {shrunk ? (
+          <>
+            Built from <span className="text-slate-300">{used} of 3</span> detectors.
+            With a detector absent the fusion shrinks the verdict toward
+            uncertainty — <span className="text-slate-400">not toward safety</span>,
+            since a model that did not answer has not cleared anything.
+          </>
+        ) : (
+          <>
+            Built from <span className="text-slate-300">all three</span> detectors,
+            so the verdict carries no uncertainty adjustment.
+          </>
+        )}
+      </p>
     </section>
   )
 }
 
-function Line({ label, hue, value, muted, signed, derived, note }) {
-  const shown = signed && value < 0 ? `−${Math.abs(value).toFixed(4)}` : fmt(value)
+function Line({ label, hue, value, muted, note }) {
   return (
     <div className="flex items-baseline gap-3">
       <dt className="flex min-w-0 shrink-0 items-center gap-2">
@@ -282,10 +273,10 @@ function Line({ label, hue, value, muted, signed, derived, note }) {
       <dd
         className={cx(
           'numeric ml-auto shrink-0 text-xs',
-          muted ? 'text-slate-600' : derived ? 'text-slate-400' : 'text-slate-200',
+          muted ? 'text-slate-600' : 'text-slate-200',
         )}
       >
-        {shown}
+        {fmt(value)}
       </dd>
     </div>
   )
