@@ -9,7 +9,7 @@ PaySim-style calibration data and saves the model for reuse.
 
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import joblib
@@ -34,6 +34,25 @@ class FusionResult:
     behavioral_available: bool
     temporal_available: bool
     modalities_used: int
+
+    # Which detector drove the verdict, and by how much.
+    #
+    # Signed contribution of each modality to the fused log-odds. Because the
+    # meta-classifier is a standardised linear model, this is not an
+    # approximation or an attribution heuristic — the log-odds are literally
+    # the intercept plus these three terms, so they sum exactly.
+    #
+    # Positive argues for fraud, negative against. A detector that did not
+    # answer contributes exactly 0.0: it is imputed at its own training mean,
+    # whose standardised value is zero. "Contributed nothing" is therefore the
+    # truth rather than a convention.
+    contributions: dict[str, float] = field(default_factory=dict)
+
+    @property
+    def driver(self) -> str | None:
+        """The detector that argued hardest for fraud, if any did."""
+        positive = {k: v for k, v in self.contributions.items() if v > 0}
+        return max(positive, key=positive.get) if positive else None
 
 
 # How much of the evidence one absent detector costs. At 0.18, a single
@@ -238,4 +257,40 @@ class MetaClassifier:
             behavioral_available=behavioral_available,
             temporal_available=temporal_available,
             modalities_used=modalities_used,
+            contributions=self._contributions(X),
         )
+
+    def _contributions(self, X: np.ndarray) -> dict[str, float]:
+        """Each modality's signed contribution to the fused log-odds.
+
+        Exact, not estimated: the pipeline is a StandardScaler followed by a
+        logistic regression, so the decision function is
+
+            z = intercept + Σ coef_i · (x_i − mean_i) / scale_i
+
+        and each term below is one of those products. They sum to
+        `z − intercept`, which is asserted in the tests.
+
+        Reported before the missing-modality shrinkage, deliberately. Shrinkage
+        scales the whole log-odds toward zero to express uncertainty; applying
+        it here would shrink every contribution by the same factor and change
+        none of their relative sizes, while making the numbers no longer sum to
+        anything meaningful.
+        """
+        try:
+            scaler = self._pipeline.named_steps["scaler"]
+            clf = self._pipeline.named_steps["clf"]
+            z = (X[0] - scaler.mean_) / scaler.scale_
+            terms = clf.coef_[0] * z
+        except Exception as exc:                          # noqa: BLE001
+            # An older saved model, or a pipeline built some other way. The
+            # verdict does not depend on this, so it degrades rather than
+            # failing the screening.
+            logger.debug(f"No per-modality contributions available: {exc}")
+            return {}
+
+        return {
+            "graph": round(float(terms[0]), 4),
+            "behavioural": round(float(terms[1]), 4),
+            "temporal": round(float(terms[2]), 4),
+        }

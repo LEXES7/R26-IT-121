@@ -402,6 +402,10 @@ export const resumeMonitor = () => client.post('/api/monitor/resume').then((r) =
 export const restartMonitor = (interval) =>
   client.post('/api/monitor/restart', null, { params: { interval } }).then((r) => r.data)
 
+/** Empty the live alert list, activity feed and counters. Administrators only.
+ *  Clears the view, not the record — the cases stay in the database. */
+export const clearMonitor = () => client.post('/api/monitor/clear').then((r) => r.data)
+
 /** Loop state plus each detector's own runtime — "is the platform working". */
 export const getMonitorRuntime = () =>
   client.get('/api/monitor/runtime').then((r) => r.data)

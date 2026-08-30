@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  getMonitorRuntime, getMonitorState, pauseMonitor, restartMonitor,
+  clearMonitor, getMonitorRuntime, getMonitorState, pauseMonitor, restartMonitor,
   resumeMonitor, startMonitor, stopMonitor, streamMonitor,
 } from '../services/api'
 import { Alert, cx } from '../components/ui'
@@ -39,9 +39,16 @@ export default function Monitor() {
   const [feed, setFeed] = useState([])
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
-  const { canControlPipeline, canViewCases, canRunAnalysis, canConfigureSystem } = useAuth()
+  // canManageAlerts is administrators and risk managers — the people who act
+  // on an alert, and so the people who need to know which detector raised it.
+  const {
+    canControlPipeline, canViewCases, canRunAnalysis, canConfigureSystem,
+    canManageAlerts,
+  } = useAuth()
   const [escalating, setEscalating] = useState(false)
   const [runtime, setRuntime] = useState(null)
+  const [confirmClear, setConfirmClear] = useState(false)
+  const confirmTimer = useRef(null)
   const stopRef = useRef(null)
   const escTimer = useRef(null)
 
@@ -61,6 +68,17 @@ export default function Monitor() {
 
     if (kind === 'heartbeat') return
 
+    // An administrator cleared the board, here or from a database reset.
+    // Everyone watching drops their copy: the list is shared state, and one
+    // dashboard still showing alerts the others have cleared is worse than
+    // showing none.
+    if (kind === 'cleared') {
+      setSnap((s) => (s ? { ...s, alerts: [], counters: {} } : s))
+      setFeed([{ kind, ...e }])
+      getMonitorState().then(setSnap).catch(() => {})
+      return
+    }
+
     setFeed((f) => [{ kind, ...e }, ...f].slice(0, 60))
 
     if (kind === 'escalated') {
@@ -69,7 +87,14 @@ export default function Monitor() {
       escTimer.current = setTimeout(() => setEscalating(false), 4000)
     }
     if (kind === 'alert') {
-      setSnap((s) => (s ? { ...s, alerts: [e, ...(s.alerts ?? [])].slice(0, 20) } : s))
+      // One row per transaction, newest kept. A transaction screened more than
+      // once is still one thing for somebody to act on, and listing it five
+      // times reads as five frauds.
+      setSnap((s) => (s ? {
+        ...s,
+        alerts: [e, ...(s.alerts ?? []).filter(
+          (a) => a.transaction_id !== e.transaction_id)].slice(0, 20),
+      } : s))
     }
     if (kind === 'screened' || kind === 'fused') {
       // Counters live on the server; refresh them cheaply rather than
@@ -97,6 +122,7 @@ export default function Monitor() {
       stopRef.current?.()
       clearInterval(t)
       clearTimeout(escTimer.current)
+      clearTimeout(confirmTimer.current)
     }
   }, [apply])
 
@@ -114,10 +140,44 @@ export default function Monitor() {
     }
   }
 
+  // First click arms, second clears. The armed state times out rather than
+  // waiting indefinitely for a click that is not coming.
+  const clearBoard = async () => {
+    if (!confirmClear) {
+      setConfirmClear(true)
+      clearTimeout(confirmTimer.current)
+      confirmTimer.current = setTimeout(() => setConfirmClear(false), 4000)
+      return
+    }
+    clearTimeout(confirmTimer.current)
+    setConfirmClear(false)
+    setBusy(true)
+    setError(null)
+    try {
+      await clearMonitor()
+      // The server publishes `cleared` to every subscriber, this one included,
+      // so the list empties through the same path as it would for a colleague.
+      setSnap(await getMonitorState())
+    } catch (err) {
+      setError(err?.userMessage ?? 'Could not clear the monitor.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const c = snap?.counters ?? {}
   const running = !!snap?.running
   const paused = !!runtime?.monitor?.paused
-  const alerts = snap?.alerts ?? []
+  // The server's ring buffer keeps every alert event, so a transaction
+  // screened twice appears twice. Collapse to the newest per transaction here,
+  // where every path — snapshot and stream alike — passes through.
+  const alerts = Array.from(
+    (snap?.alerts ?? []).reduce((m, a) => {
+      const key = a.transaction_id ?? `${a.sink_account}-${a.at}`
+      if (!m.has(key)) m.set(key, a)
+      return m
+    }, new Map()).values(),
+  )
   const worst = alerts.reduce(
     (w, a) => (['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].indexOf(a.severity)
       > ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].indexOf(w) ? a.severity : w),
@@ -244,9 +304,30 @@ export default function Monitor() {
 
           {/* ── alerts ── */}
           <section>
-            <div className="hair-b flex items-baseline justify-between pb-2.5">
+            <div className="hair-b flex items-baseline justify-between gap-4 pb-2.5">
               <h2 className="text-sm font-semibold text-slate-100">Open alerts</h2>
-              <span className="text-[11px] text-slate-500">fused verdict ≥ medium</span>
+              <div className="flex items-baseline gap-4">
+                <span className="text-[11px] text-slate-500">fused verdict ≥ medium</span>
+                {/* Administrators only: this list is shared, so clearing it
+                    empties what every other dashboard is looking at. Two
+                    clicks, because there is no undo — though nothing is lost
+                    either, the cases stay in the database. */}
+                {canControlPipeline && !!alerts.length && (
+                  <button
+                    onClick={clearBoard}
+                    disabled={busy}
+                    className={cx(
+                      'shrink-0 text-[11px] transition-colors disabled:opacity-50',
+                      confirmClear
+                        ? 'font-medium text-risk-high'
+                        : 'text-slate-500 hover:text-slate-300',
+                    )}
+                    title="Empties the live view. Cases remain in the database."
+                  >
+                    {busy ? 'Clearing…' : confirmClear ? 'Clear for everyone?' : 'Clear'}
+                  </button>
+                )}
+              </div>
             </div>
 
             {!alerts.length ? (
@@ -274,9 +355,13 @@ export default function Monitor() {
                       <span className="text-slate-600"> · sink </span>
                       <span className="numeric text-slate-500">{a.sink_account ?? '—'}</span>
                     </span>
-                    <span className="numeric hidden shrink-0 text-[11px] text-slate-600 sm:block">
-                      graph {score3(a.graph_score)} · {a.modalities_used}/3
-                    </span>
+                    {canManageAlerts ? (
+                      <Detectors alert={a} />
+                    ) : (
+                      <span className="numeric hidden shrink-0 text-[11px] text-slate-600 sm:block">
+                        graph {score3(a.graph_score)} · {a.modalities_used}/3
+                      </span>
+                    )}
                     <span className="numeric w-24 shrink-0 text-right text-[11px] text-slate-500">
                       {money(a.amount)}
                     </span>
@@ -380,6 +465,55 @@ export default function Monitor() {
 }
 
 /* ── pieces ───────────────────────────────────────────────────────── */
+
+// What each detector said, and which one drove the verdict.
+//
+// The row used to show the graph score alone, so every alert read as a graph
+// finding — including the ones where behaviour was the only reason it fired.
+//
+// `driver` is the detector with the largest positive contribution to the fused
+// log-odds. For a standardised linear meta-classifier that is exact, not an
+// attribution heuristic: the log-odds are the intercept plus those three
+// terms. A detector that did not answer contributes nothing by construction,
+// and is shown as absent rather than as a zero score.
+const DETECTORS = [
+  ['graph', 'graph'],
+  ['behavioural', 'behav'],
+  ['temporal', 'timing'],
+]
+
+function Detectors({ alert }) {
+  const scores = alert.scores ?? { graph: alert.graph_score }
+  const driver = alert.driver
+
+  return (
+    <span className="hidden shrink-0 items-center gap-3 text-[11px] sm:flex">
+      {DETECTORS.map(([key, label]) => {
+        const v = scores[key]
+        const absent = v === null || v === undefined
+        const isDriver = key === driver
+        return (
+          <span
+            key={key}
+            className={cx('numeric', absent ? 'text-slate-700'
+              : isDriver ? 'font-medium text-slate-100' : 'text-slate-500')}
+            title={absent
+              ? `${label}: did not answer, so it contributed nothing to the verdict`
+              : isDriver
+                ? `${label} drove this verdict (contribution ${alert.contributions?.[key]?.toFixed(2) ?? '—'})`
+                : `${label} score ${score3(v)}`}
+          >
+            {isDriver && (
+              <span className="mr-1 inline-block h-1 w-1 -translate-y-[2px] rounded-full bg-accent-400" />
+            )}
+            <span className="text-slate-600">{label} </span>
+            {absent ? '—' : score3(v)}
+          </span>
+        )
+      })}
+    </span>
+  )
+}
 
 function Figure({ value, label, note, suffix, accent, urgent }) {
   return (

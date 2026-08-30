@@ -144,6 +144,37 @@ async def restart(interval: float | None = None) -> dict:
     return {"running": True, "paused": False, "interval": ENGINE.interval}
 
 
+@router.post("/clear", dependencies=_admin())
+async def clear() -> dict:
+    """Empty the alert list, the activity feed and the counters.
+
+    Administrators only, for the same reason start and stop are: on a shared
+    database this wipes what everyone's dashboard is looking at, and an
+    analyst clearing the board mid-shift would drop the queue of things
+    somebody still has to act on.
+
+    Nothing in the database is touched. Cases these alerts raised remain in
+    `fraud_cases` and stay readable under Cases — this clears the live view,
+    not the record. That distinction is the whole reason it is safe to offer
+    as a button.
+    """
+    removed = STATE.clear_live(actor="admin")
+
+    # Shared state, so who cleared it is worth keeping. Audit is best-effort:
+    # the clear has already happened and must not be reported as failed
+    # because the audit write did not land.
+    try:
+        from backend.auth import audit
+
+        await audit("monitor.clear", actor="admin", target="monitor live state",
+                    detail=f"alerts={removed['alerts']}, events={removed['events']}")
+    except Exception as exc:                             # noqa: BLE001
+        logger.warning(f"Could not audit the monitor clear: {exc}")
+
+    logger.info(f"Monitor live state cleared: {removed}")
+    return {"cleared": True, "removed": removed, "counters": STATE.counters.as_dict()}
+
+
 @router.get("/runtime")
 async def runtime() -> dict:
     """Monitor state plus the upstream detector's own runtime.
