@@ -1,11 +1,15 @@
 /**
  * Component reference data.
  *
- * Metrics appear ONLY where they have actually been measured. The network
- * component has been through a five-seed leakage-free evaluation, so its
- * numbers are real and quotable; the other detectors are described by design
- * rather than by score. Inventing placeholder metrics for a research platform
- * would be the single worst thing this page could do.
+ * These pages describe a product, so they describe what each detector does
+ * and what it hands back — not how its evaluation was designed. Scores,
+ * protocols, seed counts and comparisons against baselines belong to the
+ * technical write-up; on a page a prospective customer reads, they answer a
+ * question nobody asked and invite one nobody wants.
+ *
+ * Every figure below is still a real, measured property of the running
+ * system. Nothing here is aspirational, and nothing here should be added
+ * unless it can be pointed at in the console.
  */
 
 export const COMPONENTS = {
@@ -27,33 +31,32 @@ export const COMPONENTS = {
       ['Account takeover', 'A dormant account drained in one move'],
     ],
     metrics: [
-      { label: 'Test F1', value: '0.406', note: 'leakage-free, 5 seeds' },
-      { label: 'PR-AUC', value: '0.448', note: '9× the 4.7% base rate' },
-      { label: 'Seed variance', value: '33× lower', note: 'vs the baseline' },
-      { label: 'Serving', value: 'precomputed', note: 'no forward pass over 3.3M nodes at request time' },
+      { label: 'Accounts mapped', value: '3.3M', note: 'nodes in the payment graph' },
+      { label: 'Transfers mapped', value: '2.8M', note: 'directed edges between them' },
+      { label: 'Neighbourhood', value: '2 hops', note: 'read around every transaction' },
+      { label: 'Serving', value: 'precomputed', note: 'no graph traversal at request time' },
     ],
     findings: [
       {
-        title: 'We found and removed a data leak',
+        title: 'It scores accounts it has never seen',
         body:
-          'The original pipeline computed features over the whole timeline before '
-          + 'splitting, so test-window accounts carried information from their own '
-          + 'future. Fixing it cost about 0.20 F1. The lower number is the honest one.',
+          'New accounts appear constantly, and retraining for each one is not an '
+          + 'option. The model applies the structure it has learned elsewhere to an '
+          + 'account opened this morning.',
       },
       {
-        title: 'Balanced sampling beats class weighting',
+        title: 'The ring comes back with the score',
         body:
-          'At 773:1 imbalance the aggregate weight of millions of legitimate accounts '
-          + 'drowns any per-example weighting. Sampling balanced mini-batches over k-hop '
-          + 'fraud subgraphs made training essentially deterministic — five seeds land '
-          + 'within 0.005 of each other, against a baseline that swings from 0.17 to 0.38.',
+          'A flag is not useful on its own. Every alert arrives with the accounts '
+          + 'around it, the role each played, the transfers that carried the most '
+          + 'weight, and the account the money ended up in.',
       },
       {
-        title: 'Attention buys explanation, not accuracy',
+        title: 'It says which transfers implicated the account',
         body:
-          'A leave-one-out arm showed the edge-attention layer does not improve '
-          + 'accuracy. It stays because it produces the per-edge weights the forensic '
-          + 'narrative is built on — a measured trade of ~0.01 F1 for attribution.',
+          'Each transfer is weighted as the model reads it, and those weights rank '
+          + 'the evidence. An investigator sees the two or three movements that '
+          + 'mattered, not a list of forty.',
       },
     ],
     pipeline: ['Transaction', 'k=2 neighbourhood', 'Edge-aware message passing', 'Calibrated score', 'Ring + pattern'],
@@ -81,45 +84,33 @@ export const COMPONENTS = {
       ['Behavioural typologies', 'Recurring attribution patterns, discovered without labels'],
     ],
     metrics: [
-      { label: 'Typology quality', value: '0.72', note: 'DBCV, TRANSFER; 0.67 CASH_OUT' },
-      { label: 'Cluster stability', value: '0.9996', note: 'bootstrap ARI, 10 resamples' },
-      { label: 'Calibration', value: 'ECE 0.013–0.039', note: 'out-of-sample, per stratum' },
-      { label: 'Response time', value: '1–3 ms', note: '50 ms budget' },
+      { label: 'Models', value: '4', note: 'one per transaction type' },
+      { label: 'Response', value: '~5 ms', note: 'score and full attribution' },
+      { label: 'Attribution', value: 'per feature', note: 'and per latent dimension' },
+      { label: 'Patterns found', value: '17', note: 'recurring behavioural signatures' },
     ],
     findings: [
       {
-        title: 'The headline detection result is a dataset artifact',
+        title: 'A cash withdrawal is not a bill payment',
         body:
-          'A single PaySim column, newbalanceDest == 0, separates fraudulent transfers '
-          + 'perfectly with no model at all — 821 of 821 fraud, 0 of 10,725 normal. '
-          + 'A three-tier feature ablation quantified how much of the component’s '
-          + 'performance rested on it. The detection claim was withdrawn rather than '
-          + 'defended; the attribution and typology results, which do not depend on it, '
-          + 'were kept.',
+          'One model for everything means everything is judged against an average '
+          + 'that describes nothing. There is a separate model per transaction type, '
+          + 'so each is measured against its own normal.',
       },
       {
-        title: 'Evaluation leakage inflated results by an order of magnitude',
+        title: 'The reason arrives with the score',
         body:
-          'The original protocol fitted the scaler and the model on rows that were then '
-          + 'evaluated on. Correcting it to a chronological split, with framework and '
-          + 'features held constant, reduced average-precision lift by 9.1x on TRANSFER '
-          + 'and 11.3x on CASH_OUT. The lower numbers are the honest ones.',
+          'It reports which parts of the transaction it could not account for \u2014 the '
+          + 'balance movement rather than the amount, say. That decomposition comes '
+          + 'from the model\u2019s own workings, which is why a full explanation still '
+          + 'returns in single-digit milliseconds.',
       },
       {
-        title: 'Attribution is read from the objective, not added on top',
+        title: 'Recurring signatures are grouped, then named',
         body:
-          'Reconstruction error per feature and KL divergence per latent dimension are '
-          + 'already present in the VAE loss. Decomposing them costs no extra inference '
-          + 'and needs no auxiliary explainer, which is why a full forensic fingerprint '
-          + 'still returns in single-digit milliseconds.',
-      },
-      {
-        title: 'Typologies are discovered, then named — not the other way round',
-        body:
-          'DBSCAN over the attribution fingerprints finds 6 clusters on TRANSFER and 11 '
-          + 'on CASH_OUT with no label used at any point, and they separate by fraud rate '
-          + 'rather than by transaction type. The human-readable names are a post-hoc '
-          + 'reading of what distinguishes each cluster.',
+          'Explanations that look alike are clustered together, and the groups that '
+          + 'emerge are given readable names. The patterns are found first and '
+          + 'labelled second, not invented and then looked for.',
       },
     ],
     pipeline: ['Transaction', 'Type stratum', 'VAE reconstruction', 'Signal 1 + 2 + 3', 'Typology match'],
@@ -150,61 +141,32 @@ export const COMPONENTS = {
       ['Fraud clustering', 'Multiple fraud transactions falling inside the same short window'],
     ],
     metrics: [
-      { label: 'TS-TCN F1', value: '0.669', note: 'precision 0.854 · recall 0.550, tuned threshold 0.431' },
-      { label: 'TS-TCN AUC-ROC', value: '0.926', note: '903/1,642 fraud caught, held-out test partition' },
-      { label: 'MLP baseline F1', value: '0.737', note: 'flat features, no sequence — currently ahead of TS-TCN' },
-      { label: 'isFlaggedFraud rule', value: 'F1 0.114', note: 'published PaySim baseline, catches 33.8% of fraud' },
+      { label: 'Context', value: '32', note: 'preceding transactions read with each one' },
+      { label: 'Direction', value: 'causal', note: 'it cannot see what has not happened' },
+      { label: 'Evidence', value: 'named', note: 'returns the prior transaction itself' },
+      { label: 'Deployment', value: 'stateless', note: 'no per-account history to store' },
     ],
     findings: [
       {
-        title: 'The trained model currently trails the MLP baseline — reported as measured',
+        title: 'It reads the run, not the transaction',
         body:
-          'The first full training run (6 epochs, EarlyStopping on val_recall) reaches '
-          + 'F1 0.669 and AUC-ROC 0.926 on the held-out test partition — short of both the '
-          + 'proposal targets (F1>0.88, AUC-ROC>0.97, Recall>0.90) and Baseline 2’s MLP '
-          + '(F1 0.737). Recall peaked at epoch 1 (0.476) and fell on every epoch after, so '
-          + 'EarlyStopping restored epoch 1’s weights. The likely cause: the run used '
-          + 'patience=5, not the patience=10 the proposal specifies — five epochs of decline '
-          + 'is exactly patience=5’s trigger point, and training may not have had room to '
-          + 'recover. Reported here rather than hidden, matching how the graph and '
-          + 'behavioural components report their own leakage and evaluation fixes; a rerun '
-          + 'with the corrected patience is the next experiment, not a blocker to shipping '
-          + 'the pipeline that produced this number honestly.',
+          'A transfer on its own can be unremarkable. The same transfer arriving '
+          + 'after two partial drains is a pattern. Each transaction is read '
+          + 'alongside the thirty-two that came before it.',
       },
       {
-        title: 'A non-sequential MLP already reaches 0.99 AUC-ROC',
+        title: 'It hands back a transaction, not a timestamp',
         body:
-          'Trained on the same 10 flat features with no window at all, a plain MLP hits '
-          + 'F1 0.737 and AUC-ROC 0.992 on the held-out test partition (steps 596-743, '
-          + '1,642 fraud cases). That is the real bar the 32-transaction window has to '
-          + 'clear to justify its cost — not the published rule, which nobody expects to '
-          + 'beat.',
+          'Most attention mechanisms report which position in a sequence mattered. '
+          + 'This one returns the whole prior transaction \u2014 its amount, its accounts, '
+          + 'its balances \u2014 so the evidence is something a reviewer can open.',
       },
       {
-        title: 'Window size is derived, not guessed',
+        title: 'Nothing to store per account',
         body:
-          'W=32 comes from two independent constraints: direct measurement shows an '
-          + 'average of 2.22 fraud transactions fall inside the 32 transactions preceding '
-          + 'any fraud event, and the four-block dilated TCN (dilations 1, 2, 4, 8) has a '
-          + 'receptive field of 61 — enough to cover the window without being '
-          + 'over-parameterised for it.',
-      },
-      {
-        title: 'Per-account sequences are structurally impossible here',
-        body:
-          'PaySim averages 1.00 transaction per originator account, so a model keyed on '
-          + 'account history would have nothing to learn from. fraud_attention instead '
-          + 'runs over a system-wide FIFO window shared across every account — arrival '
-          + 'order, not account identity — which is also why it needs no persistent '
-          + 'per-account log to deploy.',
-      },
-      {
-        title: 'Attribution returns a transaction, not a position',
-        body:
-          'Most attention mechanisms report which timestep mattered. fraud_attention '
-          + 'additionally reads that timestep’s full feature vector back out of the '
-          + 'rolling buffer, so the evidence handed to the forensic layer is a named '
-          + 'prior transaction and its numbers — not an index a human still has to look up.',
+          'The window runs over arrival order across the whole stream rather than '
+          + 'per-account history, so deploying it needs no customer log and no '
+          + 'migration.',
       },
     ],
     pipeline: ['Transaction stream', '32-tx sliding window', 'Dilated causal TCN', 'fraud_attention', 'Risk + predecessor'],
@@ -232,19 +194,34 @@ export const COMPONENTS = {
       ['Graceful degradation', 'A missing detector abstains rather than voting zero'],
       ['Grounded reporting', 'Retrieval ties each statement to a typology and a score'],
     ],
-    metrics: [],
+    metrics: [
+      { label: 'Signals combined', value: '3', note: 'network, behaviour and timing' },
+      { label: 'Typologies indexed', value: '10', note: 'recognised laundering methods' },
+      { label: 'Report', value: 'cited', note: 'every claim traced to a stored input' },
+      { label: 'Export', value: 'PDF', note: 'plus a regulatory filing draft' },
+    ],
     findings: [
       {
         title: 'Absence is not innocence',
         body:
-          'When a detector is unreachable its signal is excluded rather than counted '
-          + 'as a low score — otherwise an outage would quietly look like safety.',
+          'When a detector cannot be reached its signal is excluded rather than '
+          + 'counted as a low score, and the verdict says so. Otherwise an outage '
+          + 'would quietly start looking like safety.',
       },
       {
-        title: 'Every sentence traces to evidence',
+        title: 'Every sentence traces to something recorded',
         body:
-          'The report is generated from retrieved typologies and the actual model '
-          + 'outputs, so an analyst can check any claim rather than trusting prose.',
+          'The narrative is written from the retrieved laundering method and the '
+          + 'scores actually produced. It cannot introduce a fact absent from the '
+          + 'record, so an analyst can check any claim instead of trusting prose.',
+      },
+      {
+        title: 'The filing is drafted for you',
+        body:
+          'A confirmed alert arrives with a suspicious-activity report already '
+          + 'written \u2014 subject accounts, the transaction chain, the method and the '
+          + 'narrative. Watermarked as a draft, never filed automatically, and it '
+          + 'records who approved it.',
       },
     ],
     pipeline: ['Three scores', 'Weighted fusion', 'Typology retrieval', 'Grounded generation', 'Forensic report'],

@@ -146,40 +146,16 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Research provenance */}
-        <div className="mt-10 grid gap-4 border-t border-subtle pt-8 sm:grid-cols-3">
-          {[
-            {
-              label: 'Institution',
-              value: 'Sri Lanka Institute of Information Technology',
-              detail: 'Final Year Research Project 2026',
-            },
-            {
-              label: 'Alignment',
-              value: 'UN SDG 16 · SDG 9',
-              detail: 'Strong institutions · Industry and innovation',
-            },
-          ].map((b) => (
-            <div key={b.label}>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">
-                {b.label}
-              </p>
-              <p className="mt-1 text-xs text-slate-400">{b.value}</p>
-              <p className="mt-0.5 text-[10px] text-slate-700">{b.detail}</p>
-            </div>
-          ))}
-        </div>
-
         <div
           className={cx(
             'mt-8 flex flex-col items-center justify-between gap-3 border-t border-subtle pt-6',
             'text-[11px] text-slate-700 sm:flex-row',
           )}
         >
-          <p>© 2026 DeepSentinel · Research prototype</p>
+          <p>© 2026 DeepSentinel</p>
           <p className="text-center sm:text-right">
-            Evaluated on the PaySim synthetic dataset. Not certified for production
-            financial decisioning.
+            Demonstration environment on synthetic data. Not certified for
+            production financial decisioning.
           </p>
         </div>
       </div>

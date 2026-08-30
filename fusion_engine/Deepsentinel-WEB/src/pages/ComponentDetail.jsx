@@ -175,7 +175,7 @@ export default function ComponentDetail() {
 
       {/* ── Findings ─────────────────────────────────────────────────────── */}
       <section className="mx-auto max-w-5xl px-4 pt-12 sm:px-6">
-        <Eyebrow>{c.status === 'delivered' ? 'What we learned' : 'Design decisions'}</Eyebrow>
+        <Eyebrow>How it behaves</Eyebrow>
         <div className="mt-4 space-y-3">
           {c.findings.map((f, i) => (
             <Reveal key={f.title} delay={i * 100}><div className="glass card-hover h-full rounded-2xl p-5">
