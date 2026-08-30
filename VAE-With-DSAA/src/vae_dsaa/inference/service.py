@@ -61,9 +61,11 @@ def _digest(path: Path) -> str | None:
 
     `MODEL_VERSION` is a constant in this module, so it answers "which release
     is this" and cannot answer "which weights are actually loaded" — swap a
-    bundle and the string is unchanged. That gap cost a teammate real time on
-    another service: two different checkpoints served under one version string,
-    and the only way to tell them apart was hashing the file by hand.
+    bundle and the string is unchanged. The sibling timing service shows what
+    that costs: its health response names a version and a degraded status, but
+    nothing identifying the checkpoint, so when its README pointed at one
+    filename and its loader read another, the API could not be used to tell
+    which of the two was serving.
 
     Twelve hex characters is far more than enough to tell two checkpoints
     apart, and short enough to read in a health response.
