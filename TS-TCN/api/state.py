@@ -30,21 +30,33 @@ logger = logging.getLogger(__name__)
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _ARTIFACT_DIR = _REPO_ROOT / "outputs"
 
-# Stage 4 full training run (30-epoch budget, EarlyStopping fired at epoch 6 —
-# see outputs/stage6_evaluation/tstcn_test_metrics.json). Real trained
-# checkpoint, not the earlier sanity run — but it underperforms the B2 MLP
-# baseline on F1/Recall and misses the proposal's targets (F1>0.88, AUC>0.97,
-# Recall>0.90). Serve it honestly labelled rather than waiting on a retrain.
-MODEL_VERSION = "ts-tcn-v1.0-stage4"
+# Stage 4 FINAL training run (30-epoch budget, EarlyStopping patience=12 on
+# val_fraud_prob_auc, fired at epoch 27 — see
+# outputs/stage6_evaluation/tstcn_test_metrics.json). Supersedes the earlier
+# ts-tcn-v1.0-stage4 checkpoint, which used patience=5 (not the proposal's
+# §3.8 patience=10) and stopped after 6 epochs before recall could recover.
+# This run clears the B2 MLP baseline on F1 (0.851 vs 0.737) and Recall
+# (0.767 vs 0.586) at the Best-F1 operating point below. AUC-ROC (0.947) and
+# Recall (0.767) still fall short of the proposal's stretch targets
+# (AUC>0.97, Recall>0.90) — reported honestly rather than rounded up.
+MODEL_VERSION = "ts-tcn-v2.0-final"
 WINDOW_SIZE = 32
 
-# F1-optimal threshold from Stage 6 (sklearn.metrics.precision_recall_curve
-# on the held-out test partition) — see outputs/stage6_evaluation/tstcn_test_metrics.json.
+# Best-F1 / balanced operating point from Stage 6 (sklearn.metrics.precision_
+# recall_curve on the held-out test partition) — F1=0.851, Precision=0.956,
+# Recall=0.767. See outputs/stage6_evaluation/tstcn_test_metrics.json.
+#
+# A second, Recall-first operating point exists (threshold=0.1278: Recall=
+# 0.900, Precision=0.056, F1=0.105) for a deployment that would rather
+# surface far more false positives than miss fraud — not used here because
+# a 94%-false-positive alert stream is not something an analyst can action,
+# but documented so the choice is visible rather than silently made.
+#
 # Not currently consulted by classify() itself: the contract exposes a
 # continuous temporal_risk_score plus a fixed-band risk_level (see
 # _risk_level), not a binary decision field. Kept here as the documented
 # operating point the Stage 6 F1/Precision/Recall numbers were measured at.
-THRESHOLD = 0.4311
+THRESHOLD = 0.4545
 
 
 class WarmingUp(Exception):
@@ -82,11 +94,16 @@ def _predecessor_signal(row: dict) -> str:
 
 
 def _risk_level(score: float) -> str:
-    # Matches the traffic-light bands in the proposal's dashboard mockup
-    # (Appendix B.1): green <=0.3, amber 0.3-0.7, red >=0.7.
+    # SUSPICIOUS starts at THRESHOLD (0.4545), the Stage 6 Best-F1 boundary
+    # that outputs/stage6_evaluation/tstcn_test_metrics.json's F1=0.851 was
+    # measured at -- not the proposal dashboard mockup's arbitrary 0.3. A
+    # score that flips this label to SUSPICIOUS is exactly the score the
+    # tuned model calls fraud; a fixed 0.3 would report a boundary nobody
+    # validated. CRITICAL keeps the mockup's 0.7 as a high-confidence band
+    # above that.
     if score >= 0.7:
         return "CRITICAL"
-    if score >= 0.3:
+    if score >= THRESHOLD:
         return "SUSPICIOUS"
     return "NORMAL"
 
@@ -134,7 +151,14 @@ class TSTCNService:
             (self.type_risk_weights_path, "Produced alongside scaler.pkl in Stage 2"),
         ):
             if not path.exists():
-                raise ModelArtifactsMissing(f"{path} not found. {note}.")
+                # Relative to the repo root: the exception message ends up in
+                # an HTTP error body (see routes/classify.py), and an absolute
+                # path there would publish this machine's home directory.
+                try:
+                    shown = path.relative_to(_REPO_ROOT)
+                except ValueError:
+                    shown = path
+                raise ModelArtifactsMissing(f"{shown} not found. {note}.")
 
         # Deferred: tensorflow is a heavy import, and pulling it in at module
         # load would force every consumer of this module (including tests

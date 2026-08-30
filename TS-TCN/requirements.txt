@@ -6,7 +6,11 @@
 numpy==1.26.4
 pandas==2.1.4
 scipy==1.12.0
-scikit-learn==1.4.0
+# Must match the sklearn version outputs/stage2_baselines/scaler.pkl was
+# pickled with on Colab -- a mismatch doesn't error, it silently emits
+# InconsistentVersionWarning and sklearn's own docs call the result
+# potentially wrong, not just noisy.
+scikit-learn==1.6.1
 
 # ── Deep learning ─────────────────────────────────────────────────────
 tensorflow==2.15.0
