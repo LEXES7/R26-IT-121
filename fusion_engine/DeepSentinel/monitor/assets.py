@@ -34,12 +34,28 @@ LOGO_WIDTH = 26
 _cache: dict[str, bytes | None] = {}
 
 
+def _looks_like_an_image(data: bytes) -> bool:
+    """JPEG or PNG magic bytes.
+
+    A file that is present but not an image is worse than one that is absent:
+    absent degrades to alt text, whereas a truncated JPEG is attached, declared
+    as some content type, and renders as a broken box in the alert. Checked
+    here so the two failures behave the same way.
+    """
+    return data[:3] == b"\xff\xd8\xff" or data[:8] == b"\x89PNG\r\n\x1a\n"
+
+
 def _read(name: str) -> bytes | None:
     if name in _cache:
         return _cache[name]
     path = ASSETS / name
     try:
         data = path.read_bytes()
+        if not _looks_like_an_image(data):
+            logger.warning(
+                f"Alert asset {name} is not a JPEG or PNG ({len(data)} bytes); "
+                "skipping it rather than attaching a broken image.")
+            data = None
     except Exception as exc:                             # noqa: BLE001
         logger.info(f"Alert asset {name} unavailable: {exc}")
         data = None
