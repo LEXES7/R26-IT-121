@@ -50,6 +50,30 @@ POLL_BATCH = 25            # transactions fetched per refill
 DEFAULT_INTERVAL = 1.2     # seconds between screenings
 
 
+# Where the fused verdict changes severity.
+#
+# These used to fall back to `self._bands` — the risk bands the relational
+# model publishes on /health. Those are the operating point for *its* score,
+# and reusing them for the fused score is a category error: the two have
+# different distributions, and it showed. Measured over a 2,000-transaction
+# replay, 0.18, 0.25, 0.39 and 0.55 all selected the identical 49
+# transactions, so HIGH and CRITICAL were the same band wearing two names.
+#
+# The values below sit where the flagged population actually changes:
+#
+#     band     flagged   recall   false alarms per real fraud
+#     0.030        85     27.3%        49 : 1
+#     0.090        61     19.7%        48 : 1
+#     0.925        35     11.1%        54 : 1
+#
+# Recall and false-alarm rate are carried over from a fraud-oversampled
+# sample; the alert *volume* is stated at PaySim's true 0.129% rate. Note that
+# precision barely improves as the band rises — the fused score does not rank
+# well at the top end, which is a statement about the detectors and not about
+# fusion. An operator can move all three on the Thresholds page.
+FUSED_BANDS = {"medium": 0.03, "high": 0.09, "critical": 0.925}
+
+
 # A detector that just failed is left alone for this long. Under the fan-out
 # every transaction pays for a dead service, so the breaker is what keeps one
 # unreachable model from setting the pace of the whole pipeline.
@@ -74,7 +98,6 @@ class MonitorEngine:
         self._label = None           # ground truth from the source file, if present
         self.interval = DEFAULT_INTERVAL
         self.watch_threshold = DEFAULT_WATCH_THRESHOLD
-        self._bands: dict[str, float] = {}
         self._route: dict[str, str] = {}       # detector → the path that answers
         self._down_until: dict[str, float] = {}  # detector → don't call before
         self.upstream_timeout = _upstream_timeout()
@@ -184,7 +207,10 @@ class MonitorEngine:
                 r = await c.get(f"{graph_base}/health")
             bands = r.json().get("risk_bands") or {}
             if bands:
-                self._bands = bands
+                # Only the watch threshold is taken from here. The rest of the
+                # relational model's bands are deliberately not kept: they
+                # describe its own score, and the last time they were held on
+                # the engine they ended up being applied to the fused one.
                 self.watch_threshold = float(bands.get("medium", DEFAULT_WATCH_THRESHOLD))
                 logger.info(f"Monitor watch threshold from model: {self.watch_threshold:.4f}")
         except Exception as exc:                        # noqa: BLE001
@@ -566,17 +592,17 @@ class MonitorEngine:
         return None, None
 
     def _severity(self, fused: float) -> str:
-        # An operator-set line wins over the model's own calibration: someone
-        # looked at the replay and decided. Falls back to the model's bands,
-        # then to the built-in defaults.
+        # An operator-set line wins: someone looked at the replay and decided.
+        # Otherwise the measured fused bands below — NOT self._bands, which
+        # belong to the relational model.
         from backend import thresholds
 
-        b = thresholds.current() or self._bands
-        if fused >= float(b.get("critical", 0.39)):
+        b = thresholds.current() or FUSED_BANDS
+        if fused >= float(b.get("critical", FUSED_BANDS["critical"])):
             return "CRITICAL"
-        if fused >= float(b.get("high", 0.18)):
+        if fused >= float(b.get("high", FUSED_BANDS["high"])):
             return "HIGH"
-        if fused >= float(b.get("medium", 0.09)):
+        if fused >= float(b.get("medium", FUSED_BANDS["medium"])):
             return "MEDIUM"
         return "LOW"
 

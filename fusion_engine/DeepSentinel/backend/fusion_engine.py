@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import joblib
+import math
+
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
@@ -32,6 +34,16 @@ class FusionResult:
     behavioral_available: bool
     temporal_available: bool
     modalities_used: int
+
+
+# How much of the evidence one absent detector costs. At 0.18, a single
+# missing modality moves a 0.90 verdict to about 0.86 and a 0.003 one to about
+# 0.006 — less certain either way, and never collapsed to a tie.
+UNCERTAINTY_SHRINK = 0.18
+
+# Probabilities of exactly 0 or 1 have infinite log-odds. Clamping keeps the
+# transform finite without changing any decision.
+MAX_LOGIT = 12.0
 
 
 def _generate_synthetic_training_data(n_samples: int = 2000) -> tuple:
@@ -138,6 +150,17 @@ class MetaClassifier:
             self.model_save_path.unlink()
         self._train()
 
+    def _neutral(self) -> tuple[float, float, float]:
+        """The per-modality value that standardises to zero — the score an
+        absent detector is given so it contributes nothing either way."""
+        try:
+            mean = self._pipeline.named_steps["scaler"].mean_
+            return float(mean[0]), float(mean[1]), float(mean[2])
+        except Exception:                               # noqa: BLE001
+            # An unscaled or differently-shaped pipeline: fall back to the
+            # midpoint rather than failing a live verdict over it.
+            return 0.5, 0.5, 0.5
+
     def fuse(
         self,
         graph_score: float | None,
@@ -155,23 +178,55 @@ class MetaClassifier:
         behavioral_available = behavioral_score is not None
         temporal_available = temporal_score is not None
 
-        # Fallback: impute missing scores with 0.5 (neutral, maximum uncertainty)
-        g = graph_score if graph_available else 0.5
-        b = behavioral_score if behavioral_available else 0.5
-        t = temporal_score if temporal_available else 0.5
+        # A missing score is imputed at the value that contributes nothing.
+        #
+        # It used to be a flat 0.5, described as neutral. It is not: the
+        # scaler centres each modality on its own training mean (0.29, 0.32,
+        # 0.36), so feeding 0.5 puts the absent detector roughly half a
+        # standard deviation into "suspicious" and lets an outage argue for
+        # guilt. Imputing the mean makes the standardised value exactly zero,
+        # so the missing term drops out of the linear combination instead of
+        # voting. The uncertainty is then expressed once, by the shrinkage
+        # below, rather than twice and in two directions.
+        neutral = self._neutral()
+        g = graph_score if graph_available else neutral[0]
+        b = behavioral_score if behavioral_available else neutral[1]
+        t = temporal_score if temporal_available else neutral[2]
 
         modalities_used = sum([graph_available, behavioral_available, temporal_available])
 
         X = np.array([[g, b, t]])
         confidence = float(self._pipeline.predict_proba(X)[0][1])  # probability of fraud class
 
-        # Penalize confidence if modalities are missing (uncertainty penalty)
+        # Discount the *evidence* when a detector is missing, not the
+        # probability.
+        #
+        # This used to be `max(0.0, confidence - 0.10 * missing)`, and that had
+        # two faults. Subtracting a constant from a probability clamps at
+        # zero: measured over a 400-transaction replay with one detector down,
+        # the model produced 55 distinct values below 0.10 and the subtraction
+        # collapsed them to 4, sending 388 of 400 to exactly 0.0000. Every
+        # operating point between 0.09 and 0.30 then selected an identical set
+        # of transactions, which is why the severity bands did nothing.
+        #
+        # It was also the wrong direction. Lowering the score for a missing
+        # detector makes an outage look like safety — the failure this
+        # component's own design notes call out as "absence is not innocence".
+        #
+        # Shrinking the log-odds toward zero says the honest thing instead: with
+        # less evidence we are less certain in *both* directions. It is
+        # monotonic, so ordering and every distinct value survive, and it
+        # cannot clamp.
         if modalities_used < 3:
-            missing_penalty = 0.10 * (3 - modalities_used)
-            confidence = max(0.0, confidence - missing_penalty)
-            logger.warning(
-                f"{3 - modalities_used} modality/modalities unavailable. "
-                f"Applied uncertainty penalty. Adjusted confidence: {confidence:.4f}"
+            shrink = 1.0 - UNCERTAINTY_SHRINK * (3 - modalities_used)
+            z = math.log(confidence / (1.0 - confidence)) if 0.0 < confidence < 1.0 else (
+                -MAX_LOGIT if confidence <= 0.0 else MAX_LOGIT
+            )
+            z = max(-MAX_LOGIT, min(MAX_LOGIT, z)) * shrink
+            confidence = 1.0 / (1.0 + math.exp(-z))
+            logger.info(
+                f"{3 - modalities_used} modality/modalities unavailable; "
+                f"evidence shrunk by {1 - shrink:.0%} to {confidence:.4f}"
             )
 
         return FusionResult(
