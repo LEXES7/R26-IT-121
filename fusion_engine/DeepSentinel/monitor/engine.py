@@ -1,32 +1,35 @@
 """The always-on monitoring loop.
 
-Screening is deliberately asymmetric, and that asymmetry is the design:
+Every transaction goes to all three detectors at once:
 
-    every transaction ──▶ GraphSAGE  (cheap, structural, always on)
-                              │
-                     score ≥ watch threshold
-                              │
-                              ▼
-              behavioural + temporal, in parallel  (expensive)
-                              │
-                              ▼
-                      fusion ──▶ alert + report
+                        ┌──▶ GraphSAGE   (structure)  ──┐
+    every transaction ──┼──▶ Behaviour   (VAE)        ──┼──▶ fusion ──▶ alert
+                        └──▶ Timing      (TCN)        ──┘
 
-The graph model is the tripwire because relational structure is visible without
-any per-account history — a mule ring is a shape, and the shape is there on the
-first transfer. Running all three detectors on every record would cost three
-times as much to reach the same verdicts, since the other two only change the
-outcome once something is already structurally suspicious.
+This used to be a cascade, with the graph model gating the other two, and the
+docstring here described that design long after the code stopped doing it. The
+cascade was measured against a 400-transaction replay and it cost half the
+frauds: four of the eight it missed scored 0.011–0.107 on the graph model, far
+below the gate, while the behavioural model scored those same four between 0.51
+and 1.00. A gate in front of an independent detector cannot beat that detector;
+it can only hide it. It bought no speed either — the calls were sequential
+awaits, so a flagged transaction paid all three in series. Fanned out they cost
+whichever one is slowest, once.
+
+A detector that cannot answer **abstains**: its score is excluded from the
+fusion rather than counted as low, and the fused confidence is shrunk toward
+uncertainty. Absence is not innocence.
 
 Two alerts leave the system for one incident, on purpose:
 
   * **Early warning**, the moment the graph model trips. Fast and provisional —
-    an analyst can start looking while the rest of the pipeline runs.
+    an analyst can start looking while the narrative is still being written.
   * **Confirmed alert**, after fusion, carrying the severity band and the
-    forensic narrative.
+    forensic report.
 
-Sending only the second would waste the head start the graph model provides;
-sending only the first would page people on an unconfirmed signal.
+Neither the report nor the mail is awaited by the pipeline. Both are slow and
+neither changes the verdict; charging them to screening latency once made the
+case table report how slow Gmail was as though it were detection time.
 """
 
 from __future__ import annotations
@@ -38,7 +41,7 @@ from typing import Any
 
 import httpx
 
-from backend import config
+from backend import config, runlog
 from monitor.state import STATE
 
 logger = logging.getLogger(__name__)
@@ -87,6 +90,14 @@ STALE_SWEEP_SECONDS = 30
 # unreachable model from setting the pace of the whole pipeline.
 DETECTOR_BREAKER_SECONDS = 15.0
 
+# Which run-log folder each detector's calls belong in. Keyed by the config
+# name so the mapping cannot drift from the setting it describes.
+_STREAM_FOR = {
+    "graph_api_base": "graph",
+    "behavioral_api_base": "behaviour",
+    "temporal_api_base": "timing",
+}
+
 
 def _upstream_timeout() -> float:
     """Per-detector call timeout, from config, in seconds."""
@@ -127,6 +138,7 @@ class MonitorEngine:
 
         STATE.counters = Counters()
         self._task = asyncio.create_task(self._run())
+        runlog.banner(f"monitor started · interval {self.interval}s")
         STATE.publish("monitor", {"status": "started", "interval": self.interval})
 
     def pause(self) -> None:
@@ -162,6 +174,9 @@ class MonitorEngine:
             self._task = None
         for s in STATE.stage_status:
             STATE.stage_status[s] = "idle"
+        runlog.banner(
+            f"monitor stopped · screened {STATE.counters.screened}, "
+            f"flagged {STATE.counters.flagged}, alerts {STATE.counters.alerts}")
         STATE.publish("monitor", {"status": "stopped"})
 
     # ── the loop ─────────────────────────────────────────────────────
@@ -320,6 +335,12 @@ class MonitorEngine:
         row_id = txn.pop("row_id", None)
         payload = {k: v for k, v in txn.items() if not k.startswith("_")}
         self._label = txn.get("_is_fraud")
+
+        runlog.write("pipeline",
+                     f"───── screening  {payload.get('type')} "
+                     f"{payload.get('amount')} "
+                     f"{payload.get('nameOrig')} → {payload.get('nameDest')}",
+                     txn=payload.get("transaction_id"))
         txid = payload["transaction_id"]
 
         # Measured here rather than estimated later. The case table has always
@@ -444,12 +465,51 @@ class MonitorEngine:
         task.add_done_callback(_log)
 
     async def _score_graph(self, client, graph_base: str, payload: dict):
-        """The relational model. Returns `(status, body)`, body None on 404."""
-        r = await client.post(f"{graph_base}/api/graph/analyze", json=payload)
+        """The relational model. Returns `(status, body)`, body None on 404.
+
+        Logged here rather than in `_call_upstream`: this detector has its own
+        endpoint and its own 404 contract, so it never passes through that
+        path — which is why the graph folder stayed empty when only the other
+        two were instrumented.
+        """
+        txid = payload.get("transaction_id")
+        started = time.perf_counter()
+        try:
+            r = await client.post(f"{graph_base}/api/graph/analyze", json=payload)
+        except Exception as exc:                        # noqa: BLE001
+            runlog.event(("graph", "pipeline"),
+                         f"graph: FAIL   unreachable after "
+                         f"{(time.perf_counter() - started) * 1000:.0f}ms — "
+                         f"{type(exc).__name__}: {str(exc)[:100]}",
+                         txn=txid, level="ERROR")
+            raise
+
+        ms = (time.perf_counter() - started) * 1000
         if r.status_code == 404:            # accounts not in the trained graph
+            runlog.event(("graph", "pipeline"),
+                         f"graph: MISS   neither account is in the trained graph "
+                         f"({ms:.0f}ms) — abstaining", txn=txid)
             return 404, None
+        if r.status_code != 200:
+            runlog.event(("graph", "pipeline"),
+                         f"graph: FAIL   HTTP {r.status_code} in {ms:.0f}ms",
+                         txn=txid, level="ERROR")
         r.raise_for_status()
-        return r.status_code, r.json()
+        body = r.json()
+        sg = (body or {}).get("suspicious_subgraph") or {}
+        # relational_risk_score, which is what the service actually returns and
+        # what _screen reads a few lines below. Guessing graph_risk_score here
+        # logged "score=None" for a call that had in fact succeeded.
+        score = body.get("relational_risk_score")
+        if score is None:
+            line = f"graph: OK     200 without relational_risk_score in {ms:.0f}ms"
+        else:
+            line = (f"graph: OK     score={float(score):.6f} "
+                    f"risk={body.get('risk_level') or '—'} "
+                    f"pattern={sg.get('pattern') or '—'} "
+                    f"sink={sg.get('sink_account') or '—'} in {ms:.0f}ms")
+        runlog.event(("graph", "pipeline"), line, txn=txid)
+        return r.status_code, body
 
     # ── stage 2: fuse ────────────────────────────────────────────────
     async def _fuse(self, payload: dict, sg: dict, graph_score: float, *,
@@ -510,6 +570,15 @@ class MonitorEngine:
         severity = self._severity(fused)
         if severity != "LOW":
             STATE.counters.flagged += 1
+
+        runlog.event(("fusion", "pipeline"),
+                     f"fusion: VERDICT {severity} fused={fused:.4f} "
+                     f"({fusion_method}, {len(available)}/3"
+                     + (f", driver={driver}" if driver else "") + ")"
+                     + (("  contributions " + " ".join(
+                         f"{k}={v:+.2f}" for k, v in contributions.items()))
+                        if contributions else ""),
+                     txn=txid)
 
         STATE.publish("fused", {
             "transaction_id": txid,
@@ -620,8 +689,16 @@ class MonitorEngine:
         every transaction does. The sequence model has been unloadable on this
         machine for days, which is exactly the case this has to absorb.
         """
+        stream = _STREAM_FOR.get(base_key, "pipeline")
+        txid = payload.get("transaction_id")
+
         now = time.monotonic()
         if now < self._down_until.get(base_key, 0.0):
+            # Worth a line of its own. Silence here reads as "the detector was
+            # never asked", when in fact it was skipped on purpose.
+            runlog.event((stream, "pipeline"),
+                         f"{stream}: SKIP   circuit breaker open for another "
+                         f"{self._down_until[base_key] - now:.1f}s", txn=txid)
             return None, None
 
         base = str(config.get("upstream", base_key)).rstrip("/")
@@ -629,6 +706,12 @@ class MonitorEngine:
         candidates = ("/api/v1/classify", "/api/v1/behavioral/classify")
         paths = ([known] if known else []) + [p for p in candidates if p != known]
 
+        started = time.perf_counter()
+        # Every attempt, not just the last one. Reporting only the last was
+        # actively misleading: the timing detector answers its real path with a
+        # 500 (TensorFlow missing) and the fallback path with a 404, so the log
+        # blamed a 404 on a path that detector does not even serve.
+        attempts: list[str] = []
         for path in paths:
             try:
                 r = await client.post(f"{base}{path}", json=payload,
@@ -637,10 +720,24 @@ class MonitorEngine:
                     data = r.json()
                     raw = data.get(score_key)
                     if raw is None:
+                        attempts.append(f"{path} 200 without '{score_key}'")
                         continue
                     self._route[base_key] = path
+                    ms = (time.perf_counter() - started) * 1000
+                    runlog.event((stream, "pipeline"),
+                                 f"{stream}: OK     {path} → {score_key}={float(raw):.6f} "
+                                 f"in {ms:.0f}ms", txn=txid)
                     return float(raw), data
-            except Exception:                           # noqa: BLE001
+                # The body usually names the real cause — a model that failed
+                # to load says so here, and that is the line worth keeping.
+                detail = ""
+                try:
+                    detail = f" · {str(r.json())[:110]}"
+                except Exception:                       # noqa: BLE001
+                    detail = f" · {r.text[:110]}" if r.text else ""
+                attempts.append(f"{path} HTTP {r.status_code}{detail}")
+            except Exception as exc:                    # noqa: BLE001
+                attempts.append(f"{path} {type(exc).__name__}: {str(exc)[:80]}")
                 continue
 
         # Forget the route as well as opening the breaker: a service that came
@@ -651,6 +748,12 @@ class MonitorEngine:
         # dating the breaker from entry would leave it barely closed — in
         # exactly the case the breaker exists for.
         self._down_until[base_key] = time.monotonic() + DETECTOR_BREAKER_SECONDS
+        ms = (time.perf_counter() - started) * 1000
+        runlog.event((stream, "pipeline"),
+                     f"{stream}: FAIL   no answer after {ms:.0f}ms; abstaining, "
+                     f"breaker open {DETECTOR_BREAKER_SECONDS:.0f}s"
+                     + "".join(f"\n{' ' * 64}tried {a}" for a in attempts),
+                     txn=txid, level="ERROR")
         return None, None
 
     def _severity(self, fused: float) -> str:
@@ -707,22 +810,36 @@ class MonitorEngine:
         alert that arrives without its narrative is far better than one that
         does not arrive.
         """
+        txid = alert["transaction_id"]
         try:
             from backend import main as backend_main
             from backend.rag.prompt_builder import build_chain_of_evidence_prompt
 
             reporter, retriever = backend_main.forensic_reporter, backend_main.retriever
             if reporter is None or retriever is None:
+                runlog.write("fusion",
+                             "SKIP   forensic report — reporter or retriever not "
+                             "initialised", txn=txid)
                 return None
 
             g = scores.get("graph") or 0.0
             b = scores.get("behavioural")
             t = scores.get("temporal")
-            hits = await asyncio.wait_for(
-                asyncio.to_thread(retriever.retrieve, g, b or 0.0, t or 0.0,
-                                  float(alert["fused_score"])),
-                timeout=20.0,
-            )
+            with runlog.stage("fusion", "rag_retrieval", txn=txid) as d:
+                hits = await asyncio.wait_for(
+                    asyncio.to_thread(retriever.retrieve, g, b or 0.0, t or 0.0,
+                                      float(alert["fused_score"])),
+                    timeout=20.0,
+                )
+                # RetrievalResult is a dataclass, not a dict. Reading it with
+                # .get() raised inside the try that wraps report generation,
+                # so a logging line silently cost every alert its narrative.
+                top = hits[0] if hits else None
+                d["note"] = (
+                    f'matched "{getattr(top, "typology_name", "?")}" '
+                    f'(similarity {getattr(top, "similarity_score", 0.0):.3f})'
+                    if top is not None else "no typology matched"
+                )
             if not hits:
                 return None
 
@@ -738,11 +855,17 @@ class MonitorEngine:
                 retrieval=hits[0],
                 classification=alert["severity"],
             )
-            return await asyncio.wait_for(
-                asyncio.to_thread(reporter.generate_report, package), timeout=45.0
-            )
+            with runlog.stage("fusion", "llm_narrative", txn=txid) as d:
+                report = await asyncio.wait_for(
+                    asyncio.to_thread(reporter.generate_report, package), timeout=45.0
+                )
+                d["note"] = f"{len(report or '')} chars"
+            return report
         except Exception as exc:                        # noqa: BLE001
             logger.info(f"No forensic report for {alert['transaction_id']}: {exc}")
+            runlog.write("fusion",
+                         f"FAIL   forensic report — {type(exc).__name__}: {str(exc)[:140]}",
+                         txn=txid, level="ERROR")
             return None
 
     async def _notify_confirmed(self, alert: dict, sg: dict,
@@ -756,9 +879,12 @@ class MonitorEngine:
 
         # The narrative and the diagram are produced together, before the send,
         # because both belong in the same message.
+        txid = alert["transaction_id"]
         report = await self._forensic_report(alert, scores)
         try:
-            png = await asyncio.to_thread(render_subgraph, sg)
+            with runlog.stage("fusion", "subgraph_diagram", txn=txid) as d:
+                png = await asyncio.to_thread(render_subgraph, sg)
+                d["note"] = f"{len(png) / 1024:.1f} KB" if png else "no diagram produced"
         except Exception as exc:                        # noqa: BLE001
             logger.info(f"Subgraph diagram failed: {exc}")
             png = None
@@ -766,14 +892,17 @@ class MonitorEngine:
         attachments = []
         if report:
             try:
+                with runlog.stage("fusion", "pdf_generation", txn=txid) as d:
+                    pdf = _report_pdf(alert, report)
+                    d["note"] = f"{len(pdf) / 1024:.1f} KB"
                 attachments.append((
                     "application", "pdf",
-                    f"forensic-report-{alert['transaction_id']}.pdf",
-                    _report_pdf(alert, report),
+                    f"forensic-report-{txid}.pdf",
+                    pdf,
                 ))
             except Exception as exc:                    # noqa: BLE001
                 # An alert with its narrative missing still has to go out.
-                logger.warning(f"Forensic PDF failed for {alert['transaction_id']}: {exc}")
+                logger.warning(f"Forensic PDF failed for {txid}: {exc}")
                 report = None
 
         from backend import thresholds
@@ -793,15 +922,28 @@ class MonitorEngine:
         recipients = [m.email for m in managers if getattr(m, "enabled", True)]
         if not recipients:
             logger.info("No alert recipients configured; nothing sent.")
+            runlog.write("fusion",
+                         "SKIP   email — no risk managers configured", txn=txid)
             sent = False
         else:
-            sent = await asyncio.to_thread(
-                _send_rich,
-                f"[{alert['severity']}] Fraud alert {alert['transaction_id']}",
-                text, html, recipients,
-                {"subgraph": png} if png else None,
-                attachments or None,
-            )
+            with runlog.stage("fusion", "email_delivery", txn=txid,
+                              also=("pipeline",)) as d:
+                sent = await asyncio.to_thread(
+                    _send_rich,
+                    f"[{alert['severity']}] Fraud alert {txid}",
+                    text, html, recipients,
+                    {"subgraph": png} if png else None,
+                    attachments or None,
+                )
+                # Whether it was accepted, not whether it was attempted. The
+                # case table used to claim "sent" for every non-LOW verdict,
+                # including eight in a row where the handshake timed out.
+                d["note"] = (
+                    f"{'delivered to' if sent else 'REJECTED for'} "
+                    f"{len(recipients)} recipient(s)"
+                    + (", pdf attached" if attachments else "")
+                    + (", diagram inline" if png else "")
+                )
 
         # Record what happened, not what was intended. An operator reading a
         # case needs to know whether anyone was actually told.

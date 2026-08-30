@@ -80,6 +80,10 @@ SETTINGS: tuple[Setting, ...] = (
             description="User database (contains password hashes)"),
     Setting("paths", "runtime_settings", "SETTINGS_FILE", "./settings.json",
             description="Risk-manager and alert configuration written at runtime"),
+    Setting("paths", "run_logs", "RUN_LOGS_PATH", "./logs",
+            description="Where the dated per-component run logs are written. "
+                        "One folder per day, five inside it: pipeline, graph, "
+                        "behaviour, timing, fusion"),
 
     # --- upstream model APIs ---
     Setting("upstream", "behavioral_api_base", "BEHAVIORAL_API_BASE", "http://localhost:8001",
