@@ -106,6 +106,25 @@ function DetectorCard({ id, name, model, what, data }) {
   )
 }
 
+/** A dependency that is not a detector: on, off, and what that costs. */
+function ServiceRow({ label, svc }) {
+  const ok = Boolean(svc?.ok)
+  return (
+    <div className="flex items-start justify-between gap-4 border-b py-2.5 last:border-b-0"
+         style={{ borderColor: 'rgb(var(--ds-line))' }}>
+      <div className="min-w-0">
+        <p className="text-[13px] text-[rgb(var(--ds-ink))]">{label}</p>
+        <p className="mt-0.5 text-[11px] leading-snug text-[rgb(var(--ds-muted))]">
+          {svc?.detail ?? '—'}
+        </p>
+      </div>
+      <span className="mt-1 h-2 w-2 shrink-0 rounded-full"
+            style={{ background: ok ? 'rgb(var(--ds-sev-low))' : 'rgb(var(--ds-signal))' }}
+            title={ok ? 'available' : 'unavailable'} />
+    </div>
+  )
+}
+
 export default function SystemHealth() {
   const navigate = useNavigate()
   const [rt, setRt] = useState(null)
@@ -130,6 +149,9 @@ export default function SystemHealth() {
 
   const det = rt?.detectors ?? {}
   const mon = rt?.monitor ?? {}
+  const svc = rt?.services ?? {}
+  const delivery = rt?.delivery ?? {}
+  const queue = rt?.queue ?? {}
   const live = DETECTORS.filter(([k]) => verdict(det[k]).tone === 'ok').length
   const broken = DETECTORS.filter(([k]) => verdict(det[k]).tone === 'down')
 
@@ -202,6 +224,83 @@ export default function SystemHealth() {
         {DETECTORS.map(([id, name, model, what]) => (
           <DetectorCard key={id} id={id} name={name} model={model} what={what} data={det[id]} />
         ))}
+      </div>
+
+      {/* The quiet failures. A detector going down is loud — a verdict stops
+          appearing. These three stop nothing and change no number on the
+          operations dashboard, which is why they need somewhere to be seen. */}
+      <div className="mt-10 grid gap-4 lg:grid-cols-3">
+        <Panel>
+          <SectionHeading label="Are alerts arriving" title="Delivery" />
+          {delivery.raised > 0 && delivery.delivered < delivery.raised ? (
+            <p className="mb-3 rounded-lg px-3 py-2 text-[12px] leading-relaxed"
+               style={{ background: 'rgb(var(--ds-signal-soft))', color: 'rgb(var(--ds-signal))' }}>
+              {delivery.raised - delivery.delivered} of {delivery.raised} alerts were
+              raised but never delivered. Screening is working; the mail is not.
+            </p>
+          ) : null}
+          <div className="flex items-baseline gap-2">
+            <span className="numeric text-[2rem] leading-none text-[rgb(var(--ds-ink))]">
+              {delivery.delivered ?? 0}
+            </span>
+            <span className="text-[13px] text-[rgb(var(--ds-muted))]">
+              of {delivery.raised ?? 0} delivered
+            </span>
+          </div>
+          <dl className="mt-4">
+            <ServiceRow label="SMTP"
+                        svc={{ ok: delivery.configured,
+                               detail: delivery.configured
+                                 ? `sending as ${delivery.sending_as ?? 'unknown'}`
+                                 : 'not configured — nothing can be sent' }} />
+            <ServiceRow label="Recipients"
+                        svc={{ ok: (delivery.recipients ?? 0) > 0,
+                               detail: delivery.recipients
+                                 ? `${delivery.recipients} risk manager${delivery.recipients > 1 ? 's' : ''} on the list`
+                                 : 'nobody is listed — alerts have no destination' }} />
+          </dl>
+        </Panel>
+
+        <Panel>
+          <SectionHeading label="Not detectors" title="Supporting services" />
+          <div>
+            <ServiceRow label="Fusion model" svc={svc.fusion} />
+            <ServiceRow label="Typology retrieval" svc={svc.retrieval} />
+            <ServiceRow label="Report generator" svc={svc.reporter} />
+            <ServiceRow label="Database" svc={svc.database} />
+          </div>
+        </Panel>
+
+        <Panel>
+          <SectionHeading label="Work waiting" title="Ingestion queue" />
+          {queue.available ? (
+            <>
+              <div className="flex items-baseline gap-2">
+                <span className="numeric text-[2rem] leading-none"
+                      style={{ color: (queue.pending ?? 0) > 0
+                        ? 'rgb(var(--ds-warn))' : 'rgb(var(--ds-ink))' }}>
+                  {queue.pending ?? 0}
+                </span>
+                <span className="text-[13px] text-[rgb(var(--ds-muted))]">waiting</span>
+              </div>
+              <dl className="mt-4">
+                <ServiceRow label="In flight"
+                            svc={{ ok: true, detail: `${queue.claimed ?? 0} claimed by the monitor` }} />
+                <ServiceRow label="Completed"
+                            svc={{ ok: true, detail: `${(queue.screened ?? 0).toLocaleString()} screened` }} />
+                <ServiceRow label="Failed"
+                            svc={{ ok: (queue.failed ?? 0) === 0,
+                                   detail: (queue.failed ?? 0) === 0
+                                     ? 'none' : `${queue.failed} could not be screened` }} />
+              </dl>
+            </>
+          ) : (
+            <p className="text-[12px] leading-relaxed text-[rgb(var(--ds-muted))]">
+              No ingestion queue. The monitor is replaying sample transactions rather
+              than reading submitted traffic, so there is no backlog to report.
+            </p>
+          )}
+        </Panel>
       </div>
 
       <div className="mt-10">

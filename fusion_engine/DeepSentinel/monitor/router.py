@@ -181,7 +181,95 @@ async def runtime() -> dict:
             out["detectors"][name] = {
                 "reachable": False, "ready": False, "error": type(exc).__name__,
             }
+
+    # The detectors are the loud failures — an operator sees a verdict go
+    # missing. What follows are the quiet ones: a full pipeline that cannot
+    # deliver its mail, a report generator whose quota ran out, an ingestion
+    # queue backing up. Each of these fails without changing anything the
+    # detectors report, which is exactly why they belong on an operator's page.
+    out["services"] = await _services()
+    out["delivery"] = await _delivery()
+    out["queue"] = await _queue_depth()
     return out
+
+
+async def _services() -> dict:
+    """The dependencies that are not detectors, and can fail on their own."""
+    from backend import main as backend_main
+
+    svc = {
+        "fusion": {
+            "ok": backend_main.meta_classifier is not None,
+            "detail": "meta-classifier loaded" if backend_main.meta_classifier
+                      else "not loaded — fusion would average instead",
+        },
+        "retrieval": {
+            "ok": backend_main.retriever is not None,
+            "detail": "FATF typologies indexed" if backend_main.retriever
+                      else "no vector store — reports cannot cite a typology",
+        },
+        "reporter": {
+            "ok": backend_main.forensic_reporter is not None,
+            "detail": "language model reachable" if backend_main.forensic_reporter
+                      else "no backend — alerts go out without a narrative",
+        },
+    }
+    try:
+        from backend import config
+        svc["database"] = {
+            "ok": True,
+            "detail": "postgres" if "postgres" in str(config.get("database", "url"))
+                      else "sqlite (local file)",
+        }
+    except Exception:                                   # noqa: BLE001
+        svc["database"] = {"ok": False, "detail": "connection settings unreadable"}
+    return svc
+
+
+async def _delivery() -> dict:
+    """Whether alerts are reaching anyone.
+
+    Raised and delivered are different numbers, and only the second one
+    matters. The case table records what actually happened at send time, so
+    a silent SMTP failure shows up here as a gap rather than as nothing.
+    """
+    out = {"configured": False, "recipients": 0, "raised": 0, "delivered": 0}
+    try:
+        from backend.email_service import _provider
+        from backend.settings import list_risk_managers
+
+        provider, cfg = _provider()
+        out["configured"] = provider == "smtp"
+        out["sending_as"] = cfg.get("username") if provider == "smtp" else None
+        managers = await list_risk_managers()
+        out["recipients"] = len([m for m in managers if getattr(m, "enabled", True)])
+    except Exception:                                   # noqa: BLE001
+        pass
+    try:
+        from sqlalchemy import text
+
+        from backend.db.session import get_session
+
+        async with get_session() as db:
+            row = (await db.execute(text(
+                "SELECT COUNT(*), SUM(CASE WHEN alert_sent THEN 1 ELSE 0 END) "
+                "FROM analysis_records WHERE classification <> 'LOW'"
+            ))).first()
+        if row:
+            out["raised"] = int(row[0] or 0)
+            out["delivered"] = int(row[1] or 0)
+    except Exception:                                   # noqa: BLE001
+        pass
+    return out
+
+
+async def _queue_depth() -> dict:
+    from monitor import queue as ingest_queue
+
+    try:
+        return await ingest_queue.depth()
+    except Exception:                                   # noqa: BLE001
+        return {"available": False}
 
 
 def _ready(name: str, body: dict) -> bool:
