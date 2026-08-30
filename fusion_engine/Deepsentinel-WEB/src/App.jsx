@@ -10,6 +10,7 @@ import ConsoleShell from './components/ConsoleShell'
 import Footer from './components/Footer'
 import ChatBot from './components/ChatBot'
 import NotFound from './pages/NotFound'
+import useLiquidPointer from './hooks/useLiquidPointer'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import Analyzer from './pages/Analyzer'
@@ -54,6 +55,7 @@ const CONSOLE_ROUTES = [
 ]
 
 function Shell() {
+  useLiquidPointer()
   const { isAuthenticated } = useAuth()
   const { pathname } = useLocation()
   // "/" is the dashboard once signed in, so it is a console route only then.

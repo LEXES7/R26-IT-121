@@ -117,13 +117,13 @@ export default function Home() {
             <div className="mt-9 flex flex-wrap items-center gap-5">
               <Link
                 to={isAuthenticated ? '/' : '/login'}
-                className="glossy-solid shine enter enter--rise rounded-xl px-7 py-3.5 text-sm font-semibold"
+                className="liquid-solid enter enter--rise inline-flex items-center rounded-xl px-7 py-3.5 text-sm font-semibold"
                 style={{ '--d': '0.78s' }}
               >
                 {isAuthenticated ? 'Open the analyzer' : 'Sign in to run it'}
               </Link>
               <a href="#pipeline"
-                 className="glossy arrow-slide enter enter--side rounded-xl px-6 py-3.5 text-sm text-slate-200"
+                 className="liquid arrow-slide enter enter--side inline-flex items-center rounded-xl px-6 py-3.5 text-sm text-slate-200"
                  style={{ '--d': '0.9s' }}>
                 <ArrowLink>See how it works</ArrowLink>
               </a>
@@ -293,7 +293,7 @@ export default function Home() {
             <div className="mt-8 flex flex-wrap items-center gap-6">
               <Link
                 to={isAuthenticated ? '/' : '/login'}
-                className="glossy-solid shine rounded-xl px-5 py-2.5 text-sm font-semibold"
+                className="liquid-solid inline-flex items-center rounded-xl px-5 py-2.5 text-sm font-semibold"
               >
                 {isAuthenticated ? 'Run the analyzer' : 'Sign in to run it'}
               </Link>
