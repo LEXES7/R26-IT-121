@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useAuth } from '../context/AuthContext'
 import { Link } from 'react-router-dom'
 import {
   getMonitorRuntime, getStoredTransaction, scoreOneDetector, searchTransactions,
@@ -59,6 +60,7 @@ const DETECTORS = [
 const pick = (o, keys) => keys.map((k) => o?.[k]).find((v) => v !== undefined)
 
 export default function Models() {
+  const { canRunAnalysis } = useAuth()
   const [runtime, setRuntime] = useState(null)
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState([])
@@ -251,7 +253,9 @@ export default function Models() {
         <SectionHeading
           label="Reconciles all three"
           title="Fusion engine, retrieval and forensic reporting"
-          action={<Link to="/analyzer" className="ds-btn">Open the analyzer →</Link>}
+          action={canRunAnalysis
+            ? <Link to="/analyzer" className="ds-btn">Open the analyzer →</Link>
+            : null}
         />
         <p style={{ fontSize: 10, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
                     margin: '0 0 12px', maxWidth: 720 }}>
@@ -263,18 +267,25 @@ export default function Models() {
         </p>
         <div style={{ display: 'grid', gap: 10,
                       gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
+          {/* This page is in the administrator's navigation, and the analyzer
+              is not theirs to open. Described either way; linked only when the
+              link goes somewhere. */}
           {[
             ['Fused verdict + typology', 'Run a transaction on the Analyzer.', '/analyzer'],
             ['Forensic report and PDF', 'Generated per run; “Save as PDF” prints it.', '/analyzer'],
             ['Grounded vs ungrounded', 'Tick “Also run without retrieval”.', '/analyzer'],
             ['SAR draft', 'Watermarked, never filed, from a scored analysis.', '/analyzer'],
-          ].map(([t, sub, to]) => (
-            <Link key={t} to={to} style={{ all: 'unset', cursor: 'pointer',
-                    background: 'rgb(var(--ds-workspace))', borderRadius: 6, padding: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: 600 }}>{t}</div>
-              <div style={{ fontSize: 10, color: 'rgb(var(--ds-muted))', marginTop: 5 }}>{sub}</div>
-            </Link>
-          ))}
+          ].map(([t, sub, to]) => {
+            const Tag = canRunAnalysis ? Link : 'div'
+            return (
+              <Tag key={t} {...(canRunAnalysis ? { to } : {})}
+                   style={{ all: 'unset', cursor: canRunAnalysis ? 'pointer' : 'default',
+                            background: 'rgb(var(--ds-workspace))', borderRadius: 6, padding: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 600 }}>{t}</div>
+                <div style={{ fontSize: 10, color: 'rgb(var(--ds-muted))', marginTop: 5 }}>{sub}</div>
+              </Tag>
+            )
+          })}
         </div>
       </Panel>
 

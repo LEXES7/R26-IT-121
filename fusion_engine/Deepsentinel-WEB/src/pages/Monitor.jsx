@@ -39,7 +39,7 @@ export default function Monitor() {
   const [feed, setFeed] = useState([])
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
-  const { canControlPipeline } = useAuth()
+  const { canControlPipeline, canViewCases, canRunAnalysis, canConfigureSystem } = useAuth()
   const [escalating, setEscalating] = useState(false)
   const [runtime, setRuntime] = useState(null)
   const stopRef = useRef(null)
@@ -353,9 +353,16 @@ export default function Monitor() {
           <section>
             <h3 className="text-xs font-semibold text-slate-200">Go to</h3>
             <div className="rows mt-1">
-              {[['/cases', 'Review the queue'], ['/analyzer', 'Analyse a transaction'],
-                ['/thresholds', 'Tune the threshold'], ['/assistant', 'Ask the assistant']]
-                .map(([to, label]) => (
+              {/* Both consoles land here, so the list is filtered to what the
+                  reader's role can open — a link to "Access restricted" is
+                  worse than no link. */}
+              {[
+                canViewCases && ['/cases', 'Review the queue'],
+                canRunAnalysis && ['/analyzer', 'Analyse a transaction'],
+                canConfigureSystem && ['/thresholds', 'Tune the threshold'],
+                canViewCases && ['/assistant', 'Ask the assistant'],
+                canControlPipeline && ['/models', 'Test each detector'],
+              ].filter(Boolean).map(([to, label]) => (
                 <Link key={to} to={to}
                       className="block py-2 text-xs text-slate-400 transition-colors hover:text-slate-100">
                   {label}

@@ -86,13 +86,18 @@ function Shell() {
             <Route path="/about" element={<About />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/components/:slug" element={<ComponentDetail />} />
+            {/* Signed in, both of these send you home — and "/" resolves to
+                the console your role actually has. Sending everyone to the
+                analyzer was fine while every role could open it; once
+                administrators could not, signing in as one landed on "Access
+                restricted". */}
             <Route
               path="/signup"
-              element={isAuthenticated ? <Navigate to="/analyzer" replace /> : <RequestAccess />}
+              element={isAuthenticated ? <Navigate to="/" replace /> : <RequestAccess />}
             />
             <Route
               path="/login"
-              element={isAuthenticated ? <Navigate to="/analyzer" replace /> : <Login />}
+              element={isAuthenticated ? <Navigate to="/" replace /> : <Login />}
             />
 
             {/* Any signed-in user. The monitor is readable by everyone; its

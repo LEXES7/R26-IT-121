@@ -101,7 +101,7 @@ export default function Home() {
 
             <div className="mt-9 flex flex-wrap items-center gap-5">
               <Link
-                to={isAuthenticated ? '/analyzer' : '/login'}
+                to={isAuthenticated ? '/' : '/login'}
                 className="rounded-xl bg-white px-7 py-3.5 text-sm font-semibold text-sentinel-950 transition hover:bg-slate-200"
               >
                 {isAuthenticated ? 'Open the analyzer' : 'Sign in to run it'}
@@ -272,7 +272,7 @@ export default function Home() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-6">
               <Link
-                to={isAuthenticated ? '/analyzer' : '/login'}
+                to={isAuthenticated ? '/' : '/login'}
                 className="rounded-lg bg-accent-500 px-5 py-2.5 text-sm font-medium text-[#04231f] transition-colors hover:bg-accent-400"
               >
                 {isAuthenticated ? 'Run the analyzer' : 'Sign in to run it'}
