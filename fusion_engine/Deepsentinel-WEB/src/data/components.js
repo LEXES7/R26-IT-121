@@ -150,26 +150,25 @@ export const COMPONENTS = {
       ['Fraud clustering', 'Multiple fraud transactions falling inside the same short window'],
     ],
     metrics: [
-      { label: 'TS-TCN F1', value: '0.669', note: 'precision 0.854 · recall 0.550, tuned threshold 0.431' },
-      { label: 'TS-TCN AUC-ROC', value: '0.926', note: '903/1,642 fraud caught, held-out test partition' },
-      { label: 'MLP baseline F1', value: '0.737', note: 'flat features, no sequence — currently ahead of TS-TCN' },
-      { label: 'isFlaggedFraud rule', value: 'F1 0.114', note: 'published PaySim baseline, catches 33.8% of fraud' },
+      { label: 'TS-TCN F1', value: '0.851', note: 'precision 0.956 · recall 0.767, tuned threshold 0.455' },
+      { label: 'TS-TCN AUC-ROC', value: '0.947', note: '1,259/1,642 fraud caught, held-out test partition' },
+      { label: 'MLP baseline F1', value: '0.737', note: 'flat features, no sequence — TS-TCN now ahead by 0.11' },
+      { label: 'Inference latency', value: '59.5 ms', note: 'mean, single transaction — 500 ms budget' },
     ],
     findings: [
       {
-        title: 'The trained model currently trails the MLP baseline — reported as measured',
+        title: 'Fixing the EarlyStopping patience closed the gap with the MLP baseline',
         body:
-          'The first full training run (6 epochs, EarlyStopping on val_recall) reaches '
-          + 'F1 0.669 and AUC-ROC 0.926 on the held-out test partition — short of both the '
-          + 'proposal targets (F1>0.88, AUC-ROC>0.97, Recall>0.90) and Baseline 2’s MLP '
-          + '(F1 0.737). Recall peaked at epoch 1 (0.476) and fell on every epoch after, so '
-          + 'EarlyStopping restored epoch 1’s weights. The likely cause: the run used '
-          + 'patience=5, not the patience=10 the proposal specifies — five epochs of decline '
-          + 'is exactly patience=5’s trigger point, and training may not have had room to '
-          + 'recover. Reported here rather than hidden, matching how the graph and '
-          + 'behavioural components report their own leakage and evaluation fixes; a rerun '
-          + 'with the corrected patience is the next experiment, not a blocker to shipping '
-          + 'the pipeline that produced this number honestly.',
+          'The first full training run (6 epochs, patience=5) reached F1 0.669 — behind '
+          + 'Baseline 2’s MLP at 0.737 — because recall peaked at epoch 1 and fell on every '
+          + 'epoch after, triggering EarlyStopping before training had room to recover. The '
+          + 'proposal (§3.8) specifies patience=10; a rerun at patience=12, monitoring '
+          + 'AUC instead of the noisier per-epoch recall, ran 27 epochs and reached F1 0.851, '
+          + 'Recall 0.767, AUC-ROC 0.947 — now ahead of the MLP on both F1 and Recall, which '
+          + 'is the specific claim the sequential architecture has to support. AUC-ROC and '
+          + 'Recall still fall short of the proposal’s stretch targets (>0.97, >0.90) — '
+          + 'reported as measured rather than rounded up, the same way the first run’s '
+          + 'shortfall was reported rather than hidden.',
       },
       {
         title: 'A non-sequential MLP already reaches 0.99 AUC-ROC',
