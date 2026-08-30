@@ -30,6 +30,7 @@ export default function DotField({
   dots = '255 255 255',
   accent: accentProp,
   drift = true,
+  spacing = 46,
 }) {
   const canvasRef = useRef(null)
 
@@ -74,22 +75,43 @@ export default function DotField({
       canvas.height = Math.round(height * dpr)
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-      // Density scales with area, then halves on a phone. A count tuned for a
-      // desktop becomes a soup on a small screen and burns battery doing it.
       const small = width < 720
-      const target = Math.round(width * height * density * (small ? 0.5 : 1))
       spider.x = width * 0.5
       spider.y = height * 0.5
-      spider.tx = Math.random() * width
-      spider.ty = Math.random() * height
       spider.trail.length = 0
 
-      points = Array.from({ length: Math.max(14, Math.min(target, 90)) }, () => ({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: drift ? (Math.random() - 0.5) * 0.22 : 0,
-        vy: drift ? (Math.random() - 0.5) * 0.22 : 0,
-      }))
+      if (drift) {
+        // Density scales with area, then halves on a phone. A count tuned for
+        // a desktop becomes a soup on a small screen and burns battery.
+        const target = Math.round(width * height * density * (small ? 0.5 : 1))
+        points = Array.from({ length: Math.max(14, Math.min(target, 90)) }, () => ({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.22,
+          vy: (Math.random() - 0.5) * 0.22,
+        }))
+      } else {
+        // A still field is laid out on a lattice, not scattered. Random
+        // placement always leaves clumps and bald patches, and once the dots
+        // stop moving the eye has time to find every one of them. The spacing
+        // is derived from `spacing` and then divided evenly into the box, so
+        // the margins on both sides match at any width.
+        const step = small ? spacing * 1.35 : spacing
+        const cols = Math.max(3, Math.round(width / step))
+        const rows = Math.max(2, Math.round(height / step))
+        const gapX = width / (cols + 1)
+        const gapY = height / (rows + 1)
+        points = []
+        for (let r = 1; r <= rows; r += 1) {
+          for (let col = 1; col <= cols; col += 1) {
+            points.push({ x: gapX * col, y: gapY * r, vx: 0, vy: 0 })
+          }
+        }
+      }
+
+      const first = points[Math.floor(Math.random() * points.length)] ?? { x: 0, y: 0 }
+      spider.tx = first.x
+      spider.ty = first.y
     }
 
     const draw = () => {
@@ -260,7 +282,7 @@ export default function DotField({
       window.removeEventListener('pointermove', onPointer)
       window.removeEventListener('pointerleave', onLeave)
     }
-  }, [density, leader, dots, accentProp, drift])
+  }, [density, leader, dots, accentProp, drift, spacing])
 
   return (
     <canvas

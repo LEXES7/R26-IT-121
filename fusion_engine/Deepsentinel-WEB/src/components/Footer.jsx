@@ -150,7 +150,7 @@ export default function Footer() {
           <DotField
             leader
             drift={false}
-            density={0.00012}
+            spacing={40}
             dots="255 255 255"
             accent="255 138 58"
           />
