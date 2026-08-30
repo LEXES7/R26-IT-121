@@ -19,7 +19,12 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=7.4"]
-api = ["fastapi>=0.110", "uvicorn>=0.27"]
+# pydantic is not optional to the API: src/vae_dsaa/api/schemas.py imports it
+# at module scope, so `pip install .[api]` without it cannot serve.
+api = ["fastapi>=0.110", "uvicorn>=0.27", "pydantic>=2.6"]
+# Cluster discovery only. Not needed to serve — the API reads typologies that
+# were assigned during training.
+typology = ["hdbscan>=0.8"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
