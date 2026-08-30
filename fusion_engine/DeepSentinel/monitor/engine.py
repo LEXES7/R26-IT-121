@@ -534,9 +534,13 @@ class MonitorEngine:
         }
         STATE.add_alert(alert)
 
-        STATE.set_stage("report", "active")
-        await self._notify_confirmed(alert, sg, case_ref)
-        STATE.set_stage("report", "idle")
+        # Not awaited. This now generates the forensic narrative and renders the
+        # subgraph before it sends, which is tens of seconds of LLM and SMTP —
+        # none of it part of the verdict, all of it previously charged to the
+        # pipeline. The stage lamp is set inside so the monitor still shows it
+        # working.
+        self._spawn(self._report_and_notify(alert, sg, case_ref, scores),
+                    "confirmed alert")
 
 
     async def _call_upstream(self, client, base_key: str, score_key: str, payload: dict):
@@ -625,31 +629,122 @@ class MonitorEngine:
             "transaction_id": txid, "stage": "early", "sent": sent,
         })
 
-    async def _notify_confirmed(self, alert: dict, sg: dict,
-                                case_ref: str | None = None) -> None:
-        body = (
-            f"CONFIRMED {alert['severity']} — fused verdict\n"
-            f"{'=' * 44}\n"
-            f"Transaction : {alert['transaction_id']}\n"
-            f"Fused score : {alert['fused_score']:.4f} "
-            f"({alert['modalities_used']} of 3 detectors available)\n"
-            f"Graph score : {alert['graph_score']:.4f}\n"
-            f"Pattern     : {alert['pattern'] or 'n/a'}\n"
-            f"Sink        : {alert['sink_account'] or 'n/a'}\n"
-            f"Amount      : {alert['amount']:,.2f}\n"
-            f"From → To   : {alert['from']} → {alert['to']}\n"
-        )
-        ev = sg.get("structural_evidence") or {}
-        if ev:
-            body += (
-                f"\nStructural evidence\n"
-                f"  senders converging : {ev.get('convergence_count')}\n"
-                f"  brand-new senders  : {ev.get('fresh_sender_ratio')}\n"
-                f"  mules in subgraph  : {ev.get('mules_in_subgraph')}\n"
+    async def _report_and_notify(self, alert: dict, sg: dict,
+                                 case_ref: str | None, scores: dict) -> None:
+        STATE.set_stage("report", "active")
+        try:
+            await self._notify_confirmed(alert, sg, case_ref, scores)
+        finally:
+            STATE.set_stage("report", "idle")
+
+    async def _forensic_report(self, alert: dict, scores: dict) -> str | None:
+        """Generate the case narrative, or None if it cannot be produced.
+
+        Built from what the pipeline already has rather than by re-running it:
+        calling run_pipeline here would score the transaction a second time and
+        push it into the sequence model's window twice, which would corrupt the
+        very window that model depends on.
+
+        Best-effort by design. It is one LLM call on a shared quota, and an
+        alert that arrives without its narrative is far better than one that
+        does not arrive.
+        """
+        try:
+            from backend import main as backend_main
+            from backend.rag.prompt_builder import build_chain_of_evidence_prompt
+
+            reporter, retriever = backend_main.forensic_reporter, backend_main.retriever
+            if reporter is None or retriever is None:
+                return None
+
+            g = scores.get("graph") or 0.0
+            b = scores.get("behavioural")
+            t = scores.get("temporal")
+            hits = await asyncio.wait_for(
+                asyncio.to_thread(retriever.retrieve, g, b or 0.0, t or 0.0,
+                                  float(alert["fused_score"])),
+                timeout=20.0,
             )
-        sent = await self._send(
-            f"[{alert['severity']}] Fraud alert {alert['transaction_id']}", body
+            if not hits:
+                return None
+
+            package = build_chain_of_evidence_prompt(
+                transaction_id=alert["transaction_id"],
+                graph_score=g,
+                behavioral_score=b if b is not None else 0.0,
+                temporal_score=t if t is not None else 0.0,
+                confidence_score=float(alert["fused_score"]),
+                graph_available=scores.get("graph") is not None,
+                behavioral_available=b is not None,
+                temporal_available=t is not None,
+                retrieval=hits[0],
+                classification=alert["severity"],
+            )
+            return await asyncio.wait_for(
+                asyncio.to_thread(reporter.generate_report, package), timeout=45.0
+            )
+        except Exception as exc:                        # noqa: BLE001
+            logger.info(f"No forensic report for {alert['transaction_id']}: {exc}")
+            return None
+
+    async def _notify_confirmed(self, alert: dict, sg: dict,
+                                case_ref: str | None = None,
+                                scores: dict | None = None) -> None:
+        from backend.email_service import _send_rich
+        from monitor import alert_email
+        from monitor.alert_render import render_subgraph
+
+        scores = scores or {"graph": alert.get("graph_score")}
+
+        # The narrative and the diagram are produced together, before the send,
+        # because both belong in the same message.
+        report = await self._forensic_report(alert, scores)
+        try:
+            png = await asyncio.to_thread(render_subgraph, sg)
+        except Exception as exc:                        # noqa: BLE001
+            logger.info(f"Subgraph diagram failed: {exc}")
+            png = None
+
+        attachments = []
+        if report:
+            try:
+                attachments.append((
+                    "application", "pdf",
+                    f"forensic-report-{alert['transaction_id']}.pdf",
+                    _report_pdf(alert, report),
+                ))
+            except Exception as exc:                    # noqa: BLE001
+                # An alert with its narrative missing still has to go out.
+                logger.warning(f"Forensic PDF failed for {alert['transaction_id']}: {exc}")
+                report = None
+
+        from backend import thresholds
+
+        html = alert_email.build(
+            alert=alert, sg=sg, scores=scores,
+            bands=thresholds.current() or FUSED_BANDS,
+            has_image=png is not None, case_ref=case_ref,
+            console_url=str(config.get("upstream", "console_url")).rstrip("/"),
+            report_attached=bool(report),
         )
+        text = alert_email.build_text(alert, sg, scores, bool(report))
+
+        from backend.settings import list_risk_managers
+
+        managers = await list_risk_managers()
+        recipients = [m.email for m in managers if getattr(m, "enabled", True)]
+        if not recipients:
+            logger.info("No alert recipients configured; nothing sent.")
+            sent = False
+        else:
+            sent = await asyncio.to_thread(
+                _send_rich,
+                f"[{alert['severity']}] Fraud alert {alert['transaction_id']}",
+                text, html, recipients,
+                {"subgraph": png} if png else None,
+                attachments or None,
+            )
+
         # Record what happened, not what was intended. An operator reading a
         # case needs to know whether anyone was actually told.
         if case_ref:
@@ -688,6 +783,97 @@ class MonitorEngine:
         except Exception as exc:                        # noqa: BLE001
             logger.warning(f"Monitor notification failed: {exc}")
             return False
+
+
+SEV_RGB = {
+    "CRITICAL": (0.69, 0.22, 0.17),
+    "HIGH":     (0.65, 0.42, 0.03),
+    "MEDIUM":   (0.33, 0.28, 0.60),
+    "LOW":      (0.08, 0.48, 0.24),
+}
+
+
+def _report_sections(report: str) -> list[tuple[str | None, str]]:
+    """Split the narrative into (heading, body) pairs.
+
+    The reporter returns its sections with the heading run together with the
+    first sentence — "SECTION 2 - MULTI-MODAL EVIDENCE ANALYSIS The Graph
+    Network Analysis Score is..." — and wraps the whole in --- fences. Left
+    alone that reads as a wall of text. The headings are lifted out here rather
+    than by asking the model to format itself, which it does not do reliably.
+    """
+    import re as _re
+
+    heading = _re.compile(
+        r"^(SECTION\s+\d+\s*[\u2014\u2013-]\s*"
+        r"(?:[A-Z][A-Z\-/&.]*(?:[ \t]+|$)){1,6})"
+    )
+    preamble = _re.compile(r"^(Transaction ID|Classification):", _re.M)
+
+    out: list[tuple[str | None, str]] = []
+    for para in _re.split(r"\n\s*\n", report.replace("---", "").strip()):
+        para = " ".join(para.split())
+        if not para:
+            continue
+        head = None
+        m = heading.match(para)
+        if m:
+            head = " ".join(m.group(1).split()).title()
+            para = para[m.end():].strip()
+        if preamble.search(para) or para.upper().startswith("CASE INVESTIGATION REPORT"):
+            # This block only repeats the facts already tabulated above it.
+            keep = _re.search(r"(FATF Typology Match:.*)$", para)
+            para = keep.group(1).strip() if keep else ""
+        if head or para:
+            out.append((head, para))
+    return out
+
+
+def _report_pdf(alert: dict, report: str) -> bytes:
+    """The forensic report as a filed document.
+
+    A PDF rather than the HTML page this used to attach: what a compliance
+    officer does with this is save it, print it and cite it, and an .html
+    attachment is none of those things. Built with the in-tree writer, so
+    nothing has to be installed to produce one.
+    """
+    from backend.pdf import Document
+
+    sev = str(alert.get("severity") or "LOW").upper()
+    rgb = SEV_RGB.get(sev, (0.37, 0.41, 0.42))
+    doc = Document(footer="DeepSentinel \u00b7 generated from the record for this transaction")
+
+    doc.band(rgb)
+    doc.label(f"{sev}  \u00b7  chain-of-evidence forensic report", rgb)
+    doc.heading(f"Transaction {alert['transaction_id']}")
+    doc.para(
+        f"Fused confidence {float(alert['fused_score']):.4f}  \u00b7  "
+        f"{alert.get('modalities_used', 0)} of 3 detectors available",
+        size=9.5, font="Courier", rgb=(0.37, 0.41, 0.42),
+    )
+    doc.rule()
+    doc.kv([
+        ("Amount", f"{alert['amount']:,.2f}"),
+        ("From", str(alert.get("from") or "\u2014")),
+        ("To", str(alert.get("to") or "\u2014")),
+        ("Pattern", str(alert.get("pattern") or "\u2014")),
+        ("Collection account", str(alert.get("sink_account") or "\u2014")),
+    ])
+
+    for head, body in _report_sections(report):
+        if head:
+            doc.subheading(head)
+        if body:
+            doc.para(body)
+
+    doc.rule(gap=14.0)
+    doc.para(
+        "Generated by DeepSentinel from the scores and the retrieved typology on record "
+        "for this transaction. Every claim above traces to one of them; nothing in it is "
+        "inferred beyond what was measured. Review before acting.",
+        size=8.5, rgb=(0.55, 0.59, 0.60), keep_together=True,
+    )
+    return doc.render()
 
 
 ENGINE = MonitorEngine()
