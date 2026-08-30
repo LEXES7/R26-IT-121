@@ -1290,3 +1290,40 @@ html.theme-transition * {
   .ds-main .ds-panel { animation: none; }
   .ds-kpi:hover, .ds-btn:active:not(:disabled) { transform: none; }
 }
+
+/* ── scroll-revealed text ────────────────────────────────────────────
+   Words resolve as the block travels through the viewport, left to right at
+   reading pace.
+
+   Driven by `animation-timeline: view()`, so the browser ties progress to the
+   scroll position itself. Nothing listens to scroll, nothing runs on the main
+   thread, and it tracks backwards correctly when the reader scrolls up — which
+   a one-way IntersectionObserver reveal cannot do.
+
+   Each word takes a slice of the block's progress from its index, so the
+   stagger comes from the timeline rather than from delays. Delays do not mean
+   anything on a scroll timeline: there is no clock to be late against. */
+
+.reveal-text { --dim: 0.16; }
+.reveal-word { display: inline-block; will-change: opacity, filter; }
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal-word {
+      opacity: var(--dim);
+      filter: blur(2px);
+      animation: reveal-word linear both;
+      animation-timeline: view();
+      /* Word i brightens over a window that starts a little later than word
+         i-1. The spread is deliberately less than the full range so the last
+         word is resolved well before the block leaves the screen. */
+      animation-range:
+        entry calc(12% + (var(--i) / var(--n)) * 34%)
+        entry calc(46% + (var(--i) / var(--n)) * 34%);
+    }
+  }
+}
+
+@keyframes reveal-word {
+  to { opacity: 1; filter: blur(0); }
+}

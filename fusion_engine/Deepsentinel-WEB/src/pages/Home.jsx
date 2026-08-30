@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { ArrowLink, Display, Eyebrow } from '../components/Editorial'
 import Globe from '../components/Globe'
 import Reveal from '../components/Reveal'
+import ScrollRevealText from '../components/ScrollRevealText'
 import TransactionStory from '../components/TransactionStory'
 import { IconBlackBox, IconHallucination, IconLink } from '../components/Icons'
 import PipelineDiagram from '../components/PipelineDiagram'
@@ -144,7 +145,7 @@ export default function Home() {
         <Reveal className="max-w-2xl">
           <Eyebrow>The problem</Eyebrow>
           <h2 className="display mt-4 text-[2.5rem] text-slate-100 sm:text-[3.25rem]">
-            Fraud detection has{' '}
+            <ScrollRevealText as="span">Fraud detection has</ScrollRevealText>{' '}
             <span className="display-italic text-accent-400">an explanation problem.</span>
           </h2>
         </Reveal>
@@ -162,7 +163,9 @@ export default function Home() {
                 <h3 className="mt-5 text-lg font-semibold leading-snug text-slate-100">
                   {p.title}
                 </h3>
-                <p className="mt-3 text-sm leading-relaxed text-slate-400">{p.body}</p>
+                <ScrollRevealText className="mt-3 text-sm leading-relaxed text-slate-400">
+                  {p.body}
+                </ScrollRevealText>
               </article>
             </Reveal>
           ))}
