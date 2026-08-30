@@ -1480,6 +1480,111 @@ _CAPS_CACHE: dict = {"at": 0.0, "body": None}
 _CAPS_TTL = 60.0
 
 
+class SimulationReset(BaseModel):
+    """Confirmation for clearing simulation data."""
+
+    confirm: str = Field(
+        ...,
+        description="Must be exactly 'reset simulation'. A destructive call "
+                    "should not be one stray click or a bare curl away.",
+    )
+    dry_run: bool = Field(
+        True,
+        description="Report what would be removed without removing it. Defaults "
+                    "to true so the harmless call is the easy one.",
+    )
+
+
+# Everything a simulation produces, and nothing else. The exclusions matter
+# more than the list: users, risk-manager recipients, alerting settings and the
+# audit log are configuration and history, not test output. Wiping those would
+# lock the team out of a shared database and erase the record of who did it.
+SIMULATION_TABLES = (
+    "transactions_live",      # the ingestion queue the Query Runner writes
+    "transactions_archive",   # payloads kept for case reconstruction
+    "fraud_cases",            # what the monitor raised
+    "analysis_records",       # what the analyzer scored
+    "sar_drafts",             # filings drafted from those analyses
+)
+
+
+@app.post(
+    "/simulation/reset",
+    tags=["simulation"],
+    summary="Clear simulation data from the shared database",
+)
+async def reset_simulation(body: SimulationReset, user: User = Depends(require_admin)):
+    """Remove the transactions and cases a test run produced.
+
+    For testing only. Several people share one database, so a run leaves
+    traffic and cases behind that the next person then has to read around —
+    this is how you hand the database back in the state you found it.
+
+    Deliberately narrow. It empties the five tables a simulation writes and
+    touches nothing else: accounts, alert recipients, thresholds and the audit
+    trail all survive, because losing those costs the team far more than a
+    dirty queue does.
+
+    Defaults to a dry run. Pass `dry_run: false` to actually delete, and the
+    deletion is itself written to the audit log — a reset that leaves no trace
+    of who reset it is how a shared environment becomes unaccountable.
+    """
+    from sqlalchemy import text as _text
+
+    from backend.auth import audit
+    from backend.db.session import get_session
+
+    if body.confirm != "reset simulation":
+        raise HTTPException(
+            422,
+            "Set confirm to exactly 'reset simulation' to proceed. "
+            "This clears shared test data for everyone.",
+        )
+
+    counts: dict[str, int] = {}
+    async with get_session() as db:
+        for table in SIMULATION_TABLES:
+            try:
+                counts[table] = int(
+                    (await db.execute(_text(f'SELECT COUNT(*) FROM "{table}"'))).scalar() or 0)
+            except Exception:                           # noqa: BLE001
+                counts[table] = -1                      # table absent on this database
+
+    if body.dry_run:
+        return {
+            "dry_run": True,
+            "would_remove": counts,
+            "total": sum(v for v in counts.values() if v > 0),
+            "preserved": ["users", "risk_managers", "alert_settings", "audit_log"],
+            "note": "Nothing was deleted. Send dry_run false to proceed.",
+        }
+
+    removed: dict[str, int] = {}
+    async with get_session() as db:
+        for table in SIMULATION_TABLES:
+            if counts.get(table, -1) < 0:
+                continue
+            try:
+                await db.execute(_text(f'DELETE FROM "{table}"'))
+                removed[table] = counts[table]
+            except Exception as exc:                    # noqa: BLE001
+                logger.warning(f"Could not clear {table}: {exc}")
+                removed[table] = -1
+
+    total = sum(v for v in removed.values() if v > 0)
+    await audit("simulation.reset", actor=user.username, target="shared database",
+                detail=f"cleared {total} row(s): "
+                       + ", ".join(f"{k}={v}" for k, v in removed.items()))
+    logger.info(f"Simulation data cleared by {user.username}: {removed}")
+
+    return {
+        "dry_run": False,
+        "removed": removed,
+        "total": total,
+        "preserved": ["users", "risk_managers", "alert_settings", "audit_log"],
+    }
+
+
 @app.get(
     "/public/capabilities",
     tags=["public"],
