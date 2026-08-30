@@ -72,7 +72,6 @@ export default function About() {
 
       {/* ── the statement ──────────────────────────────────────────────── */}
       <section className="hair-b relative overflow-hidden">
-        <div aria-hidden className="pointer-events-none absolute inset-0 grid-bg" />
         <div className="relative mx-auto max-w-[88rem] px-5 py-24 sm:px-8">
           <Reveal className="max-w-3xl">
             <Eyebrow>Architecture</Eyebrow>

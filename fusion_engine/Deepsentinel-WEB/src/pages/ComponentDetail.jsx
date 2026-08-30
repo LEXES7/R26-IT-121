@@ -98,7 +98,6 @@ export default function ComponentDetail() {
     <div className="pb-20">
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden border-b border-subtle bg-sentinel-950">
-        <div aria-hidden className="pointer-events-none absolute inset-0 grid-bg" />
         <div
           aria-hidden
           className={cx(

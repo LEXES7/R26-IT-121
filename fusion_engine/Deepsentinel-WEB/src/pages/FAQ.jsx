@@ -132,7 +132,6 @@ export default function FAQ() {
     <div className="pb-24">
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden border-b border-subtle">
-        <div aria-hidden className="pointer-events-none absolute inset-0 grid-bg" />
         <div
           aria-hidden
           className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-accent-500/10 blur-[120px]"

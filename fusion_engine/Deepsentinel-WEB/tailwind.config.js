@@ -39,6 +39,10 @@ export default {
         // Text ramp. Inverted between themes, so a given step always means
         // the same amount of emphasis.
         slate: {
+          // 100 must be mapped like the rest. Unmapped, Tailwind's own
+          // #f1f5f9 wins, and 46 uses of text-slate-100 turn invisible the
+          // moment the light theme is selected.
+          100: 'rgb(var(--slate-100) / <alpha-value>)',
           200: 'rgb(var(--slate-200) / <alpha-value>)',
           300: 'rgb(var(--slate-300) / <alpha-value>)',
           400: 'rgb(var(--slate-400) / <alpha-value>)',

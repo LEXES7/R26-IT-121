@@ -63,7 +63,6 @@ export default function Home() {
           right. Centring the copy over a faint backdrop made both compete and
           neither land. */}
       <section className="relative overflow-hidden border-b border-subtle">
-        <div aria-hidden className="pointer-events-none absolute inset-0 grid-bg" />
         <div aria-hidden className="ambient" />
 
         <div className="relative mx-auto grid max-w-[88rem] items-center gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_minmax(0,36rem)] lg:gap-10 lg:py-28">

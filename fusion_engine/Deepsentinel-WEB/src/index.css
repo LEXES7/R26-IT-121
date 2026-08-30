@@ -24,6 +24,7 @@
   --sentinel-700: 44 40 37;
   --sentinel-600: 51 65 85;
 
+  --slate-100: 251 250 247;
   --slate-200: 240 237 231;
   --slate-300: 214 209 201;
   --slate-400: 163 156 146;
@@ -63,6 +64,7 @@
   --sentinel-700: 226 220 211;
   --sentinel-600: 200 200 196;
 
+  --slate-100: 12 11 10;
   --slate-200: 26 24 21;
   --slate-300: 30 41 59;
   --slate-400: 90 83 75;
@@ -180,13 +182,6 @@ html.theme-transition * {
 
 /* Faint isometric grid. Gives large dark sections depth without competing
    with content — visible enough to read as texture, never as pattern. */
-.grid-bg {
-  background-image:
-    linear-gradient(rgb(var(--grid-line)) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(var(--grid-line)) 1px, transparent 1px);
-  background-size: 56px 56px;
-}
-
 /* ── Print / Save as PDF ──────────────────────────────────────────────────────
  * "Save as PDF" on the forensic report routes through the browser's own print
  * pipeline rather than a canvas screenshot library, so the resulting file has
@@ -1020,7 +1015,10 @@ html.theme-transition * {
   position: relative;
   isolation: isolate;
   background: linear-gradient(180deg, #fdfdfd 0%, #eff1f2 100%);
-  color: rgb(var(--sentinel-950));
+  /* Literal, not a token. The body of this control is white in both themes,
+     so its label must be dark in both — and --sentinel-950 flips, which made
+     the text vanish into the button under the light theme. */
+  color: #14181a;
   border: 1px solid rgb(255 255 255 / 0.85);
   box-shadow:
     inset 0 1px 1.5px rgb(255 255 255 / 1),
