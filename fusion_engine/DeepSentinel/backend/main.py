@@ -133,8 +133,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="DeepSentinel — Fusion Engine & Generative Explainability",
     description=(
-        "Weighted ensemble meta-classifier + RAG-grounded LLM forensic reporting "
-        "for the DeepSentinel multi-modal fraud detection platform. Member 4 — IT22192882."
+        "Multi-modal fraud detection. Three detectors score every transaction "
+        "in parallel — the payment graph around it, how it fits its transaction "
+        "type, and the run it arrived in — and a meta-classifier fuses them into "
+        "one verdict with a cited forensic narrative.\n\n"
+        "`/public/capabilities` needs no credentials and reports which detectors "
+        "are answering. Everything else requires a bearer token from `/auth/login`."
     ),
     version="1.0.0",
     lifespan=lifespan,
@@ -1418,6 +1422,134 @@ async def review_case(
 
 
 # ── The operating point ──────────────────────────────────────────────────────
+
+
+class NetworkCapability(BaseModel):
+    accounts: Optional[int] = Field(None, description="Accounts in the payment graph")
+    transfers: Optional[int] = Field(None, description="Directed transfers between them")
+    hops: Optional[int] = Field(None, description="Neighbourhood depth read per transaction")
+    live: bool = Field(..., description="Whether the model is loaded and can score")
+
+
+class BehaviouralCapability(BaseModel):
+    strata: Optional[int] = Field(None, description="Models held, one per transaction type")
+    latency_ms: Optional[float] = Field(None, description="Mean scoring time in milliseconds")
+    live: bool = Field(..., description="Whether the service is answering")
+
+
+class TemporalCapability(BaseModel):
+    window: Optional[int] = Field(None, description="Preceding transactions read with each one")
+    live: bool = Field(..., description="Whether the model is loaded and can score")
+
+
+class FusionCapability(BaseModel):
+    signals: int = Field(..., description="Detector scores combined into the verdict")
+    typologies: Optional[int] = Field(None, description="Laundering methods indexed for retrieval")
+    live: bool = Field(..., description="Whether fusion and retrieval are both available")
+
+
+class Capabilities(BaseModel):
+    """What each detector is and whether it is currently answering."""
+
+    network: NetworkCapability
+    behavioural: BehaviouralCapability
+    temporal: TemporalCapability
+    fusion: FusionCapability
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "network": {"accounts": 3277509, "transfers": 2770409, "hops": 2, "live": True},
+                "behavioural": {"strata": 4, "latency_ms": 3.41, "live": True},
+                "temporal": {"window": 32, "live": False},
+                "fusion": {"signals": 3, "typologies": 10, "live": True},
+            },
+        },
+    }
+
+
+def _typology_count() -> int | None:
+    """How many laundering methods are indexed, straight from the store."""
+    try:
+        return knowledge_base.get_collection().count()
+    except Exception:                                   # noqa: BLE001
+        return None
+
+
+_CAPS_CACHE: dict = {"at": 0.0, "body": None}
+_CAPS_TTL = 60.0
+
+
+@app.get(
+    "/public/capabilities",
+    tags=["public"],
+    response_model=Capabilities,
+    summary="Detector status — which models are live",
+    responses={200: {"description": "Live status and capability of each detector."}},
+)
+async def public_capabilities():
+    """Which detectors are answering, and what each one is.
+
+    No credentials required — this is the endpoint to open in Swagger or
+    Postman to show the state of the models.
+
+    Deliberately not /api/monitor/runtime with the auth taken off. That
+    endpoint answers "is the system healthy" and carries things an anonymous
+    caller has no business with — the alert sending address, how many alerts
+    went undelivered, queue depth, and upstream stack traces. This is a
+    curated subset: sizes, capabilities and whether each detector is
+    answering. Nothing here reveals internal addresses, failures or volumes.
+
+    Cached for a minute, because it is reachable without a session and each
+    miss probes three internal services.
+    """
+    import time as _t
+
+    import httpx
+
+    from backend import config
+
+    now = _t.monotonic()
+    if _CAPS_CACHE["body"] is not None and now - _CAPS_CACHE["at"] < _CAPS_TTL:
+        return _CAPS_CACHE["body"]
+
+    async def probe(key: str, path: str = "/health") -> dict:
+        base = str(config.get("upstream", key)).rstrip("/")
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as c:
+                r = await c.get(f"{base}{path}")
+            return r.json() if r.status_code == 200 else {}
+        except Exception:                               # noqa: BLE001
+            return {}
+
+    graph = await probe("graph_api_base", "/api/graph/runtime")
+    behav = await probe("behavioral_api_base")
+    temp = await probe("temporal_api_base")
+
+    body = {
+        "network": {
+            "accounts": (graph.get("precomputed") or {}).get("accounts"),
+            "transfers": (graph.get("precomputed") or {}).get("transactions"),
+            "hops": (graph.get("model") or {}).get("k_hop"),
+            "live": bool((graph.get("model") or {}).get("loaded")),
+        },
+        "behavioural": {
+            "strata": len(behav.get("strata_loaded") or []) or None,
+            "latency_ms": behav.get("mean_latency_ms"),
+            "live": behav.get("status") == "ok",
+        },
+        "temporal": {
+            "window": temp.get("window_size"),
+            "live": bool(temp.get("status") == "ok" and not temp.get("load_error")),
+        },
+        "fusion": {
+            "signals": 3,
+            "typologies": _typology_count(),
+            "live": meta_classifier is not None and retriever is not None,
+        },
+    }
+    _CAPS_CACHE.update(at=now, body=body)
+    return body
 
 
 @app.get("/settings/thresholds", tags=["settings"])

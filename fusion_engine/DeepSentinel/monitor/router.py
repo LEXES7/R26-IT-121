@@ -14,9 +14,6 @@ from monitor.state import STATE
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/monitor", tags=["monitor"])
-
-
 def _auth():
     """Signed-in users only, when auth is available.
 
@@ -29,6 +26,14 @@ def _auth():
         return [Depends(get_current_user)]
     except Exception:                                   # noqa: BLE001
         return []
+
+
+# Reading the monitor requires a signed-in user. This dependency existed but
+# was never passed to the router, so every GET here — live state, detector
+# errors, queue depth, alert-delivery counts and the sending address — was
+# answering anonymous callers. The write routes were guarded; the reads were
+# not, which is the easier half to overlook.
+router = APIRouter(prefix="/api/monitor", tags=["monitor"], dependencies=_auth())
 
 
 def _admin():
