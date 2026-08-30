@@ -152,6 +152,8 @@ export default function SystemHealth() {
   const svc = rt?.services ?? {}
   const delivery = rt?.delivery ?? {}
   const queue = rt?.queue ?? {}
+  const missed = delivery.raised != null && delivery.delivered != null
+    ? delivery.raised - delivery.delivered : 0
   const live = DETECTORS.filter(([k]) => verdict(det[k]).tone === 'ok').length
   const broken = DETECTORS.filter(([k]) => verdict(det[k]).tone === 'down')
 
@@ -232,19 +234,32 @@ export default function SystemHealth() {
       <div className="mt-10 grid gap-4 lg:grid-cols-3">
         <Panel>
           <SectionHeading label="Are alerts arriving" title="Delivery" />
-          {delivery.raised > 0 && delivery.delivered < delivery.raised ? (
+          {/* A handful of failures in a long run is an SMTP hiccup; a total
+              of zero is a broken configuration. They read very differently to
+              someone on call, so they are not phrased the same way. */}
+          {missed > 0 && (
             <p className="mb-3 rounded-lg px-3 py-2 text-[12px] leading-relaxed"
-               style={{ background: 'rgb(var(--ds-signal-soft))', color: 'rgb(var(--ds-signal))' }}>
-              {delivery.raised - delivery.delivered} of {delivery.raised} alerts were
-              raised but never delivered. Screening is working; the mail is not.
+               style={{
+                 background: delivery.delivered === 0
+                   ? 'rgb(var(--ds-signal-soft))' : 'rgb(var(--ds-warn-soft))',
+                 color: delivery.delivered === 0
+                   ? 'rgb(var(--ds-signal))' : 'rgb(var(--ds-warn))',
+               }}>
+              {delivery.delivered === 0
+                ? `None of ${delivery.raised} alerts reached anyone. Screening is working; the mail is not.`
+                : `${missed} of ${delivery.raised} alerts did not reach anyone. The rest were delivered.`}
             </p>
-          ) : null}
+          )}
           <div className="flex items-baseline gap-2">
-            <span className="numeric text-[2rem] leading-none text-[rgb(var(--ds-ink))]">
-              {delivery.delivered ?? 0}
+            <span className="numeric text-[2rem] leading-none"
+                  style={{ color: delivery.raised && delivery.delivered === 0
+                    ? 'rgb(var(--ds-signal))' : 'rgb(var(--ds-ink))' }}>
+              {delivery.delivered ?? '—'}
             </span>
             <span className="text-[13px] text-[rgb(var(--ds-muted))]">
-              of {delivery.raised ?? 0} delivered
+              {delivery.raised == null
+                ? 'no alert record on this database'
+                : `of ${delivery.raised.toLocaleString()} alerts delivered`}
             </span>
           </div>
           <dl className="mt-4">

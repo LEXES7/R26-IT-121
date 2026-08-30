@@ -245,6 +245,11 @@ async def _delivery() -> dict:
         out["recipients"] = len([m for m in managers if getattr(m, "enabled", True)])
     except Exception:                                   # noqa: BLE001
         pass
+    # fraud_cases, not analysis_records. The first is what the monitor writes
+    # when it raises an alert; the second is what the analyzer writes when
+    # somebody scores a transaction by hand, and nothing about that path sends
+    # mail. Counting the analyzer's rows here reported four un-emailed manual
+    # runs as four undelivered alerts, and hid the real figure entirely.
     try:
         from sqlalchemy import text
 
@@ -253,13 +258,15 @@ async def _delivery() -> dict:
         async with get_session() as db:
             row = (await db.execute(text(
                 "SELECT COUNT(*), SUM(CASE WHEN alert_sent THEN 1 ELSE 0 END) "
-                "FROM analysis_records WHERE classification <> 'LOW'"
+                "FROM fraud_cases WHERE classification <> 'LOW'"
             ))).first()
         if row:
             out["raised"] = int(row[0] or 0)
             out["delivered"] = int(row[1] or 0)
     except Exception:                                   # noqa: BLE001
-        pass
+        # No fraud_cases table on this database — report nothing rather than
+        # zero, which would read as "everything failed".
+        out["raised"] = out["delivered"] = None
     return out
 
 
