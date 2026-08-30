@@ -20,21 +20,37 @@ import { useEffect, useRef, useState } from 'react'
  * was built.
  */
 
+// Apple's boot sequence, near enough. Lowercase throughout — that is most of
+// the look; capitalising them turns a greeting into a label.
+//
+// Sinhala and Tamil are not in Apple's set. They are here because that is
+// where this was built, and they lead after English for the same reason.
 const GREETINGS = [
-  'Hello',
-  'ආයුබෝවන්',   // Sinhala
-  'வணக்கம்',     // Tamil
-  'नमस्ते',        // Hindi
-  '你好',          // Chinese
-  'مرحبا',        // Arabic
-  'Привет',       // Russian
-  'こんにちは',    // Japanese
-  'Bonjour',
-  'Hola',
+  'hello',        // English
+  'ආයුබෝවන්',      // Sinhala
+  'வணக்கம்',       // Tamil
+  'olá',          // Portuguese
+  '你好',           // Chinese
+  'bonjour',      // French
+  'こんにちは',      // Japanese
+  '안녕하세요',      // Korean
+  'hallo',        // German
+  'ciao',         // Italian
+  'שלום',          // Hebrew
+  'привет',       // Russian
+  'hola',         // Spanish
+  'مرحبا',         // Arabic
+  'नमस्ते',          // Hindi
+  'merhaba',      // Turkish
+  'γεια σας',     // Greek
+  'สวัสดี',          // Thai
+  'cześć',        // Polish
+  'xin chào',     // Vietnamese
 ]
 
-const STEP_MS = 205        // how long each greeting holds
-const FLOOR_MS = GREETINGS.length * STEP_MS + 380
+// Fast enough that the words flick rather than linger.
+const STEP_MS = 118
+const FLOOR_MS = GREETINGS.length * STEP_MS + 300
 // The ceiling has to clear the floor comfortably, or a slow font request
 // would race the guard that exists to protect against it.
 const CEILING_MS = 6000
