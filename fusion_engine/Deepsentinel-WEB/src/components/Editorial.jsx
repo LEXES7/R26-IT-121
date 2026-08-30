@@ -24,7 +24,7 @@ export function Eyebrow({ children, className }) {
  * made each page that composes it read as one. Changing it here converts every
  * page that still uses the primitive.
  */
-export function Display({ lead, accent, className, as: Tag = 'h2' }) {
+export function Display({ lead, accent, className, as: Tag = 'h2', stack = false }) {
   return (
     <Tag
       className={cx(
@@ -35,7 +35,11 @@ export function Display({ lead, accent, className, as: Tag = 'h2' }) {
       {lead}
       {accent && (
         <>
-          {' '}
+          {/* Inline when the two halves are one sentence — "Four models, one
+              verdict." Stacked when they are two separate ideas, as on a
+              component page, where running a product name straight into its
+              tagline reads as a layout fault. */}
+          {stack ? <br /> : ' '}
           <span className="display-italic text-accent-400">{accent}</span>
         </>
       )}

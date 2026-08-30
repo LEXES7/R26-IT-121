@@ -74,10 +74,7 @@ export default function Home() {
           neither land. */}
       <section className="relative overflow-hidden border-b border-subtle">
         <div aria-hidden className="pointer-events-none absolute inset-0 grid-bg" />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -left-40 top-0 h-[32rem] w-[32rem] rounded-full bg-accent-500/10 blur-[120px]"
-        />
+        <div aria-hidden className="ambient" />
 
         <div className="relative mx-auto grid max-w-[88rem] items-center gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_minmax(0,36rem)] lg:gap-10 lg:py-28">
           {/* Left — the argument */}
@@ -120,12 +117,13 @@ export default function Home() {
             <div className="mt-9 flex flex-wrap items-center gap-5">
               <Link
                 to={isAuthenticated ? '/' : '/login'}
-                className="shine lift enter enter--rise rounded-xl bg-white px-7 py-3.5 text-sm font-semibold text-sentinel-950"
+                className="glossy-solid shine enter enter--rise rounded-xl px-7 py-3.5 text-sm font-semibold"
                 style={{ '--d': '0.78s' }}
               >
                 {isAuthenticated ? 'Open the analyzer' : 'Sign in to run it'}
               </Link>
-              <a href="#pipeline" className="arrow-slide enter enter--side"
+              <a href="#pipeline"
+                 className="glossy arrow-slide enter enter--side rounded-xl px-6 py-3.5 text-sm text-slate-200"
                  style={{ '--d': '0.9s' }}>
                 <ArrowLink>See how it works</ArrowLink>
               </a>
@@ -134,7 +132,7 @@ export default function Home() {
             {/* Measured figures, each carrying the protocol that produced it.
                 The detail line is not decoration — a number without its method
                 is a claim, and this page should not make claims. */}
-            <dl className="hair-t mt-14 grid grid-cols-2 gap-x-8 gap-y-7 pt-8 sm:grid-cols-4">
+            <dl className="glass mt-14 grid grid-cols-2 gap-x-8 gap-y-7 rounded-2xl p-6 sm:grid-cols-4">
               {STATS.map((s, i) => (
                 <div key={s.label} className="stat-hover enter enter--soft"
                      style={{ '--d': `${1.02 + i * 0.09}s` }}>
@@ -180,8 +178,7 @@ export default function Home() {
         <div className="hair-t mt-14 grid gap-x-10 gap-y-12 pt-12 md:grid-cols-3">
           {PROBLEM.map((p, i) => (
             <Reveal key={p.title} delay={i * 110}>
-              <article className={cx('card-hover h-full rounded-xl border border-transparent p-4 -m-4',
-                                     i > 0 && 'md:hair-l md:pl-10')}>
+              <article className={cx('glass card-hover h-full rounded-2xl p-6', i > 0 && 'md:pl-6')}>
                 <div className="flex items-baseline gap-4">
                   <span className="display text-[2.5rem] leading-none text-slate-700">
                     0{i + 1}
@@ -241,7 +238,7 @@ export default function Home() {
             <Reveal key={c.slug} delay={i * 80}>
               <Link
                 to={`/components/${c.slug}`}
-                className="group arrow-slide grid items-baseline gap-x-8 gap-y-2 rounded-lg px-3 py-7 -mx-3 transition-[background-color,transform] duration-300 hover:bg-surface hover:translate-x-1 md:grid-cols-[3rem_9rem_minmax(0,22rem)_minmax(0,1fr)_5rem]"
+                className="group arrow-slide grid items-baseline gap-x-8 gap-y-2 rounded-xl border border-transparent px-4 py-7 -mx-4 transition-[background-color,transform,border-color,box-shadow] duration-300 hover:translate-x-1 hover:border-white/10 hover:bg-white/[0.04] hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.09)] md:grid-cols-[3rem_9rem_minmax(0,22rem)_minmax(0,1fr)_5rem]"
                 style={{ transitionTimingFunction: 'var(--ease-hover)' }}
               >
                 <span className="display text-[2rem] leading-none text-slate-700 transition-colors group-hover:text-slate-500">
@@ -296,7 +293,7 @@ export default function Home() {
             <div className="mt-8 flex flex-wrap items-center gap-6">
               <Link
                 to={isAuthenticated ? '/' : '/login'}
-                className="shine lift rounded-lg bg-accent-500 px-5 py-2.5 text-sm font-medium text-[#04231f] hover:bg-accent-400"
+                className="glossy-solid shine rounded-xl px-5 py-2.5 text-sm font-semibold"
               >
                 {isAuthenticated ? 'Run the analyzer' : 'Sign in to run it'}
               </Link>

@@ -87,7 +87,7 @@ export default function ComponentDetail() {
             <Eyebrow>{c.modality}</Eyebrow>
           </div>
 
-          <Display as="h1" lead={c.title} accent={c.tagline} className="mt-4" />
+          <Display as="h1" stack lead={c.title} accent={c.tagline} className="mt-4" />
 
           <p className="mt-6 max-w-2xl text-base leading-relaxed text-slate-400">{c.intro}</p>
 
@@ -160,7 +160,7 @@ export default function ComponentDetail() {
           {c.detects.map(([name, desc], i) => (
             <Reveal key={name} delay={i * 80}>
             <div
-              className="group card-hover flex h-full gap-3 rounded-2xl border border-subtle bg-surface p-4 hover:border-accent-500/40 hover:bg-surface-raised"
+              className="group glass card-hover flex h-full gap-3 rounded-2xl p-4 hover:border-accent-500/40"
             >
               <span aria-hidden className={cx('mt-1.5 h-2 w-2 shrink-0 rounded-full', a.dot)} />
               <div>
@@ -178,7 +178,7 @@ export default function ComponentDetail() {
         <Eyebrow>{c.status === 'delivered' ? 'What we learned' : 'Design decisions'}</Eyebrow>
         <div className="mt-4 space-y-3">
           {c.findings.map((f, i) => (
-            <Reveal key={f.title} delay={i * 100}><div className="card-hover h-full rounded-2xl border border-subtle bg-surface p-5">
+            <Reveal key={f.title} delay={i * 100}><div className="glass card-hover h-full rounded-2xl p-5">
               <div className="flex items-baseline gap-3">
                 <span className="text-sm font-bold tabular-nums text-accent-500">
                   {String(i + 1).padStart(2, '0')}
@@ -202,7 +202,7 @@ export default function ComponentDetail() {
 
         <Link
           to={`/components/${next.slug}`}
-          className="group arrow-slide card-hover mt-6 flex items-center justify-between rounded-2xl border border-subtle bg-surface p-5 hover:border-strong hover:bg-surface-raised"
+          className="group arrow-slide glass card-hover mt-6 flex items-center justify-between rounded-2xl p-5 hover:border-strong"
         >
           <div>
             <p className="text-[10px] uppercase tracking-wider text-slate-600">Next component</p>

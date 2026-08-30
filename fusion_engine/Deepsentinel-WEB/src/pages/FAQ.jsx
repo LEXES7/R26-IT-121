@@ -74,16 +74,26 @@ const FAQS = [
   },
 ]
 
+// The open state used bg-blue-500/5 and border-blue-500/50 — a blue that
+// appears nowhere else in this product. Accent teal now, like everything else
+// that means "selected".
 function AccordionItem({ q, a }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className={`border rounded-xl overflow-hidden transition-colors ${open ? 'border-accent-500/30 bg-blue-500/5' : 'border-white/7 bg-white/[0.02]'}`}>
+    <div className={cx('glass card-hover overflow-hidden rounded-xl',
+                       open && 'border-accent-500/35')}>
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left gap-4"
+        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
       >
-        <span className={`font-medium text-sm ${open ? 'text-slate-200' : 'text-slate-300'}`}>{q}</span>
-        <span className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center text-xs transition-all ${open ? 'border-blue-500/50 text-accent-500 rotate-45' : 'border-white/15 text-slate-500'}`}>
+        <span className={cx('text-sm font-medium transition-colors',
+                            open ? 'text-slate-100' : 'text-slate-300')}>{q}</span>
+        <span className={cx(
+          'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border text-xs',
+          'transition-transform duration-300',
+          open ? 'rotate-45 border-accent-400/60 text-accent-400' : 'border-white/15 text-slate-500',
+        )}
+              style={{ transitionTimingFunction: 'var(--ease-hover)' }}>
           +
         </span>
       </button>
@@ -153,7 +163,7 @@ export default function FAQ() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search the answers…"
                 aria-label="Search questions"
-                className="w-full rounded-xl border border-subtle bg-surface py-3 pl-10 pr-4 text-sm text-slate-200 placeholder:text-slate-600 focus:border-strong focus:outline-none"
+                className="glass w-full rounded-xl py-3 pl-10 pr-4 text-sm text-slate-200 placeholder:text-slate-600 focus:border-strong focus:outline-none"
               />
             </div>
           </Reveal>
@@ -207,7 +217,7 @@ export default function FAQ() {
 
         {/* ── CTA ──────────────────────────────────────────────────────── */}
         <Reveal className="mt-20">
-          <div className="card-hover relative overflow-hidden rounded-2xl border border-subtle bg-surface p-8 text-center sm:p-10">
+          <div className="glass card-hover relative overflow-hidden rounded-2xl p-8 text-center sm:p-10">
             <div
               aria-hidden
               className="pointer-events-none absolute inset-x-0 -top-24 h-48 bg-accent-500/10 blur-3xl"

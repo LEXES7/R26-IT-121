@@ -112,7 +112,7 @@ export default function About() {
             <Reveal key={c.slug} delay={i * 80}>
               <Link
                 to={`/components/${c.slug}`}
-                className="group arrow-slide grid items-baseline gap-x-8 gap-y-2 rounded-lg px-3 py-7 -mx-3 transition-[background-color,transform] duration-300 hover:bg-surface hover:translate-x-1 md:grid-cols-[3rem_8rem_minmax(0,20rem)_minmax(0,1fr)_5rem]"
+                className="group arrow-slide grid items-baseline gap-x-8 gap-y-2 rounded-xl border border-transparent px-4 py-7 -mx-4 transition-[background-color,transform,border-color,box-shadow] duration-300 hover:translate-x-1 hover:border-white/10 hover:bg-white/[0.04] hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.09)] md:grid-cols-[3rem_8rem_minmax(0,20rem)_minmax(0,1fr)_5rem]"
                 style={{ transitionTimingFunction: 'var(--ease-hover)' }}
               >
                 <span className="display text-[2rem] leading-none text-slate-700 transition-colors group-hover:text-slate-500">
