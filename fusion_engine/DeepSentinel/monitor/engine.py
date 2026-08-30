@@ -707,12 +707,16 @@ class MonitorEngine:
 
         attachments = []
         if report:
-            doc = _report_document(alert, report)
-            attachments.append((
-                "text", "html",
-                f"forensic-report-{alert['transaction_id']}.html",
-                doc.encode("utf-8"),
-            ))
+            try:
+                attachments.append((
+                    "application", "pdf",
+                    f"forensic-report-{alert['transaction_id']}.pdf",
+                    _report_pdf(alert, report),
+                ))
+            except Exception as exc:                    # noqa: BLE001
+                # An alert with its narrative missing still has to go out.
+                logger.warning(f"Forensic PDF failed for {alert['transaction_id']}: {exc}")
+                report = None
 
         from backend import thresholds
 
@@ -781,89 +785,95 @@ class MonitorEngine:
             return False
 
 
-def _report_document(alert: dict, report: str) -> str:
-    """Wrap the narrative in a printable standalone page.
+SEV_RGB = {
+    "CRITICAL": (0.69, 0.22, 0.17),
+    "HIGH":     (0.65, 0.42, 0.03),
+    "MEDIUM":   (0.33, 0.28, 0.60),
+    "LOW":      (0.08, 0.48, 0.24),
+}
 
-    An HTML file rather than a PDF: there is no PDF library in this service,
-    and a styled page a compliance officer can open and print to PDF is worth
-    more than a plain-text attachment they have to reformat.
+
+def _report_sections(report: str) -> list[tuple[str | None, str]]:
+    """Split the narrative into (heading, body) pairs.
+
+    The reporter returns its sections with the heading run together with the
+    first sentence — "SECTION 2 - MULTI-MODAL EVIDENCE ANALYSIS The Graph
+    Network Analysis Score is..." — and wraps the whole in --- fences. Left
+    alone that reads as a wall of text. The headings are lifted out here rather
+    than by asking the model to format itself, which it does not do reliably.
     """
-    import html as _html
     import re as _re
 
-    # The reporter returns its sections with the heading run together with the
-    # first sentence — "SECTION 2 — MULTI-MODAL EVIDENCE ANALYSIS The Graph
-    # Network Analysis Score is..." — and wraps the whole thing in --- fences.
-    # Left alone that prints as a wall of text, so the headings are lifted out
-    # here rather than by asking the model to format itself, which it does not
-    # do reliably.
     heading = _re.compile(
         r"^(SECTION\s+\d+\s*[\u2014\u2013-]\s*"
-        r"(?:[A-Z][A-Z\-/&.]*(?:\s+|$)){1,6})"          # up to six all-caps words
+        r"(?:[A-Z][A-Z\-/&.]*(?:[ \t]+|$)){1,6})"
     )
-    label = _re.compile(r"^(Transaction ID|Classification|FATF Typology Match):\s*", _re.M)
+    preamble = _re.compile(r"^(Transaction ID|Classification):", _re.M)
 
-    body = []
+    out: list[tuple[str | None, str]] = []
     for para in _re.split(r"\n\s*\n", report.replace("---", "").strip()):
-        para = para.strip()
+        para = " ".join(para.split())
         if not para:
             continue
+        head = None
         m = heading.match(para)
         if m:
-            body.append(f"<h2>{_html.escape(m.group(1).strip().title())}</h2>")
+            head = " ".join(m.group(1).split()).title()
             para = para[m.end():].strip()
-        # The preamble repeats the facts already tabulated above it.
-        if label.search(para) or para.upper().startswith("CASE INVESTIGATION REPORT"):
-            kept = [ln for ln in _re.split(r"(?<=[a-z0-9%)])\s+(?=[A-Z][a-z]+ [A-Z])", para)
-                    if ln.strip().startswith("FATF Typology Match")]
-            para = " ".join(kept).strip()
-            if not para:
-                continue
-        if para:
-            body.append(f"<p>{_html.escape(para)}</p>")
-    body = "".join(body)
-    sev = _html.escape(alert["severity"])
-    txid = _html.escape(str(alert["transaction_id"]))
-    return f"""<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
-<title>Forensic report {txid}</title>
-<style>
-  @page {{ size: A4; margin: 20mm; }}
-  body {{ max-width: 44em; margin: 40px auto; padding: 0 24px;
-         font: 16px/1.65 Georgia, 'Times New Roman', serif; color: #2E3739;
-         background: #fff; }}
-  .tag {{ font: 600 11px/1 ui-monospace, monospace; letter-spacing: .13em;
-         color: #B0392C; }}
-  h1 {{ font-size: 30px; line-height: 1.15; margin: 10px 0 4px; color: #14181A;
-       font-weight: 600; }}
-  .sub {{ font: 13px ui-monospace, monospace; color: #5E696C;
-         padding-bottom: 20px; border-bottom: 1px solid #DCE3E3; }}
-  dl {{ display: grid; grid-template-columns: 210px 1fr; gap: 8px 20px;
-       margin: 22px 0 30px; font-size: 14px; }}
-  dt {{ color: #5E696C; }}
-  dd {{ margin: 0; font-family: ui-monospace, monospace; color: #14181A; }}
-  h2 {{ font: 600 13px/1.3 ui-monospace, monospace; letter-spacing: .06em;
-        color: #14181A; margin: 28px 0 9px; }}
-  p {{ margin: 0 0 15px; }}
-  footer {{ margin-top: 34px; padding-top: 16px; border-top: 1px solid #DCE3E3;
-           font: 12px/1.6 system-ui, sans-serif; color: #8A9497; }}
-</style></head><body>
-<div class="tag">{sev} &middot; CHAIN-OF-EVIDENCE FORENSIC REPORT</div>
-<h1>Transaction {txid}</h1>
-<div class="sub">Fused confidence {alert['fused_score']:.4f} &middot;
-  {alert.get('modalities_used', 0)} of 3 detectors available</div>
-<dl>
-  <dt>Amount</dt><dd>{alert['amount']:,.2f}</dd>
-  <dt>From</dt><dd>{_html.escape(str(alert['from']))}</dd>
-  <dt>To</dt><dd>{_html.escape(str(alert['to']))}</dd>
-  <dt>Pattern</dt><dd>{_html.escape(str(alert.get('pattern') or '—'))}</dd>
-  <dt>Collection account</dt><dd>{_html.escape(str(alert.get('sink_account') or '—'))}</dd>
-</dl>
-{body}
-<footer>Generated by DeepSentinel from the scores and the retrieved typology on
-record for this transaction. Every claim above traces to one of them; nothing
-in it is inferred beyond what was measured. Review before acting.</footer>
-</body></html>"""
+        if preamble.search(para) or para.upper().startswith("CASE INVESTIGATION REPORT"):
+            # This block only repeats the facts already tabulated above it.
+            keep = _re.search(r"(FATF Typology Match:.*)$", para)
+            para = keep.group(1).strip() if keep else ""
+        if head or para:
+            out.append((head, para))
+    return out
+
+
+def _report_pdf(alert: dict, report: str) -> bytes:
+    """The forensic report as a filed document.
+
+    A PDF rather than the HTML page this used to attach: what a compliance
+    officer does with this is save it, print it and cite it, and an .html
+    attachment is none of those things. Built with the in-tree writer, so
+    nothing has to be installed to produce one.
+    """
+    from backend.pdf import Document
+
+    sev = str(alert.get("severity") or "LOW").upper()
+    rgb = SEV_RGB.get(sev, (0.37, 0.41, 0.42))
+    doc = Document(footer="DeepSentinel \u00b7 generated from the record for this transaction")
+
+    doc.band(rgb)
+    doc.label(f"{sev}  \u00b7  chain-of-evidence forensic report", rgb)
+    doc.heading(f"Transaction {alert['transaction_id']}")
+    doc.para(
+        f"Fused confidence {float(alert['fused_score']):.4f}  \u00b7  "
+        f"{alert.get('modalities_used', 0)} of 3 detectors available",
+        size=9.5, font="Courier", rgb=(0.37, 0.41, 0.42),
+    )
+    doc.rule()
+    doc.kv([
+        ("Amount", f"{alert['amount']:,.2f}"),
+        ("From", str(alert.get("from") or "\u2014")),
+        ("To", str(alert.get("to") or "\u2014")),
+        ("Pattern", str(alert.get("pattern") or "\u2014")),
+        ("Collection account", str(alert.get("sink_account") or "\u2014")),
+    ])
+
+    for head, body in _report_sections(report):
+        if head:
+            doc.subheading(head)
+        if body:
+            doc.para(body)
+
+    doc.rule(gap=14.0)
+    doc.para(
+        "Generated by DeepSentinel from the scores and the retrieved typology on record "
+        "for this transaction. Every claim above traces to one of them; nothing in it is "
+        "inferred beyond what was measured. Review before acting.",
+        size=8.5, rgb=(0.55, 0.59, 0.60), keep_together=True,
+    )
+    return doc.render()
 
 
 ENGINE = MonitorEngine()
