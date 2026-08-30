@@ -39,7 +39,12 @@ export default function Monitor() {
   const [feed, setFeed] = useState([])
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
-  const { canControlPipeline, canViewCases, canRunAnalysis, canConfigureSystem } = useAuth()
+  // canManageAlerts is administrators and risk managers — the people who act
+  // on an alert, and so the people who need to know which detector raised it.
+  const {
+    canControlPipeline, canViewCases, canRunAnalysis, canConfigureSystem,
+    canManageAlerts,
+  } = useAuth()
   const [escalating, setEscalating] = useState(false)
   const [runtime, setRuntime] = useState(null)
   const [confirmClear, setConfirmClear] = useState(false)
@@ -350,9 +355,13 @@ export default function Monitor() {
                       <span className="text-slate-600"> · sink </span>
                       <span className="numeric text-slate-500">{a.sink_account ?? '—'}</span>
                     </span>
-                    <span className="numeric hidden shrink-0 text-[11px] text-slate-600 sm:block">
-                      graph {score3(a.graph_score)} · {a.modalities_used}/3
-                    </span>
+                    {canManageAlerts ? (
+                      <Detectors alert={a} />
+                    ) : (
+                      <span className="numeric hidden shrink-0 text-[11px] text-slate-600 sm:block">
+                        graph {score3(a.graph_score)} · {a.modalities_used}/3
+                      </span>
+                    )}
                     <span className="numeric w-24 shrink-0 text-right text-[11px] text-slate-500">
                       {money(a.amount)}
                     </span>
@@ -456,6 +465,55 @@ export default function Monitor() {
 }
 
 /* ── pieces ───────────────────────────────────────────────────────── */
+
+// What each detector said, and which one drove the verdict.
+//
+// The row used to show the graph score alone, so every alert read as a graph
+// finding — including the ones where behaviour was the only reason it fired.
+//
+// `driver` is the detector with the largest positive contribution to the fused
+// log-odds. For a standardised linear meta-classifier that is exact, not an
+// attribution heuristic: the log-odds are the intercept plus those three
+// terms. A detector that did not answer contributes nothing by construction,
+// and is shown as absent rather than as a zero score.
+const DETECTORS = [
+  ['graph', 'graph'],
+  ['behavioural', 'behav'],
+  ['temporal', 'timing'],
+]
+
+function Detectors({ alert }) {
+  const scores = alert.scores ?? { graph: alert.graph_score }
+  const driver = alert.driver
+
+  return (
+    <span className="hidden shrink-0 items-center gap-3 text-[11px] sm:flex">
+      {DETECTORS.map(([key, label]) => {
+        const v = scores[key]
+        const absent = v === null || v === undefined
+        const isDriver = key === driver
+        return (
+          <span
+            key={key}
+            className={cx('numeric', absent ? 'text-slate-700'
+              : isDriver ? 'font-medium text-slate-100' : 'text-slate-500')}
+            title={absent
+              ? `${label}: did not answer, so it contributed nothing to the verdict`
+              : isDriver
+                ? `${label} drove this verdict (contribution ${alert.contributions?.[key]?.toFixed(2) ?? '—'})`
+                : `${label} score ${score3(v)}`}
+          >
+            {isDriver && (
+              <span className="mr-1 inline-block h-1 w-1 -translate-y-[2px] rounded-full bg-accent-400" />
+            )}
+            <span className="text-slate-600">{label} </span>
+            {absent ? '—' : score3(v)}
+          </span>
+        )
+      })}
+    </span>
+  )
+}
 
 function Figure({ value, label, note, suffix, accent, urgent }) {
   return (

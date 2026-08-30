@@ -476,6 +476,8 @@ class MonitorEngine:
         STATE.set_stage("fusion", "active")
         available = [v for v in scores.values() if v is not None]
         fusion_method = "meta_classifier"
+        contributions: dict = {}
+        driver = None
         if self._fusion is not None:
             try:
                 result = await asyncio.to_thread(
@@ -488,6 +490,11 @@ class MonitorEngine:
                 # silent 0.0 on a renamed attribute reads as "nothing
                 # suspicious" and suppresses every alert.
                 fused = float(result.confidence_score)
+                # Which detector actually argued for this verdict. Exact for a
+                # linear meta-classifier; empty when averaging, because an
+                # average has no such thing as a driver.
+                contributions = getattr(result, "contributions", {}) or {}
+                driver = getattr(result, "driver", None)
             except Exception as exc:                    # noqa: BLE001
                 logger.warning(f"Fusion failed, averaging instead: {exc}")
                 fused = sum(available) / len(available) if available else 0.0
@@ -573,6 +580,14 @@ class MonitorEngine:
             "to": payload["nameDest"],
             "modalities_used": len(available),
             "fusion_method": fusion_method,
+            # What each detector said, and which of them drove the verdict.
+            # The alert used to carry the graph score alone, which made every
+            # row look like a graph finding even when behaviour was the reason
+            # it fired.
+            "scores": {k: (round(v, 4) if v is not None else None)
+                       for k, v in scores.items()},
+            "contributions": contributions,
+            "driver": driver,
             "at": time.time(),
         }
         STATE.add_alert(alert)
