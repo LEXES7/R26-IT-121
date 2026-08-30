@@ -31,6 +31,23 @@ def _auth():
         return []
 
 
+def _admin():
+    """Administrators only — the routes that change what the pipeline is doing.
+
+    Reading the monitor is for everyone signed in; starting, pausing and
+    stopping it is not. Until now these five routes carried the same guard as
+    /state, so a read-only analyst could stop fraud screening for the whole
+    institution with one request. Hiding the buttons in the console would not
+    have fixed that: the endpoint was the hole, not the button.
+    """
+    try:
+        from backend.auth import require_admin
+
+        return [Depends(require_admin)]
+    except Exception:                                   # noqa: BLE001
+        return []
+
+
 @router.get("/state")
 async def state() -> dict:
     """Monitor state, plus where its transactions are coming from.
@@ -91,32 +108,32 @@ async def send_briefing(hours: int = 24) -> dict:
     return {"sent": True, "recipients": recipients, "subject": subject}
 
 
-@router.post("/start")
+@router.post("/start", dependencies=_admin())
 async def start(interval: float | None = None) -> dict:
     await ENGINE.start(interval)
     return {"running": True, "interval": ENGINE.interval,
             "watch_threshold": ENGINE.watch_threshold}
 
 
-@router.post("/stop")
+@router.post("/stop", dependencies=_admin())
 async def stop() -> dict:
     await ENGINE.stop()
     return {"running": False}
 
 
-@router.post("/pause")
+@router.post("/pause", dependencies=_admin())
 async def pause() -> dict:
     ENGINE.pause()
     return {"running": STATE.running, "paused": True}
 
 
-@router.post("/resume")
+@router.post("/resume", dependencies=_admin())
 async def resume() -> dict:
     ENGINE.resume()
     return {"running": STATE.running, "paused": False}
 
 
-@router.post("/restart")
+@router.post("/restart", dependencies=_admin())
 async def restart(interval: float | None = None) -> dict:
     await ENGINE.restart(interval)
     return {"running": True, "paused": False, "interval": ENGINE.interval}

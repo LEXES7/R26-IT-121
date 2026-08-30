@@ -5,6 +5,7 @@ import {
   resumeMonitor, startMonitor, stopMonitor, streamMonitor,
 } from '../services/api'
 import { Alert, cx } from '../components/ui'
+import { useAuth } from '../context/AuthContext'
 import PipelineLive from '../components/PipelineLive'
 import RuntimePanel from '../components/RuntimePanel'
 
@@ -38,6 +39,7 @@ export default function Monitor() {
   const [feed, setFeed] = useState([])
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
+  const { canControlPipeline } = useAuth()
   const [escalating, setEscalating] = useState(false)
   const [runtime, setRuntime] = useState(null)
   const stopRef = useRef(null)
@@ -175,9 +177,15 @@ export default function Monitor() {
               </p>
             </div>
 
-            {/* Pause keeps the session; stop tears it down. Both are offered
-                because an analyst reading an alert wants the first. */}
-            {!running ? (
+            {/* Whether the institution is screening at all is an
+                administrator's decision. Everyone else watches. The buttons
+                are hidden here as a courtesy; require_admin on the monitor
+                routes is what actually enforces it. */}
+            {!canControlPipeline ? (
+              <p className="max-w-[15rem] text-right text-[11px] leading-relaxed text-slate-500">
+                Screening is controlled by an administrator.
+              </p>
+            ) : !running ? (
               <button
                 onClick={() => control(() => startMonitor(1.2))}
                 disabled={busy}

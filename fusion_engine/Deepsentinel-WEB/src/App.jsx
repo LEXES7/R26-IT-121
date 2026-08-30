@@ -18,6 +18,7 @@ import Workspace from './pages/Workspace'
 import Thresholds from './pages/Thresholds'
 import Cases from './pages/Cases'
 import Dashboard from './pages/Dashboard'
+import SystemHealth from './pages/SystemHealth'
 import Monitor from './pages/Monitor'
 import Assistant from './pages/Assistant'
 import BatchAnalysis from './pages/BatchAnalysis'
@@ -94,18 +95,26 @@ function Shell() {
               element={isAuthenticated ? <Navigate to="/analyzer" replace /> : <Login />}
             />
 
-            {/* Any signed-in user */}
+            {/* Any signed-in user. The monitor is readable by everyone; its
+                controls are gated inside the page and, that being cosmetic,
+                by require_admin on the routes themselves. */}
             <Route path="/monitor" element={<ProtectedRoute><Console><Monitor /></Console></ProtectedRoute>} />
-            <Route path="/analyzer" element={<ProtectedRoute><Console><Analyzer /></Console></ProtectedRoute>} />
-            <Route path="/thresholds" element={<ProtectedRoute><Console><Thresholds /></Console></ProtectedRoute>} />
-            <Route path="/cases" element={<ProtectedRoute><Console><Cases /></Console></ProtectedRoute>} />
-            {/* Addressable so a case can be sent to a colleague. Still authenticated. */}
-            <Route path="/cases/:caseRef" element={<ProtectedRoute><Cases /></ProtectedRoute>} />
-            <Route path="/batch" element={<ProtectedRoute><Console><BatchAnalysis /></Console></ProtectedRoute>} />
-            {/* Entitlement is enforced server-side; the page renders an upsell when not licensed. */}
             <Route path="/models" element={<ProtectedRoute><Console><Models /></Console></ProtectedRoute>} />
-            <Route path="/assistant" element={<ProtectedRoute><Console><Assistant /></Console></ProtectedRoute>} />
             <Route path="/account" element={<ProtectedRoute><Console><Workspace /></Console></ProtectedRoute>} />
+
+            {/* Case work. Not an administrator's: on a deployment that role is
+                the client's IT department, and financial-crime cases are not
+                theirs to read. Hidden from their navigation and refused here. */}
+            <Route path="/analyzer" element={<ProtectedRoute capability="canRunAnalysis"><Console><Analyzer /></Console></ProtectedRoute>} />
+            <Route path="/cases" element={<ProtectedRoute capability="canViewCases"><Console><Cases /></Console></ProtectedRoute>} />
+            {/* Addressable so a case can be sent to a colleague. Still gated. */}
+            <Route path="/cases/:caseRef" element={<ProtectedRoute capability="canViewCases"><Cases /></ProtectedRoute>} />
+            <Route path="/batch" element={<ProtectedRoute capability="canDecideCases"><Console><BatchAnalysis /></Console></ProtectedRoute>} />
+            <Route path="/assistant" element={<ProtectedRoute capability="canViewCases"><Console><Assistant /></Console></ProtectedRoute>} />
+
+            {/* The operating point the monitor alerts on — a configuration
+                decision, and audited as one. */}
+            <Route path="/thresholds" element={<ProtectedRoute capability="canConfigureSystem"><Console><Thresholds /></Console></ProtectedRoute>} />
 
             {/* Capability-gated */}
             <Route
@@ -182,11 +191,15 @@ function Console({ children }) {
 
 /** The landing page depends on who is asking. */
 function RootPage() {
-  const { isAuthenticated, initialising } = useAuth()
+  const { isAuthenticated, initialising, isAdmin } = useAuth()
   // Render nothing rather than the marketing page while the session is still
   // resolving — a signed-in user flashing the public page reads as a bug.
   if (initialising) return null
-  return isAuthenticated ? <Dashboard /> : <Home />
+  if (!isAuthenticated) return <Home />
+  // One address, two homes. An administrator lands on the system's condition;
+  // everyone else lands on the case load. Keeping both at "/" means nobody has
+  // to learn a second address and a shared link works for either.
+  return isAdmin ? <SystemHealth /> : <Dashboard />
 }
 
 

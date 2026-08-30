@@ -105,11 +105,30 @@ export function AuthProvider({ children }) {
 
       // Capability checks, named for what they permit rather than for a role,
       // so a future role change touches this file only.
+      //
+      // The console is two products sharing a shell. An administrator runs the
+      // system — models, health, configuration, and whether the pipeline is
+      // screening at all — and deliberately does not see case data: on a real
+      // deployment that is the client's IT department, and financial-crime
+      // cases are not theirs to read. Everyone else works the cases and can
+      // watch the pipeline but not touch its controls.
+      isAdmin: role === ROLES.ADMIN,
       canConfigureSystem: role === ROLES.ADMIN,
       canManageUsers: role === ROLES.ADMIN,
       canViewAuditLog: role === ROLES.ADMIN,
       canManageAlerts: role === ROLES.ADMIN || role === ROLES.RISK_MANAGER,
-      canRunAnalysis: Boolean(role),
+
+      // Starting, pausing and stopping fraud screening. Mirrored by
+      // require_admin on the monitor routes — the button being hidden is a
+      // courtesy, the server guard is the control.
+      canControlPipeline: role === ROLES.ADMIN,
+
+      // Case data and the tools that work it.
+      canViewCases: role === ROLES.RISK_MANAGER || role === ROLES.ANALYST,
+      // An analyst reads; a risk manager decides. Confirming fraud, dismissing
+      // a case and submitting batches all change the record.
+      canDecideCases: role === ROLES.RISK_MANAGER,
+      canRunAnalysis: role === ROLES.RISK_MANAGER || role === ROLES.ANALYST,
     }
   }, [user, initialising, signIn, signOut])
 
