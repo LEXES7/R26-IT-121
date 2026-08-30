@@ -77,7 +77,7 @@ export default function ComponentDetail() {
         <div className="relative mx-auto max-w-5xl px-4 py-20 sm:px-6 sm:py-24">
           <Link
             to="/"
-            className="group inline-flex items-center gap-2 text-xs text-slate-500 transition hover:text-slate-300"
+            className="group arrow-slide inline-flex items-center gap-2 text-xs text-slate-500 transition hover:text-slate-300"
           >
             <span aria-hidden className="transition-transform group-hover:-translate-x-1">←</span>
             All components
@@ -160,7 +160,7 @@ export default function ComponentDetail() {
           {c.detects.map(([name, desc], i) => (
             <Reveal key={name} delay={i * 80}>
             <div
-              className="group flex h-full gap-3 rounded-2xl border border-subtle bg-surface p-4 transition-colors duration-300 hover:border-accent-500/40 hover:bg-surface-raised"
+              className="group card-hover flex h-full gap-3 rounded-2xl border border-subtle bg-surface p-4 hover:border-accent-500/40 hover:bg-surface-raised"
             >
               <span aria-hidden className={cx('mt-1.5 h-2 w-2 shrink-0 rounded-full', a.dot)} />
               <div>
@@ -178,7 +178,7 @@ export default function ComponentDetail() {
         <Eyebrow>{c.status === 'delivered' ? 'What we learned' : 'Design decisions'}</Eyebrow>
         <div className="mt-4 space-y-3">
           {c.findings.map((f, i) => (
-            <Reveal key={f.title} delay={i * 100}><div className="rounded-2xl border border-subtle bg-surface p-5">
+            <Reveal key={f.title} delay={i * 100}><div className="card-hover h-full rounded-2xl border border-subtle bg-surface p-5">
               <div className="flex items-baseline gap-3">
                 <span className="text-sm font-bold tabular-nums text-accent-500">
                   {String(i + 1).padStart(2, '0')}
@@ -202,7 +202,7 @@ export default function ComponentDetail() {
 
         <Link
           to={`/components/${next.slug}`}
-          className="group mt-6 flex items-center justify-between rounded-2xl border border-subtle bg-surface p-5 transition hover:border-strong hover:bg-surface-raised"
+          className="group arrow-slide card-hover mt-6 flex items-center justify-between rounded-2xl border border-subtle bg-surface p-5 hover:border-strong hover:bg-surface-raised"
         >
           <div>
             <p className="text-[10px] uppercase tracking-wider text-slate-600">Next component</p>

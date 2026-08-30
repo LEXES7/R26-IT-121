@@ -207,7 +207,7 @@ export default function FAQ() {
 
         {/* ── CTA ──────────────────────────────────────────────────────── */}
         <Reveal className="mt-20">
-          <div className="relative overflow-hidden rounded-2xl border border-subtle bg-surface p-8 text-center sm:p-10">
+          <div className="card-hover relative overflow-hidden rounded-2xl border border-subtle bg-surface p-8 text-center sm:p-10">
             <div
               aria-hidden
               className="pointer-events-none absolute inset-x-0 -top-24 h-48 bg-accent-500/10 blur-3xl"
@@ -222,7 +222,7 @@ export default function FAQ() {
               <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <Link
                   to="/analyzer"
-                  className="rounded-xl bg-white px-6 py-3 text-sm font-semibold text-sentinel-950 transition hover:bg-slate-200"
+                  className="shine lift rounded-xl bg-white px-6 py-3 text-sm font-semibold text-sentinel-950"
                 >
                   Open the analyzer
                 </Link>

@@ -81,18 +81,36 @@ export default function Home() {
 
         <div className="relative mx-auto grid max-w-[88rem] items-center gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_minmax(0,36rem)] lg:gap-10 lg:py-28">
           {/* Left — the argument */}
+          {/* The hero arrives in reading order: what this is, the claim, the
+              qualification, then what you can do about it. Each step is a
+              beat behind the last, so the eye is led rather than presented
+              with everything at once. */}
           <div>
-            <Eyebrow>Multi-modal fraud detection</Eyebrow>
+            <div className="enter enter--soft" style={{ '--d': '0.06s' }}>
+              <Eyebrow>Multi-modal fraud detection</Eyebrow>
+            </div>
 
             {/* Serif, not the bold sans every product page uses. The italic
-                clause is the promise; the roman half is the commodity. */}
+                clause is the promise; the roman half is the commodity. Each
+                line rises out of its own edge — the clip is what makes the
+                words appear from nothing instead of merely fading. */}
             <h1 className="display mt-5 text-[3.5rem] text-slate-100 sm:text-[4.75rem]">
-              Detect the fraud.
-              <br />
-              <span className="display-italic text-accent-400">Then prove it.</span>
+              <span className="line-mask">
+                <span className="enter enter--mask block" style={{ '--d': '0.2s' }}>
+                  Detect the fraud.
+                </span>
+              </span>
+              <span className="line-mask">
+                <span className="enter enter--mask block" style={{ '--d': '0.38s' }}>
+                  <span className="display-italic enter-focus text-accent-400">
+                    Then prove it.
+                  </span>
+                </span>
+              </span>
             </h1>
 
-            <p className="mt-6 max-w-xl text-base leading-relaxed text-slate-400">
+            <p className="enter enter--soft mt-6 max-w-xl text-base leading-relaxed text-slate-400"
+               style={{ '--d': '0.62s' }}>
               Three deep learning models examine a transaction from different
               angles. A retrieval layer grounds the explanation in FATF typology.
               What comes out is not a score — it is a{' '}
@@ -102,11 +120,13 @@ export default function Home() {
             <div className="mt-9 flex flex-wrap items-center gap-5">
               <Link
                 to={isAuthenticated ? '/' : '/login'}
-                className="rounded-xl bg-white px-7 py-3.5 text-sm font-semibold text-sentinel-950 transition hover:bg-slate-200"
+                className="shine lift enter enter--rise rounded-xl bg-white px-7 py-3.5 text-sm font-semibold text-sentinel-950"
+                style={{ '--d': '0.78s' }}
               >
                 {isAuthenticated ? 'Open the analyzer' : 'Sign in to run it'}
               </Link>
-              <a href="#pipeline">
+              <a href="#pipeline" className="arrow-slide enter enter--side"
+                 style={{ '--d': '0.9s' }}>
                 <ArrowLink>See how it works</ArrowLink>
               </a>
             </div>
@@ -115,9 +135,10 @@ export default function Home() {
                 The detail line is not decoration — a number without its method
                 is a claim, and this page should not make claims. */}
             <dl className="hair-t mt-14 grid grid-cols-2 gap-x-8 gap-y-7 pt-8 sm:grid-cols-4">
-              {STATS.map((s) => (
-                <div key={s.label}>
-                  <dd className="numeric text-[2rem] leading-none text-slate-100">
+              {STATS.map((s, i) => (
+                <div key={s.label} className="stat-hover enter enter--soft"
+                     style={{ '--d': `${1.02 + i * 0.09}s` }}>
+                  <dd className="stat-value numeric text-[2rem] leading-none text-slate-100">
                     {s.value}
                   </dd>
                   <dt className="eyebrow mt-2.5 text-accent-400">{s.label}</dt>
@@ -159,7 +180,8 @@ export default function Home() {
         <div className="hair-t mt-14 grid gap-x-10 gap-y-12 pt-12 md:grid-cols-3">
           {PROBLEM.map((p, i) => (
             <Reveal key={p.title} delay={i * 110}>
-              <article className={cx('h-full', i > 0 && 'md:hair-l md:pl-10')}>
+              <article className={cx('card-hover h-full rounded-xl border border-transparent p-4 -m-4',
+                                     i > 0 && 'md:hair-l md:pl-10')}>
                 <div className="flex items-baseline gap-4">
                   <span className="display text-[2.5rem] leading-none text-slate-700">
                     0{i + 1}
@@ -219,7 +241,8 @@ export default function Home() {
             <Reveal key={c.slug} delay={i * 80}>
               <Link
                 to={`/components/${c.slug}`}
-                className="group grid items-baseline gap-x-8 gap-y-2 py-7 transition-colors hover:bg-surface md:grid-cols-[3rem_9rem_minmax(0,22rem)_minmax(0,1fr)_5rem]"
+                className="group arrow-slide grid items-baseline gap-x-8 gap-y-2 rounded-lg px-3 py-7 -mx-3 transition-[background-color,transform] duration-300 hover:bg-surface hover:translate-x-1 md:grid-cols-[3rem_9rem_minmax(0,22rem)_minmax(0,1fr)_5rem]"
+                style={{ transitionTimingFunction: 'var(--ease-hover)' }}
               >
                 <span className="display text-[2rem] leading-none text-slate-700 transition-colors group-hover:text-slate-500">
                   0{i + 1}
@@ -237,7 +260,7 @@ export default function Home() {
                   {c.question}
                 </span>
                 <span className="text-xs text-slate-600 transition-colors group-hover:text-accent-400 md:text-right">
-                  Explore &rarr;
+                  Explore <span className="arrow inline-block">&rarr;</span>
                 </span>
               </Link>
             </Reveal>
@@ -273,15 +296,15 @@ export default function Home() {
             <div className="mt-8 flex flex-wrap items-center gap-6">
               <Link
                 to={isAuthenticated ? '/' : '/login'}
-                className="rounded-lg bg-accent-500 px-5 py-2.5 text-sm font-medium text-[#04231f] transition-colors hover:bg-accent-400"
+                className="shine lift rounded-lg bg-accent-500 px-5 py-2.5 text-sm font-medium text-[#04231f] hover:bg-accent-400"
               >
                 {isAuthenticated ? 'Run the analyzer' : 'Sign in to run it'}
               </Link>
               <Link
                 to="/about"
-                className="hair border-b pb-1 text-sm text-slate-300 transition-colors hover:text-slate-100"
+                className="arrow-slide hair border-b pb-1 text-sm text-slate-300 transition-colors hover:text-slate-100"
               >
-                Read the architecture &rarr;
+                Read the architecture <span className="arrow inline-block">&rarr;</span>
               </Link>
             </div>
           </Reveal>

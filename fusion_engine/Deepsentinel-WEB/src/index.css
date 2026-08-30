@@ -709,3 +709,116 @@ html.theme-transition * {
   transition: top .18s ease;
 }
 .ds-skip:focus { top: 12px; }
+
+/* ── entrance and hover, public site only ────────────────────────────
+   Taken from the motion references, rebuilt on this product's own type and
+   palette rather than imported wholesale — the choreography is the reusable
+   part, the liquid-chrome look belongs to somebody else's brand.
+
+   One rule from those references is worth keeping exactly: the resting state
+   is visible. `animation-fill-mode: both` hides the element during its delay
+   and reveals it on play, so if animations never run — reduced motion, a
+   print, an old engine — the content is simply there rather than blank.
+
+   Easing is a single decelerating curve everywhere. Nothing here uses `ease`
+   or `linear`: motion that starts fast and settles reads as physical, motion
+   at constant speed reads as a slideshow. */
+
+:root {
+  --ease-settle: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-hover: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.enter {
+  animation-duration: 1.05s;
+  animation-fill-mode: both;
+  animation-timing-function: var(--ease-settle);
+  animation-delay: var(--d, 0.06s);
+}
+.enter--soft { animation-name: enter-soft; }
+.enter--mask { animation-name: enter-mask; }
+.enter--pop  { animation-name: enter-pop; }
+.enter--rise { animation-name: enter-rise; }
+.enter--side { animation-name: enter-side; }
+
+@keyframes enter-soft { from { opacity: 0; transform: translateY(14px); } }
+@keyframes enter-mask { from { opacity: 0; transform: translateY(42%); } }
+@keyframes enter-side { from { opacity: 0; transform: translateX(20px); } }
+@keyframes enter-rise { from { opacity: 0; transform: translateY(18px) scale(0.96); } }
+@keyframes enter-pop {
+  0%   { opacity: 0; transform: scale(0.9); }
+  70%  { opacity: 1; transform: scale(1.03); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* A headline line that rises out of its own edge. The clip is the effect —
+   the overflow on this wrapper is what makes the text appear from nothing
+   rather than merely fade. */
+.line-mask { display: block; overflow: hidden; padding: 0.04em 0.12em 0.16em; }
+
+/* The italic clause resolves last, from soft to sharp. It is the promise in
+   the sentence, so it is the word the eye should land on. */
+.enter-focus { animation: enter-focus 1.3s var(--ease-settle) 0.78s both; }
+@keyframes enter-focus {
+  from { opacity: 0.3; filter: blur(5px); }
+  to   { opacity: 1; filter: blur(0); }
+}
+
+/* ── hover ──────────────────────────────────────────────────────── */
+
+/* A light sweeping across a surface as the pointer arrives. */
+.shine { position: relative; isolation: isolate; overflow: hidden; }
+.shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 22%,
+              rgb(255 255 255 / 0.55) 48%, transparent 74%);
+  transform: translateX(-135%);
+  transition: transform 0.7s var(--ease-hover);
+}
+.shine:hover::after, .shine:focus-visible::after { transform: translateX(135%); }
+
+/* Lift, and a shadow tinted with the page's own accent instead of black —
+   a neutral drop shadow on a coloured ground reads as dirt. */
+.lift {
+  transition: transform 0.32s var(--ease-hover), box-shadow 0.32s var(--ease-hover),
+              border-color 0.32s var(--ease-hover), background-color 0.32s var(--ease-hover);
+}
+.lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 34px -18px rgb(var(--accent-500) / 0.45),
+              0 3px 12px -6px rgb(0 0 0 / 0.35);
+}
+/* Pressing something should feel like pressing something. */
+.lift:active { transform: translateY(-1px) scale(0.994); transition-duration: 0.09s; }
+
+/* Cards that acknowledge the pointer without moving the page under it. */
+.card-hover {
+  transition: border-color 0.3s var(--ease-hover), background-color 0.3s var(--ease-hover),
+              transform 0.3s var(--ease-hover);
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgb(var(--accent-400) / 0.4);
+  background-color: rgb(255 255 255 / 0.03);
+}
+
+/* The arrow leads before the reader does. */
+.arrow-slide svg, .arrow-slide .arrow {
+  transition: transform 0.3s var(--ease-hover);
+}
+.arrow-slide:hover svg, .arrow-slide:hover .arrow { transform: translateX(4px); }
+
+/* A figure that brightens as you read it. */
+.stat-hover { transition: color 0.3s var(--ease-hover); }
+.stat-hover:hover .stat-value { color: rgb(var(--accent-400)); }
+.stat-value { transition: color 0.3s var(--ease-hover); }
+
+@media (prefers-reduced-motion: reduce) {
+  .enter, .enter-focus { animation: none !important; }
+  .shine::after { display: none; }
+  .lift:hover, .card-hover:hover, .lift:active { transform: none; }
+  .arrow-slide:hover svg, .arrow-slide:hover .arrow { transform: none; }
+}
