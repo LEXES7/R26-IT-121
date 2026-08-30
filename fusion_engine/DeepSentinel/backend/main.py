@@ -1621,6 +1621,77 @@ DETECTORS = {
 }
 
 
+class DetectorInfo(BaseModel):
+    """One detector: what it is, where it lives, and whether it can score."""
+
+    name: str = Field(..., description="Identifier to pass to POST /detectors/{name}")
+    label: str = Field(..., description="Model name")
+    reads: str = Field(..., description="What this detector looks at")
+    live: bool = Field(..., description="Reachable and able to score right now")
+    status: str = Field(..., description="serving | warming_up | unreachable | error")
+    detail: Optional[str] = Field(None, description="Why it cannot score, when it cannot")
+    model_version: Optional[str] = None
+    docs_url: Optional[str] = Field(
+        None, description="This detector's own OpenAPI docs, served by its own process")
+
+    model_config = {"protected_namespaces": ()}
+
+
+@app.get(
+    "/detectors",
+    tags=["detectors"],
+    response_model=list[DetectorInfo],
+    summary="List the detectors and whether each one can score",
+)
+async def list_detectors(user: User = Depends(get_current_user)):
+    """Every detector, its status, and a link to its own API docs.
+
+    Each model runs as its own service with its own OpenAPI page; this is the
+    index across all three, so one request answers "what is deployed and what
+    is answering" without visiting three ports.
+    """
+    import httpx
+
+    out: list[dict] = []
+    for name, meta in DETECTORS.items():
+        base = str(config.get("upstream", meta["base"])).rstrip("/")
+        probe = "/api/graph/runtime" if name == "graph" else "/health"
+        info = {
+            "name": name,
+            "label": meta["label"],
+            "reads": meta["reads"],
+            "docs_url": f"{base}/docs",
+            "live": False,
+            "status": "unreachable",
+            "detail": "The service did not respond.",
+            "model_version": None,
+        }
+        try:
+            async with httpx.AsyncClient(timeout=4.0) as c:
+                r = await c.get(f"{base}{probe}")
+            body = r.json() if r.status_code == 200 else {}
+            info["model_version"] = body.get("model_version") or (
+                body.get("model") or {}).get("stage")
+
+            if body.get("load_error"):
+                info.update(status="error", detail=body["load_error"])
+            elif body.get("warming_up"):
+                filled, size = body.get("buffer_filled", 0), body.get("window_size", 0)
+                info.update(
+                    status="warming_up",
+                    detail=f"Needs a full window before it can score — {filled} of {size}.")
+            elif name == "graph" and not (body.get("model") or {}).get("loaded"):
+                info.update(status="error", detail="Reachable, but no model is loaded.")
+            elif r.status_code == 200:
+                info.update(live=True, status="serving", detail=None)
+            else:
+                info.update(status="error", detail=f"Health probe returned {r.status_code}.")
+        except Exception as exc:                        # noqa: BLE001
+            info["detail"] = f"{type(exc).__name__} contacting the service."
+        out.append(info)
+    return out
+
+
 @app.post("/detectors/{name}", tags=["detectors"])
 async def score_one_detector(
     name: str, body: dict, user: User = Depends(get_current_user)
