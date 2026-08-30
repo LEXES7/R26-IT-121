@@ -373,17 +373,33 @@ class MonitorEngine:
             STATE.counters.screened += 1
 
             if status != 200 or result is None:
-                # The other two are already in flight and are collected by the
-                # finally below. They are not cancelled: the sequence model has
-                # to see this transaction for its window to stay in step with
-                # the stream, whatever the relational model made of the
-                # accounts.
+                # The relational model cannot anchor a subgraph for these
+                # accounts, so it abstains — and the transaction goes on to be
+                # fused on whatever the other two say.
+                #
+                # It used to return here, which dropped the transaction
+                # entirely: the other two detectors were already running, their
+                # scores were collected and thrown away, and nothing was fused
+                # or alerted. A behavioural score of 1.00 on an account the
+                # graph snapshot has never seen produced no verdict at all.
+                # That is the same mistake as the old cascade — one detector
+                # deciding whether the others are allowed to matter.
+                #
+                # Abstaining is the honest reading. "I have no structure for
+                # this account" is not "this account is fine", and the
+                # uncertainty shrink already exists to price exactly that.
                 STATE.publish("screened", {
                     "transaction_id": txid, "outcome": "unknown_accounts",
                 })
-                if row_id is not None:
-                    from monitor import queue as ingest_queue
-                    await ingest_queue.mark_done(row_id, escalated=False)
+                runlog.event(("graph", "pipeline"),
+                             "graph: ABSTAIN no edge in the snapshot — fusing "
+                             "on the remaining detectors", txn=txid)
+                temporal = await self._collect(side, "temporal")
+                behavioural = await self._collect(side, "behavioural")
+                await self._fuse(payload, {}, None,
+                                 temporal=temporal, behavioural=behavioural,
+                                 watch_flag=False, row_id=row_id,
+                                 screening_ms=screening_ms, started=t0)
                 return
 
             score = float(result.get("relational_risk_score") or 0.0)
@@ -512,7 +528,7 @@ class MonitorEngine:
         return r.status_code, body
 
     # ── stage 2: fuse ────────────────────────────────────────────────
-    async def _fuse(self, payload: dict, sg: dict, graph_score: float, *,
+    async def _fuse(self, payload: dict, sg: dict, graph_score: float | None, *,
                     temporal: tuple, behavioural: tuple, watch_flag: bool,
                     row_id: int | None = None,
                     screening_ms: int | None = None,
@@ -641,7 +657,8 @@ class MonitorEngine:
             "transaction_id": txid,
             "severity": severity,
             "fused_score": round(fused, 4),
-            "graph_score": round(graph_score, 4),
+            "graph_score": (round(graph_score, 4)
+                            if graph_score is not None else None),
             "pattern": sg.get("pattern"),
             "sink_account": sg.get("sink_account"),
             "amount": payload["amount"],
