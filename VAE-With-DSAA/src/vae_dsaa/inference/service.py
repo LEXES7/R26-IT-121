@@ -115,8 +115,10 @@ class BehavioralPredictor:
                 f"no bundles under {models} for {protocol}__{feature_set}__*")
         self.missing_strata = missing
         self.startup_seconds = time.time() - t0
+        self.started_at = t0
         self.scored = 0
         self.latency_ms_total = 0.0
+        self._parameters: int | None = None
 
     # ---------------------------------------------------------------- route
     @staticmethod
@@ -214,6 +216,22 @@ class BehavioralPredictor:
         }
 
     # -------------------------------------------------------------- health
+    def parameter_count(self) -> int:
+        """Trained weights held in memory, summed across every loaded stratum.
+
+        One number for what is actually serving. This component is four small
+        autoencoders rather than one network, so a per-stratum figure would
+        answer a question nobody asked — and reporting only one of them would
+        understate what is loaded. `models` alongside it says how many were
+        added up. Counted once; the weights do not change after load.
+        """
+        if self._parameters is None:
+            self._parameters = sum(
+                int(sum(p.numel() for p in b.predictor.model.parameters()))
+                for b in self.bundles.values()
+            )
+        return self._parameters
+
     def health(self) -> dict:
         return {
             "status": "ok",
@@ -227,6 +245,21 @@ class BehavioralPredictor:
             "transactions_scored": self.scored,
             "mean_latency_ms": (round(self.latency_ms_total / self.scored, 2)
                                 if self.scored else None),
+
+            # The runtime block the console's Model runtime panel reads. It
+            # looks for a nested `model` on every detector and falls back to a
+            # bare "serving" when there is none, so a component that publishes
+            # its state under its own key names appears less alive than one
+            # that does not. Additive: everything above keeps its name and
+            # meaning, and a consumer reading only those is unaffected.
+            "model": {
+                "loaded": bool(self.bundles),
+                "parameters": self.parameter_count(),
+                "models": len(self.bundles),
+                "inferences": self.scored,
+                "uptime_seconds": round(time.time() - self.started_at, 1),
+            },
+
             "strata": {
                 s: {
                     "features": b.features,
