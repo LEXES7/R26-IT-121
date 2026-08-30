@@ -48,7 +48,7 @@ TS-TCN/
 │   ├── stage1_features/    features.parquet, type_risk_weights.json
 │   ├── stage2_baselines/   baseline_metrics.json, scaler.pkl, B0/B1/B2 probs
 │   ├── stage3_windows/     train/test_windows.tfrecord, windows_metadata.json
-│   ├── stage4_tcn/         best_tstcn.h5, training_history.csv
+│   ├── stage4_tcn/         best_tstcn.keras, full_training_history.csv
 │   ├── stage5_ablation/    ablation_results.json
 │   ├── stage6_evaluation/  test_metrics.json, four_model_comparison.csv
 │   ├── stage7_visualisations/  Final figures for the report
@@ -93,10 +93,13 @@ jupyter notebook notebooks/01_baseline_evaluation.ipynb
 |---|----------|-------|--------|
 | 01 | `01_baseline_evaluation.ipynb`  | Stages 1 + 2 | `features.parquet`, `baseline_metrics.json` |
 | 02 | `02_window_builder.ipynb`        | Stage 3      | `train_windows.tfrecord`, `test_windows.tfrecord` |
-| 03 | `03_tcn_architecture.ipynb`      | Stage 4 build | `ts_tcn_sanity.keras`, architecture diagram |
-| 04 | `04_full_training.ipynb`         | Stage 4 train | `best_tstcn.h5`, training history |
-| 05 | `05_evaluation_threshold.ipynb`  | Stages 6 + 7 | `test_metrics.json`, four-model comparison |
-| 06 | `06_ablation_study.ipynb`        | Stage 5      | `ablation_results.json` |
+| 03 | `03_tcn_architecture.ipynb`      | Stage 4 build | Architecture diagram, attention demo (1-epoch sanity, superseded) |
+| 04 | `04_full_training.ipynb`         | Stages 4 + 6 + 7 | `best_tstcn.keras`, `tstcn_test_metrics.json`, `four_model_comparison.csv`, figures |
+| 06 | `06_ablation_study.ipynb`        | Stage 5 (A1 ref, A2, A3) | Partial `ablation_results.json` |
+| 07 | `07_ablation_a4_completion.ipynb`| Stage 5 (A4) | Completes `ablation_results.json` |
+
+See [`notebooks/README.md`](notebooks/README.md) for why there is no `05` and why the ablation
+study is two notebooks.
 
 ### Serve the API (Stage 8)
 
@@ -108,24 +111,24 @@ uvicorn api.main:app --reload --port 8003
 Port 8003 is the fusion engine's default `TEMPORAL_API_BASE` — running here
 means the Fusion Engine and website pick it up with no extra configuration.
 See [`docs/api_contract.md`](docs/api_contract.md) for the full request /
-response schema, and note the **model status caveat**: the checkpoint served
-today (`ts_tcn_sanity.keras`) is the Stage 4 sanity run (1 epoch,
-architecture verification), not the converged model.
+response schema and the checkpoint's real measured performance
+(F1 0.851, AUC-ROC 0.947 — see the caveat there for the full picture,
+including where it still falls short of the proposal's stretch targets).
 
 ---
 
 ## 📊 Stage Map (per proposal §4, Table 7)
 
-| Stage | Component             | Deliverable                  | Month |
-|------:|-----------------------|------------------------------|------:|
-| 1 | Feature Engineering         | `features.parquet`           | 1 |
-| 2 | Baseline Evaluation         | `baseline_metrics.json`      | 1 |
-| 3 | Window + ID Buffer          | Pipeline code, `scaler.pkl`  | 2 |
-| 4 | TCN Training                | `best_tstcn.h5`              | 3–4 |
-| 5 | Ablation Study              | `ablation_results.json`      | 4–5 |
-| 6 | Evaluation                  | `test_metrics.json`          | 5 |
-| 7 | Visualisations              | 4 PNG plots                  | 5 |
-| 8 | API Delivery                | Working endpoint             | 6 |
+| Stage | Component             | Deliverable                  | Status |
+|------:|-----------------------|-------------------------------|:------:|
+| 1 | Feature Engineering         | `features.parquet`           | ✅ |
+| 2 | Baseline Evaluation         | `baseline_metrics.json`      | ✅ |
+| 3 | Window + ID Buffer          | Pipeline code, `scaler.pkl`  | ✅ |
+| 4 | TCN Training                | `best_tstcn.keras`           | ✅ |
+| 5 | Ablation Study              | `ablation_results.json`      | ✅ |
+| 6 | Evaluation                  | `tstcn_test_metrics.json`    | ✅ |
+| 7 | Visualisations              | Figures in `outputs_final/`  | ✅ |
+| 8 | API Delivery                | Working endpoint, live in the DeepSentinel platform | ✅ |
 
 ---
 
