@@ -74,6 +74,14 @@ DEFAULT_INTERVAL = 1.2     # seconds between screenings
 FUSED_BANDS = {"medium": 0.03, "high": 0.09, "critical": 0.925}
 
 
+# How long a claim may sit before it is treated as abandoned, and how often to
+# look. The claim window has to exceed the slowest realistic screening — one
+# transaction costs tens of milliseconds, so three minutes is generous — or a
+# live worker's rows would be taken out from under it.
+STALE_CLAIM_SECONDS = 180
+STALE_SWEEP_SECONDS = 30
+
+
 # A detector that just failed is left alone for this long. Under the fan-out
 # every transaction pays for a dead service, so the breaker is what keeps one
 # unreachable model from setting the pace of the whole pipeline.
@@ -102,6 +110,7 @@ class MonitorEngine:
         self._down_until: dict[str, float] = {}  # detector → don't call before
         self.upstream_timeout = _upstream_timeout()
         self._background: set[asyncio.Task] = set()  # notifications in flight
+        self._last_sweep = 0.0       # when stalled claims were last recovered
 
     # ── lifecycle ────────────────────────────────────────────────────
     async def start(self, interval: float | None = None) -> None:
@@ -161,6 +170,14 @@ class MonitorEngine:
         await self._load_bands(graph_base)
         await self._load_fusion()
 
+        # A previous run may have been killed mid-batch. Those rows are
+        # claimed by a worker that no longer exists, so they come back first.
+        from monitor import queue as ingest_queue
+
+        recovered = await ingest_queue.release_stale(STALE_CLAIM_SECONDS)
+        if recovered:
+            logger.info(f"Recovered {recovered} transaction(s) stranded by a previous run.")
+
         async with httpx.AsyncClient(timeout=20.0) as client:
             while STATE.running:
                 if self.paused:
@@ -217,37 +234,63 @@ class MonitorEngine:
             logger.info(f"Using default watch threshold ({exc})")
 
     async def _next_transaction(self, client: httpx.AsyncClient, graph_base: str):
-        """The next transaction to screen, preferring real arrivals.
+        """The next arrived transaction, or nothing.
 
-        Rows ingested by the Query Runner are claimed from `transactions_live`.
-        When that queue is empty — or its table lives in another database — the
-        monitor falls back to its sample source so a demo still has something to
-        show. The source is published either way: a dashboard must never imply
-        it is watching live traffic when it is replaying samples.
+        Only transactions the Query Runner has put into `transactions_live` are
+        screened. There is deliberately no other source.
+
+        This used to fall back to the graph service's sample endpoint whenever
+        the queue was empty, so a demo always had something moving. That is the
+        wrong trade for this system. It meant the live monitor could show a
+        throughput, a flag rate and a case queue built entirely from invented
+        traffic, labelled "sample replay" in one small caption that nobody
+        reads. Worse, it made the two states indistinguishable at a glance:
+        screening fifty real arrivals and screening nothing looked identical.
+
+        Empty now means idle, and the monitor says so.
         """
         from monitor import queue as ingest_queue
 
-        if not self._queue:
-            claimed = await ingest_queue.claim(POLL_BATCH)
-            if claimed:
-                self._queue = claimed
-                if self._source != "queue":
-                    self._source = "queue"
-                    STATE.publish("source", {"source": "queue",
-                                             "detail": "screening ingested transactions"})
-            else:
-                r = await client.get(
-                    f"{graph_base}/api/graph/sample-transactions",
-                    params={"n": POLL_BATCH, "fraud_ratio": 0.08},
-                )
-                r.raise_for_status()
-                self._queue = r.json().get("transactions", [])
-                if self._source != "sample":
-                    self._source = "sample"
-                    STATE.publish("source", {"source": "sample",
-                                             "detail": "ingestion queue empty — replaying samples"})
+        if self._queue:
+            return self._queue.pop(0)
 
-        return self._queue.pop(0) if self._queue else None
+        # Before concluding the queue is empty, check whether anything is
+        # merely stranded. A worker that dies mid-batch leaves its rows
+        # claimed, and a claimed row is never screened by anyone — the
+        # transaction is silently dropped. release_stale() has always existed
+        # for this and was never called; stopping the monitor mid-batch left
+        # 23 arrivals stuck that way.
+        now = time.monotonic()
+        if now - self._last_sweep > STALE_SWEEP_SECONDS:
+            self._last_sweep = now
+            recovered = await ingest_queue.release_stale(STALE_CLAIM_SECONDS)
+            if recovered:
+                STATE.publish("source", {
+                    "source": "queue",
+                    "detail": f"returned {recovered} stalled transaction(s) to the queue",
+                })
+
+        claimed = await ingest_queue.claim(POLL_BATCH)
+        if claimed:
+            self._queue = claimed
+            if self._source != "queue":
+                self._source = "queue"
+                STATE.publish("source", {
+                    "source": "queue",
+                    "detail": "screening transactions as they arrive",
+                })
+            return self._queue.pop(0)
+
+        if self._source != "idle":
+            self._source = "idle"
+            depth = await ingest_queue.depth()
+            STATE.publish("source", {
+                "source": "idle",
+                "detail": ("waiting for transactions — run the Query Runner"
+                           if depth.get("available")
+                           else "no ingestion queue reachable in this database"),
+            })
+        return None
 
     # ── stage 1: screen ──────────────────────────────────────────────
     async def _screen(self, client, graph_base: str, txn: dict) -> None:
