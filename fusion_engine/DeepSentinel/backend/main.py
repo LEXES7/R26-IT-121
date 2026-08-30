@@ -905,30 +905,34 @@ async def update_backend_url(payload: dict, user: User = Depends(require_admin))
 
 @app.get("/email-template/preview")
 async def preview_email_template(classification: str = "HIGH"):
-    """Preview email template (returns HTML)."""
-    from backend.email_service import FraudAlert, build_email_html
-    from datetime import datetime
+    """Render the alert email exactly as the monitor sends it.
+
+    Uses monitor.alert_email — the template that actually ships. It previously
+    rendered a second, older template from email_service, so the preview showed
+    a design no recipient ever received. Inline images are swapped for data
+    URIs, since a browser cannot resolve cid: references.
+    """
+    import base64
+
     from fastapi.responses import HTMLResponse
 
-    test_alert = FraudAlert(
-        transaction_id="PREVIEW_TX_001",
-        fraud_confidence=0.75 if classification == "MEDIUM" else 0.87,
-        classification=classification,
-        timestamp=datetime.now().isoformat(),
-        graph_score=0.85,
-        behavioral_score=0.88,
-        temporal_score=0.90,
-        graph_signal="Graph pattern: HUB_AND_SPOKE. Convergence count: 3 distinct senders. Fresh sender ratio: 66.7%.",
-        behavioral_signal="Anomaly fingerprint - Signal 1: High reconstruction error in transaction velocity. Signal 2: KL divergence indicates unusual feature distribution.",
-        temporal_signal="Step burstiness coefficient: 0.92 (significantly elevated). Triggering predecessor detected in 12 transactions.",
-        forensic_report="This transaction exhibits multiple correlated fraud signals across all modalities. The network analysis reveals a hub-and-spoke pattern typical of money mule operations. Behavioral analysis detects anomalous reconstruction errors suggesting coordinated activity. Temporal analysis shows elevated burstiness indicating rapid, automated transfers. FATF classification: MULE_NETWORK. Recommended action: FLAG_FOR_REVIEW.",
-        typology_name="Mule Network - Hub and Spoke",
-        typology_id="TY_001_MULE",
+    from backend import thresholds
+    from monitor import alert_email, assets
+
+    sev = (classification or "HIGH").upper()
+    alert, sg, scores = alert_email.sample(sev)
+    html = alert_email.build(
+        alert, sg, scores,
+        bands=thresholds.current() or {"medium": 0.03, "high": 0.09, "critical": 0.925},
+        has_image=False,
+        case_ref="CASE-2026-0184",
+        console_url=str(config.get("upstream", "console_url") or "").rstrip("/"),
+        report_attached=True,
     )
-
-    from backend.settings import get_backend_url
-
-    html = build_email_html(test_alert, await get_backend_url())
+    for cid, data in assets.inline_for(sev).items():
+        mime = "image/jpeg" if data[:3] == b"\xff\xd8\xff" else "image/png"
+        html = html.replace(
+            f"cid:{cid}", f"data:{mime};base64,{base64.b64encode(data).decode()}")
     return HTMLResponse(content=html)
 
 
@@ -936,47 +940,44 @@ async def preview_email_template(classification: str = "HIGH"):
 async def send_test_email(
     req: RiskManagerRequest, user: User = Depends(require_manager)
 ):
-    """Send a test fraud alert to verify email delivery. Admin or risk manager."""
-    from backend.email_service import send_fraud_alert, FraudAlert
-    from datetime import datetime
+    """Send a test alert to verify delivery. Admin or risk manager.
 
-    test_alert = FraudAlert(
-        transaction_id="TEST_TX_001",
-        fraud_confidence=0.87,
-        classification="HIGH",
-        timestamp=datetime.now().isoformat(),
-        graph_score=0.85,
-        behavioral_score=0.88,
-        temporal_score=0.90,
-        graph_signal="Graph pattern: HUB_AND_SPOKE. Convergence count: 3 distinct senders.",
-        behavioral_signal="High reconstruction error detected in spending patterns. DSAA score: 0.88",
-        temporal_signal="Step burstiness coefficient: 0.92 (high velocity activity). Triggering predecessor detected.",
-        forensic_report="This transaction exhibits multiple fraud signals: Hub-and-spoke network pattern in sender graph, anomalous behavioral reconstruction error, and high temporal burstiness. Combined risk confidence 87%. Recommended action: BLOCK_TRANSACTION.",
-        typology_name="Mule Network - Hub and Spoke",
-        typology_id="TY_001_MULE",
+    Sends the same template the monitor sends, banners and all, so a
+    successful test proves the thing that will actually arrive — not a
+    different email that happens to share a subject line.
+    """
+    import asyncio
+
+    from backend import thresholds
+    from backend.email_service import SendOutcome, _send_rich
+    from monitor import alert_email, assets
+
+    sev = "HIGH"
+    alert, sg, scores = alert_email.sample(sev)
+    html = alert_email.build(
+        alert, sg, scores,
+        bands=thresholds.current() or {"medium": 0.03, "high": 0.09, "critical": 0.925},
+        has_image=False, case_ref="CASE-2026-0184",
+        console_url=str(config.get("upstream", "console_url") or "").rstrip("/"),
+        report_attached=False,
     )
+    text = alert_email.build_text(alert, sg, scores, report_attached=False)
 
-    from backend.email_service import SendOutcome
-    from backend.settings import get_backend_url
+    sent = await asyncio.to_thread(
+        _send_rich, f"[TEST] [{sev}] DeepSentinel alert {alert['transaction_id']}",
+        text, html, [req.email], assets.inline_for(sev) or None, None)
 
-    result = await send_fraud_alert(
-        test_alert, [req.email], backend_url=await get_backend_url()
-    )
-
-    if result.outcome is SendOutcome.NOT_CONFIGURED:
-        # 409, not 500: nothing is broken, the server is simply not set up to
-        # send. Reporting success here is what previously made a non-delivery
-        # look like a delivery.
-        raise HTTPException(status_code=409, detail=result.detail)
-
-    if result.outcome is SendOutcome.FAILED:
-        raise HTTPException(status_code=502, detail=result.detail)
+    if not sent:
+        raise HTTPException(
+            status_code=409,
+            detail="Email is not configured, or SMTP rejected the message. "
+                   "Check the SMTP settings under Settings.")
 
     return {
-        "status": "sent",
+        "sent": True,
         "recipient": req.email,
-        "provider": result.provider,
-        "note": "Check the spam folder if it does not arrive within a minute.",
+        "template": "monitor alert (the one real alerts use)",
+        "images": sorted(assets.inline_for(sev)),
     }
 
 

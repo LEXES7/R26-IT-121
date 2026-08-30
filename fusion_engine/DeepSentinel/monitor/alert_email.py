@@ -339,3 +339,46 @@ def build_text(alert: dict, sg: dict, scores: dict, report_attached: bool) -> st
     if report_attached:
         lines += ["", "The forensic report is attached."]
     return "\n".join(lines) + "\n"
+
+
+def sample(severity: str = "HIGH") -> tuple[dict, dict, dict]:
+    """A representative alert, for the Settings preview and the test send.
+
+    Both used to build their own FraudAlert against a second, older template in
+    email_service. That meant three different emails existed — what the preview
+    showed, what the test button sent, and what the monitor actually delivered —
+    and only the third was real. A preview that does not render the shipping
+    template is worse than no preview, because it is believed.
+
+    Numbers are plausible rather than round, so the preview exercises the same
+    formatting the live path does.
+    """
+    fused = {"CRITICAL": 0.9612, "HIGH": 0.5373,
+             "MEDIUM": 0.1401, "LOW": 0.0083}.get(severity.upper(), 0.5373)
+    alert = {
+        "transaction_id": "PREVIEW-004821",
+        "severity": severity.upper(),
+        "fused_score": fused,
+        "graph_score": 0.0313,
+        "pattern": "HUB_AND_SPOKE",
+        "sink_account": "C1166671647",
+        "amount": 1326310.62,
+        "from": "C2028127673",
+        "to": "C1166671647",
+        "modalities_used": 3,
+        "fusion_method": "meta_classifier",
+        "driver": "behavioural",
+        "scores": {"graph": 0.0313, "behavioural": 0.9012, "temporal": 0.7745},
+        "at": 0,
+    }
+    sg = {
+        "pattern": "HUB_AND_SPOKE",
+        "sink_account": "C1166671647",
+        "structural_evidence": {
+            "convergence_count": 7,
+            "fresh_sender_ratio": 0.86,
+            "mules_in_subgraph": 3,
+        },
+    }
+    scores = {"graph": 0.0313, "behavioural": 0.9012, "temporal": 0.7745}
+    return alert, sg, scores
