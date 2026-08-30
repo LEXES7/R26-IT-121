@@ -1051,49 +1051,123 @@ def _report_sections(report: str) -> list[tuple[str | None, str]]:
     return out
 
 
-def _report_pdf(alert: dict, report: str) -> bytes:
+def _report_pdf(alert: dict, report: str, style: str | None = None) -> bytes:
     """The forensic report as a filed document.
 
     A PDF rather than the HTML page this used to attach: what a compliance
     officer does with this is save it, print it and cite it, and an .html
     attachment is none of those things. Built with the in-tree writer, so
     nothing has to be installed to produce one.
+
+    Laid out from the design study — warm ground, a dark masthead, the fused
+    score as the one large number, a segmented scale, and numbered sections. It
+    is the study's palette and structure rather than its typography: the writer
+    uses PDF's standard fonts so that nothing has to be embedded, and every
+    reader in the world can open it.
     """
+    from backend import report_styles
     from backend.pdf import Document
 
-    sev = str(alert.get("severity") or "LOW").upper()
-    rgb = SEV_RGB.get(sev, (0.37, 0.41, 0.42))
-    doc = Document(footer="DeepSentinel \u00b7 generated from the record for this transaction")
+    st = report_styles.resolve(style)
 
-    doc.band(rgb)
-    doc.label(f"{sev}  \u00b7  chain-of-evidence forensic report", rgb)
-    doc.heading(f"Transaction {alert['transaction_id']}")
-    doc.para(
-        f"Fused confidence {float(alert['fused_score']):.4f}  \u00b7  "
-        f"{alert.get('modalities_used', 0)} of 3 detectors available",
-        size=9.5, font="Courier", rgb=(0.37, 0.41, 0.42),
-    )
-    doc.rule()
+    class P:                       # the palette for this render
+        GROUND, INK, MUTED = st["ground"], st["ink"], st["muted"]
+        FAINT, RULE, WASH = st["faint"], st["rule"], st["wash"]
+        DEEP = st["header"]
+
+    sev = str(alert.get("severity") or "LOW").upper()
+    accent = SEV_RGB.get(sev, (0.37, 0.41, 0.42))
+    tint = {"CRITICAL": (1.000, 0.960, 0.952), "HIGH": (0.996, 0.965, 0.918),
+            "MEDIUM": (0.945, 0.941, 0.976), "LOW": (0.925, 0.957, 0.937)}.get(
+                sev, (0.949, 0.953, 0.953))
+
+    doc = Document(
+        footer="DeepSentinel \u00b7 generated from the record for this transaction",
+        ground=st["ground"])
+    txid = str(alert["transaction_id"])
+    fused = float(alert["fused_score"])
+    used = int(alert.get("modalities_used") or 0)
+
+    if st["masthead"]:
+        doc.masthead("Chain-of-evidence forensic report",
+                     "Suspicious transaction", txid, accent, deep=st["header"])
+    else:
+        doc.band(accent)
+        doc.label(f"{sev}  \u00b7  chain-of-evidence forensic report", accent)
+        doc.heading(f"Transaction {txid}")
+
+    # Where this verdict sits on the operating range, in twelve blocks. The
+    # bands are far apart in probability, so the fill is by band index and
+    # position within it — a linear scale would put nearly every transaction
+    # in the first block.
+    from backend import thresholds
+
+    b = thresholds.current() or FUSED_BANDS
+    stops = [0.0, float(b.get("medium", 0.03)), float(b.get("high", 0.09)),
+             float(b.get("critical", 0.925)), 1.0]
+    seg = max(i for i in range(4) if fused >= stops[i])
+    lo, hi = stops[seg], stops[seg + 1]
+    within = (fused - lo) / (hi - lo) if hi > lo else 0.0
+    lit = max(1, min(12, round(((seg + within) / 4) * 12)))
+
+    if st["hero"]:
+        doc.hero(f"{fused * 100:.1f}", "%", "Fused fraud confidence", accent,
+                 segments=12, lit=lit, muted=P.MUTED, ink=P.INK, wash=P.WASH)
+        doc.pill(f"{sev}  \u00b7  {used} of 3 detectors", accent, tint)
+    else:
+        doc.para(
+            f"Fused confidence {fused:.4f}  \u00b7  {used} of 3 detectors available",
+            size=9.5, font="Courier", rgb=P.MUTED)
+
+    doc.rule(rgb=P.RULE)
+    doc.label("Transaction", P.MUTED)
     doc.kv([
         ("Amount", f"{alert['amount']:,.2f}"),
-        ("From", str(alert.get("from") or "\u2014")),
-        ("To", str(alert.get("to") or "\u2014")),
-        ("Pattern", str(alert.get("pattern") or "\u2014")),
-        ("Collection account", str(alert.get("sink_account") or "\u2014")),
+        ("Originating account", str(alert.get("from") or "\u2014")),
+        ("Collection account", str(alert.get("to") or "\u2014")),
+        ("Pattern", str(alert.get("pattern") or "\u2014").replace("_", " ").title()),
+        ("Sink", str(alert.get("sink_account") or "\u2014")),
     ])
 
+    scores = alert.get("scores") or {}
+    if scores:
+        doc.rule(rgb=P.RULE)
+        doc.label("Sub-model risk scores", P.MUTED)
+        doc.kv([
+            (name, f"{scores[key]:.4f}" if scores.get(key) is not None
+                   else "did not answer")
+            for key, name in (("graph", "Network \u00b7 GraphSAGE"),
+                              ("behavioural", "Behaviour \u00b7 VAE"),
+                              ("temporal", "Timing \u00b7 TS-TCN"))
+            if key in scores
+        ])
+        if alert.get("driver"):
+            doc.para(
+                f"Largest contribution to the fused verdict: "
+                f"{alert['driver']}. The meta-classifier is linear, so this is "
+                f"the exact share of the log-odds, not an estimate.",
+                size=8.5, rgb=P.MUTED)
+
+    # The counter advances on headings only. Enumerating every pair numbered
+    # the untitled paragraphs too, so a report with any preamble came out
+    # numbered 01, 03, 05.
+    n = 0
     for head, body in _report_sections(report):
         if head:
-            doc.subheading(head)
+            n += 1
+            if st["numbered"]:
+                doc.numbered(n, head, muted=P.MUTED, rule=P.RULE, ink=P.INK)
+            else:
+                doc.subheading(head)
         if body:
-            doc.para(body)
+            doc.para(body, rgb=P.INK)
 
-    doc.rule(gap=14.0)
+    doc.rule(gap=14.0, rgb=P.RULE)
     doc.para(
         "Generated by DeepSentinel from the scores and the retrieved typology on record "
         "for this transaction. Every claim above traces to one of them; nothing in it is "
         "inferred beyond what was measured. Review before acting.",
-        size=8.5, rgb=(0.55, 0.59, 0.60), keep_together=True,
+        size=8.5, rgb=P.FAINT, keep_together=True,
     )
     return doc.render()
 

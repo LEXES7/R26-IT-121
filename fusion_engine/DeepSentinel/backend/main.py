@@ -32,6 +32,7 @@ from backend.auth import (
     UserOut,
     get_current_user,
     require_admin,
+    require_any_user,
     require_manager,
 )
 from backend.db.models import User
@@ -979,6 +980,89 @@ async def send_test_email(
         "template": "monitor alert (the one real alerts use)",
         "images": sorted(assets.inline_for(sev)),
     }
+
+
+@app.get("/report-styles", tags=["report"])
+async def list_report_styles(user: User = Depends(require_any_user)):
+    """The available looks for the forensic report PDF, and which is in force.
+
+    Readable by anyone signed in: an analyst who receives these should be able
+    to see what the options are even if they are not the one who picks.
+    """
+    from backend import report_styles
+
+    return {"styles": report_styles.listing(),
+            "selected": report_styles.selected()}
+
+
+@app.get("/report-styles/{name}/preview", tags=["report"])
+async def preview_report_style(name: str, user: User = Depends(require_any_user)):
+    """The report rendered in one style, as a real PDF.
+
+    A picture of a layout is not the layout. This returns the same bytes the
+    alert would attach, so what is previewed is what gets filed — the same
+    reason the email preview renders the shipping template rather than a copy
+    of it.
+    """
+    from fastapi.responses import Response
+
+    from backend import report_styles
+    from monitor.alert_email import sample
+    from monitor.engine import _report_pdf
+
+    if name not in report_styles.STYLES:
+        raise HTTPException(404, f"No report style named {name!r}.")
+
+    alert, sg, scores = sample("CRITICAL")
+    alert["scores"] = scores
+    narrative = (
+        "SECTION 1 - EXECUTIVE SUMMARY The transaction moved "
+        f"{alert['amount']:,.2f} from {alert['from']} to {alert['to']} and was "
+        f"assigned a fused fraud confidence of {alert['fused_score']:.4f} across "
+        "three detectors.\n\n"
+        "SECTION 2 - MULTI-MODAL EVIDENCE ANALYSIS The behavioural model returned "
+        f"{scores['behavioural']:.4f}, the largest single contribution. The network "
+        f"model returned {scores['graph']:.4f} and identified a hub-and-spoke "
+        f"structure converging on {alert['sink_account']}. The timing model "
+        f"returned {scores['temporal']:.4f}.\n\n"
+        "SECTION 3 - TYPOLOGY GROUNDING The retrieved typology is Mule Network - "
+        "Hub and Spoke, matched against the indexed FATF descriptions.\n\n"
+        "SECTION 4 - FORENSIC CONFIDENCE ASSESSMENT All three detectors answered, "
+        "so no modality was imputed and no uncertainty shrink was applied.\n\n"
+        "SECTION 5 - INVESTIGATIVE RECOMMENDATION Not available in the source record."
+    )
+    pdf = _report_pdf(alert, narrative, style=name)
+    return Response(
+        content=pdf, media_type="application/pdf",
+        headers={"Content-Disposition":
+                 f'inline; filename="report-preview-{name}.pdf"'})
+
+
+class ReportStyleChoice(BaseModel):
+    style: str
+
+
+@app.put("/report-styles/selected", tags=["report"])
+async def choose_report_style(body: ReportStyleChoice,
+                              user: User = Depends(require_manager)):
+    """Set the style every future report is rendered in.
+
+    Administrators and risk managers. It is shared and cosmetic — it changes
+    how the report looks, never what it says — so it does not need the same
+    guard as the pipeline controls, but it is still everyone's document and the
+    change is audited.
+    """
+    from backend import report_styles
+    from backend.auth import audit
+
+    try:
+        out = report_styles.choose(body.style, actor=user.username)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+    await audit("report.style", actor=user.username, target="forensic report",
+                detail=f"style={body.style}")
+    return out
 
 
 @app.get("/email/status", tags=["email"])

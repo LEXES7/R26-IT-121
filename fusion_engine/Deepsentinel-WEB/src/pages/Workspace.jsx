@@ -4,6 +4,7 @@ import Settings from './Settings'
 import Users from './Users'
 import AuditLog from './AuditLog'
 import Account from './Account'
+import ReportStyle from '../components/ReportStyle'
 
 /**
  * Administration, as one place instead of four.
@@ -23,6 +24,9 @@ const TABS = [
   ['/users',     'People',    'canManageUsers',   Users],
   ['/audit-log', 'Audit log', 'canViewAuditLog',  AuditLog],
   ['/account',   'Account',   null,               Account],
+  // No capability: everyone may look at the report they receive. Choosing is
+  // gated inside the panel, and by require_manager on the route.
+  ['/report-style', 'Report style', null,          ReportStyle],
 ]
 
 export default function Workspace() {

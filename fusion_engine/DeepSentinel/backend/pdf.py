@@ -38,6 +38,24 @@ _W["Courier"] = tuple([600] * 95)
 
 FONTS = {"Helvetica": "F1", "Helvetica-Bold": "F2", "Courier": "F3"}
 
+
+# ── palette ──────────────────────────────────────────────────────────────
+#
+# Taken from the design study for this report. It was authored in oklch, which
+# a PDF content stream cannot express, so the values are converted to sRGB once
+# here rather than approximated by eye at each call site.
+#
+# The ground is a warm off-white rather than paper white: printed, pure white
+# is what a spreadsheet looks like, and this is meant to read as a document.
+GROUND = (0.984, 0.980, 0.973)      # #FBFAF8
+INK    = (0.115, 0.123, 0.138)      # near-black, slightly blue
+MUTED  = (0.434, 0.445, 0.469)
+FAINT  = (0.468, 0.480, 0.504)
+RULE   = (0.850, 0.857, 0.874)
+WASH   = (0.904, 0.909, 0.920)      # filled cells, inactive bar segments
+DEEP   = (0.125, 0.179, 0.278)      # the header block
+PAPER  = (1.0, 1.0, 1.0)
+
 A4 = (595.28, 841.89)
 
 
@@ -88,9 +106,11 @@ class Page:
 class Document:
     """Accumulates content, flowing onto a new page when the cursor runs out."""
 
-    def __init__(self, size=A4, margin: float = 56.0, footer: str = ""):
+    def __init__(self, size=A4, margin: float = 56.0, footer: str = "",
+                 ground=GROUND):
         self.w, self.h = size
         self.margin = margin
+        self.ground = ground
         self.footer = footer
         self.col = self.w - 2 * margin
         self.pages: list[Page] = []
@@ -100,6 +120,12 @@ class Document:
     # ── page handling ────────────────────────────────────────────────
     def _new_page(self) -> None:
         self.pages.append(Page())
+        # The ground is painted first so everything else lands on top of it.
+        # Appended here rather than at render time because ops are drawn in
+        # order and a fill added later would cover the page.
+        r, g, b = self.ground
+        self.pages[-1].ops.append(
+            f"{r:.3f} {g:.3f} {b:.3f} rg 0 0 {self.w:.2f} {self.h:.2f} re f")
         self.y = self.h - self.margin
 
     def _room(self, need: float) -> None:
@@ -136,6 +162,89 @@ class Document:
             f"{self.col:.2f} {height:.2f} re f"
         )
         self.y -= height + 14
+
+    def _fill(self, x: float, y: float, w: float, h: float, rgb) -> None:
+        r, g, b = rgb
+        self.pages[-1].ops.append(
+            f"{r:.3f} {g:.3f} {b:.3f} rg {x:.2f} {y:.2f} {w:.2f} {h:.2f} re f")
+
+    def masthead(self, kicker: str, title: str, sub: str, accent,
+                 deep=DEEP) -> None:
+        """The dark block the document opens on.
+
+        The design study puts a gradient here. A PDF content stream can only do
+        that with a shading pattern, which is a lot of machinery for a band of
+        colour, so this is the flat version of the same idea — the layout is
+        what carries it, not the gradient.
+        """
+        h = 96.0
+        top = self.h
+        self._fill(0, top - h, self.w, h, deep)
+        # A severity stripe down the left edge, at full bleed.
+        self._fill(0, top - h, 7.0, h, accent)
+
+        self._txt(kicker.upper(), self.margin, top - 34,
+                  "Helvetica-Bold", 8.0, (0.62, 0.68, 0.78), spacing=1.5)
+        self._txt(title, self.margin, top - 60, "Helvetica-Bold", 19.0,
+                  (0.97, 0.97, 0.98))
+        self._txt(sub, self.margin, top - 78, "Courier", 8.5,
+                  (0.62, 0.68, 0.78))
+        self.y = top - h - 30
+
+    def hero(self, value: str, unit: str, caption: str, accent,
+             segments: int = 0, lit: int = 0,
+             muted=MUTED, ink=INK, wash=WASH) -> None:
+        """The one number the reader is looking for, at the size it deserves.
+
+        Followed by the segmented scale from the design study: equal blocks
+        with a gap between them, filled up to where this verdict sits. It reads
+        as a position on a range rather than as decoration, which a plain bar
+        does not.
+        """
+        self._room(96)
+        self._txt(caption.upper(), self.margin, self.y, "Helvetica-Bold", 8.0,
+                  muted, spacing=1.6)
+        self.y -= 46
+        self._txt(value, self.margin, self.y, "Helvetica-Bold", 46.0, ink)
+        if unit:
+            self._txt(unit, self.margin + text_width(value, "Helvetica-Bold", 46.0) + 5,
+                      self.y, "Helvetica", 17.0, muted)
+        if segments:
+            self.y -= 20
+            gap = 3.0
+            seg_w = (self.col - gap * (segments - 1)) / segments
+            for i in range(segments):
+                self._fill(self.margin + i * (seg_w + gap), self.y, seg_w, 8.0,
+                           accent if i < lit else wash)
+        self.y -= 24
+
+    def pill(self, s: str, rgb, tint) -> None:
+        """A badge. Square rather than rounded — the writer has no curves, and
+        a faked radius looks worse than an honest rectangle."""
+        pad = 6.0
+        w = text_width(s.upper(), "Helvetica-Bold", 8.0) + pad * 2 + 2.2 * (len(s) - 1)
+        self._room(22)
+        self.y -= 14
+        self._fill(self.margin, self.y - 4, w, 17.0, tint)
+        self._fill(self.margin, self.y - 4, 2.5, 17.0, rgb)
+        self._txt(s.upper(), self.margin + pad, self.y + 1.5,
+                  "Helvetica-Bold", 8.0, rgb, spacing=1.1)
+        self.y -= 12
+
+    def numbered(self, n: int, s: str, size: float = 12.0,
+                 muted=MUTED, rule=RULE, ink=INK) -> None:
+        """`01 — Executive summary`. Numbering the sections is the study's
+        strongest device: it tells the reader the document is a sequence and
+        lets a reviewer cite a part of it by number."""
+        self._room(size + 22)
+        self.y -= size + 12
+        num = f"{n:02d}"
+        self._txt(num, self.margin, self.y, "Courier", size, muted)
+        off = text_width(num, "Courier", size) + 9
+        self._txt("\u2014", self.margin + off, self.y, "Helvetica", size, rule)
+        off += text_width("\u2014", "Helvetica", size) + 9
+        self._txt(s, self.margin + off, self.y, "Helvetica-Bold", size, ink)
+        self.y -= 9
 
     def label(self, s: str, rgb=(0.69, 0.22, 0.17), size: float = 8.0) -> None:
         self._room(size + 8)
