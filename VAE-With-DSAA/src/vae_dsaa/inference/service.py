@@ -16,6 +16,7 @@ Per stratum it holds:
 
 from __future__ import annotations
 
+import hashlib
 import time
 from pathlib import Path
 
@@ -55,6 +56,30 @@ STRATA = ("TRANSFER", "CASH_OUT", "PAYMENT", "GLOBAL")
 OUT_OF_TRAINING_TYPES = frozenset({"CASH_IN", "DEBIT"})
 
 
+def _digest(path: Path) -> str | None:
+    """Short content hash of a weights file, or None if it is not there.
+
+    `MODEL_VERSION` is a constant in this module, so it answers "which release
+    is this" and cannot answer "which weights are actually loaded" — swap a
+    bundle and the string is unchanged. The sibling timing service shows what
+    that costs: its health response names a version and a degraded status, but
+    nothing identifying the checkpoint, so when its README pointed at one
+    filename and its loader read another, the API could not be used to tell
+    which of the two was serving.
+
+    Twelve hex characters is far more than enough to tell two checkpoints
+    apart, and short enough to read in a health response.
+    """
+    try:
+        h = hashlib.sha256()
+        with path.open("rb") as fh:
+            for chunk in iter(lambda: fh.read(1 << 20), b""):
+                h.update(chunk)
+        return h.hexdigest()[:12]
+    except OSError:
+        return None
+
+
 class StratumBundle:
     """One stratum's serving state."""
 
@@ -65,6 +90,7 @@ class StratumBundle:
         self.calibrator = Calibrator.load(path)
         self.typology = TypologyIndex.load(path)
         self.manifest = self.predictor.manifest
+        self.weights_digest = _digest(path / "vae.pt")
         serving = self.manifest.get("serving") or {}
         self.f8_p95 = serving.get("f8_p95_causal")
         if self.f8_p95 is None:
@@ -258,6 +284,12 @@ class BehavioralPredictor:
                 "models": len(self.bundles),
                 "inferences": self.scored,
                 "uptime_seconds": round(time.time() - self.started_at, 1),
+                # Which weights, not just which release. model_version above is
+                # a constant and stays the same when a bundle is swapped; these
+                # change with the file, so "what is actually serving" is
+                # answerable from the API rather than by hashing checkpoints by
+                # hand.
+                "weights": {s: b.weights_digest for s, b in self.bundles.items()},
             },
 
             "strata": {
