@@ -31,6 +31,7 @@ export default function GraphModelPanel() {
   const meta = m.model_meta ?? {}
   const rt = m.runtime ?? {}
   const bands = m.risk_bands ?? {}
+  const perf = m.performance
   const n = (v) => (v == null ? '—' : Number(v).toLocaleString())
 
   return (
@@ -56,6 +57,58 @@ export default function GraphModelPanel() {
         ))}
       </div>
 
+      {/* How well it scores, on the window it was never trained on. */}
+      {perf && (
+        <div className="mt-6" style={{ borderTop: '1px solid rgb(var(--ds-line))',
+                                       paddingTop: 20 }}>
+          <p className="ds-mono text-[11px] uppercase tracking-[.13em]"
+             style={{ color: 'rgb(var(--ds-faint))' }}>
+            On the held-out window · steps {perf.window?.from_step}–{perf.window?.to_step}
+          </p>
+          <div className="mt-3 grid gap-5 sm:grid-cols-3 lg:grid-cols-5">
+            {[
+              ['Precision', perf.metrics?.precision, 'of those it flags, this share are mules'],
+              ['Recall', perf.metrics?.recall, 'of the mules present, this share are found'],
+              ['F1', perf.metrics?.f1, 'the balance of the two'],
+              ['AUROC', perf.metrics?.auroc, 'how well it ranks mules above the rest'],
+              ['Accuracy', perf.metrics?.accuracy, 'see the note below'],
+            ].map(([k, v, note]) => (
+              <div key={k} className="min-w-0">
+                <p className="ds-mono text-[11px] uppercase tracking-[.13em]"
+                   style={{ color: 'rgb(var(--ds-faint))' }}>{k}</p>
+                <p className="numeric mt-1 text-[24px] leading-none">
+                  {v != null ? Number(v).toFixed(3) : '—'}
+                </p>
+                <p className="mt-1 text-[13px] leading-snug"
+                   style={{ color: 'rgb(var(--ds-muted))' }}>{note}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-[13px]"
+               style={{ color: 'rgb(var(--ds-muted))' }}>
+            <span>{Number(perf.evaluated_accounts ?? 0).toLocaleString()} accounts evaluated</span>
+            <span>{Number(perf.actual_mules ?? 0).toLocaleString()} were mules</span>
+            <span className="ds-mono">
+              tp {perf.confusion?.tp} · fp {perf.confusion?.fp}
+              {' · '}fn {perf.confusion?.fn} · tn {perf.confusion?.tn}
+            </span>
+          </div>
+
+          <p className="mt-3 text-[13px] leading-relaxed"
+             style={{ color: 'rgb(var(--ds-sev-high))' }}>
+            Accuracy is the misleading one here and is shown only so it cannot
+            be quoted out of context: mules are {perf.actual_mules && perf.evaluated_accounts
+              ? `${((perf.actual_mules / perf.evaluated_accounts) * 100).toFixed(1)}%`
+              : 'a small share'} of this population, so a model that flagged
+            nothing at all would score about{' '}
+            {perf.actual_mules && perf.evaluated_accounts
+              ? (1 - perf.actual_mules / perf.evaluated_accounts).toFixed(3) : '—'}.
+            Precision and recall are the figures that mean something.
+          </p>
+        </div>
+      )}
+
       {/* The operating point, and where it came from. */}
       <div className="mt-6 grid gap-5 sm:grid-cols-3"
            style={{ borderTop: '1px solid rgb(var(--ds-line))', paddingTop: 20 }}>
@@ -66,7 +119,7 @@ export default function GraphModelPanel() {
             'the extreme tail of scored accounts'],
           ['Validation F1', meta.val_f1_at_tuned_threshold != null
             ? Number(meta.val_f1_at_tuned_threshold).toFixed(3) : '—',
-            'at that threshold, on the validation window'],
+            'what the threshold was chosen on'],
         ].map(([k, v, note]) => (
           <div key={k} className="min-w-0">
             <p className="ds-mono text-[11px] uppercase tracking-[.13em]"

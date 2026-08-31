@@ -1343,11 +1343,14 @@ async def graph_model(user: User = Depends(require_any_user)):
         async with httpx.AsyncClient(timeout=20.0) as client:
             health = (await client.get(f"{base}/health")).json()
             runtime = (await client.get(f"{base}/api/graph/runtime")).json()
+            # Older builds of the detector do not serve this; the page copes.
+            r = await client.get(f"{base}/api/graph/performance")
+            performance = r.json() if r.status_code == 200 else None
     except Exception as exc:                            # noqa: BLE001
         raise HTTPException(
             502, f"The network detector did not answer: {type(exc).__name__}"
         ) from exc
-    return {**health, "runtime": runtime}
+    return {**health, "runtime": runtime, "performance": performance}
 
 
 @app.get("/fusion/model", tags=["analysis"])
