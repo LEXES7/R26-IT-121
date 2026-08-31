@@ -1373,10 +1373,14 @@ async def fusion_model(user: User = Depends(require_any_user)):
     except Exception as exc:                            # noqa: BLE001
         logger.debug(f"No analysis statistics for the fusion page: {exc}")
 
+    bands = thresholds.current() or {}
+    from backend import fusion_eval
+
     return {
         **described,
-        "bands": thresholds.current() or {},
+        "bands": bands,
         "decided": counts,
+        "performance": fusion_eval.evaluate(meta_classifier, bands),
     }
 
 

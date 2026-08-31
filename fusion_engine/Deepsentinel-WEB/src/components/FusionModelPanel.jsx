@@ -31,6 +31,7 @@ export default function FusionModelPanel() {
   const decided = m.decided ?? {}
   const by = decided.by_classification ?? {}
   const total = decided.total ?? 0
+  const perf = m.performance
   const widest = Math.max(...Object.values(w).map(Math.abs), 0.5)
   const LABEL = { graph: 'Network', behavioural: 'Behaviour', temporal: 'Timing' }
   const BAND = { CRITICAL: 'sev-critical', HIGH: 'sev-high', MEDIUM: 'sev-medium', LOW: 'accent' }
@@ -100,6 +101,89 @@ export default function FusionModelPanel() {
           </div>
         </div>
       </div>
+
+      {/* Does fusing actually beat the parts? The only question that
+          justifies this component existing, answered on the held-out window. */}
+      {perf && (
+        <div className="mt-6" style={{ borderTop: '1px solid rgb(var(--ds-line))',
+                                       paddingTop: 20 }}>
+          <p className="ds-mono text-[11px] uppercase tracking-[.13em]"
+             style={{ color: 'rgb(var(--ds-faint))' }}>
+            Against each detector alone · held-out window ·{' '}
+            {perf.window?.rows?.toLocaleString()} transactions,{' '}
+            {perf.window?.frauds} fraudulent
+          </p>
+
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-[14px]" style={{ borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ color: 'rgb(var(--ds-faint))' }}>
+                  {['', 'PR-AUC', 'AUROC'].map((h, i) => (
+                    <th key={h || i}
+                        className="ds-mono px-2 pb-2 text-left text-[11px] uppercase tracking-[.12em]"
+                        style={{ borderBottom: '1px solid rgb(var(--ds-line))' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[['Fused verdict', perf.fusion, true],
+                  ...Object.entries(perf.detectors ?? {}).map(([k, v]) => [k, v, false])]
+                  .map(([name, v, isFusion]) => (
+                    <tr key={name}>
+                      <td className="px-2 py-2"
+                          style={{ color: isFusion ? 'rgb(var(--ds-accent-strong))'
+                            : 'rgb(var(--ds-muted))',
+                            fontWeight: isFusion ? 700 : 400 }}>{name}</td>
+                      <td className="numeric px-2 py-2"
+                          style={{ fontWeight: isFusion ? 700 : 400 }}>
+                        {v?.pr_auc?.toFixed(4) ?? '—'}
+                      </td>
+                      <td className="numeric px-2 py-2"
+                          style={{ color: 'rgb(var(--ds-muted))' }}>
+                        {v?.auroc?.toFixed(4) ?? '—'}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="mt-3 text-[13px] leading-relaxed"
+             style={{ color: 'rgb(var(--ds-muted))' }}>
+            Read PR-AUC: at this class balance it reflects what an analyst
+            actually experiences, and the fused verdict leads it. On AUROC the
+            behavioural detector edges ahead — both are shown so neither can be
+            picked selectively.
+          </p>
+
+          {perf.at_threshold && (
+            <div className="mt-5 grid gap-5 sm:grid-cols-4">
+              {[
+                ['Precision', perf.at_threshold.precision, 'of what it alerts on'],
+                ['Recall', perf.at_threshold.recall, 'of the fraud present'],
+                ['F1', perf.at_threshold.f1, 'the balance'],
+                ['Accuracy', perf.at_threshold.accuracy, 'flattered by the balance'],
+              ].map(([k, v, note]) => (
+                <div key={k} className="min-w-0">
+                  <p className="ds-mono text-[11px] uppercase tracking-[.13em]"
+                     style={{ color: 'rgb(var(--ds-faint))' }}>{k}</p>
+                  <p className="numeric mt-1 text-[24px] leading-none">
+                    {v != null ? Number(v).toFixed(3) : '—'}
+                  </p>
+                  <p className="mt-1 text-[13px]"
+                     style={{ color: 'rgb(var(--ds-muted))' }}>{note}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="mt-2 ds-mono text-[13px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+            at the critical band {perf.at_threshold?.threshold} · tp{' '}
+            {perf.at_threshold?.confusion?.tp} · fp {perf.at_threshold?.confusion?.fp}
+            {' · '}fn {perf.at_threshold?.confusion?.fn} · tn{' '}
+            {perf.at_threshold?.confusion?.tn}
+          </p>
+        </div>
+      )}
 
       <dl className="mt-6 grid gap-2 text-[14px]"
           style={{ borderTop: '1px solid rgb(var(--ds-line))', paddingTop: 18 }}>
