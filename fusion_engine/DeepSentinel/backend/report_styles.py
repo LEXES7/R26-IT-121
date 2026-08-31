@@ -79,6 +79,29 @@ STYLES: dict[str, dict] = {
         "meters": True,
         "accent": (0.216, 0.478, 0.349),
     },
+    "dossier": {
+        "label": "Dossier",
+        "blurb": "The facts down a dark green rail, the narrative beside it. "
+                 "Reads like a case file rather than a memo.",
+        "ground": (0.984, 0.980, 0.973),
+        "ink":    (0.106, 0.129, 0.114),
+        "muted":  (0.365, 0.400, 0.376),
+        "faint":  (0.478, 0.510, 0.486),
+        "rule":   (0.847, 0.855, 0.843),
+        "wash":   (0.906, 0.910, 0.918),
+        "header": (0.086, 0.176, 0.133),
+        "masthead": False,      # the rail carries what a masthead would
+        "hero": False,          # the score lives in the rail
+        "numbered": True,
+        "meters": True,
+        "accent": (0.184, 0.376, 0.282),
+        # Width of the rail in points. A4 is 595 wide, so this is the ~30%
+        # the reference uses.
+        "rail": 175.0,
+        "rail_ink":   (0.949, 0.965, 0.957),
+        "rail_muted": (0.612, 0.702, 0.655),
+        "rail_track": (0.180, 0.290, 0.235),
+    },
     "plain": {
         "label": "Plain",
         "blurb": "No fills, no colour beyond the severity. Least ink, cleanest "
