@@ -14,12 +14,25 @@ import ConsoleShell from '../components/ConsoleShell'
  * than the whole world — the interesting part is always local, and the rest
  * costs memory to hold and time to draw.
  *
- * Radial rather than force-directed. A force layout looks better on a dense
- * mesh but needs a library and a second or two to settle, and this graph is
- * overwhelmingly hub-and-spoke: senders converging on one collector. A ring
- * around a centre draws that instantly and reads correctly, and the shape of
- * the answer is the finding.
+ * A small force layout, written here rather than pulled in: repulsion between
+ * nodes, springs along transfers, the searched account pinned to the middle.
+ * It is seeded, so the same account always draws the same picture — an
+ * investigator comparing two accounts should not have to re-read a new
+ * arrangement every visit.
+ *
+ * Worth knowing what this graph actually looks like, because it shapes the
+ * view. Of 2,770,409 transfers, 2,766,854 senders have an out-degree of
+ * exactly one, and only 686 accounts in the whole 3.3M have both senders and
+ * receivers. So there is no second hop to speak of: the neighbourhood of an
+ * account is a star, not a mesh, and asking for two hops returns the same
+ * picture as one. The way to fill the frame is to land on a collector that
+ * many accounts pay into — the busiest has 75 — not to reach further out.
  */
+
+// Collectors with the most senders converging on them, measured off the
+// served bundle. Offered as a starting point because a randomly chosen
+// account has five neighbours and looks like nothing much.
+const BUSY = ['C1286084959', 'C1360767589', 'C665576141', 'C97730845']
 
 const FRAME_H = 460
 
@@ -60,6 +73,63 @@ export default function GraphExplorer() {
     }
   }, [hops])
 
+  // ── layout ────────────────────────────────────────────────────────────
+  // A small force pass: neighbours repel, edges pull, and the whole thing is
+  // held toward the middle. Deterministic — same graph, same picture — because
+  // an investigator comparing two accounts should not have to re-read a new
+  // arrangement each time.
+  const layout = useCallback((g, w, h) => {
+    const nodes = g.nodes.map((n, i) => {
+      // Seeded spiral start. Random starts settle to a different shape on
+      // every render, which makes the same account look like a different
+      // network each time you visit it.
+      const a = i * 2.399963
+      const r = Math.sqrt(i + 0.5) * (Math.min(w, h) / 2.6) / Math.sqrt(g.nodes.length)
+      return {
+        ...n,
+        x: n.is_centre ? w / 2 : w / 2 + Math.cos(a) * r,
+        y: n.is_centre ? h / 2 : h / 2 + Math.sin(a) * r,
+        vx: 0, vy: 0,
+      }
+    })
+    const byId = new Map(nodes.map((n) => [n.id, n]))
+    const links = g.edges
+      .map((e) => ({ a: byId.get(e.source), b: byId.get(e.target), e }))
+      .filter((l) => l.a && l.b)
+
+    const pad = 46
+    for (let step = 0; step < 190; step += 1) {
+      const cool = 1 - step / 190
+      for (let i = 0; i < nodes.length; i += 1) {
+        for (let j = i + 1; j < nodes.length; j += 1) {
+          const A = nodes[i]; const B = nodes[j]
+          let dx = B.x - A.x; let dy = B.y - A.y
+          let d2 = dx * dx + dy * dy
+          if (d2 < 1) { dx = (i - j) || 1; dy = 1; d2 = 1 }
+          const f = 2600 / d2
+          const d = Math.sqrt(d2)
+          A.vx -= (dx / d) * f; A.vy -= (dy / d) * f
+          B.vx += (dx / d) * f; B.vy += (dy / d) * f
+        }
+      }
+      links.forEach(({ a, b }) => {
+        const dx = b.x - a.x; const dy = b.y - a.y
+        const d = Math.hypot(dx, dy) || 1
+        const f = (d - Math.min(w, h) / 4.2) * 0.012
+        a.vx += (dx / d) * f; a.vy += (dy / d) * f
+        b.vx -= (dx / d) * f; b.vy -= (dy / d) * f
+      })
+      nodes.forEach((n) => {
+        if (n.is_centre) { n.x = w / 2; n.y = h / 2; n.vx = 0; n.vy = 0; return }
+        n.x += (n.vx *= 0.82) * cool
+        n.y += (n.vy *= 0.82) * cool
+        n.x = Math.max(pad, Math.min(w - pad, n.x))
+        n.y = Math.max(pad, Math.min(h - pad, n.y))
+      })
+    }
+    return { nodes, links, byId }
+  }, [])
+
   // ── draw ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const canvas = canvasRef.current
@@ -69,81 +139,104 @@ export default function GraphExplorer() {
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
     const rect = canvas.getBoundingClientRect()
-    canvas.width = Math.round(rect.width * dpr)
-    canvas.height = Math.round(FRAME_H * dpr)
+    const W = rect.width
+    const H = FRAME_H
+    canvas.width = Math.round(W * dpr)
+    canvas.height = Math.round(H * dpr)
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    ctx.clearRect(0, 0, rect.width, FRAME_H)
     layoutRef.current = []
+
+    // Ground: a deep teal wash, brightest behind the centre.
+    const bg = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.7)
+    bg.addColorStop(0, '#0b2430')
+    bg.addColorStop(1, '#05121a')
+    ctx.fillStyle = bg
+    ctx.fillRect(0, 0, W, H)
+
+    // Distant specks. Seeded, so they do not crawl between renders.
+    let seed = 7
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff)
+    for (let i = 0; i < 150; i += 1) {
+      const x = rnd() * W; const y = rnd() * H; const r = rnd() * 1.1 + 0.3
+      ctx.fillStyle = `rgba(180,235,255,${0.05 + rnd() * 0.22})`
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill()
+    }
     if (!graph) return
 
-    const cx0 = rect.width / 2
-    const cy0 = FRAME_H / 2
-    const others = graph.nodes.filter((n) => !n.is_centre)
-    const hub = graph.nodes.find((n) => n.is_centre)
-    // Two rings once there are more than a dozen neighbours, so labels have
-    // somewhere to go and the ring does not become a solid band of circles.
-    const split = others.length > 14
-    const radius = Math.min(cx0, cy0) - 54
-
-    const pos = new Map()
-    if (hub) pos.set(hub.id, { x: cx0, y: cy0, r: 13, node: hub })
-    others.forEach((n, i) => {
-      const ring = split && i % 2 ? 0.66 : 1
-      const count = split
-        ? (i % 2 ? Math.floor(others.length / 2) : Math.ceil(others.length / 2))
-        : others.length
-      const idx = split ? Math.floor(i / 2) : i
-      const a = (idx / Math.max(count, 1)) * Math.PI * 2 - Math.PI / 2
-      pos.set(n.id, {
-        x: cx0 + Math.cos(a) * radius * ring,
-        y: cy0 + Math.sin(a) * radius * ring,
-        r: 7, node: n,
-      })
-    })
-
-    // Edges first, so nodes sit on top. Width and brightness follow the
-    // model's own attention — the thing it thought mattered is the thing
-    // drawn most strongly.
+    const { nodes, links } = layout(graph, W, H)
     const maxAtt = Math.max(...graph.edges.map((e) => e.attention ?? 0), 0.0001)
-    graph.edges.forEach((e) => {
-      const a = pos.get(e.source)
-      const b = pos.get(e.target)
-      if (!a || !b) return
+    const maxDeg = Math.max(...nodes.map((n) => n.in_degree + n.out_degree), 1)
+
+    // Edges, drawn twice: a wide soft pass for the bloom, a thin bright core.
+    links.forEach(({ a, b, e }) => {
       const w = (e.attention ?? 0) / maxAtt
-      ctx.strokeStyle = `rgba(56,189,178,${0.16 + w * 0.6})`
-      ctx.lineWidth = 0.7 + w * 2.1
-      ctx.beginPath()
-      ctx.moveTo(a.x, a.y)
-      ctx.lineTo(b.x, b.y)
-      ctx.stroke()
+      ctx.strokeStyle = `rgba(80,200,230,${0.05 + w * 0.10})`
+      ctx.lineWidth = 3.5 + w * 4
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke()
+      ctx.strokeStyle = `rgba(150,240,255,${0.22 + w * 0.55})`
+      ctx.lineWidth = 0.6 + w * 1.1
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke()
     })
 
-    pos.forEach((p, id) => {
-      const n = p.node
+    nodes.forEach((n) => {
+      const deg = n.in_degree + n.out_degree
+      const r = n.is_centre ? 21 : 5 + Math.sqrt(deg / maxDeg) * 9
       const risky = (n.score ?? 0) >= 0.09
-      ctx.beginPath()
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
-      ctx.fillStyle = n.is_centre ? '#2dd4bf' : risky ? '#d97706' : '#334155'
-      ctx.fill()
-      if (id === hover) {
-        ctx.strokeStyle = 'rgba(255,255,255,.85)'
-        ctx.lineWidth = 2
-        ctx.stroke()
+      const hot = n.id === hover
+
+      // Halo.
+      const g1 = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r * 3.4)
+      const tint = risky ? '255,176,72' : '64,224,240'
+      g1.addColorStop(0, `rgba(${tint},${n.is_centre ? 0.5 : 0.32})`)
+      g1.addColorStop(0.5, `rgba(${tint},0.10)`)
+      g1.addColorStop(1, `rgba(${tint},0)`)
+      ctx.fillStyle = g1
+      ctx.beginPath(); ctx.arc(n.x, n.y, r * 3.4, 0, Math.PI * 2); ctx.fill()
+
+      // Sphere: a bright core falling off to a rim.
+      const g2 = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r)
+      g2.addColorStop(0, risky ? '#fff0d0' : '#e8fdff')
+      g2.addColorStop(0.35, risky ? '#ffb448' : '#43e0f0')
+      g2.addColorStop(1, risky ? 'rgba(255,150,40,.30)' : 'rgba(40,190,220,.28)')
+      ctx.fillStyle = g2
+      ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.fill()
+
+      // Wireframe, on the larger spheres only — meridians read as a globe at
+      // 20px and as noise at 6px.
+      if (r > 9) {
+        ctx.strokeStyle = `rgba(190,250,255,${n.is_centre ? 0.5 : 0.32})`
+        ctx.lineWidth = 0.6
+        for (let k = 1; k <= 3; k += 1) {
+          const rx = r * (k / 3.4)
+          ctx.beginPath(); ctx.ellipse(n.x, n.y, rx, r, 0, 0, Math.PI * 2); ctx.stroke()
+          ctx.beginPath(); ctx.ellipse(n.x, n.y, r, rx, 0, 0, Math.PI * 2); ctx.stroke()
+        }
       }
-      layoutRef.current.push({ id, ...p })
+      ctx.strokeStyle = hot ? 'rgba(255,255,255,.95)' : `rgba(${tint},.75)`
+      ctx.lineWidth = hot ? 2 : 1
+      ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.stroke()
+
+      layoutRef.current.push({ id: n.id, x: n.x, y: n.y, r: Math.max(r, 9), node: n })
     })
 
-    // Label the centre and anything scoring above the medium band. Labelling
-    // every node turns the ring into unreadable overlap.
-    ctx.font = '11px ui-monospace, SFMono-Regular, monospace'
+    // Labels last, so nothing is drawn over them. The centre, anything risky,
+    // and whatever is under the cursor — labelling every node turns a full
+    // frame into overlapping text.
+    ctx.font = '10px ui-monospace, SFMono-Regular, monospace'
     ctx.textAlign = 'center'
-    pos.forEach((p, id) => {
-      const n = p.node
-      if (!n.is_centre && (n.score ?? 0) < 0.09 && id !== hover) return
-      ctx.fillStyle = n.is_centre ? '#e2e8f0' : '#cbd5e1'
-      ctx.fillText(id, p.x, p.y - p.r - 6)
+    nodes.forEach((n) => {
+      const risky = (n.score ?? 0) >= 0.09
+      if (!n.is_centre && !risky && n.id !== hover) return
+      const deg = n.in_degree + n.out_degree
+      const r = n.is_centre ? 21 : 5 + Math.sqrt(deg / maxDeg) * 9
+      const text = n.id
+      const w = ctx.measureText(text).width
+      ctx.fillStyle = 'rgba(3,16,22,.72)'
+      ctx.fillRect(n.x - w / 2 - 4, n.y - r - 20, w + 8, 14)
+      ctx.fillStyle = n.is_centre ? '#dffbff' : '#cfe6ee'
+      ctx.fillText(text, n.x, n.y - r - 9)
     })
-  }, [graph, hover])
+  }, [graph, hover, layout])
 
   const hit = (evt) => {
     const canvas = canvasRef.current
@@ -189,6 +282,19 @@ export default function GraphExplorer() {
             <Button type="submit" loading={loading} disabled={!query.trim()}>
               {loading ? 'Loading…' : 'Show the network'}
             </Button>
+            <span className="text-[11px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+              busiest:{' '}
+              {BUSY.map((a, i) => (
+                <span key={a}>
+                  {i > 0 && ' · '}
+                  <button type="button"
+                          onClick={() => { setQuery(a); load(a) }}
+                          className="numeric underline decoration-dotted underline-offset-2">
+                    {a}
+                  </button>
+                </span>
+              ))}
+            </span>
             <label className="flex items-center gap-2 text-[12px]"
                    style={{ color: 'rgb(var(--ds-muted))' }}>
               Hops
