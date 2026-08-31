@@ -21,6 +21,14 @@ import { Alert, cx } from './ui'
  * endpoint needs a bearer token and an <iframe src> cannot carry one. Object
  * URLs are revoked on unmount and on every re-fetch, or a few minutes of
  * clicking between styles leaks a PDF per click.
+ *
+ * It is fetched on request rather than on mount. Framing a PDF is the same
+ * gesture to the browser as opening one, so a download manager watching for
+ * PDFs — IDM does — offered to save the file on every load of this page,
+ * including loads by people who never came to look at the report. Waiting for
+ * the click also stops the server rendering a document on every visit to
+ * System Health, where this panel sits below several others and is usually
+ * not the reason anyone opened the page.
  */
 export default function ReportStyle() {
   const { canManageAlerts } = useAuth()
@@ -28,6 +36,9 @@ export default function ReportStyle() {
   const [selected, setSelected] = useState(null)
   const [showing, setShowing] = useState(null)
   const [preview, setPreview] = useState(null)
+  // Nothing is fetched until this is set. It stays set once asked, so changing
+  // style after that still re-renders the preview without a second click.
+  const [wanted, setWanted] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const urlRef = useRef(null)
@@ -53,9 +64,9 @@ export default function ReportStyle() {
   useEffect(() => { load() }, [load])
   useEffect(() => revoke, [revoke])
 
-  // Fetch the PDF for whichever style is being shown.
+  // Fetch the PDF for whichever style is being shown, once asked for.
   useEffect(() => {
-    if (!showing) return
+    if (!showing || !wanted) return
     let stale = false
     setPreview(null)
     reportStylePreviewUrl(showing)
@@ -67,7 +78,7 @@ export default function ReportStyle() {
       })
       .catch((err) => setError(err?.userMessage ?? 'Could not render the preview.'))
     return () => { stale = true }
-  }, [showing, revoke])
+  }, [showing, wanted, revoke])
 
   const pick = async (name) => {
     setBusy(true)
@@ -145,7 +156,21 @@ export default function ReportStyle() {
         </div>
 
         <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-950/40">
-          {preview ? (
+          {!wanted ? (
+            <div className="flex flex-col items-center gap-3 py-24 text-center">
+              <p className="max-w-sm text-xs leading-relaxed text-slate-500">
+                The preview is the real PDF. It opens in a frame, so a download
+                manager may offer to save it.
+              </p>
+              <button
+                type="button"
+                className="ds-btn"
+                onClick={() => setWanted(true)}
+              >
+                Show the preview
+              </button>
+            </div>
+          ) : preview ? (
             <iframe
               key={preview}
               src={preview}

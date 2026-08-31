@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 
+import { useTheme } from '../context/ThemeContext'
+import markLight from '../assets/deepsentinel-mark.png'
+import markDark from '../assets/deepsentinel-mark-dark.png'
+
 /**
- * The opening curtain: hello, in a few languages, then it lifts.
+ * The opening curtain: hello in a few languages, then the mark, then it lifts.
+ *
+ * The mark is the payoff. The greetings are motion without meaning — pleasant,
+ * but they could belong to any site — so the sequence resolves onto the one
+ * image that could only be this one. It settles rather than arrives: it enters
+ * slightly too large and eases down to its own size, which reads as coming to
+ * rest instead of being pasted on.
  *
  * Two things this deliberately is not.
  *
@@ -61,17 +71,33 @@ const GREETINGS = [
 const SHOWN = 9
 const STEP_MS = 112
 const FLOOR_MS = SHOWN * STEP_MS + 190
-// The ceiling has to clear the floor comfortably, or a slow font request
-// would race the guard that exists to protect against it.
+
+// How long the mark holds before the curtain lifts. Long enough to land and be
+// read as a mark rather than a flash; short enough that a returning visitor is
+// not made to sit through a title card. The CSS settle runs 620ms, so this
+// leaves roughly a third of a second of stillness at the end.
+const MARK_MS = 980
+
+// The ceiling has to clear the floor and the mark together, or a slow font
+// request would race the guard that exists to protect against it.
 const CEILING_MS = 6000
 
 export default function Greeting() {
-  // loading → lifting → gone. The middle state exists so the panel can finish
-  // its exit before it unmounts; unmounting straight from `loading` would cut
-  // the animation off at the first frame.
+  // loading → mark → lifting → gone. `lifting` exists so the panel can finish
+  // its exit before it unmounts; unmounting straight from `mark` would cut the
+  // animation off at the first frame.
   const [phase, setPhase] = useState('loading')
   const [index, setIndex] = useState(0)
   const started = useRef(Date.now())
+
+  // Two assets rather than one asset and a CSS filter. The source mark is not
+  // a single-colour glyph — the shield and its lines are navy, and the area
+  // they enclose is opaque near-white — so no filter can lighten one without
+  // lightening the other: `brightness(0) invert(1)` flattened both to white
+  // and the globe and eye disappeared into the shield. The dark asset is the
+  // same artwork with that enclosed area made genuinely transparent.
+  const { theme } = useTheme()
+  const mark = theme === 'light' ? markLight : markDark
 
   // Chosen once, on mount. Recomputing during render would reshuffle the
   // words on every state change and turn the sequence into noise.
@@ -93,16 +119,30 @@ export default function Greeting() {
     }
 
     document.body.style.overflow = 'hidden'
+
+    // Fetch the mark while the greetings are still running. It is not in the
+    // DOM until the handover, so without this the browser would only start
+    // loading it at the moment it is meant to appear — and the settle would
+    // play against an empty box on a cold cache.
+    new Image().src = mark
+
     const tick = setInterval(
       () => setIndex((i) => (i + 1) % words.current.length),
       STEP_MS,
     )
 
-    let lifted = false
-    const lift = () => {
-      if (lifted) return
-      lifted = true
-      setPhase('lifting')
+    // `reveal` runs once, whatever gets there first — the ready promise or the
+    // ceiling. It stops the greetings, shows the mark, and starts the single
+    // timer that lifts the curtain, so the mark is never skipped by a fast
+    // load and never doubled by a slow one.
+    let revealed = false
+    let markTimer
+    const reveal = () => {
+      if (revealed) return
+      revealed = true
+      clearInterval(tick)
+      setPhase('mark')
+      markTimer = setTimeout(() => setPhase('lifting'), MARK_MS)
     }
 
     // Ready means fonts resolved and the window loaded. Both are wrapped
@@ -114,16 +154,19 @@ export default function Greeting() {
         : new Promise((r) => window.addEventListener('load', r, { once: true })),
     ])
 
+    let floorTimer
     ready.then(() => {
       const elapsed = Date.now() - started.current
-      setTimeout(lift, Math.max(0, FLOOR_MS - elapsed))
-    }).catch(lift)
+      floorTimer = setTimeout(reveal, Math.max(0, FLOOR_MS - elapsed))
+    }).catch(reveal)
 
-    const ceiling = setTimeout(lift, CEILING_MS)
+    const ceiling = setTimeout(reveal, CEILING_MS)
 
     return () => {
       clearInterval(tick)
       clearTimeout(ceiling)
+      clearTimeout(floorTimer)
+      clearTimeout(markTimer)
       document.body.style.overflow = ''
     }
   }, [])
@@ -145,12 +188,25 @@ export default function Greeting() {
       role="status"
       aria-label="Loading DeepSentinel"
     >
-      <div className="greeting-inner">
-        <span className="greeting-dot" aria-hidden="true" />
-        <span key={index} className="greeting-word" aria-hidden="true">
-          {words.current[index]}
-        </span>
-      </div>
+      {phase === 'loading' ? (
+        <div className="greeting-inner">
+          <span className="greeting-dot" aria-hidden="true" />
+          <span key={index} className="greeting-word" aria-hidden="true">
+            {words.current[index]}
+          </span>
+        </div>
+      ) : (
+        <div className="greeting-mark" aria-hidden="true">
+          {/* The glow sits behind the mark rather than on it: a filter on the
+              image itself would bloom the shield's own edges and soften the
+              one thing that has to stay sharp. */}
+          <span className="greeting-mark-glow" />
+          <img src={mark} alt="" className="greeting-mark-img" />
+          <span className="greeting-mark-word">
+            Deep<span className="greeting-mark-word-accent">Sentinel</span>
+          </span>
+        </div>
+      )}
     </div>
   )
 }
