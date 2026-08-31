@@ -176,9 +176,8 @@ export default function Thresholds() {
               </div>
               <p style={{ padding: '11px 19px 15px', fontSize: 13, lineHeight: 1.6,
                           color: 'rgb(var(--ds-faint))', margin: 0 }}>
-                A detector with no history on this window cannot be tuned.
-                Changes here are simulated against past decisions and do not
-                affect the running services.
+                The table replays past decisions. Saving a line changes what
+                the monitor alerts on from the next transaction onward.
               </p>
             </Panel>
 
