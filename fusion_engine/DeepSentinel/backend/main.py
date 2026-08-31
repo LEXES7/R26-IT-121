@@ -1016,6 +1016,7 @@ async def send_test_email(
 @app.get("/graph/neighbourhood", tags=["graph"])
 async def graph_neighbourhood(
     account: str, hops: int = 1, max_edges: int = 150,
+    scope: str = "component",
     user: User = Depends(require_any_user),
 ):
     """The payment graph immediately around one account.
@@ -1047,7 +1048,8 @@ async def graph_neighbourhood(
         async with httpx.AsyncClient(timeout=30.0) as client:
             r = await client.get(
                 f"{base}/api/graph/neighbourhood",
-                params={"account": account, "hops": hops, "max_edges": max_edges},
+                params={"account": account, "hops": hops,
+                        "max_edges": max_edges, "scope": scope},
             )
     except Exception as exc:                            # noqa: BLE001
         raise HTTPException(

@@ -32,7 +32,16 @@ import ConsoleShell from '../components/ConsoleShell'
 // Collectors with the most senders converging on them, measured off the
 // served bundle. Offered as a starting point because a randomly chosen
 // account has five neighbours and looks like nothing much.
-const BUSY = ['C1286084959', 'C1360767589', 'C665576141', 'C97730845']
+// Entry points into the largest connected components — the only places in
+// this graph where several collectors are genuinely linked, by senders who
+// paid more than one of them. Everywhere else is an isolated star, so a
+// randomly chosen account cannot show interconnection that is not there.
+const BUSY = [
+  ['C1988852187', '90 accounts, 3 collectors'],
+  ['C1459757869', '83 accounts, 3 collectors'],
+  ['C874023329', '74 accounts, 3 collectors'],
+  ['C2083562754', '73 accounts, 2 collectors'],
+]
 
 const FRAME_H = 460
 
@@ -43,6 +52,7 @@ export default function GraphExplorer() {
   const [graph, setGraph] = useState(null)
   const [centre, setCentre] = useState(null)
   const [hops, setHops] = useState(1)
+  const [scope, setScope] = useState('component')
   const [trail, setTrail] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -59,7 +69,7 @@ export default function GraphExplorer() {
     setLoading(true)
     setError(null)
     try {
-      const d = await getNeighbourhood(account, h)
+      const d = await getNeighbourhood(account, { scope, hops: h })
       setGraph(d)
       setCentre(account)
       if (remember) {
@@ -71,7 +81,7 @@ export default function GraphExplorer() {
     } finally {
       setLoading(false)
     }
-  }, [hops])
+  }, [hops, scope])
 
   // ── layout ────────────────────────────────────────────────────────────
   // A small force pass: neighbours repel, edges pull, and the whole thing is
@@ -283,11 +293,11 @@ export default function GraphExplorer() {
               {loading ? 'Loading…' : 'Show the network'}
             </Button>
             <span className="text-[11px]" style={{ color: 'rgb(var(--ds-faint))' }}>
-              busiest:{' '}
-              {BUSY.map((a, i) => (
+              largest networks:{' '}
+              {BUSY.map(([a, note], i) => (
                 <span key={a}>
                   {i > 0 && ' · '}
-                  <button type="button"
+                  <button type="button" title={note}
                           onClick={() => { setQuery(a); load(a) }}
                           className="numeric underline decoration-dotted underline-offset-2">
                     {a}

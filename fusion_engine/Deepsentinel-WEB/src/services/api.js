@@ -414,9 +414,10 @@ export const clearMonitor = () => client.post('/api/monitor/clear').then((r) => 
 
 /** The payment graph around one account. Bounded server-side — never the
  *  whole 3.27M-node graph. */
-export const getNeighbourhood = (account, hops = 1, maxEdges) =>
+export const getNeighbourhood = (account, { scope = 'component', hops = 1,
+                                            maxEdges = 400 } = {}) =>
   client.get('/graph/neighbourhood', {
-    params: { account, hops, ...(maxEdges ? { max_edges: maxEdges } : {}) },
+    params: { account, scope, hops, max_edges: maxEdges },
   }).then((r) => r.data)
 
 export const getGraphSettings = () =>
