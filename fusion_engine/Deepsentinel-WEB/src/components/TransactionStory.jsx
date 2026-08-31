@@ -7,6 +7,7 @@
 import { useRef } from 'react'
 import { useGSAP } from '@gsap/react'
 import { gsap, prefersReducedMotion } from '../lib/motion'
+import { MODEL_LENS } from '../data/modelLens'
 import { Eyebrow } from './Editorial'
 
 const TXN = [
@@ -19,11 +20,11 @@ const TXN = [
 ]
 
 const MODELS = [
-  { key: 'graph', label: 'Network', model: 'GraphSAGE', score: 0.50, colour: 'var(--tw-modality-graph, #0f9b8e)',
+  { key: 'graph', label: 'Network', model: 'GraphSAGE', score: 0.50, colour: `rgb(${MODEL_LENS.graph.hue})`,
     finding: 'HUB_AND_SPOKE — 4 senders converging on one sink' },
-  { key: 'behavioural', label: 'Behaviour', model: 'Stratified VAE', score: 0.88, colour: '#dc2649',
+  { key: 'behavioural', label: 'Behaviour', model: 'Stratified VAE', score: 0.88, colour: `rgb(${MODEL_LENS.behavioural.hue})`,
     finding: 'Reconstruction error 4.2σ above this account’s baseline' },
-  { key: 'temporal', label: 'Timing', model: 'System-Context TCN', score: 0.92, colour: '#c2740a',
+  { key: 'temporal', label: 'Timing', model: 'System-Context TCN', score: 0.92, colour: `rgb(${MODEL_LENS.temporal.hue})`,
     finding: 'Burstiness 0.92 — machine-paced, not human' },
 ]
 

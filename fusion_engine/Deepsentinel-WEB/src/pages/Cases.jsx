@@ -706,11 +706,11 @@ function Verdict({ onClick, disabled, k, primary, block, children }) {
       onClick={onClick}
       disabled={disabled}
       className={cx(
-        'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50',
+        'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
         block && 'w-full justify-between',
         primary
-          ? 'bg-accent-500 text-[#04231f] hover:bg-accent-400'
-          : 'bg-surface-raised text-slate-300 hover:bg-surface-hover hover:text-slate-100',
+          ? 'bg-accent-500 text-[#04231f] hover:bg-accent-400 disabled:bg-surface-raised disabled:text-slate-500'
+          : 'bg-surface-raised text-slate-300 hover:bg-surface-hover hover:text-slate-100 disabled:opacity-50',
       )}
     >
       {children}
