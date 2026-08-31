@@ -1384,6 +1384,121 @@ async def fusion_model(user: User = Depends(require_any_user)):
     }
 
 
+@app.get("/fusion/stages", tags=["analysis"])
+async def fusion_stages(user: User = Depends(require_any_user)):
+    """Each step between three scores and a filed document, checked.
+
+    The fusion tab treats this as one component, and it is five: weigh the
+    detectors, match a known typology, write the narrative, render the
+    document, deliver it. Each can fail on its own and only the first is
+    visible in a verdict — a report generator that has run out of quota and an
+    SMTP password that expired both leave the numbers looking perfect.
+
+    The PDF stage is genuinely exercised rather than inspected: the writer is
+    asked for a document and the bytes are counted. A renderer that imports
+    cleanly and produces nothing would pass any lighter check.
+    """
+    from backend import report_styles, thresholds
+    from monitor.router import _delivery as delivery_status
+
+    stages: list[dict] = []
+
+    # 1 ── weigh the detectors
+    described = (meta_classifier.describe()
+                 if meta_classifier is not None else {"method": "unavailable"})
+    stages.append({
+        "key": "meta_classifier",
+        "name": "Meta-classifier",
+        "does": "Weighs the three detectors into one confidence",
+        "ok": described.get("method") == "meta_classifier",
+        "detail": ("linear model loaded" if described.get("method") == "meta_classifier"
+                   else "falling back to the mean of available scores"),
+        "figures": ([{"label": k, "value": f"{v:+.3f}"}
+                     for k, v in (described.get("weights") or {}).items()]
+                    or [{"label": "weights", "value": "—"}]),
+    })
+
+    # 2 ── match a known pattern
+    try:
+        n_typologies = len(knowledge_base.get_collection().get(include=[])["ids"])
+    except Exception as exc:                            # noqa: BLE001
+        logger.debug(f"Cannot count typologies: {exc}")
+        n_typologies = 0
+    stages.append({
+        "key": "retrieval",
+        "name": "FATF typology",
+        "does": "Finds the closest known laundering pattern",
+        "ok": n_typologies > 0,
+        "detail": (f"{n_typologies} typologies indexed" if n_typologies
+                   else "no knowledge base loaded"),
+        "figures": [{"label": "indexed", "value": str(n_typologies)},
+                    {"label": "source", "value": "FATF"}],
+    })
+
+    # 3 ── write it up
+    stages.append({
+        "key": "reporter",
+        "name": "Report writer",
+        "does": "Writes the narrative, citing only what was retrieved",
+        "ok": forensic_reporter is not None,
+        "detail": ("language model configured" if forensic_reporter is not None
+                   else "not configured — verdicts still stand, narratives do not"),
+        "figures": [{"label": "grounding", "value": "retrieval only"}],
+    })
+
+    # 4 ── render the document, for real
+    pdf_ok, pdf_detail, pdf_bytes = False, "not attempted", 0
+    try:
+        from monitor.alert_email import sample
+        from monitor.engine import _report_pdf
+
+        alert, _sg, scores = sample("HIGH")
+        alert["scores"] = scores
+        blob = _report_pdf(alert, "SECTION 1 - EXECUTIVE SUMMARY Self-check.",
+                           style=report_styles.selected())
+        pdf_bytes = len(blob)
+        pdf_ok = blob[:5] == b"%PDF-" and pdf_bytes > 800
+        pdf_detail = (f"rendered {pdf_bytes:,} bytes" if pdf_ok
+                      else "writer returned something that is not a PDF")
+    except Exception as exc:                            # noqa: BLE001
+        pdf_detail = f"{type(exc).__name__}: {exc}"[:120]
+    stages.append({
+        "key": "pdf",
+        "name": "PDF writer",
+        "does": "Renders the report as the document that gets filed",
+        "ok": pdf_ok,
+        "detail": pdf_detail,
+        "figures": [{"label": "style", "value": report_styles.selected()},
+                    {"label": "test render", "value": f"{pdf_bytes:,} B" if pdf_bytes else "—"}],
+    })
+
+    # 5 ── deliver it
+    delivery = {}
+    try:
+        delivery = await delivery_status()
+    except Exception as exc:                            # noqa: BLE001
+        logger.debug(f"No delivery status for the fusion page: {exc}")
+    raised = delivery.get("raised") or 0
+    delivered = delivery.get("delivered") or 0
+    stages.append({
+        "key": "email",
+        "name": "Email delivery",
+        "does": "Sends the alert to the nominated risk managers",
+        # Configured but never exercised is not a failure; configured and
+        # dropping everything is. They are told apart here rather than both
+        # being shown as a warning.
+        "ok": bool(delivery.get("configured")) and (raised == 0 or delivered > 0),
+        "detail": (f"{delivered} of {raised} alerts delivered" if raised
+                   else "configured, nothing raised yet"),
+        "figures": [
+            {"label": "recipients", "value": str(delivery.get("recipients") or 0)},
+            {"label": "sending as", "value": delivery.get("sending_as") or "—"},
+        ],
+    })
+
+    return {"stages": stages, "bands": thresholds.current() or {}}
+
+
 @app.get("/report-styles", tags=["report"])
 async def list_report_styles(user: User = Depends(require_any_user)):
     """The available looks for the forensic report PDF, and which is in force.

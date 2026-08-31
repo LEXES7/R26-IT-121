@@ -239,6 +239,9 @@ export const warmTemporalWindow = () =>
 /** What the network detector is serving, and under what protocol. */
 export const getGraphModel = () => client.get('/graph/model').then((r) => r.data)
 
+/** Each step between three scores and a filed document, checked. */
+export const getFusionStages = () => client.get('/fusion/stages').then((r) => r.data)
+
 /** The meta-classifier's weights, operating point and decisions so far. */
 export const getFusionModel = () => client.get('/fusion/model').then((r) => r.data)
 

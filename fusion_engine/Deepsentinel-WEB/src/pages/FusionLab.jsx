@@ -5,6 +5,7 @@ import {
 import { PRESETS } from '../components/DetectorLab'
 import ConsoleShell from '../components/ConsoleShell'
 import FusionModelPanel from '../components/FusionModelPanel'
+import FusionStages from '../components/FusionStages'
 import { Alert, Button, cx } from '../components/ui'
 
 /**
@@ -255,7 +256,8 @@ export default function FusionLab() {
           </>
         ) : null}
 
-        <div style={{ marginTop: 14 }}>
+        <div style={{ marginTop: 14, display: 'grid', gap: 18 }}>
+          <FusionStages />
           <FusionModelPanel />
         </div>
       </div>
