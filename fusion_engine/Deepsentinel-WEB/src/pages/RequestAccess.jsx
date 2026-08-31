@@ -254,7 +254,7 @@ export default function RequestAccess() {
         </Button>
 
         <div className="rounded-xl border border-subtle bg-surface p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+          <p className="text-[15px] font-semibold uppercase tracking-wider text-slate-500">
             What happens next
           </p>
           <ol className="mt-3 space-y-2.5">
@@ -264,17 +264,17 @@ export default function RequestAccess() {
               ['3', 'We set up your accounts', 'Configured for your team, with roles assigned.'],
             ].map(([n, title, detail]) => (
               <li key={n} className="flex gap-3">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent-500/15 text-[10px] font-bold text-accent-500">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent-500/15 text-[14px] font-bold text-accent-500">
                   {n}
                 </span>
                 <span>
                   <span className="block text-xs font-medium text-slate-300">{title}</span>
-                  <span className="block text-[11px] leading-relaxed text-slate-600">{detail}</span>
+                  <span className="block text-[15px] leading-relaxed text-slate-600">{detail}</span>
                 </span>
               </li>
             ))}
           </ol>
-          <p className="mt-3 border-t border-subtle pt-3 text-[11px] leading-relaxed text-slate-600">
+          <p className="mt-3 border-t border-subtle pt-3 text-[15px] leading-relaxed text-slate-600">
             Your details are used only to respond to this enquiry.
           </p>
         </div>

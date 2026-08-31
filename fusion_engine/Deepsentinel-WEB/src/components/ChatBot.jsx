@@ -152,7 +152,7 @@ export default function ChatBot() {
 
         {messages.length === 1 && suggestions.length > 0 && (
           <div className="space-y-1.5 pt-1">
-            <p className="text-[11px] uppercase tracking-wide text-slate-500">Try asking</p>
+            <p className="text-[15px] uppercase tracking-wide text-slate-500">Try asking</p>
             {suggestions.slice(0, 4).map((s) => (
               <button
                 key={s}
@@ -216,13 +216,13 @@ function Message({ message }) {
 
         {message.sources?.length > 0 && (
           <details className="mt-2 border-t border-subtle pt-2">
-            <summary className="cursor-pointer text-[11px] text-slate-400 hover:text-slate-200">
+            <summary className="cursor-pointer text-[15px] text-slate-400 hover:text-slate-200">
               {message.sources.length} source{message.sources.length > 1 ? 's' : ''}
               {message.grounded === false && ' · quoted directly'}
             </summary>
             <ul className="mt-1.5 space-y-1">
               {message.sources.map((s) => (
-                <li key={s} className="text-[11px] leading-snug text-slate-500">
+                <li key={s} className="text-[15px] leading-snug text-slate-500">
                   {s}
                 </li>
               ))}

@@ -300,7 +300,7 @@ export default function BatchAnalysis() {
 
         {/* ── step 2: what the file actually contains ── */}
         {inspecting && (
-          <p style={{ marginTop: 14, fontSize: 11, color: 'rgb(var(--ds-muted))' }}>
+          <p style={{ marginTop: 14, fontSize: 15, color: 'rgb(var(--ds-muted))' }}>
             Reading the file…
           </p>
         )}
@@ -308,7 +308,7 @@ export default function BatchAnalysis() {
         {inspect?.fatal && (
           <div className="ds-fade-up" style={{ marginTop: 16, borderRadius: 6, padding: 13,
                 background: 'rgb(var(--ds-signal-soft))', color: 'rgb(var(--ds-signal))',
-                fontSize: 11, lineHeight: 1.6 }}>
+                fontSize: 15, lineHeight: 1.6 }}>
             <strong>This file cannot be read.</strong> {inspect.fatal}
           </div>
         )}
@@ -336,15 +336,15 @@ export default function BatchAnalysis() {
             <div style={{ display: 'grid', gap: 12, marginBottom: 15,
                           gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))' }}>
               <div>
-                <div className="ds-mono" style={{ fontSize: 19 }}>{inspect.rows.toLocaleString()}</div>
+                <div className="ds-mono" style={{ fontSize: 26 }}>{inspect.rows.toLocaleString()}</div>
                 <div className="ds-section-label" style={{ marginTop: 4 }}>Rows</div>
               </div>
               <div>
-                <div className="ds-mono" style={{ fontSize: 19 }}>{inspect.header.length}</div>
+                <div className="ds-mono" style={{ fontSize: 26 }}>{inspect.header.length}</div>
                 <div className="ds-section-label" style={{ marginTop: 4 }}>Columns</div>
               </div>
               <div>
-                <div className="ds-mono" style={{ fontSize: 19,
+                <div className="ds-mono" style={{ fontSize: 26,
                       color: inspect.labelCol ? 'rgb(var(--ds-accent-strong))'
                         : 'rgb(var(--ds-faint))' }}>
                   {inspect.labelCol ? inspect.fraudLabelled : '—'}
@@ -352,8 +352,8 @@ export default function BatchAnalysis() {
                 <div className="ds-section-label" style={{ marginTop: 4 }}>Labelled fraud</div>
               </div>
               <div>
-                <div className="ds-mono" style={{ fontSize: 19 }}>
-                  {(file.size / 1024).toFixed(0)}<span style={{ fontSize: 11 }}> KB</span>
+                <div className="ds-mono" style={{ fontSize: 26 }}>
+                  {(file.size / 1024).toFixed(0)}<span style={{ fontSize: 15 }}> KB</span>
                 </div>
                 <div className="ds-section-label" style={{ marginTop: 4 }}>Size</div>
               </div>
@@ -363,7 +363,7 @@ export default function BatchAnalysis() {
                           gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
               {inspect.mapped.map((m) => (
                 <div key={m.label} style={{ display: 'flex', gap: 8, alignItems: 'baseline',
-                      fontSize: 10, padding: '7px 9px', borderRadius: 5,
+                      fontSize: 14, padding: '7px 9px', borderRadius: 5,
                       background: 'rgb(var(--ds-workspace))' }}>
                   <span className="ds-mono" style={{ flex: 1 }}>{m.label}</span>
                   <span style={{ color: m.found ? 'rgb(var(--ds-accent-strong))'
@@ -372,7 +372,7 @@ export default function BatchAnalysis() {
                   </span>
                 </div>
               ))}
-              <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', fontSize: 10,
+              <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', fontSize: 14,
                     padding: '7px 9px', borderRadius: 5, background: 'rgb(var(--ds-workspace))' }}>
                 <span className="ds-mono" style={{ flex: 1 }}>isFraud</span>
                 <span style={{ color: inspect.labelCol ? 'rgb(var(--ds-accent-strong))'
@@ -396,14 +396,14 @@ export default function BatchAnalysis() {
                               color: bad ? 'rgb(var(--ds-signal))' : 'rgb(var(--ds-warn))' }}>
                           {bad ? 'blocking' : 'advisory'}
                         </span>
-                        <span style={{ fontSize: 11, fontWeight: 600 }}>{x.title}</span>
+                        <span style={{ fontSize: 15, fontWeight: 600 }}>{x.title}</span>
                       </div>
-                      <div style={{ fontSize: 10, lineHeight: 1.6, marginTop: 5,
+                      <div style={{ fontSize: 14, lineHeight: 1.6, marginTop: 5,
                                     color: 'rgb(var(--ds-muted))' }}>
                         {x.detail}
                       </div>
                       {x.rows?.length > 0 && (
-                        <div className="ds-mono" style={{ fontSize: 9, marginTop: 6,
+                        <div className="ds-mono" style={{ fontSize: 13, marginTop: 6,
                               color: 'rgb(var(--ds-faint))' }}>
                           row {x.rows.join(' · row ')}
                           {x.rows.length >= 6 ? ' · …' : ''}
@@ -415,7 +415,7 @@ export default function BatchAnalysis() {
               </div>
             )}
 
-            <p style={{ fontSize: 10, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
+            <p style={{ fontSize: 14, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
                         marginBottom: 14 }}>
               {inspect.missing.length
                 ? `Add ${inspect.missing.join(', ')} and choose the file again.`
@@ -435,14 +435,14 @@ export default function BatchAnalysis() {
                   {inspect.preview.map((r, i) => (
                     <tr key={i}>
                       {inspect.header.slice(0, 7).map((h) => (
-                        <td key={h} className="ds-mono" style={{ fontSize: 10 }}>{r[h]}</td>
+                        <td key={h} className="ds-mono" style={{ fontSize: 14 }}>{r[h]}</td>
                       ))}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <p style={{ fontSize: 9, color: 'rgb(var(--ds-faint))' }}>
+            <p style={{ fontSize: 13, color: 'rgb(var(--ds-faint))' }}>
               First {inspect.preview.length} rows, read locally. Nothing has been
               uploaded or scored yet.
             </p>
@@ -456,7 +456,7 @@ export default function BatchAnalysis() {
             {scoring ? 'Scoring…' : 'Run the pipeline'}
           </Button>
 
-          <label className="flex items-center gap-2 text-[12px] text-[rgb(var(--ds-muted))]">
+          <label className="flex items-center gap-2 text-[16px] text-[rgb(var(--ds-muted))]">
             Alert at
             <input
               type="number" step="0.001" min="0" max="1"
@@ -464,12 +464,12 @@ export default function BatchAnalysis() {
               onChange={(e) => setThresholdInput(e.target.value)}
               placeholder="live band"
               disabled={scoring}
-              className="numeric w-24 rounded-md border px-2 py-1 text-[12px]"
+              className="numeric w-24 rounded-md border px-2 py-1 text-[16px]"
               style={{ borderColor: 'rgb(var(--ds-line))',
                        background: 'rgb(var(--ds-surface))',
                        color: 'rgb(var(--ds-ink))' }}
             />
-            <span className="text-[11px] text-[rgb(var(--ds-faint))]">
+            <span className="text-[15px] text-[rgb(var(--ds-faint))]">
               {thresholdInput.trim() === ''
                 ? 'blank uses whatever the live monitor alerts on'
                 : 'this run only — the monitor is unchanged'}
@@ -504,7 +504,7 @@ export default function BatchAnalysis() {
           <SectionHeading
             label="Applied in the browser the moment a file is chosen"
             title="What every file is checked against"
-            action={<span className="ds-mono" style={{ fontSize: 9,
+            action={<span className="ds-mono" style={{ fontSize: 13,
                     color: 'rgb(var(--ds-faint))' }}>
               mirrors backend/batch.py
             </span>}
@@ -532,7 +532,7 @@ export default function BatchAnalysis() {
                    'one stray comma shifts every value after it'],
                   ['At most 5,000 rows', 'larger files are split into batches'],
                 ].map(([t, d]) => (
-                  <li key={t} style={{ fontSize: 10, lineHeight: 1.55 }}>
+                  <li key={t} style={{ fontSize: 14, lineHeight: 1.55 }}>
                     <span style={{ color: 'rgb(var(--ds-signal))', marginRight: 6 }}>✗</span>
                     <span style={{ fontWeight: 600 }}>{t}</span>
                     <div style={{ color: 'rgb(var(--ds-muted))', marginLeft: 16 }}>{d}</div>
@@ -560,7 +560,7 @@ export default function BatchAnalysis() {
                   ['No duplicate transaction ids',
                    'repeats are each scored separately'],
                 ].map(([t, d]) => (
-                  <li key={t} style={{ fontSize: 10, lineHeight: 1.55 }}>
+                  <li key={t} style={{ fontSize: 14, lineHeight: 1.55 }}>
                     <span style={{ color: 'rgb(var(--ds-warn))', marginRight: 6 }}>!</span>
                     <span style={{ fontWeight: 600 }}>{t}</span>
                     <div style={{ color: 'rgb(var(--ds-muted))', marginLeft: 16 }}>{d}</div>
@@ -570,7 +570,7 @@ export default function BatchAnalysis() {
             </div>
           </div>
 
-          <p style={{ fontSize: 9, lineHeight: 1.6, color: 'rgb(var(--ds-faint))',
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: 'rgb(var(--ds-faint))',
                       marginTop: 14 }}>
             Header names are matched case-insensitively. Findings name the
             offending rows. The upload is validated again server-side.
@@ -608,19 +608,19 @@ export default function BatchAnalysis() {
                   alignItems: 'center', marginTop: 14, padding: '11px 13px', borderRadius: 6,
                   background: 'rgb(var(--ds-workspace))' }}>
               <span className="ds-section-label" style={{ flex: '0 0 auto' }}>Scoring</span>
-              <span className="ds-mono" style={{ fontSize: 11, flex: '1 1 220px', minWidth: 0 }}>
+              <span className="ds-mono" style={{ fontSize: 15, flex: '1 1 220px', minWidth: 0 }}>
                 {latest.nameOrig} → {latest.nameDest}
               </span>
-              <span style={{ fontSize: 10, color: 'rgb(var(--ds-muted))' }}>{latest.type}</span>
-              <span className="ds-mono" style={{ fontSize: 11 }}>
+              <span style={{ fontSize: 14, color: 'rgb(var(--ds-muted))' }}>{latest.type}</span>
+              <span className="ds-mono" style={{ fontSize: 15 }}>
                 {Number(latest.amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </span>
-              <span className="ds-mono" style={{ fontSize: 13, minWidth: 52, textAlign: 'right',
+              <span className="ds-mono" style={{ fontSize: 17, minWidth: 52, textAlign: 'right',
                     color: latest.alerted ? 'rgb(var(--ds-sev-critical))'
                       : 'rgb(var(--ds-accent-strong))' }}>
                 {typeof latest.score === 'number' ? latest.score.toFixed(3) : '—'}
               </span>
-              <span className="ds-mono" style={{ fontSize: 10, color: 'rgb(var(--ds-faint))' }}>
+              <span className="ds-mono" style={{ fontSize: 14, color: 'rgb(var(--ds-faint))' }}>
                 {latest.modalities_used}/3
               </span>
             </div>
@@ -637,7 +637,7 @@ export default function BatchAnalysis() {
                 ['False alarms', live.falseAlarm, 'rgb(var(--ds-sev-medium))'],
               ].map(([label, value, colour]) => (
                 <div key={label}>
-                  <div className="ds-mono" style={{ fontSize: 19, color: colour }}>{value}</div>
+                  <div className="ds-mono" style={{ fontSize: 26, color: colour }}>{value}</div>
                   <div className="ds-section-label" style={{ marginTop: 4 }}>{label}</div>
                 </div>
               ))}
@@ -721,7 +721,7 @@ export default function BatchAnalysis() {
           <SectionHeading
             label="Each detector scored at its own operating point"
             title="What each part of the system contributed"
-            action={<span className="ds-mono" style={{ fontSize: 10,
+            action={<span className="ds-mono" style={{ fontSize: 14,
                     color: 'rgb(var(--ds-muted))' }}>this file only</span>}
           />
           <div style={{ overflowX: 'auto' }}>
@@ -754,7 +754,7 @@ export default function BatchAnalysis() {
               </tbody>
             </table>
           </div>
-          <p style={{ fontSize: 10, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
+          <p style={{ fontSize: 14, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
                       marginTop: 12 }}>
             {(() => {
               const singles = perModel.filter((m) => m.key !== 'fused' && m.f1 !== null)
@@ -775,7 +775,7 @@ export default function BatchAnalysis() {
                   : `Fusion and ${best.name} are within half an F1 point on this file.`
             })()}
           </p>
-          <p style={{ fontSize: 9, lineHeight: 1.6, color: 'rgb(var(--ds-faint))',
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: 'rgb(var(--ds-faint))',
                       marginTop: 8 }}>
             Each detector is measured at its own threshold — graph{' '}
             {OWN_THRESHOLD.graph}, behaviour {OWN_THRESHOLD.behavioural},
@@ -800,7 +800,7 @@ export default function BatchAnalysis() {
               </span>
             }
           />
-          <p style={{ fontSize: 10, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
+          <p style={{ fontSize: 14, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
                       marginBottom: 14 }}>
             Written only for the highest-scoring rows — one per row would cost
             seconds each. Each is constrained by Chain-of-Evidence prompting to
@@ -813,19 +813,19 @@ export default function BatchAnalysis() {
                     borderRadius: 7, padding: 15 }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10,
                               alignItems: 'center', marginBottom: 10 }}>
-                  <span className="ds-mono" style={{ fontSize: 10,
+                  <span className="ds-mono" style={{ fontSize: 14,
                         color: 'rgb(var(--ds-muted))' }}>row {n.index}</span>
-                  <span className="ds-mono" style={{ fontSize: 13,
+                  <span className="ds-mono" style={{ fontSize: 17,
                         color: 'rgb(var(--ds-sev-critical))' }}>
                     {n.score.toFixed(3)}
                   </span>
                   {n.typology && <DsBadge tone="warn">{n.typology}</DsBadge>}
-                  <span style={{ fontSize: 9, color: 'rgb(var(--ds-faint))',
+                  <span style={{ fontSize: 13, color: 'rgb(var(--ds-faint))',
                                  marginLeft: 'auto' }}>
                     cited, not invented
                   </span>
                 </div>
-                <p style={{ fontSize: 11, lineHeight: 1.7, whiteSpace: 'pre-wrap',
+                <p style={{ fontSize: 15, lineHeight: 1.7, whiteSpace: 'pre-wrap',
                             margin: 0 }}>{n.report}</p>
               </div>
             ))}
@@ -879,7 +879,7 @@ export default function BatchAnalysis() {
                     {['Row', 'From → To', 'Type', 'Amount', 'Score', 'Verdict'].map((h) => (
                       <th
                         key={h}
-                        className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500"
+                        className="px-4 py-2.5 text-[14px] font-semibold uppercase tracking-wider text-slate-500"
                       >
                         {h}
                       </th>
@@ -932,7 +932,7 @@ function TransactionRow({ row, hasLabels }) {
         <span className="mx-1.5 text-slate-700">→</span>
         <span className="font-mono text-xs text-slate-400">{row.nameDest}</span>
         {row.typology_label && (
-          <span className="ml-2 text-[10px] text-slate-600">{row.typology_label}</span>
+          <span className="ml-2 text-[14px] text-slate-600">{row.typology_label}</span>
         )}
       </td>
       <td className="px-4 py-2.5 text-xs text-slate-500">{row.type}</td>
@@ -1019,9 +1019,9 @@ function Scorecard({ metrics, summary }) {
 function Metric({ label, value, hint, emphasis }) {
   return (
     <div className={cx('rounded-xl border p-4', emphasis ? 'border-strong bg-surface-raised' : 'border-subtle bg-surface')}>
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+      <p className="text-[14px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
       <p className="mt-1.5 font-mono text-2xl font-bold text-slate-200">{value}</p>
-      <p className="mt-0.5 text-[10px] text-slate-600">{hint}</p>
+      <p className="mt-0.5 text-[14px] text-slate-600">{hint}</p>
     </div>
   )
 }
@@ -1036,9 +1036,9 @@ function Confusion({ label, value, tone, hint }) {
 
   return (
     <div className="rounded-xl border border-subtle bg-surface p-4">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+      <p className="text-[14px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
       <p className={cx('mt-1.5 font-mono text-2xl font-bold', colour)}>{value}</p>
-      <p className="mt-0.5 text-[10px] text-slate-600">{hint}</p>
+      <p className="mt-0.5 text-[14px] text-slate-600">{hint}</p>
     </div>
   )
 }

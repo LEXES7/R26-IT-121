@@ -95,7 +95,7 @@ export default function Footer() {
               {['FastAPI', 'PostgreSQL', 'ChromaDB', 'PyTorch', 'React'].map((t) => (
                 <span
                   key={t}
-                  className="rounded border border-subtle bg-surface px-1.5 py-0.5 font-mono text-[10px] text-slate-600"
+                  className="rounded border border-subtle bg-surface px-1.5 py-0.5 font-mono text-[12px] text-slate-600"
                 >
                   {t}
                 </span>
@@ -106,7 +106,7 @@ export default function Footer() {
           {/* Link columns */}
           {columns.map((col) => (
             <div key={col.heading} className="space-y-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              <p className="text-[12px] font-semibold uppercase tracking-wider text-slate-500">
                 {col.heading}
               </p>
 
@@ -135,7 +135,7 @@ export default function Footer() {
                 {col.items?.map((it) => (
                   <li key={it.label} className="leading-snug">
                     <span className="block text-slate-500">{it.label}</span>
-                    <span className="block text-[10px] text-slate-700">{it.detail}</span>
+                    <span className="block text-[12px] text-slate-700">{it.detail}</span>
                   </li>
                 ))}
               </ul>
@@ -159,7 +159,7 @@ export default function Footer() {
         <div
           className={cx(
             'mt-8 flex flex-col items-center justify-between gap-3 border-t border-subtle pt-6',
-            'text-[11px] text-slate-700 sm:flex-row',
+            'text-[13px] text-slate-700 sm:flex-row',
           )}
         >
           <p>© 2026 DeepSentinel</p>

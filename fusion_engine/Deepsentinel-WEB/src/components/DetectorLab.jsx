@@ -51,8 +51,8 @@ export function Bar({ value, max = 1, tone = 'accent', label, right }) {
   return (
     <div style={{ display: 'grid', gap: 4 }}>
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[12px]" style={{ color: 'rgb(var(--ds-ink))' }}>{label}</span>
-        <span className="numeric text-[12px]" style={{ color: 'rgb(var(--ds-muted))' }}>{right}</span>
+        <span className="text-[16px]" style={{ color: 'rgb(var(--ds-ink))' }}>{label}</span>
+        <span className="numeric text-[16px]" style={{ color: 'rgb(var(--ds-muted))' }}>{right}</span>
       </div>
       <div style={{ height: 7, borderRadius: 4, background: 'rgb(var(--ds-line))' }}>
         <div style={{ width: `${pct}%`, height: '100%', borderRadius: 4, background: colour }} />
@@ -64,11 +64,11 @@ export function Bar({ value, max = 1, tone = 'accent', label, right }) {
 export function Stat({ label, value, note }) {
   return (
     <div>
-      <p className="ds-mono text-[10px] uppercase tracking-wider"
+      <p className="ds-mono text-[14px] uppercase tracking-wider"
          style={{ color: 'rgb(var(--ds-faint))' }}>{label}</p>
-      <p className="numeric mt-1 text-[22px] leading-none"
+      <p className="numeric mt-1 text-[28px] leading-none"
          style={{ color: 'rgb(var(--ds-ink))' }}>{value}</p>
-      {note && <p className="mt-1 text-[11px]" style={{ color: 'rgb(var(--ds-muted))' }}>{note}</p>}
+      {note && <p className="mt-1 text-[15px]" style={{ color: 'rgb(var(--ds-muted))' }}>{note}</p>}
     </div>
   )
 }
@@ -97,6 +97,9 @@ export default function DetectorLab({ detector, eyebrow, title, subtitle, childr
   const p = PRESETS[pick]
   return (
     <ConsoleShell eyebrow={eyebrow} title={title} subtitle={subtitle}>
+      {/* .ds-content sets padding but no gap, so blocks rendered straight into
+          it sit flush against one another. The page owns its own rhythm. */}
+      <div style={{ display: 'grid', gap: 18 }}>
       {error && <Alert tone="error">{error}</Alert>}
 
       <div className="flex flex-wrap items-center gap-2">
@@ -108,9 +111,9 @@ export default function DetectorLab({ detector, eyebrow, title, subtitle, childr
               i === pick ? 'border-accent-400/60' : 'border-slate-800 hover:border-slate-700')}
             style={{ background: i === pick ? 'rgba(45,212,191,.06)' : 'transparent' }}
           >
-            <span className="numeric block text-[12px]"
+            <span className="numeric block text-[16px]"
                   style={{ color: 'rgb(var(--ds-ink))' }}>{x.ref}</span>
-            <span className="block text-[10px]"
+            <span className="block text-[14px]"
                   style={{ color: 'rgb(var(--ds-faint))' }}>{x.note}</span>
           </button>
         ))}
@@ -119,7 +122,7 @@ export default function DetectorLab({ detector, eyebrow, title, subtitle, childr
         </Button>
       </div>
 
-      <p className="numeric text-[11px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+      <p className="numeric text-[15px]" style={{ color: 'rgb(var(--ds-faint))' }}>
         {p.txn.type} · {p.txn.amount.toLocaleString()} · {p.txn.nameOrig} → {p.txn.nameDest} · step {p.txn.step}
       </p>
 
@@ -135,6 +138,7 @@ export default function DetectorLab({ detector, eyebrow, title, subtitle, childr
       ) : result ? (
         children(result)
       ) : null}
+      </div>
     </ConsoleShell>
   )
 }

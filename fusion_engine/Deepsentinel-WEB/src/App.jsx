@@ -6,6 +6,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import ProtectedRoute from './components/ProtectedRoute'
 import Navbar from './components/Navbar'
+import { CONSOLE_PATHS } from './components/ConsoleShell'
 import ConsoleShell from './components/ConsoleShell'
 import Footer from './components/Footer'
 import ChatBot from './components/ChatBot'
@@ -54,10 +55,10 @@ import RequestAccess from './pages/RequestAccess'
  * mid-triage to click away into the brochure. Console routes get a single
  * quiet line instead.
  */
-const CONSOLE_ROUTES = [
-  '/monitor', '/analyzer', '/thresholds', '/cases', '/batch', '/models',
-  '/assistant', '/account', '/settings', '/users', '/audit-log',
-]
+// Derived from the navigation rather than listed again here — see
+// CONSOLE_PATHS. The hand-written version fell behind every route added after
+// it, and the symptom was the public header appearing over the console.
+const CONSOLE_ROUTES = [...CONSOLE_PATHS, '/audit-log', '/users', '/settings']
 
 function Shell() {
   useLiquidPointer()

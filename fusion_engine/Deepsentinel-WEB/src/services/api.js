@@ -211,6 +211,22 @@ export const getStoredTransaction = (transactionId) =>
     .then((r) => r.data)
 
 /** Run one detector alone and return exactly what it said. */
+/* Demo mode — the relational model on its own.
+ *
+ * Separate from every other scoring call in this file because it deliberately
+ * does not fuse: one detector answers, and what is on screen is attributable
+ * to that detector alone. Used for showing the model's inductive behaviour,
+ * not for deciding anything. */
+export const demoScoreAccount = (account, transactions) =>
+  client.post('/graph/demo/score-account', { account, transactions })
+    .then((r) => r.data)
+
+export const demoScoreCsv = (file) => {
+  const body = new FormData()
+  body.append('file', file)
+  return client.post('/graph/demo/score-csv', body).then((r) => r.data)
+}
+
 export const scoreOneDetector = (name, transaction) =>
   client.post(`/detectors/${name}`, { transaction }).then((r) => r.data)
 
@@ -441,6 +457,26 @@ export const reportStylePreviewUrl = (style) =>
   client.get(`/report-styles/${style}/preview`, { responseType: 'blob' })
     .then((r) => URL.createObjectURL(
       new Blob([r.data], { type: 'application/pdf' })))
+
+/** The forensic narrative for one analysis, as a PDF the user keeps.
+ *
+ * Fetched through the client rather than linked to directly: the endpoint
+ * requires a bearer token and an <a href> cannot carry one. Triggers the save
+ * and cleans up the object URL itself, so callers do not have to. */
+export const downloadAnalysisReport = async (analysisId, style) => {
+  const r = await client.get(`/analyses/${analysisId}/report.pdf`, {
+    responseType: 'blob',
+    params: style ? { style } : undefined,
+  })
+  const url = URL.createObjectURL(new Blob([r.data], { type: 'application/pdf' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `deepsentinel-report-${analysisId}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
 
 /** Loop state plus each detector's own runtime — "is the platform working". */
 export const getMonitorRuntime = () =>
