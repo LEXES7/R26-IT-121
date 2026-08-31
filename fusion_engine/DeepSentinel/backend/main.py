@@ -1189,8 +1189,13 @@ async def analysis_report_pdf(
     """
     from fastapi.responses import Response
 
-    from backend import report_styles, sar
+    from backend import packages, report_styles, sar
     from monitor.engine import _report_pdf
+
+    # Same gate as the endpoint that returns this narrative as text. Without it
+    # the licence check was bypassable by asking for the PDF instead of the
+    # JSON — the paid feature handed over in a different content type.
+    packages.require("forensic_report")
 
     if style is not None and style not in report_styles.STYLES:
         raise HTTPException(404, f"No report style named {style!r}.")
