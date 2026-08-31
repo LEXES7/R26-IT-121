@@ -1,6 +1,6 @@
 import Logo from './Logo'
 import ThemeToggle from './ThemeToggle'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ROLE_LABELS, useAuth } from '../context/AuthContext'
 import { Badge, cx } from './ui'
@@ -26,6 +26,51 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [openMenu, setOpenMenu] = useState(null) // 'admin' | 'user' | null
   const navRef = useRef(null)
+  // The pill that slides between links, and whether the page has moved.
+  // Both are paint concerns; the pill is measured from the DOM rather than
+  // computed from a layout guess, so it stays right when the font or the
+  // link set changes.
+  const linksRef = useRef(null)
+  const [pill, setPill] = useState({ left: 0, width: 0, on: false })
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const movePill = (el) => {
+    const box = linksRef.current
+    if (!box || !el) return
+    const b = box.getBoundingClientRect()
+    const r = el.getBoundingClientRect()
+    setPill({ left: r.left - b.left, width: r.width, on: true })
+  }
+
+  /* At rest the pill sits on the current page, so it marks where you are as
+     well as where the pointer is — the underline it replaced did that, and
+     losing it would leave the bar with no sense of place. It re-measures on
+     navigation and on resize, because the link widths move with both. */
+  const restPill = useCallback(() => {
+    const box = linksRef.current
+    const active = box?.querySelector('[aria-current="page"]')
+    if (!active) return setPill((p) => ({ ...p, on: false }))
+    const b = box.getBoundingClientRect()
+    const r = active.getBoundingClientRect()
+    setPill({ left: r.left - b.left, width: r.width, on: true })
+  }, [])
+
+  useEffect(() => {
+    // After paint: the links have to be laid out before they can be measured.
+    const id = requestAnimationFrame(restPill)
+    window.addEventListener('resize', restPill)
+    return () => {
+      cancelAnimationFrame(id)
+      window.removeEventListener('resize', restPill)
+    }
+  }, [restPill, pathname, primary.length])
 
   const primary = auth.isAuthenticated
     ? [
@@ -102,25 +147,34 @@ export default function Navbar() {
   return (
     <nav
       ref={navRef}
-      className="glass-bar sticky top-0 z-50"
+      data-scrolled={scrolled}
+      className="liquid nav-liquid"
     >
-      <div className="mx-auto flex h-[3.75rem] max-w-[88rem] items-center justify-between gap-6 px-5 sm:px-8">
+      <div className="flex h-[3.75rem] items-center justify-between gap-6 px-5 sm:px-7">
         <Link to="/" className="shrink-0" aria-label="DeepSentinel home">
           <Logo />
         </Link>
 
         {/* Desktop navigation */}
-        <div className="hidden items-center gap-6 lg:flex">
+        <div
+          ref={linksRef}
+          onMouseLeave={restPill}
+          className="relative hidden items-center gap-1 lg:flex"
+        >
+          <span className="nav-pill" data-on={pill.on}
+                style={{ left: pill.left, width: pill.width }} />
           {primary.map((l) => (
             <Link
               key={l.to}
               to={l.to}
               aria-current={pathname === l.to ? 'page' : undefined}
+              onMouseEnter={(e) => movePill(e.currentTarget)}
+              onFocus={(e) => movePill(e.currentTarget)}
               className={cx(
-                'relative py-2 text-[0.8125rem] transition-colors',
+                'relative z-10 rounded-full px-3 py-1.5 text-[0.8125rem] transition-colors',
                 pathname === l.to
-                  ? 'font-medium text-slate-100 after:absolute after:-bottom-[1.3rem] after:left-0 after:h-px after:w-full after:bg-accent-400'
-                  : 'text-slate-500 hover:text-slate-200',
+                  ? 'font-medium text-slate-100'
+                  : 'text-slate-400 hover:text-slate-100',
               )}
             >
               {l.label}
@@ -253,7 +307,7 @@ export default function Navbar() {
               </Link>
               <Link
                 to="/login"
-                className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-400"
+                className="nav-cta rounded-lg bg-accent-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-400"
               >
                 Sign in
               </Link>
