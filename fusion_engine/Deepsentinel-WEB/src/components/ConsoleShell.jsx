@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { getMonitorRuntime } from '../services/api'
+import ConfirmDialog from './ConfirmDialog'
 import markLight from '../assets/deepsentinel-mark.png'
 import markDark from '../assets/deepsentinel-mark-dark.png'
 
@@ -143,6 +144,7 @@ export const CONSOLE_PATHS = [...new Set(
 
 export default function ConsoleShell({ eyebrow, title, subtitle, actions, children }) {
   const { user, signOut, isAdmin } = useAuth()
+  const [confirmingSignOut, setConfirmingSignOut] = useState(false)
   const { theme, toggle } = useTheme()
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -227,7 +229,7 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
               <span className={`ds-status-dot ${ready === null ? 'off' : allUp ? '' : 'warn'}`} />
             </div>
             <button
-              onClick={() => signOut().then(() => navigate('/'))}
+              onClick={() => setConfirmingSignOut(true)}
               className="ds-btn ds-btn-quiet"
               style={{ marginTop: 10, width: '100%', justifyContent: 'flex-start', padding: '7px 9px' }}
             >
@@ -235,6 +237,21 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
             </button>
           </div>
         </aside>
+
+        <ConfirmDialog
+          open={confirmingSignOut}
+          title="Sign out?"
+          confirmLabel="Sign out"
+          tone="danger"
+          onCancel={() => setConfirmingSignOut(false)}
+          onConfirm={() => {
+            setConfirmingSignOut(false)
+            signOut().then(() => navigate('/'))
+          }}
+        >
+          The monitor keeps running and nothing in progress is lost. Screening
+          happens on the server, not in this browser.
+        </ConfirmDialog>
 
         <main className="ds-main">
           <header className="ds-topbar">

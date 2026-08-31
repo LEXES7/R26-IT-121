@@ -466,8 +466,29 @@ html.theme-transition * {
 
 /* shell */
 .ds-shell { min-height: 100dvh; display: flex; background: rgb(var(--ds-workspace)); color: rgb(var(--ds-ink)); }
-.ds-sidebar { width: 248px; border-right: 1px solid rgb(var(--ds-line)); background: rgb(var(--ds-surface)); display: flex; flex-direction: column; flex: 0 0 auto; }
-.ds-brand { height: 84px; padding: 20px 19px; border-bottom: 1px solid rgb(var(--ds-line)); display: flex; align-items: center; gap: 10px; }
+/* Sticky, and sized to the viewport rather than to the document.
+   `.ds-shell` is min-height:100dvh, so on a long page it grows past the
+   viewport — and the sidebar, stretching to its full height as a flex child,
+   takes its footer with it. Sign out then sits at the bottom of the *document*,
+   several screens down, which is what makes it feel unreachable.
+
+   Sticky rather than fixed: fixed would take it out of flow and the main
+   column would slide underneath, needing a margin to compensate. Sticky keeps
+   the flex row intact. `align-self: flex-start` is required — the default
+   `stretch` overrides the height and puts the bug straight back.
+
+   Width, colours and every other value on this line are untouched; only the
+   four positioning properties at the end are added. This was lost once already
+   when main was merged, so if Sign out drifts to the bottom of the page again,
+   this is the line to check first. */
+.ds-sidebar { width: 248px; border-right: 1px solid rgb(var(--ds-line)); background: rgb(var(--ds-surface)); display: flex; flex-direction: column; flex: 0 0 auto; position: sticky; top: 0; align-self: flex-start; height: 100dvh; }
+/* The brand bar is 84px with 20px of padding, so 44px is the largest the mark
+   can be without moving the bar — and the bar's height is matched by the
+   topbar beside it, so moving it would misalign the two. `flex: 0 0 auto`
+   matters as much as the size: without it the image is a shrinkable flex item
+   and the wordmark squeezes it to whatever is left. */
+.ds-brand-mark { width: 61px; height: 61px; flex: 0 0 auto; display: block; }
+.ds-brand { height: 84px; padding: 11px 19px; border-bottom: 1px solid rgb(var(--ds-line)); display: flex; align-items: center; gap: 10px; }
 .ds-brand-name { font-size: 17px; font-weight: 700; letter-spacing: -.04em; }
 .ds-brand-sub { font-size: 11px; color: rgb(var(--ds-faint)); letter-spacing: .12em; text-transform: uppercase; margin-top: 2px; }
 .ds-nav { padding: 17px 11px; flex: 1; overflow-y: auto; }
@@ -1524,3 +1545,51 @@ html.theme-transition * {
 [data-theme='light'] .pl-ribbon { opacity: 0.3; }
 [data-theme='light'] .pl-ribbon-alert { opacity: 0.42; }
 [data-theme='light'] .pl-clear-stop { stop-opacity: 0.4; }
+
+/* ── the detector lab's sliders ──────────────────────────────────────
+   A range input is one of the few controls browsers still style entirely
+   themselves, and the default is a light-grey track that disappears against
+   the console's dark surface and looks like a system dialog against its light
+   one. Both thumbs and both tracks are drawn here.
+
+   The WebKit and Firefox pseudo-elements cannot be combined into one rule:
+   a selector list containing a pseudo-element the browser does not recognise
+   is dropped whole, so pairing them would silently style neither. */
+.ds-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 3px;
+  background: rgb(var(--ds-surface-3));
+  outline: none;
+  cursor: pointer;
+}
+.ds-range:focus-visible {
+  box-shadow: 0 0 0 3px rgb(var(--ds-accent) / 0.3);
+}
+.ds-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: rgb(var(--ds-accent));
+  border: 2px solid rgb(var(--ds-surface));
+  box-shadow: 0 1px 4px rgba(var(--ds-shadow), .3);
+  transition: transform .12s ease;
+}
+.ds-range::-webkit-slider-thumb:hover { transform: scale(1.15); }
+.ds-range::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: rgb(var(--ds-accent));
+  border: 2px solid rgb(var(--ds-surface));
+  box-shadow: 0 1px 4px rgba(var(--ds-shadow), .3);
+}
+.ds-range::-moz-range-track {
+  height: 4px;
+  border-radius: 3px;
+  background: rgb(var(--ds-surface-3));
+}
