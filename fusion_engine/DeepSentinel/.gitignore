@@ -55,3 +55,4 @@ logs/
 
 # Runtime state, set through the console — not source
 report_style.json
+graph_explorer.json

@@ -745,6 +745,35 @@ class MonitorEngine:
                                  f"{stream}: OK     {path} → {score_key}={float(raw):.6f} "
                                  f"in {ms:.0f}ms", txn=txid)
                     return float(raw), data
+                # 503 is the sequence detector saying its 32-transaction
+                # window is still filling — a normal start-up state, and the
+                # call that got this answer still advanced that window.
+                #
+                # Arming the breaker here suppressed the very calls that fill
+                # it. The breaker check returns before the POST is sent, so a
+                # held-out detector receives nothing and its window stops
+                # advancing: at one call per 15s the buffer needed about eight
+                # minutes of wall-clock screening rather than 32 transactions,
+                # and a replay of any realistic length finished with the
+                # detector still warming and every alert showing no timing
+                # score. Retry on the next transaction instead.
+                #
+                # This is not a cosmetic gap. On a transaction where the
+                # sequence model carries the verdict, fusion imputes its
+                # training mean and the fused score collapses far below the
+                # alerting band — the fraud is cleared rather than flagged.
+                #
+                # A path that answers 503 is a path that exists, so remember it
+                # and stop probing the alternates; otherwise every screening
+                # also sent a doomed request to the other candidate.
+                if r.status_code == 503:
+                    self._route[base_key] = path
+                    ms = (time.perf_counter() - started) * 1000
+                    runlog.event((stream, "pipeline"),
+                                 f"{stream}: WARM   {path} still filling its "
+                                 f"window ({ms:.0f}ms); abstaining, breaker "
+                                 f"left closed", txn=txid)
+                    return None, None
                 # The body usually names the real cause — a model that failed
                 # to load says so here, and that is the line worth keeping.
                 detail = ""
