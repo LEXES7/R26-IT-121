@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { analyzeBatch } from '../services/api'
 import { Alert, Button } from './ui'
+import Validation from './Validation'
 
 /**
  * A file through the whole pipeline, with each verdict's working shown.
@@ -78,6 +79,13 @@ export default function FusionBatch() {
           {done?.elapsed_ms != null && ` · ${(done.elapsed_ms / 1000).toFixed(1)}s`}
         </p>
       )}
+
+      {/* The batch endpoint echoes the file's own label back on each row, so
+          the same scores can be marked right or wrong without a second pass. */}
+      <Validation rows={rows} threshold={0.39}
+                  scoreOf={(r) => r.score}
+                  labelOf={(r) => (r.label === undefined || r.label === null
+                    ? null : Boolean(Number(r.label)))} />
 
       {rows.length > 0 && (
         <div className="mt-3 overflow-auto" style={{ maxHeight: 380 }}>

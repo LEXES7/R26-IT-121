@@ -8,6 +8,7 @@ import { Alert, Button, Input, cx } from '../components/ui'
 import ConsoleShell from '../components/ConsoleShell'
 import DetectorRuntime from '../components/DetectorRuntime'
 import GraphModelPanel from '../components/GraphModelPanel'
+import Validation from '../components/Validation'
 
 /**
  * Walk the payment graph one account at a time.
@@ -887,6 +888,11 @@ export default function GraphExplorer() {
                         </span>
                       )}
                     </div>
+
+                    {csv && (
+                      <Validation rows={csv.rows} threshold={0.39}
+                                  scoreOf={(r) => r.score} />
+                    )}
 
                     {csv && (
                       <div style={{ overflow: 'auto', maxHeight: 210 }}>
