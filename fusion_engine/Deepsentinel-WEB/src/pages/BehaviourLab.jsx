@@ -1,4 +1,6 @@
 import DetectorLab, { Bar, Stat } from '../components/DetectorLab'
+import { ExpectationGap, FingerprintStrip } from '../components/Fingerprint'
+import TypologyPanel from '../components/TypologyPanel'
 
 /**
  * What the behavioural model saw, and which part of it was wrong.
@@ -14,6 +16,7 @@ export default function BehaviourLab() {
   return (
     <DetectorLab
       detector="behavioural"
+      editable
       eyebrow="Detector · Behaviour"
       title="Stratified VAE with dual-signal attribution"
       subtitle="What normal looks like for each transaction type, and how far this sits from it."
@@ -21,7 +24,11 @@ export default function BehaviourLab() {
       {(r) => {
         const ev = r.evidence ?? {}
         const d = ev.vae_diagnostics ?? {}
+        // `fingerprint` is the raw block from the detector, carrying the
+        // per-entry shares. Older responses put only the two headline strings
+        // here, so both shapes are read.
         const fp = ev.fingerprint ?? {}
+        const hasShares = Boolean(fp.signal_1_reconstruction_error?.shares?.length)
         const zs = [
           ['Reconstruction', d.recon_z, d.weights?.alpha],
           ['KL divergence', d.kl_z, d.weights?.beta],
@@ -56,48 +63,57 @@ export default function BehaviourLab() {
               ))}
             </section>
 
-            <div className="grid gap-8 md:grid-cols-2">
-              {/* Signal 1 — which input it could not rebuild. */}
-              <section style={{ display: 'grid', gap: 8 }}>
-                <h3 className="ds-mono text-[14px] uppercase tracking-wider"
-                    style={{ color: 'rgb(var(--ds-faint))' }}>
-                  Signal 1 · reconstruction error
-                </h3>
-                <div className="rounded-lg border p-3"
-                     style={{ borderColor: 'rgb(var(--ds-line))' }}>
-                  <p className="text-[16px] leading-relaxed"
-                     style={{ color: 'rgb(var(--ds-ink))' }}>
-                    {fp.dominant_reconstruction_signal
-                      ?? 'No single input dominated the reconstruction error.'}
-                  </p>
-                </div>
-              </section>
-
-              {/* Signal 2 — which latent dimension had to stretch. */}
-              <section style={{ display: 'grid', gap: 8 }}>
-                <h3 className="ds-mono text-[14px] uppercase tracking-wider"
-                    style={{ color: 'rgb(var(--ds-faint))' }}>
-                  Signal 2 · KL divergence
-                </h3>
-                <div className="rounded-lg border p-3"
-                     style={{ borderColor: 'rgb(var(--ds-line))' }}>
-                  <p className="text-[16px] leading-relaxed"
-                     style={{ color: 'rgb(var(--ds-ink))' }}>
-                    {fp.dominant_kl_signal
-                      ?? 'No single latent dimension dominated the divergence.'}
-                  </p>
-                </div>
-              </section>
-            </div>
-
-            {ev.fraud_typology?.typology_label && (
-              <p className="text-[15px]" style={{ color: 'rgb(var(--ds-muted))' }}>
-                Closest discovered behavioural typology:{' '}
-                <span style={{ color: 'rgb(var(--ds-ink))' }}>
-                  {ev.fraud_typology.typology_label}
-                </span>
+            {!hasShares && (
+              <p className="text-[14px] leading-relaxed"
+                 style={{ color: 'rgb(var(--ds-muted))' }}>
+                {fp.dominant_reconstruction_signal
+                  ?? 'This response carries the headline signals only; the '
+                     + 'per-feature decomposition is not in it.'}
               </p>
             )}
+
+            {hasShares && (
+              <>
+              {/* What it expected against what arrived. The one view that
+                  belongs to a reconstruction model and to nothing else here. */}
+              <section style={{ display: 'grid', gap: 10 }}>
+                <div className="flex items-baseline justify-between gap-3">
+                  <h3 className="ds-mono text-[14px] uppercase tracking-wider"
+                      style={{ color: 'rgb(var(--ds-faint))' }}>
+                    What it expected, and what arrived
+                  </h3>
+                  <span className="text-[13px]" style={{ color: 'rgb(var(--ds-muted))' }}>
+                    {fp.signal_1_reconstruction_error?.dominant_feature_signal ?? ''}
+                  </span>
+                </div>
+                <div className="rounded-lg border p-4"
+                     style={{ borderColor: 'rgb(var(--ds-line))' }}>
+                  <ExpectationGap
+                    shares={fp.signal_1_reconstruction_error?.shares ?? []} />
+                </div>
+              </section>
+
+              {/* The fingerprint as a vector, which is what gets clustered. */}
+              <section style={{ display: 'grid', gap: 10 }}>
+                <h3 className="ds-mono text-[14px] uppercase tracking-wider"
+                    style={{ color: 'rgb(var(--ds-faint))' }}>
+                  The anomaly fingerprint
+                </h3>
+                <div className="rounded-lg border p-4"
+                     style={{ borderColor: 'rgb(var(--ds-line))' }}>
+                  <FingerprintStrip fingerprint={fp} />
+                </div>
+                <p className="text-[13px] leading-relaxed"
+                   style={{ color: 'rgb(var(--ds-muted))' }}>
+                  Three decompositions of the same alert, read straight off the
+                  model rather than from a separate explainer. Clustering these
+                  vectors, not the scores, is what produces the typology below.
+                </p>
+              </section>
+              </>
+            )}
+
+            <TypologyPanel typology={ev.fraud_typology} />
 
             {d.out_of_training_distribution && (
               <p className="text-[15px]" style={{ color: 'rgb(var(--ds-sev-high))' }}>

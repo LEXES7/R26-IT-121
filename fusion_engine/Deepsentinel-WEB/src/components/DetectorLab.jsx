@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { scoreOneDetector } from '../services/api'
 import { Alert, Button, cx } from './ui'
+import TransactionEditor from './TransactionEditor'
 import ConsoleShell from './ConsoleShell'
 
 /**
@@ -73,17 +74,22 @@ export function Stat({ label, value, note }) {
   )
 }
 
-export default function DetectorLab({ detector, eyebrow, title, subtitle, children }) {
+export default function DetectorLab({
+  detector, eyebrow, title, subtitle, children, editable = false,
+}) {
   const [pick, setPick] = useState(0)
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  // The row actually being scored. Seeded from the preset and edited from
+  // there, so the starting point is always a real transaction.
+  const [txn, setTxn] = useState(PRESETS[0].txn)
 
-  const run = useCallback(async (i) => {
+  const run = useCallback(async (t) => {
     setLoading(true)
     setError(null)
     try {
-      setResult(await scoreOneDetector(detector, PRESETS[i].txn))
+      setResult(await scoreOneDetector(detector, t))
     } catch (err) {
       setError(err?.userMessage ?? 'The detector did not answer.')
       setResult(null)
@@ -92,9 +98,20 @@ export default function DetectorLab({ detector, eyebrow, title, subtitle, childr
     }
   }, [detector])
 
-  useEffect(() => { run(pick) }, [run, pick])
+  // Choosing a preset replaces the working row outright; any edits are gone,
+  // which is what picking a different transaction should mean.
+  useEffect(() => { setTxn(PRESETS[pick].txn) }, [pick])
+
+  // Debounced, because a slider fires on every pixel and each change is a
+  // round trip to the model. 300ms is long enough that a drag makes one
+  // request at the end and short enough to feel like it answered immediately.
+  useEffect(() => {
+    const t = setTimeout(() => run(txn), 300)
+    return () => clearTimeout(t)
+  }, [run, txn])
 
   const p = PRESETS[pick]
+  const dirty = JSON.stringify(txn) !== JSON.stringify(p.txn)
   return (
     <ConsoleShell eyebrow={eyebrow} title={title} subtitle={subtitle}>
       {/* .ds-content sets padding but no gap, so blocks rendered straight into
@@ -117,14 +134,24 @@ export default function DetectorLab({ detector, eyebrow, title, subtitle, childr
                   style={{ color: 'rgb(var(--ds-faint))' }}>{x.note}</span>
           </button>
         ))}
-        <Button size="sm" variant="ghost" onClick={() => run(pick)} loading={loading}>
+        <Button size="sm" variant="ghost" onClick={() => run(txn)} loading={loading}>
           Run again
         </Button>
       </div>
 
       <p className="numeric text-[15px]" style={{ color: 'rgb(var(--ds-faint))' }}>
-        {p.txn.type} · {p.txn.amount.toLocaleString()} · {p.txn.nameOrig} → {p.txn.nameDest} · step {p.txn.step}
+        {txn.type} · {Number(txn.amount).toLocaleString()} · {txn.nameOrig} → {txn.nameDest} · step {txn.step}
+        {dirty && <span style={{ color: 'rgb(var(--ds-warn))' }}> · edited, no longer the labelled row</span>}
       </p>
+
+      {editable && (
+        <TransactionEditor
+          txn={txn}
+          onChange={setTxn}
+          onReset={() => setTxn(p.txn)}
+          dirty={dirty}
+        />
+      )}
 
       {loading && !result ? (
         <p className="py-16 text-center text-xs" style={{ color: 'rgb(var(--ds-faint))' }}>
