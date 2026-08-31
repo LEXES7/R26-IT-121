@@ -97,10 +97,10 @@ export default function GraphModelPanel() {
 
           <p className="mt-3 text-[13px] leading-relaxed"
              style={{ color: 'rgb(var(--ds-sev-high))' }}>
-            Ignore accuracy: flagging nothing would score{' '}
+            Accuracy flatters here — flagging nothing would score{' '}
             {perf.actual_mules && perf.evaluated_accounts
               ? (1 - perf.actual_mules / perf.evaluated_accounts).toFixed(3) : '—'}.
-            Precision and recall are the real figures.
+            Precision and recall are the figures that mean something.
           </p>
         </div>
       )}
