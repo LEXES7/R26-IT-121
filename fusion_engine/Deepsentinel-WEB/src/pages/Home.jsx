@@ -3,6 +3,7 @@ import { ArrowLink, Display, Eyebrow } from '../components/Editorial'
 import Globe from '../components/Globe'
 import Reveal from '../components/Reveal'
 import ScrollRevealText from '../components/ScrollRevealText'
+import LedSign from '../components/LedSign'
 import TransactionStory from '../components/TransactionStory'
 import { IconBlackBox, IconHallucination, IconLink } from '../components/Icons'
 import PipelineDiagram from '../components/PipelineDiagram'
@@ -142,13 +143,26 @@ export default function Home() {
           rather than boxed. Equal-weight cards read as a feature grid; this is
           an argument. */}
       <section className="mx-auto max-w-[88rem] px-5 py-24 sm:px-8">
-        <Reveal className="max-w-2xl">
-          <Eyebrow>The problem</Eyebrow>
-          <h2 className="display mt-4 text-[2.5rem] text-slate-100 sm:text-[3.25rem]">
-            <ScrollRevealText as="span">Fraud detection has</ScrollRevealText>{' '}
-            <span className="display-italic text-accent-400">an explanation problem.</span>
-          </h2>
-        </Reveal>
+        {/* The heading holds the left column; the board runs across the right,
+            level with it. Below `lg` there is no room for both, and a sign
+            squeezed into a phone width reads as a glitch, so it is dropped. */}
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,42rem)_1fr]">
+          <Reveal>
+            <Eyebrow>The problem</Eyebrow>
+            <h2 className="display mt-4 text-[2.5rem] text-slate-100 sm:text-[3.25rem]">
+              <ScrollRevealText as="span">Fraud detection has</ScrollRevealText>{' '}
+              <span className="display-italic text-accent-400">an explanation problem.</span>
+            </h2>
+          </Reveal>
+
+          <div className="hidden overflow-hidden lg:block"
+               style={{ maskImage:
+                          'linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent)',
+                        WebkitMaskImage:
+                          'linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent)' }}>
+            <LedSign word="DEEPSENTINEL" />
+          </div>
+        </div>
 
         <div className="hair-t mt-14 grid gap-x-10 gap-y-12 pt-12 md:grid-cols-3">
           {PROBLEM.map((p, i) => (
