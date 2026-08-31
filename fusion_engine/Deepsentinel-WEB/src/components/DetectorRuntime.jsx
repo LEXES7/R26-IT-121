@@ -22,7 +22,7 @@ const secs = (s) => {
   return `${(n / 3600).toFixed(1)}h`
 }
 
-export default function DetectorRuntime({ detector, model }) {
+export default function DetectorRuntime({ detector, model, children }) {
   const [d, setD] = useState(null)
   const [failed, setFailed] = useState(false)
 
@@ -37,40 +37,53 @@ export default function DetectorRuntime({ detector, model }) {
   if (failed) return null
 
   const ready = d?.ready
+  const lat = d?.mean_latency_ms ?? d?.model?.mean_latency_ms
   const rows = [
-    ['Model', d?.model_version ?? d?.model?.stage ?? '—'],
-    ['Service up', secs(d?.service_uptime_seconds ?? d?.startup_seconds) ?? '—'],
-    ['Scored', d?.transactions_scored ?? d?.model?.inferences ?? '—'],
-    ['Mean latency', (d?.mean_latency_ms ?? d?.model?.mean_latency_ms) != null
-      ? `${Number(d.mean_latency_ms ?? d.model.mean_latency_ms).toFixed(1)} ms` : '—'],
+    ['Build', d?.model_version ?? d?.model?.stage ?? '—', d?.model_meta?.features
+      ? `feature set ${d.model_meta.features}` : d?.detection_method ?? ''],
+    ['Serving for', secs(d?.service_uptime_seconds ?? d?.startup_seconds) ?? '—',
+      'since the process started'],
+    ['Scored', (d?.transactions_scored ?? d?.model?.inferences ?? 0).toLocaleString(),
+      'transactions this run'],
+    ['Mean latency', lat != null ? `${Number(lat).toFixed(1)} ms` : '—',
+      lat != null ? 'per verdict' : 'nothing scored yet'],
   ]
 
   return (
-    <div className="flex flex-wrap items-center gap-x-7 gap-y-3 rounded-xl border px-4 py-3"
-         style={{ borderColor: 'rgb(var(--ds-line))',
-                  background: 'rgb(var(--ds-surface-2))' }}>
-      <span className="flex items-center gap-2">
-        <span className="h-2 w-2 rounded-full"
-              style={{ background: d == null ? 'rgb(var(--ds-faint))'
-                : ready ? 'rgb(var(--ds-accent))' : 'rgb(var(--ds-sev-high))' }} />
-        <span className="text-[14px] font-semibold">
-          {d == null ? 'Checking…' : ready ? 'Serving' : 'Not serving'}
+    <section className="rounded-xl border p-5"
+             style={{ borderColor: 'rgb(var(--ds-line))',
+                      background: 'rgb(var(--ds-surface-2))' }}>
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <span className="flex items-center gap-2.5">
+          <span className="h-2.5 w-2.5 rounded-full"
+                style={{ background: d == null ? 'rgb(var(--ds-faint))'
+                  : ready ? 'rgb(var(--ds-accent))' : 'rgb(var(--ds-sev-high))' }} />
+          <span className="text-[19px] font-semibold">
+            {d == null ? 'Checking…' : ready ? 'Serving' : 'Not serving'}
+          </span>
         </span>
-      </span>
+        {model && (
+          <span className="ds-mono text-[14px]"
+                style={{ color: 'rgb(var(--ds-faint))' }}>{model}</span>
+        )}
+      </div>
 
-      {rows.map(([k, v]) => (
-        <span key={k} className="min-w-0">
-          <span className="ds-mono block text-[11px] uppercase tracking-[.12em]"
-                style={{ color: 'rgb(var(--ds-faint))' }}>{k}</span>
-          <span className="numeric block truncate text-[15px]"
-                style={{ color: 'rgb(var(--ds-ink))' }}>{v}</span>
-        </span>
-      ))}
+      <dl className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {rows.map(([k, v, note]) => (
+          <div key={k} className="min-w-0">
+            <dt className="ds-mono text-[11px] uppercase tracking-[.13em]"
+                style={{ color: 'rgb(var(--ds-faint))' }}>{k}</dt>
+            <dd className="numeric mt-1 truncate text-[24px] leading-none"
+                style={{ color: 'rgb(var(--ds-ink))' }}>{v}</dd>
+            {note && (
+              <p className="mt-1 truncate text-[13px]"
+                 style={{ color: 'rgb(var(--ds-muted))' }}>{note}</p>
+            )}
+          </div>
+        ))}
+      </dl>
 
-      {model && (
-        <span className="ds-mono ml-auto text-[13px]"
-              style={{ color: 'rgb(var(--ds-faint))' }}>{model}</span>
-      )}
-    </div>
+      {children}
+    </section>
   )
 }

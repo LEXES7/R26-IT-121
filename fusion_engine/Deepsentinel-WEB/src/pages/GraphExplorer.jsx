@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { Alert, Button, Input, cx } from '../components/ui'
 import ConsoleShell from '../components/ConsoleShell'
 import DetectorRuntime from '../components/DetectorRuntime'
+import GraphModelPanel from '../components/GraphModelPanel'
 
 /**
  * Walk the payment graph one account at a time.
@@ -1038,6 +1039,10 @@ export default function GraphExplorer() {
             )}
         </>
       )}
+
+      <div style={{ marginTop: 14 }}>
+        <GraphModelPanel />
+      </div>
 
       {isAdmin && settings && (
         <div className="mt-6 rounded-xl border p-4"

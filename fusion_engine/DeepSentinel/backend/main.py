@@ -1327,6 +1327,56 @@ async def warm_temporal_window(user: User = Depends(require_any_user)):
     }
 
 
+@app.get("/graph/model", tags=["graph"])
+async def graph_model(user: User = Depends(require_any_user)):
+    """What the network detector is serving, and on what.
+
+    Straight from the detector rather than restated here: the size of the
+    graph, the protocol it was evaluated under, the calibration, and the
+    operating point. The protocol matters most — a score means nothing without
+    knowing whether the window it was measured on was held out.
+    """
+    import httpx
+
+    base = str(config.get("upstream", "graph_api_base")).rstrip("/")
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            health = (await client.get(f"{base}/health")).json()
+            runtime = (await client.get(f"{base}/api/graph/runtime")).json()
+    except Exception as exc:                            # noqa: BLE001
+        raise HTTPException(
+            502, f"The network detector did not answer: {type(exc).__name__}"
+        ) from exc
+    return {**health, "runtime": runtime}
+
+
+@app.get("/fusion/model", tags=["analysis"])
+async def fusion_model(user: User = Depends(require_any_user)):
+    """The meta-classifier's own shape, plus what it has decided so far.
+
+    The weights are published deliberately. This component's claim is that the
+    fusion is linear and its terms can be read off a verdict; a page that
+    shows the weights is that claim kept rather than asserted.
+    """
+    from backend import thresholds
+    from backend.settings import analysis_statistics
+
+    described = (meta_classifier.describe()
+                 if meta_classifier is not None else {"method": "unavailable"})
+
+    counts = {}
+    try:
+        counts = await analysis_statistics()
+    except Exception as exc:                            # noqa: BLE001
+        logger.debug(f"No analysis statistics for the fusion page: {exc}")
+
+    return {
+        **described,
+        "bands": thresholds.current() or {},
+        "decided": counts,
+    }
+
+
 @app.get("/report-styles", tags=["report"])
 async def list_report_styles(user: User = Depends(require_any_user)):
     """The available looks for the forensic report PDF, and which is in force.

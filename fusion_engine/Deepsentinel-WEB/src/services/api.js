@@ -236,6 +236,12 @@ export const demoScoreCsv = (file) => {
 export const warmTemporalWindow = () =>
   client.post('/detectors/temporal/warm').then((r) => r.data)
 
+/** What the network detector is serving, and under what protocol. */
+export const getGraphModel = () => client.get('/graph/model').then((r) => r.data)
+
+/** The meta-classifier's weights, operating point and decisions so far. */
+export const getFusionModel = () => client.get('/fusion/model').then((r) => r.data)
+
 export const scoreOneDetector = (name, transaction) =>
   client.post(`/detectors/${name}`, { transaction }).then((r) => r.data)
 

@@ -4,6 +4,7 @@ import {
 } from '../services/api'
 import { PRESETS } from '../components/DetectorLab'
 import ConsoleShell from '../components/ConsoleShell'
+import FusionModelPanel from '../components/FusionModelPanel'
 import { Alert, Button, cx } from '../components/ui'
 
 /**
@@ -253,6 +254,10 @@ export default function FusionLab() {
             </div>
           </>
         ) : null}
+
+        <div style={{ marginTop: 14 }}>
+          <FusionModelPanel />
+        </div>
       </div>
     </ConsoleShell>
   )
