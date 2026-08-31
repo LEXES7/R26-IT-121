@@ -467,9 +467,8 @@ html.theme-transition * {
 /* shell */
 .ds-shell { min-height: 100dvh; display: flex; background: rgb(var(--ds-workspace)); color: rgb(var(--ds-ink)); }
 .ds-sidebar { width: 248px; border-right: 1px solid rgb(var(--ds-line)); background: rgb(var(--ds-surface)); display: flex; flex-direction: column; flex: 0 0 auto; }
-.ds-brand { height: 84px; padding: 20px 19px; border-bottom: 1px solid rgb(var(--ds-line)); display: flex; align-items: center; gap: 10px; }
-.ds-brand-name { font-size: 17px; font-weight: 700; letter-spacing: -.04em; }
-.ds-brand-sub { font-size: 11px; color: rgb(var(--ds-faint)); letter-spacing: .12em; text-transform: uppercase; margin-top: 2px; }
+.ds-brand { height: 68px; padding: 16px 19px; border-bottom: 1px solid rgb(var(--ds-line)); display: flex; align-items: center; gap: 10px; }
+.ds-brand-sub { font-size: 11px; color: rgb(var(--ds-faint)); letter-spacing: .12em; text-transform: uppercase; }
 .ds-nav { padding: 17px 11px; flex: 1; overflow-y: auto; }
 .ds-nav-label { font-size: 11px; text-transform: uppercase; letter-spacing: .16em; color: rgb(var(--ds-faint)); padding: 0 9px 9px; }
 .ds-nav-btn { width: 100%; display: flex; align-items: center; gap: 10px; border: 0; background: transparent; color: rgb(var(--ds-muted)); padding: 9px 10px; border-radius: 6px; font-size: 14px; text-align: left; text-decoration: none; transition: background .18s ease, color .18s ease, transform .18s ease; }
