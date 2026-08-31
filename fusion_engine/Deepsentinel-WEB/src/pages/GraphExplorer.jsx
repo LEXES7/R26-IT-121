@@ -288,6 +288,23 @@ export default function GraphExplorer() {
   // grows into another. Senders that paid more than one collector go on the
   // line between them, which is where they belong: they are the only reason
   // the component is one network rather than several.
+  /* A deterministic wobble per node.
+   *
+   * The layout was exact — every spoke on the same ring, every angle evenly
+   * spaced — and exactness is what made it read as a diagram of a network
+   * rather than a network. Real ones are irregular. Seeding from the account
+   * id rather than Math.random keeps that irregularity identical across
+   * redraws, so the picture does not shimmer when you pan. */
+  const wobble = (id, salt) => {
+    let h = 2166136261
+    const str = `${id}:${salt}`
+    for (let i = 0; i < str.length; i += 1) {
+      h ^= str.charCodeAt(i)
+      h = Math.imul(h, 16777619)
+    }
+    return ((h >>> 0) % 10000) / 10000        // 0..1
+  }
+
   const layout = useCallback((g, vw, vh) => {
     const W = vw * WORLD
     const H = vh * WORLD
@@ -322,8 +339,10 @@ export default function GraphExplorer() {
     // circle in a 2:1 world leaves the sides empty and stacks everything down
     // the middle — with two collectors either side of the centre it put all
     // three on one vertical line and used 15% of the available width.
-    const rx = W * 0.30
-    const ry = H * 0.26
+    // Pushed out from 0.30/0.26: the clusters were compact balls sitting in
+    // the middle third of a mostly empty frame.
+    const rx = W * 0.36
+    const ry = H * 0.32
     const others = hubs.filter((x) => !x.is_centre)
     hubs.forEach((h) => {
       const node = byId.get(h.id)
@@ -363,14 +382,17 @@ export default function GraphExplorer() {
       // Rings sized so arc length between neighbours stays readable rather
       // than packing everything onto one circle.
       const perRing = Math.max(7, Math.ceil(Math.sqrt(members.length) * 2.6))
-      const rings = Math.ceil(members.length / perRing)
       members.forEach((m, i) => {
         const ring = Math.floor(i / perRing)
         const inRing = members.slice(ring * perRing, (ring + 1) * perRing).length
         const idx = i % perRing
-        const r = 92 + ring * 74
         const t = inRing === 1 ? 0.5 : idx / (inRing - 1)
-        const a = away + (t - 0.5) * full
+        // Both the angle and the distance carry a per-node offset, so the
+        // spokes stop landing on a perfect circle at even spacing.
+        const jitterA = (wobble(m.id, 'a') - 0.5) * (full / Math.max(6, inRing)) * 1.5
+        const jitterR = 0.72 + wobble(m.id, 'r') * 0.62
+        const r = (104 + ring * 88) * jitterR
+        const a = away + (t - 0.5) * full + jitterA
         const node = byId.get(m.id)
         node.x = hub.x + Math.cos(a) * r
         node.y = hub.y + Math.sin(a) * r
@@ -457,15 +479,28 @@ export default function GraphExplorer() {
 
     nodes.forEach((n) => {
       const deg = (n.in_degree ?? 0) + (n.out_degree ?? 0)
-      const r = n.is_centre ? 21 : n.invented ? 15
-        : 5 + Math.sqrt(Math.max(deg, 0) / maxDeg) * 9
+      // A wider spread than before. Everything used to land between 5 and 14
+      // pixels, so a collector taking forty accounts looked much like the
+      // accounts feeding it — and the shape is the whole point.
+      const r = n.is_centre ? 26 : n.invented ? 15
+        : 3.4 + Math.pow(Math.max(deg, 0) / maxDeg, 0.62) * 17
       const risky = (n.score ?? 0) >= 0.09
       const hot = n.id === hover
 
       // Halo. An invented account gets its own colour so nobody in the room
       // has to take on trust which node is the one that was just added.
       const g1 = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r * 3.4)
-      const tint = n.invented ? '196,132,252' : risky ? '255,176,72' : '64,224,240'
+      // Role, not just risk. A collector, an account that only pays, and one
+      // that does both are three different things in a fraud network, and
+      // colouring them alike threw that away — every dot was the same blue, so
+      // the picture said nothing until you read the labels.
+      const collector = (n.in_degree ?? 0) >= 2
+      const bridge = (n.in_degree ?? 0) > 0 && (n.out_degree ?? 0) > 0
+      const tint = n.invented ? '196,132,252'
+        : risky ? '255,176,72'
+          : bridge ? '167,139,250'
+            : collector ? '56,208,255'
+              : '74,222,160'
       g1.addColorStop(0, `rgba(${tint},${n.is_centre ? 0.5 : 0.32})`)
       g1.addColorStop(0.5, `rgba(${tint},0.10)`)
       g1.addColorStop(1, `rgba(${tint},0)`)
@@ -474,10 +509,9 @@ export default function GraphExplorer() {
 
       // Sphere: a bright core falling off to a rim.
       const g2 = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r)
-      g2.addColorStop(0, n.invented ? '#f6ecff' : risky ? '#fff0d0' : '#e8fdff')
-      g2.addColorStop(0.35, n.invented ? '#c084fc' : risky ? '#ffb448' : '#43e0f0')
-      g2.addColorStop(1, n.invented ? 'rgba(168,85,247,.30)'
-        : risky ? 'rgba(255,150,40,.30)' : 'rgba(40,190,220,.28)')
+      g2.addColorStop(0, '#f2ffff')
+      g2.addColorStop(0.34, `rgb(${tint})`)
+      g2.addColorStop(1, `rgba(${tint},.28)`)
       ctx.fillStyle = g2
       ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.fill()
 
@@ -508,8 +542,11 @@ export default function GraphExplorer() {
       const risky = (n.score ?? 0) >= 0.09
       if (!n.is_centre && !risky && !n.invented && n.id !== hover) return
       const deg = (n.in_degree ?? 0) + (n.out_degree ?? 0)
-      const r = n.is_centre ? 21 : n.invented ? 15
-        : 5 + Math.sqrt(Math.max(deg, 0) / maxDeg) * 9
+      // A wider spread than before. Everything used to land between 5 and 14
+      // pixels, so a collector taking forty accounts looked much like the
+      // accounts feeding it — and the shape is the whole point.
+      const r = n.is_centre ? 26 : n.invented ? 15
+        : 3.4 + Math.pow(Math.max(deg, 0) / maxDeg, 0.62) * 17
       const text = n.id
       const w = ctx.measureText(text).width
       ctx.fillStyle = 'rgba(3,16,22,.72)'
@@ -928,9 +965,10 @@ export default function GraphExplorer() {
                   ? ` — ${counts.edges_in_ball} exist here, showing the ${counts.edges_returned}
                       the model weighted most heavily`
                   : ''}
-                . Teal is the account you searched, amber scores above the medium
-                band, and a thicker line is an edge the model attended to more.
-                Click any account to move there.
+                . Blue collects from two or more accounts, green only pays out,
+                violet does both, and amber scores above the medium band. Size
+                follows how many accounts touch it. Click any account to move
+                there.
               </p>
             )}
         </>
