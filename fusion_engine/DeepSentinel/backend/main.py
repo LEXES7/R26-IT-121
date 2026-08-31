@@ -526,7 +526,7 @@ async def analyze_stream(request: AnalyzeRequest):
 @app.post("/analyze/batch", tags=["analysis"])
 async def analyze_batch(
     file: UploadFile = File(...),
-    alert_threshold: float = Form(0.6),
+    alert_threshold: float | None = Form(None),
     narrate_top: int = Form(3),
     user: User = Depends(get_current_user),
 ):
@@ -538,6 +538,18 @@ async def analyze_batch(
     reaches the models.
 
     Narration is generated only for the `narrate_top` highest-scoring rows.
+
+    `alert_threshold` defaults to the line the live monitor is alerting on right
+    now — the operator's setting if one exists, otherwise the measured medium
+    band. It used to default to a hardcoded 0.6, twenty times the medium band,
+    so the same file scored here and screened live produced different verdicts
+    from the same three models and the same fused score. A system that
+    disagrees with itself about what counts as an alert cannot defend either
+    number.
+
+    It stays settable, because trying a different line against a labelled file
+    is most of what a batch tool is for. The default is simply no longer a
+    figure nobody chose.
     Producing one per transaction would take seconds each and turn a 300-row
     file into an hour-long job.
 
@@ -576,6 +588,23 @@ async def analyze_batch(
             return
 
         labelled = sum(1 for r in rows if r.is_fraud_label is not None)
+
+        # Resolved here rather than in the signature: a Form default has to be
+        # a constant, and this one has to follow whatever the operator set.
+        from backend import thresholds as _thr
+
+        live_bands = _thr.current() or {"medium": 0.03, "high": 0.09,
+                                        "critical": 0.925}
+        # A distinct name on purpose. Assigning to `alert_threshold` here made
+        # it a local of this nested generator, which shadowed the enclosing
+        # parameter and raised UnboundLocalError on the read above it.
+        if alert_threshold is None:
+            threshold = float(live_bands["medium"])
+            threshold_source = "live"
+        else:
+            threshold = float(alert_threshold)
+            threshold_source = "custom"
+
         yield sse(
             "meta",
             {
@@ -583,7 +612,9 @@ async def analyze_batch(
                 "rows": len(rows),
                 "labelled": labelled,
                 "has_labels": labelled > 0,
-                "alert_threshold": alert_threshold,
+                "alert_threshold": threshold,
+                "threshold_source": threshold_source,
+                "live_bands": live_bands,
             },
         )
 
@@ -662,7 +693,7 @@ async def analyze_batch(
             # the reviewer to ignore them. Rows scored with zero modalities are
             # reported as unscored and excluded from the metrics.
             scored_at_all = fusion.modalities_used > 0
-            alerted = scored_at_all and fusion.confidence_score >= alert_threshold
+            alerted = scored_at_all and fusion.confidence_score >= threshold
 
             if scored_at_all:
                 update_summary(summary, classification, alerted, row.is_fraud_label)

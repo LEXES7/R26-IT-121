@@ -41,6 +41,9 @@ export default function BatchAnalysis() {
   const [file, setFile] = useState(null)
   const [dragging, setDragging] = useState(false)
   const [meta, setMeta] = useState(null)
+  // Empty means "use the live monitor's band", which is what the server does
+  // when the field is absent. A number here overrides it for this run only.
+  const [thresholdInput, setThresholdInput] = useState('')
   const [rows, setRows] = useState([])
   const [summary, setSummary] = useState(null)
   const [narratives, setNarratives] = useState([])
@@ -120,7 +123,9 @@ export default function BatchAnalysis() {
     reset()
     setRunning(true)
 
+    const custom = thresholdInput.trim() === '' ? undefined : Number(thresholdInput)
     abortRef.current = analyzeBatch(file, {
+      alertThreshold: Number.isFinite(custom) ? custom : undefined,
       onEvent: (name, data) => {
         if (name === 'meta') setMeta(data)
         else if (name === 'progress') setQueue((prev) => [...prev, data])
@@ -147,16 +152,21 @@ export default function BatchAnalysis() {
 
   // Drain one row per tick. Fast enough to finish promptly, slow enough that
   // a person can see transactions arriving one at a time.
+  //
+  // The two updates are separate calls on purpose. setRows used to be called
+  // *inside* setQueue's updater, which makes that updater impure — and React
+  // deliberately invokes updaters twice under StrictMode to catch exactly
+  // that. The side effect ran twice per tick, so every row was appended
+  // twice: a 100-row file reported "200 of 100 scored", the totals doubled,
+  // and each transaction appeared twice in the table. Both updaters below are
+  // pure, so a double invocation produces the same state either way.
   useEffect(() => {
     if (queue.length === 0) return undefined
+    const head = queue[0]
     const step = demoPace ? 220 : 45
     const t = setTimeout(() => {
-      setQueue((q) => {
-        if (q.length === 0) return q
-        const [head, ...rest] = q
-        setRows((prev) => [...prev, head])
-        return rest
-      })
+      setRows((prev) => [...prev, head])
+      setQueue((q) => q.slice(1))
     }, step)
     return () => clearTimeout(t)
   }, [queue, demoPace])
@@ -179,17 +189,31 @@ export default function BatchAnalysis() {
      model can be scored on its own against the same labels and compared with
      the fused verdict. That is the difference between "the platform got 74%"
      and "here is what my model did, and here is what fusion added on top". */
-  const ALERT_AT = 0.6
+  // Each detector is scored at its OWN operating point, not at one shared
+  // number. They were all measured at 0.6, which is three times GraphSAGE's
+  // critical band of 0.391 — so it was being asked to clear a line it can
+  // never reach, and reported 4% recall as though that were its performance.
+  //
+  // The fused row uses whatever line this run was scored at, which is the
+  // live monitor's band unless it was overridden for the run.
+  const OWN_THRESHOLD = {
+    graph: 0.0915,        // GraphSAGE medium band, from its /health
+    behavioural: 0.5,     // the VAE publishes none; 0.5 is its midpoint
+    temporal: 0.4545,     // TS-TCN tuned threshold, from its /health
+  }
+  // The line this run was actually scored at, reported by the backend.
+  const fusedAt = meta?.alert_threshold ?? 0.03
+
   const perModel = useMemo(() => {
     const labelled = rows.filter((r) => r.label === 0 || r.label === 1)
     if (labelled.length === 0) return null
-    const score = (get) => {
+    const score = (get, at) => {
       let tp = 0, fp = 0, fn = 0, alerts = 0, scored = 0
       labelled.forEach((r) => {
         const v = get(r)
         if (v === null || v === undefined) return
         scored += 1
-        const flag = v >= ALERT_AT
+        const flag = v >= at
         if (flag) alerts += 1
         if (flag && r.label === 1) tp += 1
         else if (flag && r.label === 0) fp += 1
@@ -198,19 +222,19 @@ export default function BatchAnalysis() {
       const precision = tp + fp ? tp / (tp + fp) : null
       const recall = tp + fn ? tp / (tp + fn) : null
       const f1 = precision && recall ? (2 * precision * recall) / (precision + recall) : null
-      return { alerts, precision, recall, f1, tp, fp, fn, scored }
+      return { alerts, precision, recall, f1, tp, fp, fn, scored, at }
     }
     return [
       { key: 'graph', name: 'Edge-Enhanced GraphSAGE', owner: 'network',
-        ...score((r) => r.graph_score) },
+        ...score((r) => r.graph_score, OWN_THRESHOLD.graph) },
       { key: 'behavioural', name: 'Stratified VAE + DSAA', owner: 'behaviour',
-        ...score((r) => r.behavioral_score) },
+        ...score((r) => r.behavioral_score, OWN_THRESHOLD.behavioural) },
       { key: 'temporal', name: 'Transaction-Sequence TCN', owner: 'timing',
-        ...score((r) => r.temporal_score) },
+        ...score((r) => r.temporal_score, OWN_THRESHOLD.temporal) },
       { key: 'fused', name: 'Fusion engine', owner: 'all three, reconciled',
-        ...score((r) => r.score) },
+        ...score((r) => r.score, fusedAt) },
     ]
-  }, [rows])
+  }, [rows, fusedAt])
 
   const progressPct = meta?.rows ? Math.round((rows.length / meta.rows) * 100) : 0
 
@@ -431,6 +455,26 @@ export default function BatchAnalysis() {
                   loading={scoring}>
             {scoring ? 'Scoring…' : 'Run the pipeline'}
           </Button>
+
+          <label className="flex items-center gap-2 text-[12px] text-[rgb(var(--ds-muted))]">
+            Alert at
+            <input
+              type="number" step="0.001" min="0" max="1"
+              value={thresholdInput}
+              onChange={(e) => setThresholdInput(e.target.value)}
+              placeholder="live band"
+              disabled={scoring}
+              className="numeric w-24 rounded-md border px-2 py-1 text-[12px]"
+              style={{ borderColor: 'rgb(var(--ds-line))',
+                       background: 'rgb(var(--ds-surface))',
+                       color: 'rgb(var(--ds-ink))' }}
+            />
+            <span className="text-[11px] text-[rgb(var(--ds-faint))]">
+              {thresholdInput.trim() === ''
+                ? 'blank uses whatever the live monitor alerts on'
+                : 'this run only — the monitor is unchanged'}
+            </span>
+          </label>
           {scoring && (
             <Button variant="ghost" onClick={cancel} size="sm">
               Cancel
