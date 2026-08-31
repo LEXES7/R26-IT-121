@@ -246,9 +246,14 @@ async def call_temporal_api(
               evidence.current_transaction.fraud_signal_summary
 
     The service keeps its own deque(maxlen=32) of predecessor feature vectors
-    and answers 503 WARMING_UP until 32 have arrived — the 33rd call is the
-    first real classification. That is a normal startup state, not an outage,
-    so it is reported as unavailable without logging a failure.
+    and answers 503 WARMING_UP while fewer than 32 have arrived. It appends
+    before it checks, so calls 1-31 warm up and the 32nd is the first real
+    classification. That is a normal startup state, not an outage, so it is
+    reported as unavailable without logging a failure.
+
+    The buffer is in-process and starts empty on every restart, so a replay of
+    fewer than 32 transactions never gets an answer from this detector. Check
+    GET /api/v1/runtime — it reports buffer_filled and warming_up directly.
     """
     try:
         name_orig = transaction.get("nameOrig", "")
