@@ -352,11 +352,20 @@ async def _fetch_from_upstream_apis(
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _classify(confidence: float) -> str:
-    if confidence >= 0.80:
+    """Band a fused score, on the line the rest of the system uses.
+
+    These cutoffs used to be written here as literals, which meant an operator
+    could move the threshold on the settings page and every /analyze verdict
+    would carry on being banded at the old one.
+    """
+    from backend import thresholds
+
+    b = thresholds.current() or thresholds.DEFAULT_BANDS
+    if confidence >= float(b["critical"]):
         return "CRITICAL"
-    if confidence >= 0.65:
+    if confidence >= float(b["high"]):
         return "HIGH"
-    if confidence >= 0.50:
+    if confidence >= float(b["medium"]):
         return "MEDIUM"
     return "LOW"
 
@@ -1378,7 +1387,7 @@ async def fusion_model(user: User = Depends(require_any_user)):
     except Exception as exc:                            # noqa: BLE001
         logger.debug(f"No analysis statistics for the fusion page: {exc}")
 
-    bands = thresholds.current() or {}
+    bands = thresholds.current() or thresholds.DEFAULT_BANDS
     from backend import fusion_eval
 
     return {

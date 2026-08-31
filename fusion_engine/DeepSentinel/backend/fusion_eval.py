@@ -71,8 +71,12 @@ def evaluate(meta_classifier, bands: dict) -> dict | None:
             if got:
                 detectors[label] = got
 
-        # At the line the monitor actually alerts on.
-        thr = float(bands.get("critical") or 0.39)
+        # At the line the monitor actually alerts on — read from the one
+        # definition rather than defaulted to here, which is how a fourth copy
+        # of this number got into the codebase in the first place.
+        from backend.thresholds import DEFAULT_BANDS
+
+        thr = float((bands or {}).get("critical") or DEFAULT_BANDS["critical"])
         flagged = fused >= thr
         tp = int((flagged & y).sum())
         fp = int((flagged & ~y).sum())
