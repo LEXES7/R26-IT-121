@@ -59,7 +59,15 @@ import RequestAccess from './pages/RequestAccess'
 // Derived from the navigation rather than listed again here — see
 // CONSOLE_PATHS. The hand-written version fell behind every route added after
 // it, and the symptom was the public header appearing over the console.
+//
+// A few pages are reachable from both navigations. /about is in the console's
+// "Understand" group and in the public header, so deriving blindly made it a
+// console route and the public header removed itself from a public page,
+// leaving it with no navigation at all. Anything both sides offer belongs to
+// the public site: that is the version an unauthenticated visitor must get.
+const SHARED_WITH_PUBLIC = ['/about', '/faq', '/pricing']
 const CONSOLE_ROUTES = [...CONSOLE_PATHS, '/audit-log', '/users', '/settings']
+  .filter((r) => !SHARED_WITH_PUBLIC.includes(r))
 
 function Shell() {
   useLiquidPointer()
