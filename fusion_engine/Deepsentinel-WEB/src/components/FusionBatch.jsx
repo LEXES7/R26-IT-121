@@ -65,9 +65,8 @@ export default function FusionBatch() {
       </div>
 
       <p className="mt-2 text-[13px]" style={{ color: 'rgb(var(--ds-muted))' }}>
-        Every row through all three detectors and the meta-classifier. The three
-        terms are what each detector added to the log-odds — they sum to the
-        decision, minus the intercept.
+        Every row through all three detectors. The terms are what each added
+        to the decision.
       </p>
 
       {error && <div className="mt-3"><Alert tone="error">{error}</Alert></div>}
