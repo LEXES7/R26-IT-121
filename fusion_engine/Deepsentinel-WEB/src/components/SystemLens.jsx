@@ -129,24 +129,22 @@ export default function SystemLens({ highlight = null, className }) {
           <circle cx={TX.x} cy={TX.y} r={13} fill="rgb(var(--sentinel-950))"
                   stroke="rgb(var(--slate-200))" strokeWidth="1.6" />
           <circle cx={TX.x} cy={TX.y} r={4.5} fill="rgb(var(--slate-200))" />
-          <text x={TX.x} y={TX.y + 40} textAnchor="middle" fontSize="10"
+          <text x={TX.x} y={TX.y + 40} textAnchor="middle" fontSize="13"
                 fill="rgb(var(--slate-400))" letterSpacing="0.11em">
             ONE TRANSACTION
           </text>
 
           {/* ══ labels — outside their regions, on leaders ══ */}
-          <g fontSize="11" fontWeight="600">
+          <g fontSize="13" fontWeight="600">
             {/* time */}
             <g style={{ opacity: dim('temporal') }}>
               <path d="M120,160 L120,138" stroke={hue('temporal')} strokeWidth="1" opacity="0.5" />
               <text x={120} y={130} textAnchor="middle" fill={hue('temporal')}>
                 What came before
               </text>
-              <text x={120} y={144} textAnchor="middle" fontSize="9" fontWeight="400"
-                    fill="rgb(var(--slate-500))" opacity="0">.</text>
-              <text x={120} y={252} textAnchor="middle" fontSize="9" fontWeight="400"
+              <text x={120} y={252} textAnchor="middle" fontSize="12" fontWeight="400"
                     fill="rgb(var(--slate-500))">
-                the 32 transactions ending here
+                the 32 transactions before it
               </text>
               <path d="M120,212 L120,240" stroke={hue('temporal')} strokeWidth="1" opacity="0.35" />
             </g>
@@ -155,8 +153,8 @@ export default function SystemLens({ highlight = null, className }) {
             <g style={{ opacity: dim('graph') }}>
               <path d="M700,90 L648,112" stroke={hue('graph')} strokeWidth="1" opacity="0.5" />
               <text x={708} y={86} fill={hue('graph')}>The accounts around it</text>
-              <text x={708} y={102} fontSize="9" fontWeight="400" fill="rgb(var(--slate-500))">
-                who paid whom, two hops out
+              <text x={708} y={102} fontSize="12" fontWeight="400" fill="rgb(var(--slate-500))">
+                who paid whom, two steps
               </text>
             </g>
 
@@ -164,16 +162,16 @@ export default function SystemLens({ highlight = null, className }) {
             <g style={{ opacity: dim('behavioural') }}>
               <path d="M700,246 L648,224" stroke={hue('behavioural')} strokeWidth="1" opacity="0.5" />
               <text x={708} y={244} fill={hue('behavioural')}>The transaction itself</text>
-              <text x={708} y={260} fontSize="9" fontWeight="400" fill="rgb(var(--slate-500))">
-                its own values, against its type
+              <text x={708} y={260} fontSize="12" fontWeight="400" fill="rgb(var(--slate-500))">
+                its amounts and balances
               </text>
             </g>
           </g>
 
           {/* the one place all three meet */}
-          <text x={TX.x} y={H - 16} textAnchor="middle" fontSize="9"
+          <text x={TX.x} y={H - 16} textAnchor="middle" fontSize="12"
                 fill="rgb(var(--slate-600))">
-            the only point all three fields share
+            the one thing all three can see
           </text>
         </svg>
       </div>

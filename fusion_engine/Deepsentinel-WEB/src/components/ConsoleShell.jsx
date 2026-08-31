@@ -3,9 +3,10 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { getMonitorRuntime } from '../services/api'
+import markDark from '../assets/deepsentinel-logo.png'
+import markLight from '../assets/deepsentinel-logo-light.png'
+import DotClock from './DotClock'
 import ConfirmDialog from './ConfirmDialog'
-import markLight from '../assets/deepsentinel-mark.png'
-import markDark from '../assets/deepsentinel-mark-dark.png'
 
 /**
  * The signed-in application shell.
@@ -47,7 +48,7 @@ const I = {
   menu: 'M3 6h18M3 12h18M3 18h18',
   close: 'M18 6 6 18M6 6l12 12',
   out: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14 5-5-5-5m5 5H9',
-  shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z',
+  page: 'M6 2h8l4 4v16H6zM14 2v5h5M9 12h6M9 16h6',
   // A distribution with one point out in the tail — what the
   // behavioural model is looking for.
   curve: 'M3 18c3 0 4-12 7-12s4 12 7 12M20 8v.01',
@@ -91,6 +92,7 @@ const ADMIN_NAV = [
   ]],
   ['Configure', [
     ['/thresholds', 'Thresholds', I.sliders],
+    ['/report-style', 'Report style', I.page],
     ['/settings', 'Administration', I.settings],
   ]],
   ['Understand', [
@@ -120,6 +122,7 @@ const OPS_NAV = [
   ]],
   // Administration is an administrator's; the account inside it is everyone's.
   ['Workspace', [
+    ['/report-style', 'Report style', I.page],
     ['/account', 'Account', I.settings],
   ]],
 ]
@@ -138,17 +141,21 @@ const PARENT_ROUTES = new Set(
 /* Every path the signed-in console owns, taken from the tables above.
    App.jsx uses this to decide whether to render the public header; keeping a
    second list by hand is what put the marketing nav on top of the console. */
+/* Pages that get left open on a second screen, where the time is worth having
+   in the chrome. Everywhere else it is furniture. */
+const WATCHED = new Set(['/', '/monitor'])
+
 export const CONSOLE_PATHS = [...new Set(
   [ADMIN_NAV, OPS_NAV].flatMap((nav) => nav.flatMap(([, items]) => items.map(([to]) => to))),
 )].filter((p) => p !== '/')
 
 export default function ConsoleShell({ eyebrow, title, subtitle, actions, children }) {
   const { user, signOut, isAdmin } = useAuth()
-  const [confirmingSignOut, setConfirmingSignOut] = useState(false)
   const { theme, toggle } = useTheme()
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const [open, setOpen] = useState(false)
+  const [confirmingSignOut, setConfirmingSignOut] = useState(false)
   const [ready, setReady] = useState(null)
 
   // The foot of the sidebar reports what can actually score. Polled slowly:
@@ -178,19 +185,11 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
       <div className="ds-shell">
         <aside className={`ds-sidebar ${open ? 'open' : ''}`}>
           <div className="ds-brand">
-            {/* The real mark, not the outline glyph that used to sit here: that
-                was a bare shield with nothing inside it, so the globe and the
-                eye the brand is built around were simply absent. Rendered at
-                34px against a 220px source, so it stays sharp at any display
-                scaling, and switched by theme because the artwork is navy on
-                one ground and white on the other. */}
-            <img
-              src={theme === 'light' ? markLight : markDark}
-              alt=""
-              className="ds-brand-mark"
-            />
+            <img src={theme === 'light' ? markDark : markLight}
+                 alt="DeepSentinel" width={30} height={30}
+                 className="shrink-0 select-none object-contain"
+                 draggable={false} />
             <div className="ds-brand-copy">
-              <div className="ds-brand-name">DeepSentinel</div>
               <div className="ds-brand-sub">
                 {isAdmin ? 'System administration' : 'Fraud operations'}
               </div>
@@ -265,6 +264,9 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
                       aria-label="Toggle navigation">
                 <Icon d={open ? I.close : I.menu} />
               </button>
+              {WATCHED.has(pathname) && (
+                <DotClock className="mr-1 hidden sm:flex" />
+              )}
               <button className="ds-icon-btn" onClick={toggle}
                       aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
                 <Icon d={theme === 'dark' ? I.sun : I.moon} />

@@ -35,6 +35,8 @@ import AuditLog from './pages/AuditLog'
 import Account from './pages/Account'
 import About from './pages/About'
 import FAQ from './pages/FAQ'
+import Pricing from './pages/Pricing'
+import LiveMap from './pages/LiveMap'
 import ComponentDetail from './pages/ComponentDetail'
 import RequestAccess from './pages/RequestAccess'
 
@@ -58,7 +60,15 @@ import RequestAccess from './pages/RequestAccess'
 // Derived from the navigation rather than listed again here — see
 // CONSOLE_PATHS. The hand-written version fell behind every route added after
 // it, and the symptom was the public header appearing over the console.
+//
+// A few pages are reachable from both navigations. /about is in the console's
+// "Understand" group and in the public header, so deriving blindly made it a
+// console route and the public header removed itself from a public page,
+// leaving it with no navigation at all. Anything both sides offer belongs to
+// the public site: that is the version an unauthenticated visitor must get.
+const SHARED_WITH_PUBLIC = ['/about', '/faq', '/pricing', '/live']
 const CONSOLE_ROUTES = [...CONSOLE_PATHS, '/audit-log', '/users', '/settings']
+  .filter((r) => !SHARED_WITH_PUBLIC.includes(r))
 
 function Shell() {
   useLiquidPointer()
@@ -95,6 +105,8 @@ function Shell() {
             <Route path="/" element={<RootPage />} />
             <Route path="/about" element={<About />} />
             <Route path="/faq" element={<FAQ />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/live" element={<LiveMap />} />
             <Route path="/components/:slug" element={<ComponentDetail />} />
             {/* Signed in, both of these send you home — and "/" resolves to
                 the console your role actually has. Sending everyone to the

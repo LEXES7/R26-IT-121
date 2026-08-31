@@ -15,7 +15,10 @@ const cx = (...parts) => parts.filter(Boolean).join(' ')
 
 const BUTTON_VARIANTS = {
   primary:
-    'bg-accent-500 text-white hover:bg-accent-400 focus-visible:ring-blue-400 shadow-lg shadow-accent-500/20',
+    'btn-shader focus-visible:ring-emerald-400',
+  /* Kept as an explicit name too, for markup that is not a <Button>. */
+  shader:
+    'btn-shader font-semibold focus-visible:ring-emerald-400',
   secondary:
     'bg-surface-raised text-slate-200 border border-subtle hover:bg-surface-hover hover:border-strong focus-visible:ring-slate-400',
   danger:

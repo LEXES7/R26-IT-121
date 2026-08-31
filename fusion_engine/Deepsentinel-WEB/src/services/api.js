@@ -164,6 +164,10 @@ export const getSampleTransaction = () =>
 // Which commercial package this deployment holds, and which features it
 // unlocks. Detection, fusion, alerting and monitoring are never gated.
 
+/** The public price list. No auth — it is what an unsigned-in visitor reads. */
+export const getCatalogue = () =>
+  client.get('/packages/catalogue').then((r) => r.data)
+
 export const getPackage = () => client.get('/packages').then((r) => r.data)
 
 export const setPackage = (pkg) =>
@@ -226,6 +230,20 @@ export const demoScoreCsv = (file) => {
   body.append('file', file)
   return client.post('/graph/demo/score-csv', body).then((r) => r.data)
 }
+
+/** Fill the sequence detector's 32-transaction window so it can answer.
+ *  Real rows from the served graph, not invented ones. */
+export const warmTemporalWindow = () =>
+  client.post('/detectors/temporal/warm').then((r) => r.data)
+
+/** What the network detector is serving, and under what protocol. */
+export const getGraphModel = () => client.get('/graph/model').then((r) => r.data)
+
+/** Each step between three scores and a filed document, checked. */
+export const getFusionStages = () => client.get('/fusion/stages').then((r) => r.data)
+
+/** The meta-classifier's weights, operating point and decisions so far. */
+export const getFusionModel = () => client.get('/fusion/model').then((r) => r.data)
 
 export const scoreOneDetector = (name, transaction) =>
   client.post(`/detectors/${name}`, { transaction }).then((r) => r.data)

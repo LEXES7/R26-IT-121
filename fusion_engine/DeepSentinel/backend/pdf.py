@@ -91,10 +91,32 @@ def wrap(s: str, font: str, size: float, width: float) -> list[str]:
     return out or [""]
 
 
+# The fonts are declared /WinAnsiEncoding, which carries the typographic
+# characters latin-1 does not. Encoding straight to latin-1 turned every em
+# dash into a question mark — visible as "01 ? Executive summary" at the head
+# of every numbered section, in every style.
+_WINANSI = {
+    "\u2014": "\x97",   # em dash
+    "\u2013": "\x96",   # en dash
+    "\u2018": "\x91", "\u2019": "\x92",   # single quotes
+    "\u201c": "\x93", "\u201d": "\x94",   # double quotes
+    "\u2026": "\x85",   # ellipsis
+    "\u2022": "\x95",   # bullet
+    "\u2122": "\x99",   # trademark
+    # Not in WinAnsi at all — spell them rather than let them become "?".
+    "\u2192": "->", "\u2190": "<-", "\u2193": "v", "\u2191": "^",
+}
+
+
 def _esc(s: str) -> str:
-    """PDF string escaping, and anything non-Latin-1 replaced rather than
-    raising — a report should not fail to render over one stray glyph."""
+    """PDF string escaping, with WinAnsi's typographic characters preserved.
+
+    Anything still outside the encoding is replaced rather than raising — a
+    report should not fail to render over one stray glyph.
+    """
     s = s.replace("\\", r"\\").replace("(", r"\(").replace(")", r"\)")
+    for ch, byte in _WINANSI.items():
+        s = s.replace(ch, byte)
     return s.encode("latin-1", "replace").decode("latin-1")
 
 
@@ -107,12 +129,19 @@ class Document:
     """Accumulates content, flowing onto a new page when the cursor runs out."""
 
     def __init__(self, size=A4, margin: float = 56.0, footer: str = "",
-                 ground=GROUND):
+                 ground=GROUND, rail: float = 0.0, rail_rgb=None):
         self.w, self.h = size
-        self.margin = margin
         self.ground = ground
         self.footer = footer
-        self.col = self.w - 2 * margin
+        # A full-height rail down the left, when a style asks for one. The text
+        # column starts after it, so every existing call — which passes no rail
+        # — lays out exactly as before.
+        self.rail = rail
+        self.rail_rgb = rail_rgb
+        self.margin = margin + rail
+        self.ry = 0.0                 # the rail's own cursor
+        self.col = self.w - self.margin - margin
+        self._edge = margin
         self.pages: list[Page] = []
         self.y = 0.0
         self._new_page()
@@ -126,7 +155,14 @@ class Document:
         r, g, b = self.ground
         self.pages[-1].ops.append(
             f"{r:.3f} {g:.3f} {b:.3f} rg 0 0 {self.w:.2f} {self.h:.2f} re f")
-        self.y = self.h - self.margin
+        if self.rail and self.rail_rgb:
+            # Repainted on every page: a rail that appears only on page one
+            # reads as a header that fell off.
+            rr, rg, rb = self.rail_rgb
+            self.pages[-1].ops.append(
+                f"{rr:.3f} {rg:.3f} {rb:.3f} rg 0 0 {self.rail:.2f} {self.h:.2f} re f")
+        self.y = self.h - self._edge
+        self.ry = self.h - self._edge
 
     def _room(self, need: float) -> None:
         # The running footer is drawn below the margin line, so content may use
@@ -280,6 +316,78 @@ class Document:
             self._txt(line, self.margin, self.y, font, size, rgb)
         self.y -= size * 0.55
 
+    def rail_label(self, text: str, rgb, size: float = 7.5,
+                   gap: float = 4.0) -> None:
+        """A small letterspaced caption in the rail, wrapped to it.
+
+        Letterspacing widens a string beyond what `wrap` measures, so the
+        available width is discounted before wrapping — otherwise a label like
+        "Fused fraud confidence" runs straight out of the rail and across the
+        narrative beside it.
+        """
+        width = (self.rail - self._edge * 1.6) * 0.86
+        for i, line in enumerate(wrap(text.upper(), "Helvetica-Bold", size, width)):
+            self.ry -= size + (gap if i == 0 else 1.0)
+            self._txt(line, self._edge, self.ry, "Helvetica-Bold", size,
+                      rgb, spacing=1.1)
+
+    def rail_value(self, text: str, rgb, size: float = 9.0,
+                   font: str = "Courier", gap: float = 3.0) -> None:
+        """A value in the rail, wrapped to the rail's own width."""
+        width = self.rail - self._edge * 1.6
+        for line in wrap(text, font, size, width):
+            self.ry -= size + gap
+            self._txt(line, self._edge, self.ry, font, size, rgb)
+
+    def rail_hero(self, value: str, unit: str, rgb, accent, track,
+                  filled: float, size: float = 26.0) -> None:
+        """The one number, in the rail, over a single progress bar."""
+        self.ry -= size + 6
+        self._txt(value, self._edge, self.ry, "Helvetica-Bold", size, rgb)
+        self._txt(unit, self._edge + text_width(value, "Helvetica-Bold", size) + 2,
+                  self.ry, "Helvetica", size * 0.44, rgb)
+        self.ry -= 12
+        width = self.rail - self._edge * 1.6
+        self._fill(self._edge, self.ry, width, 3.0, track)
+        if filled > 0:
+            self._fill(self._edge, self.ry, width * max(0.0, min(1.0, filled)),
+                       3.0, accent)
+
+    def rail_rule(self, rgb, gap: float = 13.0) -> None:
+        self.ry -= gap
+        width = self.rail - self._edge * 1.6
+        self._fill(self._edge, self.ry, width, 0.4, rgb)
+
+    def meter(self, label: str, value: float, caption: str = "",
+              accent=(0.216, 0.478, 0.349), track=WASH, ink=INK,
+              muted=MUTED, size: float = 10.0) -> None:
+        """One score as a name, a figure and a filled bar.
+
+        A column of four-decimal numbers makes the reader do the comparison.
+        A bar does it for them — which detector is loud is the first thing the
+        eye should answer, and the figure is still there for anyone who wants
+        to check it.
+        """
+        self._room(size * 3.6)
+        self.y -= size * 1.35
+        self._txt(label, self.margin, self.y, "Helvetica-Bold", size, ink)
+        shown = f"{value:.4f}"
+        self._txt(shown, self.margin + self.col - text_width(shown, "Courier", size),
+                  self.y, "Courier", size, ink)
+
+        self.y -= size * 0.72
+        h = 5.0
+        self._fill(self.margin, self.y, self.col, h, track)
+        filled = max(0.0, min(1.0, value)) * self.col
+        if filled > 0.6:
+            self._fill(self.margin, self.y, filled, h, accent)
+
+        if caption:
+            self.y -= size * 1.15
+            self._txt(caption.upper(), self.margin, self.y, "Courier",
+                      size * 0.78, muted, spacing=0.8)
+        self.y -= size * 0.5
+
     def kv(self, rows: list[tuple[str, str]], size: float = 9.5) -> None:
         key_col = 150.0
         for k, v in rows:
@@ -326,7 +434,7 @@ class Document:
             num = f"{i} / {n_pages}"
             ops.append(
                 f"BT /F1 7.50 Tf 0.62 0.66 0.67 rg "
-                f"{self.w - self.margin - text_width(num, 'Helvetica', 7.5):.2f} "
+                f"{self.w - self._edge - text_width(num, 'Helvetica', 7.5):.2f} "
                 f"{self.margin - 16:.2f} Td ({_esc(num)}) Tj ET"
             )
             stream = zlib.compress("\n".join(ops).encode("latin-1", "replace"))

@@ -468,29 +468,21 @@ html.theme-transition * {
 .ds-shell { min-height: 100dvh; display: flex; background: rgb(var(--ds-workspace)); color: rgb(var(--ds-ink)); }
 /* Sticky, and sized to the viewport rather than to the document.
    `.ds-shell` is min-height:100dvh, so on a long page it grows past the
-   viewport — and the sidebar, stretching to its full height as a flex child,
+   viewport, and the sidebar stretching to its full height as a flex child
    takes its footer with it. Sign out then sits at the bottom of the *document*,
    several screens down, which is what makes it feel unreachable.
 
    Sticky rather than fixed: fixed would take it out of flow and the main
    column would slide underneath, needing a margin to compensate. Sticky keeps
-   the flex row intact. `align-self: flex-start` is required — the default
+   the flex row intact. `align-self: flex-start` is required, or the default
    `stretch` overrides the height and puts the bug straight back.
 
-   Width, colours and every other value on this line are untouched; only the
-   four positioning properties at the end are added. This was lost once already
-   when main was merged, so if Sign out drifts to the bottom of the page again,
-   this is the line to check first. */
+   Everything before the positioning properties is untouched. This has been
+   lost to a merge once already, so if Sign out drifts to the bottom of the
+   page again, this is the line to check first. */
 .ds-sidebar { width: 248px; border-right: 1px solid rgb(var(--ds-line)); background: rgb(var(--ds-surface)); display: flex; flex-direction: column; flex: 0 0 auto; position: sticky; top: 0; align-self: flex-start; height: 100dvh; }
-/* The brand bar is 84px with 20px of padding, so 44px is the largest the mark
-   can be without moving the bar — and the bar's height is matched by the
-   topbar beside it, so moving it would misalign the two. `flex: 0 0 auto`
-   matters as much as the size: without it the image is a shrinkable flex item
-   and the wordmark squeezes it to whatever is left. */
-.ds-brand-mark { width: 61px; height: 61px; flex: 0 0 auto; display: block; }
-.ds-brand { height: 84px; padding: 11px 19px; border-bottom: 1px solid rgb(var(--ds-line)); display: flex; align-items: center; gap: 10px; }
-.ds-brand-name { font-size: 17px; font-weight: 700; letter-spacing: -.04em; }
-.ds-brand-sub { font-size: 11px; color: rgb(var(--ds-faint)); letter-spacing: .12em; text-transform: uppercase; margin-top: 2px; }
+.ds-brand { height: 68px; padding: 16px 19px; border-bottom: 1px solid rgb(var(--ds-line)); display: flex; align-items: center; gap: 10px; }
+.ds-brand-sub { font-size: 11px; color: rgb(var(--ds-faint)); letter-spacing: .12em; text-transform: uppercase; }
 .ds-nav { padding: 17px 11px; flex: 1; overflow-y: auto; }
 .ds-nav-label { font-size: 11px; text-transform: uppercase; letter-spacing: .16em; color: rgb(var(--ds-faint)); padding: 0 9px 9px; }
 .ds-nav-btn { width: 100%; display: flex; align-items: center; gap: 10px; border: 0; background: transparent; color: rgb(var(--ds-muted)); padding: 9px 10px; border-radius: 6px; font-size: 14px; text-align: left; text-decoration: none; transition: background .18s ease, color .18s ease, transform .18s ease; }
@@ -581,8 +573,7 @@ html.theme-transition * {
 
 @media (max-width: 860px) {
   .ds-sidebar { width: 64px; }
-  .ds-brand { padding: 20px 15px; }
-  .ds-brand-mark { width: 34px; height: 34px; }
+  .ds-brand { padding: 20px 17px; }
   .ds-brand-copy, .ds-nav-label, .ds-nav-btn span, .ds-sidebar-foot .ds-statusline span { display: none; }
   .ds-nav-btn { justify-content: center; padding: 11px 8px; }
   .ds-sidebar-foot { padding: 15px 9px; }
@@ -592,7 +583,7 @@ html.theme-transition * {
 }
 @media (max-width: 640px) {
   .ds-sidebar { display: none; }
-  .ds-sidebar.open { display: flex; position: fixed; inset: 0 auto 0 0; z-index: 30; width: 232px; height: auto; box-shadow: 12px 0 30px rgba(var(--ds-shadow), .16); }
+  .ds-sidebar.open { display: flex; position: fixed; inset: 0 auto 0 0; height: auto; z-index: 30; width: 232px; box-shadow: 12px 0 30px rgba(var(--ds-shadow), .16); }
   .ds-sidebar.open .ds-brand-copy, .ds-sidebar.open .ds-nav-label, .ds-sidebar.open .ds-nav-btn span, .ds-sidebar.open .ds-sidebar-foot .ds-statusline span { display: block; }
   .ds-sidebar.open .ds-nav-btn { justify-content: flex-start; padding: 9px 10px; }
   .ds-topbar { min-height: 72px; padding: 13px 15px; }
@@ -1526,35 +1517,161 @@ html.theme-transition * {
   to { opacity: 1; filter: blur(0); }
 }
 
+/* ── the navigation bar as liquid glass ──────────────────────────────
+   It floats rather than sitting flush. An edge-to-edge bar reads as chrome
+   bolted to the top of the window; a detached pane with the page sliding
+   under it is what makes the material legible as glass at all — you can see
+   it has edges, and see through them.
 
-/* ── the pipeline diagram, on the light ground ───────────────────────
-   The ribbon opacities are set as attributes in PipelineLive, tuned against
-   the dark workspace where a 0.13 wash over a near-black fill separates
-   cleanly. The same wash over the light workspace does not: the composite
-   lands a few values off a near-white ground and the lanes read as smudges
-   rather than as three distinct paths.
+   .liquid does the pane, the refracting rim and the pointer highlight. What
+   is added here is only the shape and the behaviour on scroll. */
+.nav-liquid {
+  position: sticky;
+  top: 12px;
+  z-index: 50;
+  margin: 12px auto 0;
+  width: calc(100% - 24px);
+  max-width: 88rem;
+  border-radius: 18px;
+  transition: top .35s var(--ease-hover), width .35s var(--ease-hover),
+              border-radius .35s var(--ease-hover), box-shadow .35s var(--ease-hover);
+}
+/* Once the page has moved, the bar tightens and lifts — a small acknowledgement
+   that it is now floating over content rather than sitting at the top of it. */
+.nav-liquid[data-scrolled='true'] {
+  top: 8px;
+  width: calc(100% - 40px);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.16),
+    0 18px 46px -18px rgb(0 0 0 / 0.7);
+}
 
-   Doubling the alpha roughly doubles the distance from the ground — measured
-   on the tokens themselves, the strongest channel moves from 28-33 to 66-72 —
-   which is enough to follow a lane across the diagram without the fills
-   turning into blocks of colour that compete with the node cards.
+/* The pill that slides between links. One element that moves, rather than a
+   background on each link: the movement is what ties the items together. */
+.nav-pill {
+  position: absolute;
+  top: 50%;
+  height: 32px;
+  translate: 0 -50%;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.09);
+  border: 1px solid rgb(255 255 255 / 0.10);
+  pointer-events: none;
+  opacity: 0;
+  transition: left .38s var(--ease-hover), width .38s var(--ease-hover),
+              opacity .25s ease;
+}
+.nav-pill[data-on='true'] { opacity: 1; }
+[data-theme='light'] .nav-pill {
+  background: rgb(16 30 40 / 0.06);
+  border-color: rgb(16 30 40 / 0.08);
+}
 
-   Only the light theme is touched. These rules are CSS and the values they
-   replace are presentation attributes, which always lose to CSS, so the dark
-   theme keeps exactly the appearance it has. */
-[data-theme='light'] .pl-ribbon { opacity: 0.3; }
-[data-theme='light'] .pl-ribbon-alert { opacity: 0.42; }
-[data-theme='light'] .pl-clear-stop { stop-opacity: 0.4; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-liquid, .nav-pill { transition: none; }
+}
+
+/* ── shader buttons ───────────────────────────────────────────────────
+   The look of a fragment shader without one: layered conic and radial
+   gradients rotating behind the label, a fine grain over the top, and a
+   specular sweep on hover.
+
+   Done in CSS rather than WebGL on purpose. A canvas per button costs a GL
+   context each and keeps a rAF loop alive for something decorative — on a
+   machine already running five services and a 3.3M-node graph, that is a
+   bad trade for a gradient. This composites on the GPU and stops when the
+   pointer leaves.
+
+   @property is what makes the rotation smooth: an unregistered custom
+   property animates as a discrete swap, so the gradient would jump between
+   frames. Where it is unsupported the angle simply holds and the button is
+   a still gradient, which is a fine button. */
+@property --shader-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.btn-shader {
+  position: relative;
+  isolation: isolate;
+  /* The sweep travels from -130% to +130%, so without this it paints outside
+     the button and slides a white band across whatever sits beside it —
+     which reads as neighbouring elements glitching, not as this one animating. */
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  color: #05261a;
+  background:
+    conic-gradient(from var(--shader-angle) at 30% 110%,
+      /* The gradient turns, so the label passes over every stop — the
+         darkest one therefore sets the contrast, not the average. emerald-600
+         measured 4.29:1 against this ink and was raised until the whole ramp
+         clears 4.5:1. */
+      rgb(16 185 129) 0deg,     /* emerald      6.4:1 */
+      rgb(52 211 153) 80deg,    /* spring green 8.4:1 */
+      rgb(163 230 53) 150deg,   /* lime        10.7:1 */
+      rgb(34 197 138) 240deg,
+      rgb(16 185 129) 360deg);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 8px 26px -10px rgb(16 185 129 / 0.55);
+  animation: shader-drift 9s linear infinite;
+  transition: box-shadow .35s var(--ease-hover), transform .35s var(--ease-hover);
+}
+@keyframes shader-drift { to { --shader-angle: 360deg; } }
+
+/* Grain. A pure gradient reads as plastic; the speckle is what makes it read
+   as a material with a surface. */
+.btn-shader::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  /* Plain white speckle rather than an overlay blend. `mix-blend-mode` on a
+     pseudo-element inside `isolation: isolate` renders as a grey haze in
+     Safari, which greyed the button instead of texturing it. */
+  opacity: .10;
+  background-image: radial-gradient(rgb(255 255 255 / .8) .5px, transparent .5px);
+  background-size: 3px 3px;
+}
+
+/* The sweep, on hover only. */
+.btn-shader::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  transform: translateX(-130%);
+  background: linear-gradient(105deg,
+    transparent 32%, rgb(255 255 255 / .55) 50%, transparent 68%);
+}
+.btn-shader:hover { transform: translateY(-1px); box-shadow:
+  inset 0 1px 0 rgb(255 255 255 / 0.45),
+  0 14px 34px -12px rgb(16 185 129 / 0.7); }
+.btn-shader:hover::after { animation: shader-sweep .85s ease-out; }
+@keyframes shader-sweep { to { transform: translateX(130%); } }
+
+.btn-shader:disabled { animation-play-state: paused; filter: saturate(.5); }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-shader { animation: none; transition: none; }
+  .btn-shader:hover { transform: none; }
+  .btn-shader:hover::after { animation: none; }
+}
+
+
 
 /* ── the detector lab's sliders ──────────────────────────────────────
-   A range input is one of the few controls browsers still style entirely
-   themselves, and the default is a light-grey track that disappears against
-   the console's dark surface and looks like a system dialog against its light
-   one. Both thumbs and both tracks are drawn here.
+   A range input is one of the few controls browsers still draw entirely
+   themselves, and the default light-grey track vanishes against the console's
+   dark surface while reading as a system dialog against its light one.
 
-   The WebKit and Firefox pseudo-elements cannot be combined into one rule:
-   a selector list containing a pseudo-element the browser does not recognise
-   is dropped whole, so pairing them would silently style neither. */
+   The WebKit and Firefox pseudo-elements are separate rules on purpose: a
+   selector list containing a pseudo-element the browser does not recognise is
+   dropped whole, so pairing them would silently style neither. */
 .ds-range {
   -webkit-appearance: none;
   appearance: none;
@@ -1565,15 +1682,11 @@ html.theme-transition * {
   outline: none;
   cursor: pointer;
 }
-.ds-range:focus-visible {
-  box-shadow: 0 0 0 3px rgb(var(--ds-accent) / 0.3);
-}
+.ds-range:focus-visible { box-shadow: 0 0 0 3px rgb(var(--ds-accent) / 0.3); }
 .ds-range::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
+  width: 15px; height: 15px; border-radius: 50%;
   background: rgb(var(--ds-accent));
   border: 2px solid rgb(var(--ds-surface));
   box-shadow: 0 1px 4px rgba(var(--ds-shadow), .3);
@@ -1581,15 +1694,11 @@ html.theme-transition * {
 }
 .ds-range::-webkit-slider-thumb:hover { transform: scale(1.15); }
 .ds-range::-moz-range-thumb {
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
+  width: 15px; height: 15px; border-radius: 50%;
   background: rgb(var(--ds-accent));
   border: 2px solid rgb(var(--ds-surface));
   box-shadow: 0 1px 4px rgba(var(--ds-shadow), .3);
 }
 .ds-range::-moz-range-track {
-  height: 4px;
-  border-radius: 3px;
-  background: rgb(var(--ds-surface-3));
+  height: 4px; border-radius: 3px; background: rgb(var(--ds-surface-3));
 }

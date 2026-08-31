@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { askAssistant, getAssistantSuggestions } from '../services/api'
 import { Spinner, cx } from './ui'
+import SentinelBot from './SentinelBot'
 
 /**
  * Floating project assistant.
@@ -17,6 +18,7 @@ import { Spinner, cx } from './ui'
 
 const GREETING = {
   role: 'assistant',
+  at: Date.now(),
   content:
     "Ask me about DeepSentinel — the architecture, the GraphSAGE results and how " +
     'they were measured, the API contract, or the dataset. I answer only from the ' +
@@ -64,7 +66,7 @@ export default function ChatBot() {
 
     setError(null)
     setInput('')
-    const next = [...messages, { role: 'user', content: text }]
+    const next = [...messages, { role: 'user', content: text, at: Date.now() }]
     setMessages(next)
     setBusy(true)
 
@@ -79,6 +81,7 @@ export default function ChatBot() {
         ...m,
         {
           role: 'assistant',
+          at: Date.now(),
           content: res.answer,
           sources: res.sources || [],
           grounded: res.grounded,
@@ -104,11 +107,14 @@ export default function ChatBot() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Open the project assistant"
-        className="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent-500 text-white shadow-lg shadow-accent-500/25 transition hover:scale-105 hover:bg-accent-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-sentinel-950"
+        className="fixed bottom-5 right-5 z-40 grid h-16 w-16 place-items-center rounded-full border transition hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-sentinel-950"
+        style={{ borderColor: 'rgba(45,212,191,.35)',
+                 background: 'rgb(var(--ds-surface))',
+                 boxShadow: '0 12px 34px -12px rgba(45,212,191,.5)' }}
       >
-        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-        </svg>
+        {/* Him, not a speech bubble. A named character people can recognise
+            beats a generic glyph, and he is the same face that answers. */}
+        <SentinelBot size={52} />
       </button>
     )
   }
@@ -116,9 +122,12 @@ export default function ChatBot() {
   return (
     <div className="fixed bottom-5 right-5 z-40 flex h-[min(34rem,80vh)] w-[min(26rem,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-2xl border border-subtle bg-sentinel-900 shadow-2xl ring-1 ring-black/5">
       <header className="flex items-center justify-between border-b border-subtle px-4 py-3">
-        <div>
-          <p className="text-sm font-semibold text-slate-200">Project assistant</p>
-          <p className="text-xs text-slate-400">Answers from the project documentation</p>
+        <div className="flex items-center gap-2.5">
+          <SentinelBot size={34} awake />
+          <div>
+            <p className="text-sm font-semibold text-slate-200">DeepSentinel</p>
+            <p className="text-xs text-slate-400">Answers from the project documentation</p>
+          </div>
         </div>
         <button
           type="button"
@@ -200,16 +209,35 @@ export default function ChatBot() {
   )
 }
 
+/* A message thread rather than a log.
+ *
+ * A bubble with a tail on the sender's side, an avatar beside each turn, the
+ * time underneath — the arrangement everyone already knows how to read, so
+ * nobody has to work out who said what. The bot's own face is the avatar.
+ *
+ * The asymmetric corner is what makes a rounded rectangle read as speech: the
+ * corner nearest its own avatar is square, the other three are not. */
 function Message({ message }) {
   const isUser = message.role === 'user'
+  const time = message.at
+    ? new Date(message.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    : null
   return (
-    <div className={cx('flex', isUser ? 'justify-end' : 'justify-start')}>
+    <div className={cx('flex items-end gap-2', isUser ? 'flex-row-reverse' : 'flex-row')}>
+      {isUser ? (
+        <span className="mb-4 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-surface-raised text-[11px] font-semibold text-slate-300">
+          You
+        </span>
+      ) : (
+        <span className="mb-4 shrink-0"><SentinelBot size={28} /></span>
+      )}
+      <div className={cx('flex max-w-[78%] flex-col', isUser ? 'items-end' : 'items-start')}>
       <div
         className={cx(
-          'max-w-[85%] rounded-xl px-3 py-2 text-sm leading-relaxed',
+          'px-3.5 py-2 text-sm leading-relaxed',
           isUser
-            ? 'bg-accent-500/15 text-slate-200'
-            : 'border border-subtle bg-surface-raised text-slate-300',
+            ? 'rounded-2xl rounded-br-sm bg-accent-500 text-white'
+            : 'rounded-2xl rounded-bl-sm bg-surface-raised text-slate-200',
         )}
       >
         <p className="whitespace-pre-wrap">{message.content}</p>
@@ -229,6 +257,8 @@ function Message({ message }) {
             </ul>
           </details>
         )}
+      </div>
+        {time && <span className="mt-1 px-1 text-[11px] text-slate-500">{time}</span>}
       </div>
     </div>
   )

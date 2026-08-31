@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
-import { scoreOneDetector } from '../services/api'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  scoreOneDetector, warmTemporalWindow, searchTransactions, getStoredTransaction,
+} from '../services/api'
 import { Alert, Button, cx } from './ui'
-import TransactionEditor from './TransactionEditor'
 import ConsoleShell from './ConsoleShell'
+import TransactionEditor from './TransactionEditor'
+import DetectorRuntime from './DetectorRuntime'
 
 /**
  * The shell the three detector pages share: pick a transaction, run one
@@ -75,20 +78,64 @@ export function Stat({ label, value, note }) {
 }
 
 export default function DetectorLab({
-  detector, eyebrow, title, subtitle, children, editable = false,
+  detector, eyebrow, title, subtitle, model, children, editable = false,
 }) {
   const [pick, setPick] = useState(0)
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  // The row actually being scored. Seeded from the preset and edited from
-  // there, so the starting point is always a real transaction.
+
+  const warmedRef = useRef(false)
+  const [liveRows, setLiveRows] = useState([])
+  const [source, setSource] = useState('fixed')
+  // The row actually scored. Seeded from whichever preset is selected, so
+  // an edit always starts from a real transaction rather than a blank form.
   const [txn, setTxn] = useState(PRESETS[0].txn)
+
+  /* The three fixed rows are known cases you can rehearse against. These are
+   * whatever the monitor screened most recently — genuinely live, and so
+   * genuinely different every time, which is the point: a picker that only
+   * ever offers the same three transactions proves nothing about the stream.
+   *
+   * The list view does not carry balances, so each row is fetched in full
+   * before it can be scored — a detector given a transaction with no balances
+   * would score it as though the account were empty. */
+  useEffect(() => {
+    let alive = true
+    searchTransactions('', 6)
+      .then(async (d) => {
+        const rows = Array.isArray(d) ? d : (d?.transactions ?? [])
+        const full = await Promise.all(rows.slice(0, 4).map(async (r) => {
+          try {
+            const one = await getStoredTransaction(r.transaction_id)
+            const t = one?.transaction ?? one
+            if (!t?.nameOrig) return null
+            return {
+              ref: r.transaction_id?.slice(0, 12) ?? t.nameOrig,
+              note: `${t.type} · ${Number(t.amount).toLocaleString()}`
+                + (r.label_is_fraud === true ? ' · labelled fraud'
+                  : r.label_is_fraud === false ? ' · labelled clean' : ''),
+              txn: { ...t, transaction_id: r.transaction_id },
+            }
+          } catch { return null }
+        }))
+        if (alive) setLiveRows(full.filter(Boolean))
+      })
+      .catch(() => { /* the fixed three still work */ })
+    return () => { alive = false }
+  }, [])
+
+  const presets = source === 'live' && liveRows.length ? liveRows : PRESETS
 
   const run = useCallback(async (t) => {
     setLoading(true)
     setError(null)
     try {
+      // Once per visit, and only for the detector that needs it.
+      if (detector === 'temporal' && !warmedRef.current) {
+        warmedRef.current = true
+        try { await warmTemporalWindow() } catch { /* score anyway; it will say */ }
+      }
       setResult(await scoreOneDetector(detector, t))
     } catch (err) {
       setError(err?.userMessage ?? 'The detector did not answer.')
@@ -98,29 +145,33 @@ export default function DetectorLab({
     }
   }, [detector])
 
-  // Choosing a preset replaces the working row outright; any edits are gone,
-  // which is what picking a different transaction should mean.
-  useEffect(() => { setTxn(PRESETS[pick].txn) }, [pick])
+  const p = presets[Math.min(pick, presets.length - 1)] ?? presets[0]
 
-  // Debounced, because a slider fires on every pixel and each change is a
-  // round trip to the model. 300ms is long enough that a drag makes one
-  // request at the end and short enough to feel like it answered immediately.
+  // Choosing a different preset, or switching between the fixed and live
+  // lists, replaces the working row outright. Any edits go with it, which is
+  // what picking a different transaction should mean.
+  useEffect(() => { if (p?.txn) setTxn(p.txn) }, [p])
+
+  // Debounced: a slider fires on every pixel and each change is a round trip
+  // to the model. 300ms makes one request at the end of a drag and still feels
+  // immediate. Unedited pages score straight away.
   useEffect(() => {
-    const t = setTimeout(() => run(txn), 300)
-    return () => clearTimeout(t)
-  }, [run, txn])
+    const id = setTimeout(() => run(txn), editable ? 300 : 0)
+    return () => clearTimeout(id)
+  }, [run, txn, editable])
 
-  const p = PRESETS[pick]
-  const dirty = JSON.stringify(txn) !== JSON.stringify(p.txn)
+  const dirty = editable && JSON.stringify(txn) !== JSON.stringify(p?.txn)
   return (
     <ConsoleShell eyebrow={eyebrow} title={title} subtitle={subtitle}>
       {/* .ds-content sets padding but no gap, so blocks rendered straight into
           it sit flush against one another. The page owns its own rhythm. */}
       <div style={{ display: 'grid', gap: 18 }}>
+      <DetectorRuntime detector={detector === 'behavioural' ? 'behavioural' : detector}
+                       model={model} />
       {error && <Alert tone="error">{error}</Alert>}
 
       <div className="flex flex-wrap items-center gap-2">
-        {PRESETS.map((x, i) => (
+        {presets.map((x, i) => (
           <button
             key={x.ref}
             onClick={() => setPick(i)}
@@ -137,11 +188,37 @@ export default function DetectorLab({
         <Button size="sm" variant="ghost" onClick={() => run(txn)} loading={loading}>
           Run again
         </Button>
+
+        {/* Fixed rows are for rehearsing; live rows are for proving. Both are
+            real transactions — the difference is only whether they change. */}
+        <span className="ml-auto flex items-center gap-1 rounded-full border p-1"
+              style={{ borderColor: 'rgb(var(--ds-line))' }}>
+          {[['fixed', 'Known cases'], ['live', 'Latest screened']].map(([k, label]) => (
+            <button key={k}
+                    onClick={() => { setSource(k); setPick(0) }}
+                    disabled={k === 'live' && liveRows.length === 0}
+                    className="rounded-full px-3 py-1 text-[13px] transition-colors disabled:opacity-40"
+                    style={{
+                      background: source === k ? 'rgb(var(--ds-accent-soft))' : 'transparent',
+                      color: source === k ? 'rgb(var(--ds-accent-strong))'
+                        : 'rgb(var(--ds-muted))',
+                    }}>
+              {label}
+              {k === 'live' && liveRows.length > 0 && ` (${liveRows.length})`}
+            </button>
+          ))}
+        </span>
       </div>
 
       <p className="numeric text-[15px]" style={{ color: 'rgb(var(--ds-faint))' }}>
-        {txn.type} · {Number(txn.amount).toLocaleString()} · {txn.nameOrig} → {txn.nameDest} · step {txn.step}
-        {dirty && <span style={{ color: 'rgb(var(--ds-warn))' }}> · edited, no longer the labelled row</span>}
+        {txn.type} · {Number(txn.amount).toLocaleString()} · {txn.nameOrig} → {txn.nameDest}
+        {' · '}step {txn.step}
+        {source === 'live' && ' · from the monitor, so this set changes'}
+        {dirty && (
+          <span style={{ color: 'rgb(var(--ds-warn))' }}>
+            {' · '}edited, no longer the labelled row
+          </span>
+        )}
       </p>
 
       {editable && (

@@ -19,6 +19,7 @@ export default function BehaviourLab() {
       editable
       eyebrow="Detector · Behaviour"
       title="Stratified VAE with dual-signal attribution"
+      model="Stratified VAE + DSAA"
       subtitle="What normal looks like for each transaction type, and how far this sits from it."
     >
       {(r) => {

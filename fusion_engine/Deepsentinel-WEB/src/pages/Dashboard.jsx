@@ -46,7 +46,7 @@ const since = (iso) => {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth()
+  const { user, canControlPipeline } = useAuth()
   const navigate = useNavigate()
   const [state, setState] = useState(null)
   const [runtime, setRuntime] = useState(null)
@@ -132,7 +132,7 @@ export default function Dashboard() {
       eyebrow={`Workspace / Observe${name ? ` · ${name}` : ''}`}
       title={title}
       subtitle={`${today} · ${running ? 'monitor live' : 'monitor stopped'}`}
-      actions={running ? (
+      actions={running || !canControlPipeline ? (
         <button className="ds-btn" onClick={() => navigate('/monitor')}>Open monitor</button>
       ) : (
         <button className="ds-btn ds-btn-primary" disabled={starting}
@@ -203,7 +203,9 @@ export default function Dashboard() {
             ) : (
               <div className="ds-empty">
                 When a transaction escalates, the accounts around it are drawn here.
-                Ingest a file with the Query Runner, or start the monitor.
+                {canControlPipeline
+                  ? ' Ingest a file with the Query Runner, or start the monitor.'
+                  : ' Screening is controlled by an administrator.'}
               </div>
             )}
           </Panel>

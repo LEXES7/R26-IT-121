@@ -603,6 +603,12 @@ class MonitorEngine:
             "fusion_method": fusion_method,
             "modalities_used": len(available),
             "scores": {k: (round(v, 4) if v is not None else None) for k, v in scores.items()},
+            # The arithmetic, not just the answer. These were already computed
+            # for the runlog and then dropped on the floor; carrying them on
+            # the event lets a watcher see how each verdict was arrived at
+            # while it happens, rather than reconstructing it afterwards.
+            "contributions": contributions,
+            "driver": driver,
         })
 
         # The queue row is closed on the fused answer, not the relational one.
@@ -1112,15 +1118,69 @@ def _report_pdf(alert: dict, report: str, style: str | None = None) -> bytes:
 
     doc = Document(
         footer="DeepSentinel \u00b7 generated from the record for this transaction",
-        ground=st["ground"])
+        ground=st["ground"],
+        rail=st.get("rail", 0.0), rail_rgb=st.get("header"))
     txid = str(alert["transaction_id"])
     fused = float(alert["fused_score"])
     used = int(alert.get("modalities_used") or 0)
 
+    # A style may pin its own accent. Severity still shows in the words and the
+    # band; letting an amber HIGH tint a deep-green report just makes it look
+    # like two designs stapled together.
+    if st.get("accent"):
+        accent = st["accent"]
+
+    # ── the rail, when the style has one ─────────────────────────────────
+    #
+    # Everything here is what a masthead and a hero would otherwise carry: who
+    # produced this, how sure it is, and which accounts it concerns. Putting
+    # them down the side leaves the whole width to the narrative, which is the
+    # part anyone actually reads.
+    if st.get("rail"):
+        RI = st.get("rail_ink", (0.95, 0.96, 0.96))
+        RM = st.get("rail_muted", (0.61, 0.70, 0.65))
+        RT = st.get("rail_track", (0.18, 0.29, 0.23))
+
+        doc.rail_label("Chain-of-evidence", RM, size=7.0, gap=2.0)
+        doc.rail_label("Forensic report", RM, size=7.0, gap=1.0)
+        doc.ry -= 10
+        doc.rail_label(f"{sev} priority", RI, size=7.5, gap=4.0)
+
+        doc.ry -= 12
+        doc.rail_label("Fused fraud confidence", RM)
+        doc.rail_hero(f"{fused * 100:.1f}", "%", RI, accent, RT, fused)
+        doc.ry -= 6
+        doc.rail_value(f"{used} of 3 detectors", RM, size=7.5)
+
+        doc.rail_rule(RT)
+        doc.rail_label("Transaction", RM)
+        doc.rail_value(txid, RI, size=8.0)
+
+        if alert.get("pattern"):
+            doc.rail_rule(RT)
+            doc.rail_label("Type", RM)
+            doc.rail_value(str(alert["pattern"]).replace(" ", "_").upper(), RI, size=8.5)
+
+        if alert.get("amount") is not None:
+            doc.rail_rule(RT)
+            doc.rail_label("Amount", RM)
+            doc.rail_value(f"{float(alert['amount']):,.2f}", RI,
+                           size=13.0, font="Helvetica-Bold")
+
+        if alert.get("from") or alert.get("to"):
+            doc.rail_rule(RT)
+            doc.rail_label("From \u2192 to", RM)
+            doc.rail_value(str(alert.get("from") or "\u2014"), RI, size=8.0)
+            doc.rail_value("\u2193", RM, size=8.0)
+            doc.rail_value(str(alert.get("to") or "\u2014"), RI, size=8.0)
+
+        doc.heading("Suspicious transaction", size=20.0)
+        doc.rule(rgb=P.RULE)
+
     if st["masthead"]:
         doc.masthead("Chain-of-evidence forensic report",
                      "Suspicious transaction", txid, accent, deep=st["header"])
-    else:
+    elif not st.get("rail"):
         doc.band(accent)
         doc.label(f"{sev}  \u00b7  chain-of-evidence forensic report", accent)
         doc.heading(f"Transaction {txid}")
@@ -1143,33 +1203,55 @@ def _report_pdf(alert: dict, report: str, style: str | None = None) -> bytes:
         doc.hero(f"{fused * 100:.1f}", "%", "Fused fraud confidence", accent,
                  segments=12, lit=lit, muted=P.MUTED, ink=P.INK, wash=P.WASH)
         doc.pill(f"{sev}  \u00b7  {used} of 3 detectors", accent, tint)
-    else:
+    elif not st.get("rail"):
         doc.para(
             f"Fused confidence {fused:.4f}  \u00b7  {used} of 3 detectors available",
             size=9.5, font="Courier", rgb=P.MUTED)
 
-    doc.rule(rgb=P.RULE)
-    doc.label("Transaction", P.MUTED)
-    doc.kv([
-        ("Amount", f"{alert['amount']:,.2f}"),
-        ("Originating account", str(alert.get("from") or "\u2014")),
-        ("Collection account", str(alert.get("to") or "\u2014")),
-        ("Pattern", str(alert.get("pattern") or "\u2014").replace("_", " ").title()),
-        ("Sink", str(alert.get("sink_account") or "\u2014")),
-    ])
+    # With a rail, these already appear down the side.
+    if not st.get("rail"):
+        doc.rule(rgb=P.RULE)
+        doc.label("Transaction", P.MUTED)
+        doc.kv([
+            ("Amount", f"{alert['amount']:,.2f}"),
+            ("Originating account", str(alert.get("from") or "\u2014")),
+            ("Collection account", str(alert.get("to") or "\u2014")),
+            ("Pattern", str(alert.get("pattern") or "\u2014").replace("_", " ").title()),
+            ("Sink", str(alert.get("sink_account") or "\u2014")),
+        ])
 
     scores = alert.get("scores") or {}
     if scores:
         doc.rule(rgb=P.RULE)
         doc.label("Sub-model risk scores", P.MUTED)
-        doc.kv([
-            (name, f"{scores[key]:.4f}" if scores.get(key) is not None
-                   else "did not answer")
-            for key, name in (("graph", "Network \u00b7 GraphSAGE"),
-                              ("behavioural", "Behaviour \u00b7 VAE"),
-                              ("temporal", "Timing \u00b7 TS-TCN"))
-            if key in scores
-        ])
+        rows = [(key, name) for key, name in
+                (("graph", "Graph network analysis"),
+                 ("behavioural", "Behavioural anomaly"),
+                 ("temporal", "Temporal pattern analysis"))
+                if key in scores]
+        if st.get("meters"):
+            # Same three numbers, drawn instead of listed. The dominant
+            # detector is named on its own row rather than in a sentence
+            # underneath, so the loudest signal is visible before it is read.
+            driver = alert.get("driver")
+            for key, name in rows:
+                v = scores.get(key)
+                if v is None:
+                    doc.kv([(name, "did not answer")])
+                    continue
+                note = ("dominant \u00b7 signal rating high" if key == driver
+                        else "rating high" if v >= 0.5
+                        else "rating medium" if v >= 0.18
+                        else "minimal \u00b7 rating low")
+                doc.meter(name, float(v), note,
+                          accent=st.get("accent", accent),
+                          track=P.WASH, ink=P.INK, muted=P.MUTED)
+        else:
+            doc.kv([
+                (name, f"{scores[key]:.4f}" if scores.get(key) is not None
+                       else "did not answer")
+                for key, name in rows
+            ])
         if alert.get("driver"):
             doc.para(
                 f"Largest contribution to the fused verdict: "

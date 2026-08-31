@@ -298,6 +298,50 @@ export default function Home() {
           </Reveal>
         </div>
       </section>
+
+      {/* ── pricing ─────────────────────────────────────────────────── */}
+      <section className="border-t border-slate-800/60 py-24">
+        <div className="mx-auto w-full max-w-6xl px-6">
+          <Reveal>
+            <p className="ds-mono text-[13px] uppercase tracking-[.18em] text-accent-400">
+              Pricing
+            </p>
+            <h2 className="mt-3 max-w-[20ch] text-[34px] leading-[1.08] tracking-tight text-slate-100">
+              Detection is never the thing you pay for
+            </h2>
+            <p className="mt-4 max-w-[58ch] text-[16px] text-slate-400">
+              Every plan screens every transaction through all three detectors,
+              fuses them, and alerts your team. What the plans differ on is how
+              much the product helps you understand a result and answer for it.
+            </p>
+
+            <div className="mt-10 grid gap-4 sm:grid-cols-3">
+              {[
+                ['Essential', '$40', 'Detection and alerting'],
+                ['Professional', '$120', 'Investigation and evidence'],
+                ['Enterprise', 'From $25,000', 'Your data, your governance'],
+              ].map(([name, price, line]) => (
+                <div key={name} className="rounded-xl border border-slate-800 p-5">
+                  <p className="text-[17px] font-semibold text-slate-100">{name}</p>
+                  <p className="mt-2 text-[26px] font-bold tracking-tight text-slate-100">
+                    {price}
+                  </p>
+                  <p className="mt-2 text-[15px] text-slate-400">{line}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8">
+              <Link
+                to="/pricing"
+                className="arrow-slide hair border-b pb-1 text-sm text-slate-300 transition-colors hover:text-slate-100"
+              >
+                See what each plan includes <span className="arrow inline-block">&rarr;</span>
+              </Link>
+            </div>
+          </Reveal>
+        </div>
+      </section>
     </div>
   )
 }

@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import ConsoleShell, { Panel, SectionHeading, Metric } from '../components/ConsoleShell'
 import { getMonitorRuntime } from '../services/api'
 import { Alert, Button, cx } from '../components/ui'
-import ReportStyle from '../components/ReportStyle'
 
 /**
  * The administrator's home: is the system working, and if not, which part.
@@ -17,6 +16,12 @@ import ReportStyle from '../components/ReportStyle'
  * Everything here is read from /api/monitor/runtime, which probes each
  * detector rather than trusting a registry.
  */
+
+const DETECTOR_PAGE = {
+  graph: '/graph',
+  behavioural: '/lab/behaviour',
+  temporal: '/lab/timing',
+}
 
 const DETECTORS = [
   ['graph', 'Network', 'Edge-Enhanced GraphSAGE', 'Relational structure around the transaction'],
@@ -56,56 +61,6 @@ const TONE = {
   down: { dot: 'rgb(var(--ds-signal))', text: 'rgb(var(--ds-signal))' },
 }
 
-function DetectorCard({ id, name, model, what, data }) {
-  const v = verdict(data)
-  const tone = TONE[v.tone]
-  const version = data?.model_version ?? data?.model?.stage ?? null
-  const latency = data?.mean_latency_ms ?? data?.model?.mean_latency_ms
-  const scored = data?.transactions_scored ?? data?.model?.inferences
-
-  return (
-    <Panel className="ds-panel-pad">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: tone.dot }} />
-            <h3 className="text-[19px] font-semibold text-[rgb(var(--ds-ink))]">{name}</h3>
-          </div>
-          <p className="mt-1 text-[16px] text-[rgb(var(--ds-muted))]">{what}</p>
-        </div>
-        <span className="shrink-0 font-mono text-[15px] font-semibold uppercase tracking-[0.09em]"
-              style={{ color: tone.text }}>
-          {v.label}
-        </span>
-      </div>
-
-      {v.why && (
-        <p className="mt-3 rounded-lg px-3 py-2 text-[16px] leading-relaxed"
-           style={{ background: 'rgb(var(--ds-surface-2))', color: 'rgb(var(--ds-muted))' }}>
-          {v.why}
-        </p>
-      )}
-
-      <dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3">
-        {[
-          ['Model', version ?? '—'],
-          ['Service up', secs(data?.service_uptime_seconds ?? data?.startup_seconds) ?? '—'],
-          ['Scored', scored != null ? Number(scored).toLocaleString() : '—'],
-          ['Mean latency', latency != null ? `${Number(latency).toFixed(1)} ms` : '—'],
-        ].map(([k, val]) => (
-          <div key={k} className="min-w-0">
-            <dt className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[rgb(var(--ds-faint))]">
-              {k}
-            </dt>
-            <dd className="numeric mt-0.5 truncate text-[17px] text-[rgb(var(--ds-ink))]">{val}</dd>
-          </div>
-        ))}
-      </dl>
-
-      <p className="mt-3 font-mono text-[14px] text-[rgb(var(--ds-faint))]">{model}</p>
-    </Panel>
-  )
-}
 
 /** A dependency that is not a detector: on, off, and what that costs. */
 function ServiceRow({ label, svc }) {
@@ -223,10 +178,41 @@ export default function SystemHealth() {
           </span>
         )}
       />
-      <div className="grid gap-4 lg:grid-cols-3">
-        {DETECTORS.map(([id, name, model, what]) => (
-          <DetectorCard key={id} id={id} name={name} model={model} what={what} data={det[id]} />
-        ))}
+      {/* One line per detector, not a card each. The per-model detail — build,
+          uptime, throughput, latency — now lives on that detector's own page,
+          which is where you are when the question is "is this one working".
+          What belongs here is the sweep: is anything down. */}
+      <div className="grid gap-2">
+        {DETECTORS.map(([id, name, model, what]) => {
+          const d = det[id]
+          const v = verdict(d)
+          const tone = TONE[v.tone]
+          return (
+            <Panel key={id} className="ds-panel-pad">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <span className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ background: tone.dot }} />
+                <span className="text-[17px] font-semibold text-[rgb(var(--ds-ink))]">
+                  {name}
+                </span>
+                <span className="text-[15px] text-[rgb(var(--ds-muted))]">{what}</span>
+                <span className="ml-auto font-mono text-[14px] uppercase tracking-[0.09em]"
+                      style={{ color: tone.text }}>
+                  {v.label}
+                </span>
+                <Link to={DETECTOR_PAGE[id]}
+                      className="font-mono text-[14px] text-[rgb(var(--ds-accent-strong))]">
+                  open →
+                </Link>
+              </div>
+              {v.why && (
+                <p className="mt-2 text-[15px] leading-relaxed text-[rgb(var(--ds-muted))]">
+                  {v.why}
+                </p>
+              )}
+            </Panel>
+          )
+        })}
       </div>
 
       {/* The quiet failures. A detector going down is loud — a verdict stops
@@ -343,10 +329,6 @@ export default function SystemHealth() {
         ))}
       </div>
 
-      <div className="mt-10">
-        <SectionHeading label="Output" title="The document that leaves the building" />
-      </div>
-      <ReportStyle />
     </ConsoleShell>
   )
 }
