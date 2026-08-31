@@ -133,9 +133,9 @@ export default function Pricing() {
 
               // The featured card is filled rather than outlined, so every
               // colour on it has to come from the fill, not the page.
-              const ink = mid ? 'rgb(6 44 38)' : 'rgb(var(--ds-ink))'
-              const soft = mid ? 'rgb(6 44 38 / .82)' : 'rgb(var(--ds-muted))'
-              const line = mid ? 'rgb(6 44 38 / .16)' : 'rgb(var(--ds-line))'
+              const ink = mid ? 'rgb(232 240 242)' : 'rgb(var(--ds-ink))'
+              const soft = mid ? 'rgb(232 240 242 / .74)' : 'rgb(var(--ds-muted))'
+              const line = mid ? 'rgb(255 255 255 / .12)' : 'rgb(var(--ds-line))'
 
               return (
                 <section
@@ -143,23 +143,27 @@ export default function Pricing() {
                   className="ds-card ds-rise flex w-[86%] shrink-0 snap-center flex-col
                              rounded-2xl border p-7 sm:w-[58%] lg:w-[calc((100%-2.5rem)/3)]"
                   style={{
-                    borderColor: mid ? 'transparent' : 'rgb(var(--ds-line))',
-                    background: mid ? 'rgb(var(--ds-accent))' : 'rgb(var(--ds-surface))',
+                    borderColor: mid ? 'rgb(45 212 191 / .45)' : 'rgb(var(--ds-line))',
+                    background: mid
+                      ? 'linear-gradient(180deg, rgb(16 96 86), rgb(10 62 56))'
+                      : 'rgb(var(--ds-surface))',
                     color: ink,
-                    boxShadow: mid ? '0 24px 60px -24px rgb(45 212 191 / .45)' : 'none',
+                    boxShadow: mid ? '0 26px 64px -28px rgb(45 212 191 / .40)' : 'none',
                     animationDelay: `${0.14 + i * 0.09}s`,
                   }}
                 >
                   {mid && (
                     <p className="ds-mono mx-auto rounded-full px-3 py-1 text-[11px] uppercase tracking-[.14em]"
-                       style={{ background: 'rgb(6 44 38)', color: 'rgb(var(--ds-accent))' }}>
+                       style={{ background: 'rgb(45 212 191 / .16)',
+                                color: 'rgb(var(--ds-accent-strong))' }}>
                       Most chosen
                     </p>
                   )}
 
                   {/* The number, at the size the decision deserves. */}
                   <p className="mt-7 text-center">
-                    <span className="text-[52px] font-bold leading-none tracking-tight">
+                    <span className="text-[52px] font-bold leading-none tracking-tight"
+                          style={mid ? { color: 'rgb(var(--ds-accent-strong))' } : undefined}>
                       {p.price}
                     </span>
                   </p>
@@ -197,11 +201,7 @@ export default function Pricing() {
                   </p>
 
                   <Link to="/request-access"
-                        className={mid
-                          ? 'mt-5 block w-full rounded-lg px-4 py-3 text-center text-[15px] font-semibold'
-                          : 'btn-shader mt-5 block w-full rounded-lg px-4 py-3 text-center text-[15px]'}
-                        style={mid ? { background: 'rgb(6 44 38)', color: 'rgb(var(--ds-accent))' }
-                          : undefined}>
+                        className="btn-shader mt-5 block w-full rounded-lg px-4 py-3 text-center text-[15px]">
                     {p.id === 'enterprise' ? 'Talk to us' : 'Request access'}
                   </Link>
                   <p className="mt-3 text-center text-[12px]" style={{ color: soft }}>
