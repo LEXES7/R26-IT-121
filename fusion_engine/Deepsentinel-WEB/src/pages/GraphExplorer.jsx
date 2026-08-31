@@ -6,6 +6,9 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { Alert, Button, Input, cx } from '../components/ui'
 import ConsoleShell from '../components/ConsoleShell'
+import DetectorRuntime from '../components/DetectorRuntime'
+import GraphModelPanel from '../components/GraphModelPanel'
+import Validation from '../components/Validation'
 
 /**
  * Walk the payment graph one account at a time.
@@ -653,6 +656,7 @@ export default function GraphExplorer() {
       {error && <Alert tone="error">{error}</Alert>}
 
       <div style={{ display: "grid", gap: 18 }}>
+      <DetectorRuntime detector="graph" model="Edge-Enhanced GraphSAGE" />
       {/* One switch, at the top, before anything else.
         *
         * The explorer is the only screen here that can put real load on the
@@ -886,6 +890,11 @@ export default function GraphExplorer() {
                     </div>
 
                     {csv && (
+                      <Validation rows={csv.rows} threshold={0.39}
+                                  scoreOf={(r) => r.score} />
+                    )}
+
+                    {csv && (
                       <div style={{ overflow: 'auto', maxHeight: 210 }}>
                         <table className="w-full text-[14px]" style={{ borderCollapse: 'collapse' }}>
                           <thead className="sticky top-0"
@@ -1036,6 +1045,10 @@ export default function GraphExplorer() {
             )}
         </>
       )}
+
+      <div style={{ marginTop: 14 }}>
+        <GraphModelPanel />
+      </div>
 
       {isAdmin && settings && (
         <div className="mt-6 rounded-xl border p-4"

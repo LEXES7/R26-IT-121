@@ -46,6 +46,7 @@ const I = {
   close: 'M18 6 6 18M6 6l12 12',
   out: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14 5-5-5-5m5 5H9',
   shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z',
+  page: 'M6 2h8l4 4v16H6zM14 2v5h5M9 12h6M9 16h6',
   // A distribution with one point out in the tail — what the
   // behavioural model is looking for.
   curve: 'M3 18c3 0 4-12 7-12s4 12 7 12M20 8v.01',
@@ -89,6 +90,7 @@ const ADMIN_NAV = [
   ]],
   ['Configure', [
     ['/thresholds', 'Thresholds', I.sliders],
+    ['/report-style', 'Report style', I.page],
     ['/settings', 'Administration', I.settings],
   ]],
   ['Understand', [
@@ -118,6 +120,7 @@ const OPS_NAV = [
   ]],
   // Administration is an administrator's; the account inside it is everyone's.
   ['Workspace', [
+    ['/report-style', 'Report style', I.page],
     ['/account', 'Account', I.settings],
   ]],
 ]

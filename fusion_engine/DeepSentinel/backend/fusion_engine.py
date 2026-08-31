@@ -260,6 +260,34 @@ class MetaClassifier:
             contributions=self._contributions(X),
         )
 
+    def describe(self) -> dict:
+        """What this model is, for a page that has to account for its verdicts.
+
+        The weights are the interesting part and they are not a secret: the
+        whole claim of this component is that the fusion is a linear model
+        whose terms can be read off, so showing them is the claim being kept.
+        """
+        out = {
+            "method": "meta_classifier" if self._pipeline is not None else "mean_fallback",
+            "uncertainty_shrink": UNCERTAINTY_SHRINK,
+            "modalities": ["graph", "behavioural", "temporal"],
+        }
+        try:
+            scaler = self._pipeline.named_steps["scaler"]
+            clf = self._pipeline.named_steps["clf"]
+            out["weights"] = {
+                name: round(float(c), 4)
+                for name, c in zip(out["modalities"], clf.coef_[0])
+            }
+            out["intercept"] = round(float(clf.intercept_[0]), 4)
+            out["training_means"] = {
+                name: round(float(m), 4)
+                for name, m in zip(out["modalities"], scaler.mean_)
+            }
+        except Exception as exc:                        # noqa: BLE001
+            logger.debug(f"Meta-classifier cannot be described: {exc}")
+        return out
+
     def _contributions(self, X: np.ndarray) -> dict[str, float]:
         """Each modality's signed contribution to the fused log-odds.
 
