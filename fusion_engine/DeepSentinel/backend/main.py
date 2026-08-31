@@ -1260,6 +1260,73 @@ async def packages_catalogue():
     return packages.catalogue()
 
 
+@app.post("/detectors/temporal/warm", tags=["detectors"])
+async def warm_temporal_window(user: User = Depends(require_any_user)):
+    """Fill the sequence detector's window so it can answer at all.
+
+    The detector holds the last 32 transactions and refuses to score until it
+    has them. That is correct for a live stream, which supplies 32 in a few
+    seconds, and impossible on a page that sends one transaction per click —
+    the window creeps up by one and never arrives.
+
+    So the window is filled here, from genuine PaySim rows served by the graph
+    service rather than invented ones. That matters: the detector reports which
+    earlier transaction it attended to, and priming with fabricated rows would
+    have it name a transaction that never happened.
+    """
+    import httpx
+
+    graph = str(config.get("upstream", "graph_api_base")).rstrip("/")
+    temporal = str(config.get("upstream", "temporal_api_base")).rstrip("/")
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            before = (await client.get(f"{temporal}/api/v1/runtime")).json()
+        except Exception as exc:                        # noqa: BLE001
+            raise HTTPException(
+                502, f"The sequence detector did not answer: {type(exc).__name__}"
+            ) from exc
+
+        need = max(0, int(before.get("window_size", 32))
+                   - int(before.get("buffer_filled", 0)))
+        if need == 0:
+            return {"warmed": 0, "buffer_filled": before.get("buffer_filled"),
+                    "warming_up": False,
+                    "note": "The window was already full."}
+
+        try:
+            rows = (await client.get(
+                f"{graph}/api/graph/sample-transactions",
+                params={"n": need, "fraud_ratio": 0.1})).json()["transactions"]
+        except Exception as exc:                        # noqa: BLE001
+            raise HTTPException(
+                502, "Could not fetch transactions to warm the window: "
+                     f"{type(exc).__name__}") from exc
+
+        sent = 0
+        for row in rows:
+            payload = {**row,
+                       "composite_id": f"{row.get('nameOrig')}_{row.get('step')}"}
+            try:
+                # 503 is the expected answer while filling — the call still
+                # advances the window, which is the whole point.
+                await client.post(f"{temporal}/api/v1/classify", json=payload)
+                sent += 1
+            except Exception:                           # noqa: BLE001
+                break
+
+        after = (await client.get(f"{temporal}/api/v1/runtime")).json()
+
+    return {
+        "warmed": sent,
+        "buffer_filled": after.get("buffer_filled"),
+        "window_size": after.get("window_size"),
+        "warming_up": after.get("warming_up"),
+        "note": ("Filled with real transactions drawn from the served graph, "
+                 "so the predecessor the detector names is a genuine one."),
+    }
+
+
 @app.get("/report-styles", tags=["report"])
 async def list_report_styles(user: User = Depends(require_any_user)):
     """The available looks for the forensic report PDF, and which is in force.
