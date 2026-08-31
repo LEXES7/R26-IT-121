@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import ConsoleShell, { Panel, SectionHeading, Metric } from '../components/ConsoleShell'
 import { getMonitorRuntime } from '../services/api'
 import { Alert, Button, cx } from '../components/ui'
-import ReportStyle from '../components/ReportStyle'
 
 /**
  * The administrator's home: is the system working, and if not, which part.
@@ -330,10 +329,6 @@ export default function SystemHealth() {
         ))}
       </div>
 
-      <div className="mt-10">
-        <SectionHeading label="Output" title="The document that leaves the building" />
-      </div>
-      <ReportStyle />
     </ConsoleShell>
   )
 }
