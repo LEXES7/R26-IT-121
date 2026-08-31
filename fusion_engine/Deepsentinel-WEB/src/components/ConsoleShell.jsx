@@ -3,6 +3,8 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { getMonitorRuntime } from '../services/api'
+import markDark from '../assets/deepsentinel-logo.png'
+import markLight from '../assets/deepsentinel-logo-light.png'
 import DotClock from './DotClock'
 
 /**
@@ -45,7 +47,6 @@ const I = {
   menu: 'M3 6h18M3 12h18M3 18h18',
   close: 'M18 6 6 18M6 6l12 12',
   out: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14 5-5-5-5m5 5H9',
-  shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z',
   page: 'M6 2h8l4 4v16H6zM14 2v5h5M9 12h6M9 16h6',
   // A distribution with one point out in the tail — what the
   // behavioural model is looking for.
@@ -182,11 +183,11 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
       <div className="ds-shell">
         <aside className={`ds-sidebar ${open ? 'open' : ''}`}>
           <div className="ds-brand">
-            <span style={{ color: 'rgb(var(--ds-accent))', display: 'grid' }}>
-              <Icon d={I.shield} size={26} />
-            </span>
+            <img src={theme === 'light' ? markDark : markLight}
+                 alt="DeepSentinel" width={30} height={30}
+                 className="shrink-0 select-none object-contain"
+                 draggable={false} />
             <div className="ds-brand-copy">
-              <div className="ds-brand-name">DeepSentinel</div>
               <div className="ds-brand-sub">
                 {isAdmin ? 'System administration' : 'Fraud operations'}
               </div>
