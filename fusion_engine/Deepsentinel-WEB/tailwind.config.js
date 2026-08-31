@@ -61,13 +61,16 @@ export default {
         },
 
         // Risk classification. These carry meaning — one hue per severity,
-        // used consistently across gauges, badges, tables and email.
+        // used consistently across gauges, badges, tables and email. Values
+        // come from CSS variables, re-stepped per theme, for the same reason
+        // the neutral ramp is: the dark-tuned hues read fine on near-black
+        // and fail WCAG contrast on the light theme's paper ground.
         risk: {
-          critical: '#ef4444',
-          high: '#f97316',
-          medium: '#eab308',
-          low: '#22c55e',
-          unknown: '#64748b',
+          critical: 'rgb(var(--risk-critical) / <alpha-value>)',
+          high: 'rgb(var(--risk-high) / <alpha-value>)',
+          medium: 'rgb(var(--risk-medium) / <alpha-value>)',
+          low: 'rgb(var(--risk-low) / <alpha-value>)',
+          unknown: 'rgb(var(--risk-unknown) / <alpha-value>)',
         },
 
         // Per-modality identity, so a colour always means the same model

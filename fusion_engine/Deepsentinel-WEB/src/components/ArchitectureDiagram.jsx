@@ -113,7 +113,7 @@ export default function ArchitectureDiagram() {
         <text x={colFusion + NODE_W / 2} y={rowMid + NODE_H + 10} textAnchor="middle" fill="#22c55e" fontSize={9} fontFamily="monospace">Fraud Confidence Score</text>
 
         {/* Arrows: models → fusion */}
-        <Arrow x1={colModels + NODE_W} y1={rowTop + NODE_H / 2}  x2={colFusion} y2={rowMid} color="var(--tw-modality-graph, #0f9b8e)" />
+        <Arrow x1={colModels + NODE_W} y1={rowTop + NODE_H / 2}  x2={colFusion} y2={rowMid} color="rgb(var(--modality-graph))" />
         <Arrow x1={colModels + NODE_W} y1={rowMid + NODE_H / 2}  x2={colFusion} y2={rowMid + NODE_H / 2} color="#f97316" />
         <Arrow x1={colModels + NODE_W} y1={rowBot + NODE_H / 2}  x2={colFusion} y2={rowMid + NODE_H} color="#0f9b8e" />
 

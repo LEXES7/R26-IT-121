@@ -191,7 +191,7 @@ export default function ChatBot() {
         <button
           type="submit"
           disabled={busy || !input.trim()}
-          className="rounded-lg bg-accent-500 px-3 py-2 text-sm font-semibold text-white transition enabled:hover:bg-accent-400 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-accent-500 px-3 py-2 text-sm font-semibold text-white transition enabled:hover:bg-accent-400 disabled:cursor-not-allowed disabled:bg-surface-raised disabled:text-slate-500"
         >
           Send
         </button>

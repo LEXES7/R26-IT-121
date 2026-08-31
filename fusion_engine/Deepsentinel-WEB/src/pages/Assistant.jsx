@@ -176,7 +176,7 @@ export default function Assistant() {
           <button
             type="submit"
             disabled={busy || !input.trim()}
-            className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-semibold text-slate-200 transition enabled:hover:bg-accent-400 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-semibold text-slate-200 transition enabled:hover:bg-accent-400 disabled:cursor-not-allowed disabled:bg-surface-raised disabled:text-slate-500"
           >
             Ask
           </button>
