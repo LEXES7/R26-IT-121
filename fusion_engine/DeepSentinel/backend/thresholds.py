@@ -31,9 +31,21 @@ logger = logging.getLogger(__name__)
 SETTINGS_KEY = "fused_bands"
 _LOCK = threading.Lock()
 
-# Fallbacks only. The monitor asks the relational model for its calibrated
-# bands first; these apply when nothing has been set and the model is silent.
-DEFAULT_BANDS = {"critical": 0.39, "high": 0.18, "medium": 0.09}
+# The operating point, and the only definition of it.
+#
+# There were three: this file reported 0.39/0.18/0.09, the monitor alerted on
+# 0.925/0.09/0.03, and /analyze classified at 0.80/0.65/0.50 — so the page
+# showed one line, the monitor fired on a second, and every stored verdict was
+# labelled by a third. The values kept below are the ones that actually
+# classified the data: every analysis on record was banded at 0.80/0.65/0.50,
+# which makes them the operating point in fact, whatever the other two said.
+#
+# They are a chosen operating point, not a derived one — the fused score has no
+# calibration of its own. What justifies moving them is the threshold page,
+# which replays stored decisions at a new line and shows what it would have
+# caught and missed. The relational detector's own 0.1830 is different: that
+# one is tuned on the validation window and published by the model.
+DEFAULT_BANDS = {"critical": 0.80, "high": 0.65, "medium": 0.50}
 ORDER = ("critical", "high", "medium")
 
 
