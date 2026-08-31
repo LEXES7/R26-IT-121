@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
-import { scoreOneDetector } from '../services/api'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { scoreOneDetector, warmTemporalWindow } from '../services/api'
 import { Alert, Button, cx } from './ui'
 import ConsoleShell from './ConsoleShell'
 
@@ -79,10 +79,17 @@ export default function DetectorLab({ detector, eyebrow, title, subtitle, childr
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  const warmedRef = useRef(false)
+
   const run = useCallback(async (i) => {
     setLoading(true)
     setError(null)
     try {
+      // Once per visit, and only for the detector that needs it.
+      if (detector === 'temporal' && !warmedRef.current) {
+        warmedRef.current = true
+        try { await warmTemporalWindow() } catch { /* score anyway; it will say */ }
+      }
       setResult(await scoreOneDetector(detector, PRESETS[i].txn))
     } catch (err) {
       setError(err?.userMessage ?? 'The detector did not answer.')

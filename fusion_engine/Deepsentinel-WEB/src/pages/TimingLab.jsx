@@ -141,6 +141,13 @@ export default function TimingLab() {
               </section>
             </div>
 
+            <p className="text-[13px] leading-relaxed"
+               style={{ color: 'rgb(var(--ds-faint))' }}>
+              This detector needs the 32 transactions before this one, and on a
+              page that scores one at a time there is no stream to supply them.
+              The window is filled on arrival with real transactions from the
+              served graph, so the predecessor it names is a genuine one.
+            </p>
           </div>
         )
       }}

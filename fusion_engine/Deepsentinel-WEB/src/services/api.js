@@ -231,6 +231,11 @@ export const demoScoreCsv = (file) => {
   return client.post('/graph/demo/score-csv', body).then((r) => r.data)
 }
 
+/** Fill the sequence detector's 32-transaction window so it can answer.
+ *  Real rows from the served graph, not invented ones. */
+export const warmTemporalWindow = () =>
+  client.post('/detectors/temporal/warm').then((r) => r.data)
+
 export const scoreOneDetector = (name, transaction) =>
   client.post(`/detectors/${name}`, { transaction }).then((r) => r.data)
 
