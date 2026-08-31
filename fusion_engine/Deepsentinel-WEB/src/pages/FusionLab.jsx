@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { analyzeTransaction, getThresholds } from '../services/api'
+import {
+  analyzeTransaction, getThresholds, downloadAnalysisReport,
+} from '../services/api'
 import { PRESETS } from '../components/DetectorLab'
 import ConsoleShell from '../components/ConsoleShell'
 import { Alert, Button, cx } from '../components/ui'
@@ -33,6 +35,7 @@ export default function FusionLab() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [bands, setBands] = useState(null)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     getThresholds().then((t) => setBands(t?.bands ?? null)).catch(() => setBands(null))
@@ -219,6 +222,26 @@ export default function FusionLab() {
                            style={{ color: 'rgb(var(--ds-accent))' }}>
                     Generated report
                   </summary>
+                  {r.analysis_id != null && (
+                    <Button
+                      size="sm" variant="secondary" loading={saving}
+                      className="mt-2"
+                      onClick={async () => {
+                        setSaving(true)
+                        setError(null)
+                        try {
+                          await downloadAnalysisReport(r.analysis_id)
+                        } catch (err) {
+                          setError(err?.userMessage
+                            ?? 'That report could not be rendered as a PDF.')
+                        } finally {
+                          setSaving(false)
+                        }
+                      }}
+                    >
+                      Download PDF
+                    </Button>
+                  )}
                   <pre className="mt-2 overflow-x-auto rounded-lg border p-3 text-[11px]"
                        style={{ borderColor: 'rgb(var(--ds-line))',
                                 color: 'rgb(var(--ds-muted))', whiteSpace: 'pre-wrap',

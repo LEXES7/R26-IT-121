@@ -458,6 +458,26 @@ export const reportStylePreviewUrl = (style) =>
     .then((r) => URL.createObjectURL(
       new Blob([r.data], { type: 'application/pdf' })))
 
+/** The forensic narrative for one analysis, as a PDF the user keeps.
+ *
+ * Fetched through the client rather than linked to directly: the endpoint
+ * requires a bearer token and an <a href> cannot carry one. Triggers the save
+ * and cleans up the object URL itself, so callers do not have to. */
+export const downloadAnalysisReport = async (analysisId, style) => {
+  const r = await client.get(`/analyses/${analysisId}/report.pdf`, {
+    responseType: 'blob',
+    params: style ? { style } : undefined,
+  })
+  const url = URL.createObjectURL(new Blob([r.data], { type: 'application/pdf' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `deepsentinel-report-${analysisId}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
 /** Loop state plus each detector's own runtime — "is the platform working". */
 export const getMonitorRuntime = () =>
   client.get('/api/monitor/runtime').then((r) => r.data)

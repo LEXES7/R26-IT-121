@@ -1170,6 +1170,76 @@ async def set_graph_settings(body: GraphSettings,
     return cfg
 
 
+@app.get("/analyses/{analysis_id}/report.pdf", tags=["report"])
+async def analysis_report_pdf(
+    analysis_id: int,
+    style: str | None = None,
+    user: User = Depends(require_any_user),
+):
+    """The forensic narrative for one analysis, as a filed document.
+
+    The console could already show this narrative as text and the monitor could
+    already attach it to an alert email, but there was no way to get the
+    document itself out of a screen you were looking at — which is the thing an
+    investigator actually keeps. Same writer, same styles, same bytes the alert
+    attaches, so what is downloaded is what gets filed.
+
+    Built from the stored record rather than from whatever the browser happens
+    to be holding: the PDF is evidence, and it should say what was persisted.
+    """
+    from fastapi.responses import Response
+
+    from backend import report_styles, sar
+    from monitor.engine import _report_pdf
+
+    if style is not None and style not in report_styles.STYLES:
+        raise HTTPException(404, f"No report style named {style!r}.")
+
+    record = await sar.get_analysis(analysis_id)
+    if not record.forensic_report:
+        raise HTTPException(
+            409,
+            "This analysis has no forensic narrative recorded, so there is "
+            "nothing to render. Re-run it with report generation enabled.",
+        )
+
+    # _report_pdf speaks the monitor's alert shape; a stored analysis carries
+    # the same facts under different names.
+    scores = {
+        "graph": record.graph_score,
+        "behavioural": record.behavioral_score,
+        "temporal": record.temporal_score,
+    }
+    answered = {k: v for k, v in scores.items() if v is not None}
+    alert = {
+        "transaction_id": record.transaction_id,
+        "severity": record.classification,
+        "fused_score": record.fraud_confidence_score,
+        "graph_score": record.graph_score,
+        "pattern": None,
+        "sink_account": record.name_dest,
+        "amount": record.amount,
+        "from": record.name_orig,
+        "to": record.name_dest,
+        "modalities_used": record.modalities_used,
+        "fusion_method": "meta_classifier",
+        # The loudest detector that actually answered. Not a contribution —
+        # those are not persisted on the record — so it is named for what it
+        # is rather than dressed up as an attribution.
+        "driver": max(answered, key=answered.get) if answered else None,
+        "scores": scores,
+        "at": 0,
+    }
+
+    pdf = _report_pdf(alert, record.forensic_report,
+                      style=style or report_styles.selected())
+    stamp = (record.transaction_id or str(analysis_id))[:18]
+    return Response(
+        content=pdf, media_type="application/pdf",
+        headers={"Content-Disposition":
+                 f'attachment; filename="deepsentinel-report-{stamp}.pdf"'})
+
+
 @app.get("/report-styles", tags=["report"])
 async def list_report_styles(user: User = Depends(require_any_user)):
     """The available looks for the forensic report PDF, and which is in force.
