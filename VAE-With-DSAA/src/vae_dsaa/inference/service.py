@@ -183,11 +183,23 @@ class BehavioralPredictor:
             level = "HIGH" if flagged else "LOW"
 
         sig = compute_signals(b.predictor, X, with_signal_3=True)
-        s1 = rank_signal(sig["signal_1"], sig["feature_names"], 0, top=3,
+        # The whole fingerprint, not its top three. Three names the dominant
+        # contributor, which is all a one-line summary needs, but the
+        # fingerprint is a vector and its shape is the object this component
+        # claims as a contribution: a reader cannot see that one feature
+        # carries 43% while the rest carry nothing unless the rest are there to
+        # compare against. Seven features and eight or sixteen dimensions is a
+        # handful of floats, so nothing is paid for sending them.
+        #
+        # Additive: `dominant_*_signal` is unchanged and the fusion adapter
+        # passes `shares` through by name without assuming a length.
+        n_feat = len(sig["feature_names"])
+        n_dim = len(sig["latent_names"])
+        s1 = rank_signal(sig["signal_1"], sig["feature_names"], 0, top=n_feat,
                          observed=sig.get("observed"),
                          reconstructed=sig.get("reconstructed"))
-        s2 = rank_signal(sig["signal_2"], sig["latent_names"], 0, top=3)
-        s3 = rank_signal(sig["signal_3"], sig["latent_names"], 0, top=3)
+        s2 = rank_signal(sig["signal_2"], sig["latent_names"], 0, top=n_dim)
+        s3 = rank_signal(sig["signal_3"], sig["latent_names"], 0, top=n_dim)
 
         typ = {"typology_label": "UNASSIGNED", "cluster_id": -1,
                "confidence": 0.0,
