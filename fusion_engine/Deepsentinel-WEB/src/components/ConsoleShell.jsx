@@ -27,6 +27,8 @@ import { getMonitorRuntime } from '../services/api'
 const I = {
   gauge: 'M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0-4V6m8 6a8 8 0 1 0-16 0',
   activity: 'M3 12h4l3 8 4-16 3 8h4',
+  // A collector with three senders — the shape this graph mostly is.
+  graph: 'M12 14a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM5 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm14 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM12 22a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM6.4 4.2l4 5.1m7.2-5.1l-4 5.1M12 14v4',
   search: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm10 2-4.35-4.35',
   archive: 'M3 7h18v13H3zM3 3h18v4H3zm7 8h4',
   sliders: 'M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M1 14h6m2-6h6m2 8h6',
@@ -70,6 +72,7 @@ const ADMIN_NAV = [
     ['/', 'System', I.gauge],
     ['/monitor', 'Live monitor', I.activity],
     ['/models', 'Detectors', I.network],
+    ['/graph', 'Graph explorer', I.graph],
   ]],
   ['Configure', [
     ['/thresholds', 'Thresholds', I.sliders],
@@ -85,6 +88,7 @@ const OPS_NAV = [
     ['/', 'Overview', I.gauge],
     ['/monitor', 'Live monitor', I.activity],
     ['/analyzer', 'Analyzer', I.search],
+    ['/graph', 'Graph explorer', I.graph],
   ]],
   ['Investigate', [
     ['/cases', 'Cases', I.archive],

@@ -1013,6 +1013,85 @@ async def send_test_email(
     }
 
 
+@app.get("/graph/neighbourhood", tags=["graph"])
+async def graph_neighbourhood(
+    account: str, hops: int = 1, max_edges: int = 150,
+    user: User = Depends(require_any_user),
+):
+    """The payment graph immediately around one account.
+
+    Proxied rather than called directly from the browser: the detector services
+    are not exposed to the internet and carry no auth of their own, so the
+    console reaches them through here and inherits the platform's session.
+
+    Bounded at the far end — the served graph is 3.27M accounts and nothing is
+    ever going to hand a browser all of it. The caller asks for one account,
+    draws what comes back, and walks outward from there.
+    """
+    import httpx
+
+    from backend import graph_explorer
+
+    cfg = graph_explorer.current()
+    if not cfg["enabled"]:
+        raise HTTPException(
+            403, "The graph explorer is switched off. An administrator can "
+                 "turn it back on under System.")
+    # Clamped here, not in the browser. A limit the client enforces is a
+    # suggestion; the detector is what actually pays for a large request.
+    hops = max(1, min(int(hops), cfg["max_hops"]))
+    max_edges = max(10, min(int(max_edges), cfg["max_edges"]))
+
+    base = str(config.get("upstream", "graph_api_base")).rstrip("/")
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            r = await client.get(
+                f"{base}/api/graph/neighbourhood",
+                params={"account": account, "hops": hops, "max_edges": max_edges},
+            )
+    except Exception as exc:                            # noqa: BLE001
+        raise HTTPException(
+            502, f"The network detector did not answer: {type(exc).__name__}"
+        ) from exc
+
+    if r.status_code == 404:
+        raise HTTPException(404, f"No account {account!r} in the graph snapshot.")
+    if r.status_code != 200:
+        raise HTTPException(502, f"The network detector returned {r.status_code}.")
+    return r.json()
+
+
+@app.get("/graph/settings", tags=["graph"])
+async def get_graph_settings(user: User = Depends(require_any_user)):
+    """Whether the explorer is on, and how far it may reach. Readable by anyone
+    signed in, so the page can explain itself rather than just failing."""
+    from backend import graph_explorer
+
+    return graph_explorer.current()
+
+
+class GraphSettings(BaseModel):
+    enabled: bool | None = None
+    max_hops: int | None = None
+    max_edges: int | None = None
+
+
+@app.put("/graph/settings", tags=["graph"])
+async def set_graph_settings(body: GraphSettings,
+                             user: User = Depends(require_admin)):
+    """Administrators only. This is a load control rather than a preference:
+    it decides how hard everyone else can make the network detector work."""
+    from backend import graph_explorer
+    from backend.auth import audit
+
+    cfg = graph_explorer.update(
+        enabled=body.enabled, max_hops=body.max_hops,
+        max_edges=body.max_edges, actor=user.username)
+    await audit("graph.settings", actor=user.username, target="graph explorer",
+                detail=str(cfg))
+    return cfg
+
+
 @app.get("/report-styles", tags=["report"])
 async def list_report_styles(user: User = Depends(require_any_user)):
     """The available looks for the forensic report PDF, and which is in force.

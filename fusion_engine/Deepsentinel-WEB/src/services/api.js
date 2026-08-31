@@ -412,6 +412,19 @@ export const restartMonitor = (interval) =>
  *  Clears the view, not the record — the cases stay in the database. */
 export const clearMonitor = () => client.post('/api/monitor/clear').then((r) => r.data)
 
+/** The payment graph around one account. Bounded server-side — never the
+ *  whole 3.27M-node graph. */
+export const getNeighbourhood = (account, hops = 1, maxEdges) =>
+  client.get('/graph/neighbourhood', {
+    params: { account, hops, ...(maxEdges ? { max_edges: maxEdges } : {}) },
+  }).then((r) => r.data)
+
+export const getGraphSettings = () =>
+  client.get('/graph/settings').then((r) => r.data)
+
+export const setGraphSettings = (patch) =>
+  client.put('/graph/settings', patch).then((r) => r.data)
+
 /** The forensic report's look. Preview is open to anyone signed in; choosing
  *  is for admins and risk managers, and enforced server-side. */
 export const getReportStyles = () =>

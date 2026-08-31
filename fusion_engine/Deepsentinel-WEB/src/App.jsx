@@ -22,6 +22,7 @@ import Cases from './pages/Cases'
 import Dashboard from './pages/Dashboard'
 import SystemHealth from './pages/SystemHealth'
 import Monitor from './pages/Monitor'
+import GraphExplorer from './pages/GraphExplorer'
 import Assistant from './pages/Assistant'
 import BatchAnalysis from './pages/BatchAnalysis'
 import Settings from './pages/Settings'
@@ -110,6 +111,9 @@ function Shell() {
                 by require_admin on the routes themselves. */}
             <Route path="/monitor" element={<ProtectedRoute><Console><Monitor /></Console></ProtectedRoute>} />
             <Route path="/models" element={<ProtectedRoute><Console><Models /></Console></ProtectedRoute>} />
+            {/* Readable by any signed-in role; the switch inside it is an
+                administrator's, and enforced by require_admin on the route. */}
+            <Route path="/graph" element={<ProtectedRoute><GraphExplorer /></ProtectedRoute>} />
             <Route path="/account" element={<ProtectedRoute><Console><Workspace /></Console></ProtectedRoute>} />
             <Route path="/report-style" element={<ProtectedRoute><Console><Workspace /></Console></ProtectedRoute>} />
 
