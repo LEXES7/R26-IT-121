@@ -80,6 +80,7 @@ export default function Navbar() {
         { to: '/about', label: 'Architecture' },
         { to: '/pricing', label: 'Pricing' },
         { to: '/faq', label: 'FAQ' },
+        { to: '/live', label: 'Live map' },
       ]
 
   const adminLinks = [

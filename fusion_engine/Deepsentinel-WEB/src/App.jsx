@@ -36,6 +36,7 @@ import Account from './pages/Account'
 import About from './pages/About'
 import FAQ from './pages/FAQ'
 import Pricing from './pages/Pricing'
+import LiveMap from './pages/LiveMap'
 import ComponentDetail from './pages/ComponentDetail'
 import RequestAccess from './pages/RequestAccess'
 
@@ -65,7 +66,7 @@ import RequestAccess from './pages/RequestAccess'
 // console route and the public header removed itself from a public page,
 // leaving it with no navigation at all. Anything both sides offer belongs to
 // the public site: that is the version an unauthenticated visitor must get.
-const SHARED_WITH_PUBLIC = ['/about', '/faq', '/pricing']
+const SHARED_WITH_PUBLIC = ['/about', '/faq', '/pricing', '/live']
 const CONSOLE_ROUTES = [...CONSOLE_PATHS, '/audit-log', '/users', '/settings']
   .filter((r) => !SHARED_WITH_PUBLIC.includes(r))
 
@@ -105,6 +106,7 @@ function Shell() {
             <Route path="/about" element={<About />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/live" element={<LiveMap />} />
             <Route path="/components/:slug" element={<ComponentDetail />} />
             {/* Signed in, both of these send you home — and "/" resolves to
                 the console your role actually has. Sending everyone to the
