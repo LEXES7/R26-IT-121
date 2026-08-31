@@ -163,7 +163,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
     allow_credentials=_cors_origins != ["*"],
-    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    # PUT is used by the settings writes — thresholds, package tier, graph
+    # settings, report style. Leaving it out let the preflight fail, and the
+    # browser reports a blocked preflight as no response at all, so the
+    # console said the backend was down while it was answering fine.
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
 
@@ -606,8 +610,7 @@ async def analyze_batch(
         # a constant, and this one has to follow whatever the operator set.
         from backend import thresholds as _thr
 
-        live_bands = _thr.current() or {"medium": 0.03, "high": 0.09,
-                                        "critical": 0.925}
+        live_bands = _thr.current() or _thr.DEFAULT_BANDS
         # A distinct name on purpose. Assigning to `alert_threshold` here made
         # it a local of this nested generator, which shadowed the enclosing
         # parameter and raised UnboundLocalError on the read above it.
@@ -973,7 +976,7 @@ async def preview_email_template(classification: str = "HIGH"):
     alert, sg, scores = alert_email.sample(sev)
     html = alert_email.build(
         alert, sg, scores,
-        bands=thresholds.current() or {"medium": 0.03, "high": 0.09, "critical": 0.925},
+        bands=thresholds.current() or thresholds.DEFAULT_BANDS,
         has_image=False,
         case_ref="CASE-2026-0184",
         console_url=str(config.get("upstream", "console_url") or "").rstrip("/"),
@@ -1006,7 +1009,7 @@ async def send_test_email(
     alert, sg, scores = alert_email.sample(sev)
     html = alert_email.build(
         alert, sg, scores,
-        bands=thresholds.current() or {"medium": 0.03, "high": 0.09, "critical": 0.925},
+        bands=thresholds.current() or thresholds.DEFAULT_BANDS,
         has_image=False, case_ref="CASE-2026-0184",
         console_url=str(config.get("upstream", "console_url") or "").rstrip("/"),
         report_attached=False,

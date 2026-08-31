@@ -270,8 +270,16 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
 
 /* ── shared pieces, so every console page is built from the same parts ── */
 
-export function Panel({ children, className = '', style }) {
-  return <section className={`ds-panel ${className}`} style={style}>{children}</section>
+// Anything beyond className/style is forwarded to the DOM. Batch analysis marks
+// its narratives panel with data-print-region so the print stylesheet can keep
+// it visible; while that attribute was being dropped here, "Save as PDF" on
+// that page produced blank pages — body * is hidden and nothing matched.
+export function Panel({ children, className = '', style, ...rest }) {
+  return (
+    <section className={`ds-panel ${className}`} style={style} {...rest}>
+      {children}
+    </section>
+  )
 }
 
 export function SectionHeading({ label, title, action }) {
