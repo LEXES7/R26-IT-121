@@ -1,0 +1,569 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { getGraphSettings, setGraphSettings, getNeighbourhood } from '../services/api'
+import { useAuth } from '../context/AuthContext'
+import { Alert, Button, cx } from '../components/ui'
+import ConsoleShell from '../components/ConsoleShell'
+
+/**
+ * Walk the payment graph one account at a time.
+ *
+ * The served graph is 3,277,509 accounts and 2,770,409 transfers. Nothing here
+ * ever tries to draw that: you name an account, the server returns the ring
+ * immediately around it, and clicking any neighbour re-centres and fetches the
+ * next ring. The same reason a game streams the map it is standing on rather
+ * than the whole world — the interesting part is always local, and the rest
+ * costs memory to hold and time to draw.
+ *
+ * A small force layout, written here rather than pulled in: repulsion between
+ * nodes, springs along transfers, the searched account pinned to the middle.
+ * It is seeded, so the same account always draws the same picture — an
+ * investigator comparing two accounts should not have to re-read a new
+ * arrangement every visit.
+ *
+ * Worth knowing what this graph actually looks like, because it shapes the
+ * view. Of 2,770,409 transfers, 2,766,854 senders have an out-degree of
+ * exactly one, and only 686 accounts in the whole 3.3M have both senders and
+ * receivers. So there is no second hop to speak of: the neighbourhood of an
+ * account is a star, not a mesh, and asking for two hops returns the same
+ * picture as one. The way to fill the frame is to land on a collector that
+ * many accounts pay into — the busiest has 75 — not to reach further out.
+ */
+
+// Collectors with the most senders converging on them, measured off the
+// served bundle. Offered as a starting point because a randomly chosen
+// account has five neighbours and looks like nothing much.
+// Entry points into the largest connected components — the only places in
+// this graph where several collectors are genuinely linked, by senders who
+// paid more than one of them. Everywhere else is an isolated star, so a
+// randomly chosen account cannot show interconnection that is not there.
+const BUSY = [
+  ['C1988852187', '90 accounts, 3 collectors'],
+  ['C1459757869', '83 accounts, 3 collectors'],
+  ['C874023329', '74 accounts, 3 collectors'],
+  ['C2083562754', '73 accounts, 2 collectors'],
+]
+
+const FRAME_H = 620
+// The layout runs on a world larger than the frame, so there is somewhere to
+// move to. Packing 90 accounts into 620px makes a dense blob; spreading them
+// over twice that and letting the viewer travel makes the structure legible.
+const WORLD = 2.1
+
+export default function GraphExplorer() {
+  const { isAdmin } = useAuth()
+  const [settings, setSettings] = useState(null)
+  const [query, setQuery] = useState('')
+  const [graph, setGraph] = useState(null)
+  const [centre, setCentre] = useState(null)
+  const [hops, setHops] = useState(1)
+  const [scope, setScope] = useState('component')
+  const [trail, setTrail] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [hover, setHover] = useState(null)
+  // Where the viewer is looking. Kept in a ref as well as state: the draw
+  // effect reads it every frame, and a drag would otherwise re-run the force
+  // layout on every mouse move.
+  const [view, setView] = useState({ x: 0, y: 0, z: 1 })
+  const dragRef = useRef(null)
+  const frameRef = useRef(null)
+  const canvasRef = useRef(null)
+  const layoutRef = useRef([])          // [{id, x, y, r, node}] for hit-testing
+
+  // Arrow keys move the view; +/- zoom; 0 returns to the searched account.
+  // Bound to the frame rather than the window so typing an account name in
+  // the search box does not scroll the graph out from under you.
+  useEffect(() => {
+    const el = frameRef.current
+    if (!el) return undefined
+    const onKey = (e) => {
+      const step = e.shiftKey ? 160 : 60
+      const moves = {
+        ArrowLeft: [step, 0], ArrowRight: [-step, 0],
+        ArrowUp: [0, step], ArrowDown: [0, -step],
+      }
+      if (moves[e.key]) {
+        e.preventDefault()
+        const [dx, dy] = moves[e.key]
+        setView((v) => ({ ...v, x: v.x + dx, y: v.y + dy }))
+      } else if (e.key === '+' || e.key === '=') {
+        e.preventDefault()
+        setView((v) => ({ ...v, z: Math.min(3, v.z * 1.18) }))
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault()
+        setView((v) => ({ ...v, z: Math.max(0.35, v.z / 1.18) }))
+      } else if (e.key === '0') {
+        e.preventDefault()
+        setView({ x: 0, y: 0, z: 1 })
+      }
+    }
+    el.addEventListener('keydown', onKey)
+    return () => el.removeEventListener('keydown', onKey)
+  }, [])
+
+  useEffect(() => {
+    getGraphSettings().then(setSettings).catch(() => setSettings({ enabled: true }))
+  }, [])
+
+  const load = useCallback(async (account, h = hops, remember = true) => {
+    if (!account) return
+    setLoading(true)
+    setError(null)
+    try {
+      const d = await getNeighbourhood(account, { scope, hops: h })
+      setGraph(d)
+      setCentre(account)
+      setView({ x: 0, y: 0, z: 1 })
+      if (remember) {
+        setTrail((t) => (t[t.length - 1] === account ? t : [...t, account]).slice(-8))
+      }
+    } catch (err) {
+      setError(err?.userMessage ?? `Could not load ${account}.`)
+      setGraph(null)
+    } finally {
+      setLoading(false)
+    }
+  }, [hops, scope])
+
+  // ── layout ────────────────────────────────────────────────────────────
+  //
+  // Structural, not a force simulation. A generic force pass scatters this
+  // graph into a starburst because it has no idea what the nodes mean; the
+  // graph is in fact hub-and-spoke — collectors with senders converging — and
+  // a layout that knows that reads immediately.
+  //
+  // Collectors are placed on a ring, well apart. Each collector's senders sit
+  // in arcs on the far side of it, facing away from the middle, so no cluster
+  // grows into another. Senders that paid more than one collector go on the
+  // line between them, which is where they belong: they are the only reason
+  // the component is one network rather than several.
+  const layout = useCallback((g, vw, vh) => {
+    const W = vw * WORLD
+    const H = vh * WORLD
+    const cx = W / 2
+    const cy = H / 2
+    const byId = new Map(g.nodes.map((n) => [n.id, { ...n, x: cx, y: cy }]))
+
+    // Who pays whom, so a sender can be attached to its collector.
+    const paysTo = new Map()
+    g.edges.forEach((e) => {
+      if (!paysTo.has(e.source)) paysTo.set(e.source, [])
+      paysTo.get(e.source).push(e.target)
+    })
+
+    // Collectors: anything two or more accounts pay into, biggest first. The
+    // searched account is always treated as one so it keeps the middle.
+    const hubs = g.nodes
+      .filter((n) => n.in_degree >= 2 || n.is_centre)
+      .sort((a, b) => (b.is_centre - a.is_centre) || (b.in_degree - a.in_degree))
+    const hubIds = new Set(hubs.map((h) => h.id))
+
+    // Collectors on an ellipse rather than a circle, sized to the frame. A
+    // circle in a 2:1 world leaves the sides empty and stacks everything down
+    // the middle — with two collectors either side of the centre it put all
+    // three on one vertical line and used 15% of the available width.
+    const rx = W * 0.30
+    const ry = H * 0.26
+    const others = hubs.filter((x) => !x.is_centre)
+    hubs.forEach((h) => {
+      const node = byId.get(h.id)
+      if (hubs.length === 1 || h.is_centre) { node.x = cx; node.y = cy; return }
+      const k = others.findIndex((x) => x.id === h.id)
+      // Tilted off the axes. Two collectors either side of a centre are always
+      // collinear with it, so an unrotated ring lays all three along one edge
+      // of the frame — vertically at offset 0, horizontally at a quarter turn,
+      // using a third of the space either way. 0.6rad puts the line on a
+      // diagonal, which measured best across both axes: 62% of the width and
+      // 54% of the height, with 23px between the closest pair.
+      const a = (k / others.length) * Math.PI * 2 + 0.6
+      node.x = cx + Math.cos(a) * rx
+      node.y = cy + Math.sin(a) * ry
+    })
+
+    // Senders, grouped by the collector they paid.
+    const groups = new Map(hubs.map((h) => [h.id, []]))
+    const bridges = []
+    g.nodes.forEach((n) => {
+      if (hubIds.has(n.id)) return
+      const targets = (paysTo.get(n.id) ?? []).filter((t) => hubIds.has(t))
+      if (targets.length > 1) bridges.push({ node: n, targets })
+      else if (targets.length === 1) groups.get(targets[0]).push(n)
+      else (groups.get(hubs[0]?.id) ?? []).push(n)
+    })
+
+    groups.forEach((members, hubId) => {
+      if (!members.length) return
+      const hub = byId.get(hubId)
+      // Face away from the middle, so clusters open outward instead of
+      // overlapping. A lone hub fans out in every direction.
+      const away = hubs.length === 1
+        ? 0 : Math.atan2(hub.y - cy, hub.x - cx)
+      const full = hubs.length === 1 ? Math.PI * 2 : Math.PI * 1.25
+      // Rings sized so arc length between neighbours stays readable rather
+      // than packing everything onto one circle.
+      const perRing = Math.max(7, Math.ceil(Math.sqrt(members.length) * 2.6))
+      const rings = Math.ceil(members.length / perRing)
+      members.forEach((m, i) => {
+        const ring = Math.floor(i / perRing)
+        const inRing = members.slice(ring * perRing, (ring + 1) * perRing).length
+        const idx = i % perRing
+        const r = 92 + ring * 74
+        const t = inRing === 1 ? 0.5 : idx / (inRing - 1)
+        const a = away + (t - 0.5) * full
+        const node = byId.get(m.id)
+        node.x = hub.x + Math.cos(a) * r
+        node.y = hub.y + Math.sin(a) * r
+      })
+    })
+
+    // Bridges sit midway between the collectors they paid, nudged outward so
+    // they are not hidden under the line joining them.
+    bridges.forEach(({ node: n, targets }, i) => {
+      const pts = targets.map((t) => byId.get(t)).filter(Boolean)
+      const mx = pts.reduce((s, p2) => s + p2.x, 0) / pts.length
+      const my = pts.reduce((s, p2) => s + p2.y, 0) / pts.length
+      const off = (i % 2 ? 1 : -1) * (34 + Math.floor(i / 2) * 26)
+      const dx = (pts[1]?.x ?? mx) - (pts[0]?.x ?? mx)
+      const dy = (pts[1]?.y ?? my) - (pts[0]?.y ?? my)
+      const len = Math.hypot(dx, dy) || 1
+      const node = byId.get(n.id)
+      node.x = mx + (-dy / len) * off
+      node.y = my + (dx / len) * off
+      node.is_bridge = true
+    })
+
+    const nodes = [...byId.values()]
+    const links = g.edges
+      .map((e) => ({ a: byId.get(e.source), b: byId.get(e.target), e }))
+      .filter((l) => l.a && l.b)
+    return { nodes, links, byId }
+  }, [])
+
+  // ── draw ──────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const rect = canvas.getBoundingClientRect()
+    const W = rect.width
+    const H = FRAME_H
+    canvas.width = Math.round(W * dpr)
+    canvas.height = Math.round(H * dpr)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    layoutRef.current = []
+
+    // Ground: a deep teal wash, brightest behind the centre.
+    const bg = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.7)
+    bg.addColorStop(0, '#0b2430')
+    bg.addColorStop(1, '#05121a')
+    ctx.fillStyle = bg
+    ctx.fillRect(0, 0, W, H)
+
+    // Distant specks. Seeded, so they do not crawl between renders.
+    let seed = 7
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff)
+    for (let i = 0; i < 150; i += 1) {
+      const x = rnd() * W; const y = rnd() * H; const r = rnd() * 1.1 + 0.3
+      ctx.fillStyle = `rgba(180,235,255,${0.05 + rnd() * 0.22})`
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill()
+    }
+    if (!graph) return
+
+    // Everything after this is drawn in world space; the viewer's pan and zoom
+    // are one transform rather than an offset threaded through every call.
+    ctx.save()
+    ctx.translate(W / 2 + view.x, H / 2 + view.y)
+    ctx.scale(view.z, view.z)
+    ctx.translate(-W / 2, -H / 2)
+
+    const { nodes, links } = layout(graph, W, H)
+    const maxAtt = Math.max(...graph.edges.map((e) => e.attention ?? 0), 0.0001)
+    const maxDeg = Math.max(...nodes.map((n) => n.in_degree + n.out_degree), 1)
+
+    // Edges, drawn twice: a wide soft pass for the bloom, a thin bright core.
+    links.forEach(({ a, b, e }) => {
+      const w = (e.attention ?? 0) / maxAtt
+      ctx.strokeStyle = `rgba(80,200,230,${0.05 + w * 0.10})`
+      ctx.lineWidth = 3.5 + w * 4
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke()
+      ctx.strokeStyle = `rgba(150,240,255,${0.22 + w * 0.55})`
+      ctx.lineWidth = 0.6 + w * 1.1
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke()
+    })
+
+    nodes.forEach((n) => {
+      const deg = n.in_degree + n.out_degree
+      const r = n.is_centre ? 21 : 5 + Math.sqrt(deg / maxDeg) * 9
+      const risky = (n.score ?? 0) >= 0.09
+      const hot = n.id === hover
+
+      // Halo.
+      const g1 = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r * 3.4)
+      const tint = risky ? '255,176,72' : '64,224,240'
+      g1.addColorStop(0, `rgba(${tint},${n.is_centre ? 0.5 : 0.32})`)
+      g1.addColorStop(0.5, `rgba(${tint},0.10)`)
+      g1.addColorStop(1, `rgba(${tint},0)`)
+      ctx.fillStyle = g1
+      ctx.beginPath(); ctx.arc(n.x, n.y, r * 3.4, 0, Math.PI * 2); ctx.fill()
+
+      // Sphere: a bright core falling off to a rim.
+      const g2 = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r)
+      g2.addColorStop(0, risky ? '#fff0d0' : '#e8fdff')
+      g2.addColorStop(0.35, risky ? '#ffb448' : '#43e0f0')
+      g2.addColorStop(1, risky ? 'rgba(255,150,40,.30)' : 'rgba(40,190,220,.28)')
+      ctx.fillStyle = g2
+      ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.fill()
+
+      // Wireframe, on the larger spheres only — meridians read as a globe at
+      // 20px and as noise at 6px.
+      if (r > 9) {
+        ctx.strokeStyle = `rgba(190,250,255,${n.is_centre ? 0.5 : 0.32})`
+        ctx.lineWidth = 0.6
+        for (let k = 1; k <= 3; k += 1) {
+          const rx = r * (k / 3.4)
+          ctx.beginPath(); ctx.ellipse(n.x, n.y, rx, r, 0, 0, Math.PI * 2); ctx.stroke()
+          ctx.beginPath(); ctx.ellipse(n.x, n.y, r, rx, 0, 0, Math.PI * 2); ctx.stroke()
+        }
+      }
+      ctx.strokeStyle = hot ? 'rgba(255,255,255,.95)' : `rgba(${tint},.75)`
+      ctx.lineWidth = hot ? 2 : 1
+      ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.stroke()
+
+      layoutRef.current.push({ id: n.id, x: n.x, y: n.y, r: Math.max(r, 9), node: n })
+    })
+
+    // Labels last, so nothing is drawn over them. The centre, anything risky,
+    // and whatever is under the cursor — labelling every node turns a full
+    // frame into overlapping text.
+    ctx.font = '10px ui-monospace, SFMono-Regular, monospace'
+    ctx.textAlign = 'center'
+    nodes.forEach((n) => {
+      const risky = (n.score ?? 0) >= 0.09
+      if (!n.is_centre && !risky && n.id !== hover) return
+      const deg = n.in_degree + n.out_degree
+      const r = n.is_centre ? 21 : 5 + Math.sqrt(deg / maxDeg) * 9
+      const text = n.id
+      const w = ctx.measureText(text).width
+      ctx.fillStyle = 'rgba(3,16,22,.72)'
+      ctx.fillRect(n.x - w / 2 - 4, n.y - r - 20, w + 8, 14)
+      ctx.fillStyle = n.is_centre ? '#dffbff' : '#cfe6ee'
+      ctx.fillText(text, n.x, n.y - r - 9)
+    })
+    ctx.restore()
+  }, [graph, hover, layout, view])
+
+  // Screen point back to world point — the inverse of the transform the draw
+  // applies. Without this, hit-testing is correct only at zoom 1 with no pan,
+  // which is exactly the state nobody is in after they start looking around.
+  const toWorld = (evt) => {
+    const canvas = canvasRef.current
+    if (!canvas) return null
+    const r = canvas.getBoundingClientRect()
+    const W = r.width
+    const H = FRAME_H
+    const sx = evt.clientX - r.left
+    const sy = evt.clientY - r.top
+    return {
+      x: (sx - W / 2 - view.x) / view.z + W / 2,
+      y: (sy - H / 2 - view.y) / view.z + H / 2,
+    }
+  }
+
+  const hit = (evt) => {
+    const w = toWorld(evt)
+    if (!w) return null
+    // The hit radius grows as you zoom out, so a node stays clickable when it
+    // is drawn at four pixels.
+    const slack = 5 / view.z
+    return layoutRef.current.find(
+      (p) => (w.x - p.x) ** 2 + (w.y - p.y) ** 2 <= (p.r + slack) ** 2) ?? null
+  }
+
+  const counts = graph?.counts
+  const off = settings && settings.enabled === false
+
+  return (
+    <ConsoleShell
+      eyebrow="Explore"
+      title="The payment graph"
+      lede="Search an account to see the network around it. The graph is 3.27M accounts; this loads only what you are looking at."
+    >
+      {error && <Alert tone="danger">{error}</Alert>}
+
+      {off ? (
+        <Alert tone="warning">
+          The graph explorer is switched off.{' '}
+          {isAdmin ? 'Turn it back on below.' : 'An administrator can turn it back on.'}
+        </Alert>
+      ) : (
+        <>
+          <form
+            onSubmit={(e) => { e.preventDefault(); load(query.trim()) }}
+            className="flex flex-wrap items-center gap-3"
+          >
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Account, e.g. C1166671647"
+              className="numeric w-64 rounded-md border px-3 py-2 text-[13px]"
+              style={{ borderColor: 'rgb(var(--ds-line))',
+                       background: 'rgb(var(--ds-surface))',
+                       color: 'rgb(var(--ds-ink))' }}
+            />
+            <Button type="submit" loading={loading} disabled={!query.trim()}>
+              {loading ? 'Loading…' : 'Show the network'}
+            </Button>
+            <span className="text-[11px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+              largest networks:{' '}
+              {BUSY.map(([a, note], i) => (
+                <span key={a}>
+                  {i > 0 && ' · '}
+                  <button type="button" title={note}
+                          onClick={() => { setQuery(a); load(a) }}
+                          className="numeric underline decoration-dotted underline-offset-2">
+                    {a}
+                  </button>
+                </span>
+              ))}
+            </span>
+            <label className="flex items-center gap-2 text-[12px]"
+                   style={{ color: 'rgb(var(--ds-muted))' }}>
+              Hops
+              <select
+                value={hops}
+                onChange={(e) => {
+                  const h = Number(e.target.value)
+                  setHops(h)
+                  if (centre) load(centre, h, false)
+                }}
+                className="rounded-md border px-2 py-1 text-[12px]"
+                style={{ borderColor: 'rgb(var(--ds-line))',
+                         background: 'rgb(var(--ds-surface))',
+                         color: 'rgb(var(--ds-ink))' }}
+              >
+                <option value={1}>1</option>
+                <option value={2} disabled={settings?.max_hops < 2}>2</option>
+              </select>
+            </label>
+          </form>
+
+          {trail.length > 1 && (
+            <p className="text-[11px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+              {trail.map((a, i) => (
+                <span key={`${a}-${i}`}>
+                  {i > 0 && ' → '}
+                  <button onClick={() => load(a, hops, false)}
+                          className="underline decoration-dotted underline-offset-2">
+                    {a}
+                  </button>
+                </span>
+              ))}
+            </p>
+          )}
+
+          <div
+            ref={frameRef}
+            tabIndex={0}
+            className="relative overflow-hidden rounded-xl border outline-none"
+            style={{ borderColor: 'rgb(var(--ds-line))',
+                     background: 'rgb(var(--ds-surface))' }}
+          >
+            <canvas
+              ref={canvasRef}
+              style={{ display: 'block', width: '100%', height: FRAME_H,
+                       cursor: dragRef.current ? 'grabbing'
+                             : hover ? 'pointer' : 'grab' }}
+              onMouseDown={(e) => {
+                frameRef.current?.focus()
+                dragRef.current = { x: e.clientX, y: e.clientY,
+                                    vx: view.x, vy: view.y, moved: false }
+              }}
+              onMouseMove={(e) => {
+                const d = dragRef.current
+                if (d) {
+                  const dx = e.clientX - d.x
+                  const dy = e.clientY - d.y
+                  if (Math.abs(dx) + Math.abs(dy) > 3) d.moved = true
+                  setView((v) => ({ ...v, x: d.vx + dx, y: d.vy + dy }))
+                  return
+                }
+                setHover(hit(e)?.id ?? null)
+              }}
+              onMouseUp={(e) => {
+                const d = dragRef.current
+                dragRef.current = null
+                // A drag that happened to end on a node is not a click on it.
+                if (d && !d.moved) {
+                  const h = hit(e)
+                  if (h && h.id !== centre) { setQuery(h.id); load(h.id) }
+                }
+              }}
+              onMouseLeave={() => { dragRef.current = null; setHover(null) }}
+              onWheel={(e) => {
+                e.preventDefault()
+                setView((v) => ({
+                  ...v,
+                  z: Math.max(0.35, Math.min(3, v.z * (e.deltaY < 0 ? 1.1 : 1 / 1.1))),
+                }))
+              }}
+            />
+            <p className="pointer-events-none absolute bottom-2 right-3 text-[10px]"
+               style={{ color: 'rgb(var(--ds-faint))' }}>
+              arrow keys move · +/− zoom · 0 recentres · drag to pan
+            </p>
+            {!graph && !loading && (
+              <p className="pb-6 text-center text-xs" style={{ color: 'rgb(var(--ds-faint))' }}>
+                Nothing loaded. Search an account above.
+              </p>
+            )}
+          </div>
+
+          {counts && (
+            <p className="text-[11px]" style={{ color: 'rgb(var(--ds-muted))' }}>
+              {counts.nodes_returned} accounts, {counts.edges_returned} transfers
+              {counts.truncated
+                ? ` — ${counts.edges_in_ball} exist here, showing the ${counts.edges_returned}
+                    the model weighted most heavily`
+                : ''}
+              . Teal is the account you searched, amber scores above the medium
+              band, and a thicker line is an edge the model attended to more.
+              Click any account to move there.
+            </p>
+          )}
+        </>
+      )}
+
+      {isAdmin && settings && (
+        <div className="mt-6 rounded-xl border p-4"
+             style={{ borderColor: 'rgb(var(--ds-line))' }}>
+          <p className="text-[13px] font-semibold" style={{ color: 'rgb(var(--ds-ink))' }}>
+            Explorer availability
+          </p>
+          <p className="mt-1 text-[11px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
+            Every search walks the served graph. Switching this off during a
+            demo keeps the network detector free for the pipeline.
+          </p>
+          <div className="mt-3 flex items-center gap-3">
+            <Button
+              size="sm"
+              variant={settings.enabled ? 'ghost' : 'primary'}
+              onClick={async () => {
+                const next = await setGraphSettings({ enabled: !settings.enabled })
+                setSettings(next)
+              }}
+            >
+              {settings.enabled ? 'Switch off' : 'Switch on'}
+            </Button>
+            <span className="text-[11px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+              Currently {settings.enabled ? 'on' : 'off'} · up to {settings.max_hops} hop
+              {settings.max_hops === 1 ? '' : 's'}, {settings.max_edges} transfers
+            </span>
+          </div>
+        </div>
+      )}
+    </ConsoleShell>
+  )
+}

@@ -29,6 +29,8 @@ import markDark from '../assets/deepsentinel-mark-dark.png'
 const I = {
   gauge: 'M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0-4V6m8 6a8 8 0 1 0-16 0',
   activity: 'M3 12h4l3 8 4-16 3 8h4',
+  // A collector with three senders — the shape this graph mostly is.
+  graph: 'M12 14a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM5 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm14 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM12 22a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM6.4 4.2l4 5.1m7.2-5.1l-4 5.1M12 14v4',
   search: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm10 2-4.35-4.35',
   archive: 'M3 7h18v13H3zM3 3h18v4H3zm7 8h4',
   sliders: 'M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M1 14h6m2-6h6m2 8h6',
@@ -44,6 +46,14 @@ const I = {
   menu: 'M3 6h18M3 12h18M3 18h18',
   close: 'M18 6 6 18M6 6l12 12',
   out: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14 5-5-5-5m5 5H9',
+  shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z',
+  // A distribution with one point out in the tail — what the
+  // behavioural model is looking for.
+  curve: 'M3 18c3 0 4-12 7-12s4 12 7 12M20 8v.01',
+  // A sequence of steps with one taller than the rest.
+  sequence: 'M4 20V14m4 6V8m4 12V4m4 16v-9m4 9v-6',
+  // Three inputs converging on one output.
+  merge: 'M4 5h4c4 0 4 7 8 7h4M4 19h4c4 0 4-7 8-7M4 12h4m12 0 -3-3m3 3-3 3',
 }
 
 function Icon({ d, size = 15 }) {
@@ -71,6 +81,12 @@ const ADMIN_NAV = [
     ['/', 'System', I.gauge],
     ['/monitor', 'Live monitor', I.activity],
     ['/models', 'Detectors', I.network],
+    ['/graph', 'Graph explorer', I.graph],
+  ]],
+  ['Detectors', [
+    ['/lab/behaviour', 'Behaviour', I.curve],
+    ['/lab/timing', 'Timing', I.sequence],
+    ['/lab/fusion', 'Fusion', I.merge],
   ]],
   ['Configure', [
     ['/thresholds', 'Thresholds', I.sliders],
@@ -86,6 +102,12 @@ const OPS_NAV = [
     ['/', 'Overview', I.gauge],
     ['/monitor', 'Live monitor', I.activity],
     ['/analyzer', 'Analyzer', I.search],
+    ['/graph', 'Graph explorer', I.graph],
+  ]],
+  ['Detectors', [
+    ['/lab/behaviour', 'Behaviour', I.curve],
+    ['/lab/timing', 'Timing', I.sequence],
+    ['/lab/fusion', 'Fusion', I.merge],
   ]],
   ['Investigate', [
     ['/cases', 'Cases', I.archive],
