@@ -129,6 +129,7 @@ export default function GraphExplorer() {
   // Kept separate from the page-level error, which renders at the very top:
   // a rejected upload has to say so next to the button that was pressed.
   const [csvError, setCsvError] = useState(null)
+  const [addError, setAddError] = useState(null)
   const fileRef = useRef(null)
   const [newAccount, setNewAccount] = useState('DEMO-NEW-001')
   const [from, setFrom] = useState('C1988852187')
@@ -217,10 +218,24 @@ export default function GraphExplorer() {
     const account = newAccount.trim()
     const neighbour = from.trim()
     if (!account || !neighbour) return
+
+    // Checked here as well as on the server. These are the values this panel
+    // lets someone edit, so this is where a wrong one should be caught — the
+    // server refuses the same things, and says so if this is ever bypassed.
+    const value = Number(amount)
+    if (account === neighbour) {
+      setAddError('An account cannot receive from itself. '
+                  + 'Name a different sender.')
+      return
+    }
+    if (!Number.isFinite(value) || value <= 0) {
+      setAddError(`'${amount}' is not an amount. Enter a number above zero.`)
+      return
+    }
+
     setScoring(true)
-    setError(null)
+    setAddError(null)
     try {
-      const value = Number(amount) || 0
       const r = await demoScoreAccount(account, [{
         step: 705, type: 'TRANSFER', amount: value,
         nameOrig: neighbour, nameDest: account,
@@ -245,7 +260,7 @@ export default function GraphExplorer() {
       setCentre(neighbour)
       setView({ x: 0, y: 0, z: 1 })
     } catch (err) {
-      setError(err?.userMessage ?? 'The relational model did not answer.')
+      setAddError(err?.userMessage ?? 'The relational model did not answer.')
     } finally {
       setScoring(false)
     }
@@ -810,6 +825,11 @@ export default function GraphExplorer() {
                             disabled={!newAccount.trim() || !from.trim()}>
                       Score and place it in the graph
                     </Button>
+
+                    {/* Why it was not added, said where the button is. Nothing
+                        reaches the graph until these transactions describe a
+                        ledger that could exist. */}
+                    {addError && <Alert tone="error">{addError}</Alert>}
 
                     {runs.length > 0 && (() => {
                       const top = Math.max(...runs.map((r) => r.score), 0.0001)
