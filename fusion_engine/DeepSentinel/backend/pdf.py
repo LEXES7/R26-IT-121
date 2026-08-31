@@ -91,10 +91,30 @@ def wrap(s: str, font: str, size: float, width: float) -> list[str]:
     return out or [""]
 
 
+# The fonts are declared /WinAnsiEncoding, which carries the typographic
+# characters latin-1 does not. Encoding straight to latin-1 turned every em
+# dash into a question mark — visible as "01 ? Executive summary" at the head
+# of every numbered section, in every style.
+_WINANSI = {
+    "\u2014": "\x97",   # em dash
+    "\u2013": "\x96",   # en dash
+    "\u2018": "\x91", "\u2019": "\x92",   # single quotes
+    "\u201c": "\x93", "\u201d": "\x94",   # double quotes
+    "\u2026": "\x85",   # ellipsis
+    "\u2022": "\x95",   # bullet
+    "\u2122": "\x99",   # trademark
+}
+
+
 def _esc(s: str) -> str:
-    """PDF string escaping, and anything non-Latin-1 replaced rather than
-    raising — a report should not fail to render over one stray glyph."""
+    """PDF string escaping, with WinAnsi's typographic characters preserved.
+
+    Anything still outside the encoding is replaced rather than raising — a
+    report should not fail to render over one stray glyph.
+    """
     s = s.replace("\\", r"\\").replace("(", r"\(").replace(")", r"\)")
+    for ch, byte in _WINANSI.items():
+        s = s.replace(ch, byte)
     return s.encode("latin-1", "replace").decode("latin-1")
 
 
@@ -279,6 +299,36 @@ class Document:
             self.y -= size * leading
             self._txt(line, self.margin, self.y, font, size, rgb)
         self.y -= size * 0.55
+
+    def meter(self, label: str, value: float, caption: str = "",
+              accent=(0.216, 0.478, 0.349), track=WASH, ink=INK,
+              muted=MUTED, size: float = 10.0) -> None:
+        """One score as a name, a figure and a filled bar.
+
+        A column of four-decimal numbers makes the reader do the comparison.
+        A bar does it for them — which detector is loud is the first thing the
+        eye should answer, and the figure is still there for anyone who wants
+        to check it.
+        """
+        self._room(size * 3.6)
+        self.y -= size * 1.35
+        self._txt(label, self.margin, self.y, "Helvetica-Bold", size, ink)
+        shown = f"{value:.4f}"
+        self._txt(shown, self.margin + self.col - text_width(shown, "Courier", size),
+                  self.y, "Courier", size, ink)
+
+        self.y -= size * 0.72
+        h = 5.0
+        self._fill(self.margin, self.y, self.col, h, track)
+        filled = max(0.0, min(1.0, value)) * self.col
+        if filled > 0.6:
+            self._fill(self.margin, self.y, filled, h, accent)
+
+        if caption:
+            self.y -= size * 1.15
+            self._txt(caption.upper(), self.margin, self.y, "Courier",
+                      size * 0.78, muted, spacing=0.8)
+        self.y -= size * 0.5
 
     def kv(self, rows: list[tuple[str, str]], size: float = 9.5) -> None:
         key_col = 150.0

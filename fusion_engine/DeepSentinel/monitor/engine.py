@@ -1123,6 +1123,12 @@ def _report_pdf(alert: dict, report: str, style: str | None = None) -> bytes:
     fused = float(alert["fused_score"])
     used = int(alert.get("modalities_used") or 0)
 
+    # A style may pin its own accent. Severity still shows in the words and the
+    # band; letting an amber HIGH tint a deep-green report just makes it look
+    # like two designs stapled together.
+    if st.get("accent"):
+        accent = st["accent"]
+
     if st["masthead"]:
         doc.masthead("Chain-of-evidence forensic report",
                      "Suspicious transaction", txid, accent, deep=st["header"])
@@ -1168,14 +1174,34 @@ def _report_pdf(alert: dict, report: str, style: str | None = None) -> bytes:
     if scores:
         doc.rule(rgb=P.RULE)
         doc.label("Sub-model risk scores", P.MUTED)
-        doc.kv([
-            (name, f"{scores[key]:.4f}" if scores.get(key) is not None
-                   else "did not answer")
-            for key, name in (("graph", "Network \u00b7 GraphSAGE"),
-                              ("behavioural", "Behaviour \u00b7 VAE"),
-                              ("temporal", "Timing \u00b7 TS-TCN"))
-            if key in scores
-        ])
+        rows = [(key, name) for key, name in
+                (("graph", "Graph network analysis"),
+                 ("behavioural", "Behavioural anomaly"),
+                 ("temporal", "Temporal pattern analysis"))
+                if key in scores]
+        if st.get("meters"):
+            # Same three numbers, drawn instead of listed. The dominant
+            # detector is named on its own row rather than in a sentence
+            # underneath, so the loudest signal is visible before it is read.
+            driver = alert.get("driver")
+            for key, name in rows:
+                v = scores.get(key)
+                if v is None:
+                    doc.kv([(name, "did not answer")])
+                    continue
+                note = ("dominant \u00b7 signal rating high" if key == driver
+                        else "rating high" if v >= 0.5
+                        else "rating medium" if v >= 0.18
+                        else "minimal \u00b7 rating low")
+                doc.meter(name, float(v), note,
+                          accent=st.get("accent", accent),
+                          track=P.WASH, ink=P.INK, muted=P.MUTED)
+        else:
+            doc.kv([
+                (name, f"{scores[key]:.4f}" if scores.get(key) is not None
+                       else "did not answer")
+                for key, name in rows
+            ])
         if alert.get("driver"):
             doc.para(
                 f"Largest contribution to the fused verdict: "
