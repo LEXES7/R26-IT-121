@@ -96,12 +96,10 @@ export default function TypologyBook({ matched, similarity }) {
       <p className="mt-3 text-[13px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
         {matched
           ? <>The current transaction matched <strong>{matched}</strong>
-              {similarity != null && <> at {Number(similarity).toFixed(3)} similarity</>}.
-              The three signal columns say which detectors that pattern expects
-              to be loud — a match whose expected signals stayed quiet is weaker
-              than its score suggests.</>
-          : <>Score a transaction above and the retrieved pattern is highlighted
-              here, against the full set it was chosen from.</>}
+              {similarity != null && <> at {Number(similarity).toFixed(3)}</>}.
+              The signal columns say which detectors that pattern expects to be
+              loud.</>
+          : <>Score a transaction and the match is highlighted here.</>}
       </p>
     </section>
   )

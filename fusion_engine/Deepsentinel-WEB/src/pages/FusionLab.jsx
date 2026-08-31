@@ -34,6 +34,14 @@ const BAND_COLOURS = {
   LOW: 'rgb(var(--ds-accent))',
 }
 
+const TABS = [
+  ['pipeline', 'Pipeline'],
+  ['file', 'Score a file'],
+  ['live', 'Live'],
+  ['typologies', 'Typologies'],
+  ['model', 'Model'],
+]
+
 export default function FusionLab() {
   const [pick, setPick] = useState(0)
   const [r, setResult] = useState(null)
@@ -41,6 +49,7 @@ export default function FusionLab() {
   const [error, setError] = useState(null)
   const [bands, setBands] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [tab, setTab] = useState('pipeline')
 
   useEffect(() => {
     getThresholds().then((t) => setBands(t?.bands ?? null)).catch(() => setBands(null))
@@ -259,13 +268,30 @@ export default function FusionLab() {
           </>
         ) : null}
 
-        <div style={{ marginTop: 14, display: 'grid', gap: 18 }}>
-          <FusionStages />
-          <FusionBatch />
-          <FusionLive />
-          <TypologyBook matched={r?.retrieval?.typology_name}
-                        similarity={r?.retrieval?.similarity_score} />
-          <FusionModelPanel />
+        <div style={{ marginTop: 18, display: 'grid', gap: 14 }}>
+          <div className="flex flex-wrap gap-1"
+               style={{ borderBottom: '1px solid rgb(var(--ds-line))', paddingBottom: 10 }}>
+            {TABS.map(([key, label]) => (
+              <button key={key} onClick={() => setTab(key)}
+                      className="rounded-lg px-3.5 py-2 text-[15px] transition-colors"
+                      style={{
+                        background: tab === key ? 'rgb(var(--ds-surface-2))' : 'transparent',
+                        color: tab === key ? 'rgb(var(--ds-ink))' : 'rgb(var(--ds-muted))',
+                        fontWeight: tab === key ? 600 : 400,
+                      }}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {tab === 'pipeline' && <FusionStages />}
+          {tab === 'file' && <FusionBatch />}
+          {tab === 'live' && <FusionLive />}
+          {tab === 'typologies' && (
+            <TypologyBook matched={r?.retrieval?.typology_name}
+                          similarity={r?.retrieval?.similarity_score} />
+          )}
+          {tab === 'model' && <FusionModelPanel />}
         </div>
       </div>
     </ConsoleShell>

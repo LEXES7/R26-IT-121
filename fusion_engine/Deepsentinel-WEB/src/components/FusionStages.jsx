@@ -89,11 +89,12 @@ export default function FusionStages() {
             <dl className="mt-3 grid gap-1"
                 style={{ borderTop: '1px solid rgb(var(--ds-line))', paddingTop: 10 }}>
               {(s.figures ?? []).map((f) => (
-                <div key={f.label} className="flex justify-between gap-2 text-[12px]">
-                  <dt className="truncate" style={{ color: 'rgb(var(--ds-faint))' }}>
+                <div key={f.label} className="flex min-w-0 justify-between gap-2 text-[12px]">
+                  <dt className="shrink-0" style={{ color: 'rgb(var(--ds-faint))' }}>
                     {f.label}
                   </dt>
-                  <dd className="numeric truncate" style={{ color: 'rgb(var(--ds-ink))' }}>
+                  <dd className="numeric min-w-0 truncate text-right"
+                      title={String(f.value)} style={{ color: 'rgb(var(--ds-ink))' }}>
                     {f.value}
                   </dd>
                 </div>
@@ -103,11 +104,8 @@ export default function FusionStages() {
         ))}
       </div>
 
-      <p className="mt-4 text-[13px] leading-relaxed" style={{ color: 'rgb(var(--ds-faint))' }}>
-        Read left to right. Nothing reaches the report writer that did not come
-        out of the two stages before it — that constraint is what makes the
-        narrative checkable against the record. Only the first stage changes a
-        verdict; the other four fail quietly, which is why they are checked here.
+      <p className="mt-4 text-[13px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+        Only the first stage changes a verdict. The other four fail quietly.
       </p>
     </section>
   )

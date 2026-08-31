@@ -64,9 +64,8 @@ export default function FusionModelPanel() {
             ))}
           </div>
           <p className="mt-3 text-[13px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
-            Timing carries the most weight, then behaviour, then the network.
             With the intercept at {m.intercept ?? '—'}, these three numbers
-            reproduce any verdict this engine has ever returned.
+            reproduce any verdict this engine returns.
           </p>
         </div>
 
@@ -150,10 +149,8 @@ export default function FusionModelPanel() {
 
           <p className="mt-3 text-[13px] leading-relaxed"
              style={{ color: 'rgb(var(--ds-muted))' }}>
-            Read PR-AUC: at this class balance it reflects what an analyst
-            actually experiences, and the fused verdict leads it. On AUROC the
-            behavioural detector edges ahead — both are shown so neither can be
-            picked selectively.
+            Read PR-AUC — the right metric at this class balance, and the fused
+            verdict leads it. On AUROC behaviour edges ahead; both are shown.
           </p>
 
           {perf.at_threshold && (
@@ -203,9 +200,7 @@ export default function FusionModelPanel() {
       </dl>
 
       <p className="mt-4 text-[13px] leading-relaxed" style={{ color: 'rgb(var(--ds-faint))' }}>
-        The counts above are what this deployment has decided, not a benchmark.
-        A distribution over a few dozen demo analyses says nothing about
-        accuracy and is not offered as if it did.
+        Counts from this deployment, not a benchmark.
       </p>
     </section>
   )

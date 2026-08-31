@@ -73,8 +73,7 @@ export default function FusionLive() {
       {rows.length === 0 ? (
         <p className="mt-5 rounded-lg border border-dashed px-4 py-8 text-center text-[14px]"
            style={{ borderColor: 'rgb(var(--ds-line))', color: 'rgb(var(--ds-faint))' }}>
-          Nothing fused yet. Start the live monitor, or ingest a file with the
-          Query Runner, and each verdict will appear here with its working.
+          Nothing fused yet. Start the live monitor and verdicts appear here.
         </p>
       ) : (
         <div className="mt-4 grid gap-3">
