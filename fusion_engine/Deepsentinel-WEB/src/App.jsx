@@ -23,7 +23,6 @@ import Dashboard from './pages/Dashboard'
 import SystemHealth from './pages/SystemHealth'
 import Monitor from './pages/Monitor'
 import GraphExplorer from './pages/GraphExplorer'
-import GraphDemo from './pages/GraphDemo'
 import BehaviourLab from './pages/BehaviourLab'
 import TimingLab from './pages/TimingLab'
 import FusionLab from './pages/FusionLab'
@@ -118,7 +117,6 @@ function Shell() {
             {/* Readable by any signed-in role; the switch inside it is an
                 administrator's, and enforced by require_admin on the route. */}
             <Route path="/graph" element={<ProtectedRoute><GraphExplorer /></ProtectedRoute>} />
-            <Route path="/graph/demo" element={<ProtectedRoute><GraphDemo /></ProtectedRoute>} />
             <Route path="/lab/behaviour" element={<ProtectedRoute><BehaviourLab /></ProtectedRoute>} />
             <Route path="/lab/timing" element={<ProtectedRoute><TimingLab /></ProtectedRoute>} />
             <Route path="/lab/fusion" element={<ProtectedRoute><FusionLab /></ProtectedRoute>} />
