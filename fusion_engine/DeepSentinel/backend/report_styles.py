@@ -59,6 +59,26 @@ STYLES: dict[str, dict] = {
         "hero": False,
         "numbered": False,
     },
+    "chain": {
+        "label": "Chain of evidence",
+        "blurb": "Deep green masthead on warm paper, the confidence as one large "
+                 "number and every sub-model score on its own bar.",
+        "ground": (0.984, 0.980, 0.973),
+        "ink":    (0.106, 0.129, 0.114),
+        "muted":  (0.365, 0.400, 0.376),
+        "faint":  (0.478, 0.510, 0.486),
+        "rule":   (0.847, 0.855, 0.843),
+        "wash":   (0.906, 0.910, 0.918),
+        "header": (0.086, 0.176, 0.133),
+        "masthead": True,
+        "hero": True,
+        "numbered": True,
+        # The one layout switch this style adds: sub-model scores as bars
+        # rather than a column of figures. Same numbers, same order — a reader
+        # can see which detector is loud without reading four decimals.
+        "meters": True,
+        "accent": (0.216, 0.478, 0.349),
+    },
     "plain": {
         "label": "Plain",
         "blurb": "No fills, no colour beyond the severity. Least ink, cleanest "
