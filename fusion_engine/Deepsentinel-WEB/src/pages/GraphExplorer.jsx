@@ -609,9 +609,15 @@ export default function GraphExplorer() {
         * loaded rather than leaving a few hundred nodes resident for the rest
         * of the session. So it opens on request, like a map that streams in
         * only once you look at it. */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3"
-           style={{ borderColor: expanded ? 'rgba(45,212,191,.4)' : 'rgb(var(--ds-line))',
-                    background: expanded ? 'rgba(45,212,191,.05)' : 'transparent' }}>
+      <div className="flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-xl border px-4 py-3"
+           style={{
+             borderColor: 'rgb(var(--ds-line))',
+             background: 'rgb(var(--ds-surface-2))',
+             // The rail is the state: lit when open, inert when closed, amber
+             // when an administrator has taken it away entirely.
+             boxShadow: `inset 4px 0 0 0 ${off ? 'rgb(var(--ds-sev-high))'
+               : expanded ? 'rgb(var(--ds-accent))' : 'rgb(var(--ds-line))'}`,
+           }}>
         <div className="flex items-center gap-3">
           <button
             type="button"
