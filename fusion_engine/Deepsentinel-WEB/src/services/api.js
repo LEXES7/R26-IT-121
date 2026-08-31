@@ -276,11 +276,17 @@ export const getEmailStatus = () => client.get('/email/status').then((r) => r.da
  * takes a while, and the caller should be able to show progress instead of a
  * spinner. Returns an abort function.
  */
-export function analyzeBatch(file, { onEvent, onDone, onError, alertThreshold = 0.6 } = {}) {
+/** `alertThreshold` is omitted unless it is set, so the server falls back to
+ *  the line the live monitor is alerting on. It used to default to 0.6 here —
+ *  a third copy of that number, and the one that actually won, so the same
+ *  file scored in batch and screened live disagreed. */
+export function analyzeBatch(file, { onEvent, onDone, onError, alertThreshold } = {}) {
   const controller = new AbortController()
   const form = new FormData()
   form.append('file', file)
-  form.append('alert_threshold', String(alertThreshold))
+  if (alertThreshold !== undefined && alertThreshold !== null) {
+    form.append('alert_threshold', String(alertThreshold))
+  }
 
   const token = getToken()
 
