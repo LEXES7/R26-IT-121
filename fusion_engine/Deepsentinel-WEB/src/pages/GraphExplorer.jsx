@@ -223,12 +223,21 @@ export default function GraphExplorer() {
     const cy = H / 2
     const byId = new Map(g.nodes.map((n) => [n.id, { ...n, x: cx, y: cy }]))
 
-    // Who pays whom, so a sender can be attached to its collector.
-    const paysTo = new Map()
-    g.edges.forEach((e) => {
-      if (!paysTo.has(e.source)) paysTo.set(e.source, [])
-      paysTo.get(e.source).push(e.target)
-    })
+    // Who a node is attached to, so it can be placed beside them.
+    //
+    // Both directions, deliberately. Reading only source -> target placed a
+    // node by who it *pays*, which is right for a sender and silently wrong
+    // for anything that only receives: with no outgoing edge it matched
+    // nothing and fell through to the default branch, landing in the first
+    // collector's cluster whoever it had actually transacted with. An account
+    // added in demo mode only ever receives, so it was placed correctly only
+    // by the accident of its sender happening to be the searched account.
+    const attachedTo = new Map()
+    const link = (a, b) => {
+      if (!attachedTo.has(a)) attachedTo.set(a, [])
+      attachedTo.get(a).push(b)
+    }
+    g.edges.forEach((e) => { link(e.source, e.target); link(e.target, e.source) })
 
     // Collectors: anything two or more accounts pay into, biggest first. The
     // searched account is always treated as one so it keeps the middle.
@@ -264,7 +273,8 @@ export default function GraphExplorer() {
     const bridges = []
     g.nodes.forEach((n) => {
       if (hubIds.has(n.id)) return
-      const targets = (paysTo.get(n.id) ?? []).filter((t) => hubIds.has(t))
+      const targets = [...new Set(attachedTo.get(n.id) ?? [])]
+        .filter((t) => hubIds.has(t))
       if (targets.length > 1) bridges.push({ node: n, targets })
       else if (targets.length === 1) groups.get(targets[0]).push(n)
       else (groups.get(hubs[0]?.id) ?? []).push(n)
@@ -493,147 +503,177 @@ export default function GraphExplorer() {
       )}
 
       {!off && demo && (
-        <div className="rounded-xl border p-4"
-             style={{ borderColor: 'rgba(168,85,247,.35)',
-                      background: 'rgba(168,85,247,.05)',
-                      display: 'grid', gap: 18 }}>
+        <section className="rounded-xl border"
+                 style={{ borderColor: 'rgba(168,85,247,.35)',
+                          background: 'rgba(168,85,247,.05)' }}>
+          <div className="grid gap-px md:grid-cols-[1.15fr_1fr]"
+               style={{ background: 'rgba(168,85,247,.18)' }}>
 
-          {/* The claim, and the reason this lives on the graph page. */}
-          <div style={{ display: 'grid', gap: 6 }}>
-            <p className="ds-mono text-[10px] uppercase tracking-wider"
-               style={{ color: 'rgb(var(--ds-faint))' }}>
-              Invent an account the model has never seen
-            </p>
-            <p className="text-[12px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
-              Name an account that does not exist, say who it received from, and
-              score it. It appears in the graph below in violet, placed by the
-              same layout as every other node — next to whoever it transacted
-              with. Change only the sender and score again: the account is
-              identical, so any change in the score came from the company it
-              keeps. That is what inductive means, and it is the one thing a
-              model with a fixed embedding per node cannot do at all.
-            </p>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-4">
-            <label style={{ display: 'grid', gap: 4 }}>
-              <span className="ds-mono text-[10px] uppercase tracking-wider"
-                    style={{ color: 'rgb(var(--ds-faint))' }}>New account</span>
-              <Input value={newAccount} onChange={(e) => setNewAccount(e.target.value)} />
-            </label>
-            <label style={{ display: 'grid', gap: 4 }}>
-              <span className="ds-mono text-[10px] uppercase tracking-wider"
-                    style={{ color: 'rgb(var(--ds-faint))' }}>Received from</span>
-              <Input value={from} onChange={(e) => setFrom(e.target.value)} />
-            </label>
-            <label style={{ display: 'grid', gap: 4 }}>
-              <span className="ds-mono text-[10px] uppercase tracking-wider"
-                    style={{ color: 'rgb(var(--ds-faint))' }}>Amount</span>
-              <Input value={amount} onChange={(e) => setAmount(e.target.value)} />
-            </label>
-            <div className="flex items-end">
-              <Button size="sm" onClick={scoreInvented} loading={scoring}
-                      disabled={!newAccount.trim() || !from.trim()}>
-                Score and place it
-              </Button>
-            </div>
-          </div>
-
-          {runs.length > 0 && (
-            <div style={{ display: 'grid', gap: 6 }}>
-              <div className="flex flex-wrap items-baseline gap-3">
-                <span className="numeric text-[26px] leading-none"
-                      style={{ color: 'rgb(var(--ds-ink))' }}>
-                  {runs[0].score.toFixed(4)}
-                </span>
-                <span className="text-[11px]" style={{ color: 'rgb(var(--ds-muted))' }}>
-                  raw network probability · aggregated from{' '}
-                  {runs[0].accounts.toLocaleString()} accounts
-                </span>
-              </div>
-              {runs.length > 1 && (
-                <p className="text-[11px]"
-                   style={{ color: new Set(runs.map((r) => r.score)).size > 1
-                     ? 'rgb(var(--ds-sev-high))' : 'rgb(var(--ds-muted))' }}>
-                  {new Set(runs.map((r) => r.score)).size > 1
-                    ? `${new Set(runs.map((r) => r.score)).size} different scores across ${runs.length} runs — only the sender changed.`
-                    : 'Same score so far. Try a different sender.'}
+            {/* ── Invent an account ───────────────────────────────────── */}
+            <div className="p-4" style={{ display: 'grid', gap: 12,
+                                          background: 'rgb(var(--ds-surface))',
+                                          alignContent: 'start' }}>
+              <div>
+                <p className="ds-mono text-[10px] uppercase tracking-wider"
+                   style={{ color: 'rgb(var(--ds-faint))' }}>
+                  Invent an account the model has never seen
                 </p>
-              )}
-              <div className="flex flex-wrap gap-x-5 gap-y-1 text-[11px]">
-                {runs.map((r) => (
-                  <span key={r.at} className="numeric"
-                        style={{ color: 'rgb(var(--ds-muted))' }}>
-                    {r.from} → {r.score.toFixed(4)}
-                  </span>
+                <p className="mt-1 text-[11px] leading-relaxed"
+                   style={{ color: 'rgb(var(--ds-muted))' }}>
+                  Change only the sender and score again. The account is
+                  identical, so any change came from the company it keeps.
+                </p>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-3">
+                {[['New account', newAccount, setNewAccount],
+                  ['Received from', from, setFrom],
+                  ['Amount', amount, setAmount]].map(([label, value, set]) => (
+                  <label key={label} style={{ display: 'grid', gap: 3 }}>
+                    <span className="ds-mono text-[9px] uppercase tracking-wider"
+                          style={{ color: 'rgb(var(--ds-faint))' }}>{label}</span>
+                    <Input value={value} onChange={(e) => set(e.target.value)} />
+                  </label>
                 ))}
               </div>
-              <p className="text-[11px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
-                This is the raw network output, not the calibrated score the rest
-                of the platform reports — the isotonic calibrator was never saved
-                as a reusable artefact, so a calibrated number cannot honestly be
-                produced here. These runs are comparable with each other, which
-                is what the demonstration turns on.
-              </p>
-            </div>
-          )}
-
-          {/* A file, through this model and no other. */}
-          <div style={{ display: 'grid', gap: 8 }}>
-            <p className="ds-mono text-[10px] uppercase tracking-wider"
-               style={{ color: 'rgb(var(--ds-faint))' }}>
-              Or score a file through this model alone
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <input ref={fileRef} type="file" accept=".csv,text/csv"
-                     onChange={onDemoFile} className="hidden" />
-              <Button size="sm" variant="secondary" loading={csvBusy}
-                      onClick={() => fileRef.current?.click()}>
-                Upload a CSV
+              <Button size="sm" onClick={scoreInvented} loading={scoring}
+                      disabled={!newAccount.trim() || !from.trim()}>
+                Score and place it in the graph
               </Button>
+
+              {runs.length > 0 && (() => {
+                const top = Math.max(...runs.map((r) => r.score), 0.0001)
+                const spread = new Set(runs.map((r) => r.score)).size
+                return (
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    <div className="flex items-baseline gap-2">
+                      <span className="numeric text-[30px] leading-none"
+                            style={{ color: '#c084fc' }}>
+                        {runs[0].score.toFixed(4)}
+                      </span>
+                      <span className="text-[10px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+                        raw · from {runs[0].accounts.toLocaleString()} accounts
+                      </span>
+                    </div>
+
+                    {/* The comparison, drawn. A panel at the back of the room
+                        reads bar lengths; it does not read four decimals. */}
+                    <div style={{ display: 'grid', gap: 4 }}>
+                      {runs.map((r, i) => (
+                        <div key={r.at} className="flex items-center gap-2">
+                          <span className="numeric w-[92px] shrink-0 truncate text-[10px]"
+                                title={r.from}
+                                style={{ color: 'rgb(var(--ds-muted))' }}>{r.from}</span>
+                          <span className="h-[6px] flex-1 rounded"
+                                style={{ background: 'rgb(var(--ds-line))' }}>
+                            <span className="block h-full rounded"
+                                  style={{ width: `${Math.max(2, (r.score / top) * 100)}%`,
+                                           background: i === 0 ? '#c084fc'
+                                             : 'rgba(168,85,247,.45)' }} />
+                          </span>
+                          <span className="numeric w-[52px] shrink-0 text-right text-[10px]"
+                                style={{ color: 'rgb(var(--ds-ink))' }}>
+                            {r.score.toFixed(4)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {runs.length > 1 && (
+                      <p className="text-[10px]"
+                         style={{ color: spread > 1 ? '#c084fc' : 'rgb(var(--ds-muted))' }}>
+                        {spread > 1
+                          ? `${spread} different scores across ${runs.length} runs — only the sender changed.`
+                          : 'Same score so far. Try a different sender.'}
+                      </p>
+                    )}
+                  </div>
+                )
+              })()}
+            </div>
+
+            {/* ── A file, through this model alone ────────────────────── */}
+            <div className="p-4" style={{ display: 'grid', gap: 10,
+                                          background: 'rgb(var(--ds-surface))',
+                                          alignContent: 'start' }}>
+              <div>
+                <p className="ds-mono text-[10px] uppercase tracking-wider"
+                   style={{ color: 'rgb(var(--ds-faint))' }}>
+                  Or score a file through this model alone
+                </p>
+                <p className="mt-1 text-[11px] leading-relaxed"
+                   style={{ color: 'rgb(var(--ds-muted))' }}>
+                  No fusion, no other detector. Rows whose destination is new are
+                  scored from their neighbourhood instead of looked up.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <input ref={fileRef} type="file" accept=".csv,text/csv"
+                       onChange={onDemoFile} className="hidden" />
+                <Button size="sm" variant="secondary" loading={csvBusy}
+                        onClick={() => fileRef.current?.click()}>
+                  Upload a CSV
+                </Button>
+                {csv && (
+                  <span className="numeric text-[10px]" style={{ color: 'rgb(var(--ds-muted))' }}>
+                    {csv.counts.precomputed} looked up · {csv.counts.inductive} new
+                    · {csv.counts.unscored} not scoreable
+                  </span>
+                )}
+              </div>
+
               {csv && (
-                <span className="numeric text-[11px]" style={{ color: 'rgb(var(--ds-muted))' }}>
-                  {csv.counts.precomputed} looked up · {csv.counts.inductive} scored
-                  from neighbours · {csv.counts.unscored} not scoreable
-                </span>
+                <div style={{ overflow: 'auto', maxHeight: 210 }}>
+                  <table className="w-full text-[10px]" style={{ borderCollapse: 'collapse' }}>
+                    <thead className="sticky top-0"
+                           style={{ background: 'rgb(var(--ds-surface))' }}>
+                      <tr style={{ color: 'rgb(var(--ds-faint))' }}>
+                        {['To', 'Score', 'How'].map((h) => (
+                          <th key={h}
+                              className="ds-mono px-2 py-1 text-left text-[9px] uppercase tracking-wider"
+                              style={{ borderBottom: '1px solid rgb(var(--ds-line))' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {csv.rows.map((r) => (
+                        <tr key={r.row}>
+                          <td className="numeric px-2 py-1"
+                              style={{ color: 'rgb(var(--ds-ink))' }}>{r.nameDest}</td>
+                          <td className="numeric px-2 py-1"
+                              style={{ color: r.score == null ? 'rgb(var(--ds-faint))'
+                                : 'rgb(var(--ds-ink))' }}>
+                            {r.score == null ? '—' : r.score.toFixed(4)}
+                          </td>
+                          <td className="px-2 py-1" style={{
+                            color: r.source === 'inductive' ? '#c084fc'
+                              : 'rgb(var(--ds-muted))' }}>
+                            {r.source === 'precomputed' ? 'in the graph'
+                              : r.source === 'inductive' ? 'new · from neighbours'
+                                : 'not scoreable'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
-            {csv && (
-              <div style={{ overflowX: 'auto', maxHeight: 260 }}>
-                <table className="w-full text-[11px]" style={{ borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ color: 'rgb(var(--ds-faint))' }}>
-                      {['#', 'From', 'To', 'Score', 'How it was scored'].map((h) => (
-                        <th key={h}
-                            className="ds-mono px-2 py-1 text-left text-[10px] uppercase tracking-wider"
-                            style={{ borderBottom: '1px solid rgb(var(--ds-line))' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {csv.rows.map((r) => (
-                      <tr key={r.row}>
-                        <td className="numeric px-2 py-1" style={{ color: 'rgb(var(--ds-faint))' }}>{r.row}</td>
-                        <td className="numeric px-2 py-1" style={{ color: 'rgb(var(--ds-muted))' }}>{r.nameOrig}</td>
-                        <td className="numeric px-2 py-1" style={{ color: 'rgb(var(--ds-ink))' }}>{r.nameDest}</td>
-                        <td className="numeric px-2 py-1" style={{ color: 'rgb(var(--ds-ink))' }}>
-                          {r.score == null ? '—' : r.score.toFixed(4)}
-                        </td>
-                        <td className="px-2 py-1" style={{ color: 'rgb(var(--ds-muted))' }}>
-                          {r.source === 'precomputed' ? 'already in the graph'
-                            : r.source === 'inductive' ? 'new account · from its neighbours'
-                              : (r.note ?? 'not scoreable')}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
-        </div>
-      )}
 
+          {/* The caveat belongs with the numbers, but not above them. */}
+          <p className="px-4 py-2 text-[10px] leading-relaxed"
+             style={{ color: 'rgb(var(--ds-faint))',
+                      borderTop: '1px solid rgba(168,85,247,.18)' }}>
+            Scores here are the raw network output, not the calibrated numbers the
+            rest of the platform reports — the isotonic calibrator was never saved
+            as a reusable artefact. Runs are comparable with each other, which is
+            what the demonstration turns on. Nothing is recorded, alerted on, or
+            written to the graph.
+          </p>
+        </section>
+      )}
       {off ? (
         <Alert tone="warning">
           The graph explorer is switched off.{' '}
