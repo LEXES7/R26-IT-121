@@ -103,6 +103,8 @@ _WINANSI = {
     "\u2026": "\x85",   # ellipsis
     "\u2022": "\x95",   # bullet
     "\u2122": "\x99",   # trademark
+    # Not in WinAnsi at all — spell them rather than let them become "?".
+    "\u2192": "->", "\u2190": "<-", "\u2193": "v", "\u2191": "^",
 }
 
 
@@ -127,12 +129,19 @@ class Document:
     """Accumulates content, flowing onto a new page when the cursor runs out."""
 
     def __init__(self, size=A4, margin: float = 56.0, footer: str = "",
-                 ground=GROUND):
+                 ground=GROUND, rail: float = 0.0, rail_rgb=None):
         self.w, self.h = size
-        self.margin = margin
         self.ground = ground
         self.footer = footer
-        self.col = self.w - 2 * margin
+        # A full-height rail down the left, when a style asks for one. The text
+        # column starts after it, so every existing call — which passes no rail
+        # — lays out exactly as before.
+        self.rail = rail
+        self.rail_rgb = rail_rgb
+        self.margin = margin + rail
+        self.ry = 0.0                 # the rail's own cursor
+        self.col = self.w - self.margin - margin
+        self._edge = margin
         self.pages: list[Page] = []
         self.y = 0.0
         self._new_page()
@@ -146,7 +155,14 @@ class Document:
         r, g, b = self.ground
         self.pages[-1].ops.append(
             f"{r:.3f} {g:.3f} {b:.3f} rg 0 0 {self.w:.2f} {self.h:.2f} re f")
-        self.y = self.h - self.margin
+        if self.rail and self.rail_rgb:
+            # Repainted on every page: a rail that appears only on page one
+            # reads as a header that fell off.
+            rr, rg, rb = self.rail_rgb
+            self.pages[-1].ops.append(
+                f"{rr:.3f} {rg:.3f} {rb:.3f} rg 0 0 {self.rail:.2f} {self.h:.2f} re f")
+        self.y = self.h - self._edge
+        self.ry = self.h - self._edge
 
     def _room(self, need: float) -> None:
         # The running footer is drawn below the margin line, so content may use
@@ -300,6 +316,48 @@ class Document:
             self._txt(line, self.margin, self.y, font, size, rgb)
         self.y -= size * 0.55
 
+    def rail_label(self, text: str, rgb, size: float = 7.5,
+                   gap: float = 4.0) -> None:
+        """A small letterspaced caption in the rail, wrapped to it.
+
+        Letterspacing widens a string beyond what `wrap` measures, so the
+        available width is discounted before wrapping — otherwise a label like
+        "Fused fraud confidence" runs straight out of the rail and across the
+        narrative beside it.
+        """
+        width = (self.rail - self._edge * 1.6) * 0.86
+        for i, line in enumerate(wrap(text.upper(), "Helvetica-Bold", size, width)):
+            self.ry -= size + (gap if i == 0 else 1.0)
+            self._txt(line, self._edge, self.ry, "Helvetica-Bold", size,
+                      rgb, spacing=1.1)
+
+    def rail_value(self, text: str, rgb, size: float = 9.0,
+                   font: str = "Courier", gap: float = 3.0) -> None:
+        """A value in the rail, wrapped to the rail's own width."""
+        width = self.rail - self._edge * 1.6
+        for line in wrap(text, font, size, width):
+            self.ry -= size + gap
+            self._txt(line, self._edge, self.ry, font, size, rgb)
+
+    def rail_hero(self, value: str, unit: str, rgb, accent, track,
+                  filled: float, size: float = 26.0) -> None:
+        """The one number, in the rail, over a single progress bar."""
+        self.ry -= size + 6
+        self._txt(value, self._edge, self.ry, "Helvetica-Bold", size, rgb)
+        self._txt(unit, self._edge + text_width(value, "Helvetica-Bold", size) + 2,
+                  self.ry, "Helvetica", size * 0.44, rgb)
+        self.ry -= 12
+        width = self.rail - self._edge * 1.6
+        self._fill(self._edge, self.ry, width, 3.0, track)
+        if filled > 0:
+            self._fill(self._edge, self.ry, width * max(0.0, min(1.0, filled)),
+                       3.0, accent)
+
+    def rail_rule(self, rgb, gap: float = 13.0) -> None:
+        self.ry -= gap
+        width = self.rail - self._edge * 1.6
+        self._fill(self._edge, self.ry, width, 0.4, rgb)
+
     def meter(self, label: str, value: float, caption: str = "",
               accent=(0.216, 0.478, 0.349), track=WASH, ink=INK,
               muted=MUTED, size: float = 10.0) -> None:
@@ -376,7 +434,7 @@ class Document:
             num = f"{i} / {n_pages}"
             ops.append(
                 f"BT /F1 7.50 Tf 0.62 0.66 0.67 rg "
-                f"{self.w - self.margin - text_width(num, 'Helvetica', 7.5):.2f} "
+                f"{self.w - self._edge - text_width(num, 'Helvetica', 7.5):.2f} "
                 f"{self.margin - 16:.2f} Td ({_esc(num)}) Tj ET"
             )
             stream = zlib.compress("\n".join(ops).encode("latin-1", "replace"))

@@ -1118,7 +1118,8 @@ def _report_pdf(alert: dict, report: str, style: str | None = None) -> bytes:
 
     doc = Document(
         footer="DeepSentinel \u00b7 generated from the record for this transaction",
-        ground=st["ground"])
+        ground=st["ground"],
+        rail=st.get("rail", 0.0), rail_rgb=st.get("header"))
     txid = str(alert["transaction_id"])
     fused = float(alert["fused_score"])
     used = int(alert.get("modalities_used") or 0)
@@ -1129,10 +1130,57 @@ def _report_pdf(alert: dict, report: str, style: str | None = None) -> bytes:
     if st.get("accent"):
         accent = st["accent"]
 
+    # ── the rail, when the style has one ─────────────────────────────────
+    #
+    # Everything here is what a masthead and a hero would otherwise carry: who
+    # produced this, how sure it is, and which accounts it concerns. Putting
+    # them down the side leaves the whole width to the narrative, which is the
+    # part anyone actually reads.
+    if st.get("rail"):
+        RI = st.get("rail_ink", (0.95, 0.96, 0.96))
+        RM = st.get("rail_muted", (0.61, 0.70, 0.65))
+        RT = st.get("rail_track", (0.18, 0.29, 0.23))
+
+        doc.rail_label("Chain-of-evidence", RM, size=7.0, gap=2.0)
+        doc.rail_label("Forensic report", RM, size=7.0, gap=1.0)
+        doc.ry -= 10
+        doc.rail_label(f"{sev} priority", RI, size=7.5, gap=4.0)
+
+        doc.ry -= 12
+        doc.rail_label("Fused fraud confidence", RM)
+        doc.rail_hero(f"{fused * 100:.1f}", "%", RI, accent, RT, fused)
+        doc.ry -= 6
+        doc.rail_value(f"{used} of 3 detectors", RM, size=7.5)
+
+        doc.rail_rule(RT)
+        doc.rail_label("Transaction", RM)
+        doc.rail_value(txid, RI, size=8.0)
+
+        if alert.get("pattern"):
+            doc.rail_rule(RT)
+            doc.rail_label("Type", RM)
+            doc.rail_value(str(alert["pattern"]).replace(" ", "_").upper(), RI, size=8.5)
+
+        if alert.get("amount") is not None:
+            doc.rail_rule(RT)
+            doc.rail_label("Amount", RM)
+            doc.rail_value(f"{float(alert['amount']):,.2f}", RI,
+                           size=13.0, font="Helvetica-Bold")
+
+        if alert.get("from") or alert.get("to"):
+            doc.rail_rule(RT)
+            doc.rail_label("From \u2192 to", RM)
+            doc.rail_value(str(alert.get("from") or "\u2014"), RI, size=8.0)
+            doc.rail_value("\u2193", RM, size=8.0)
+            doc.rail_value(str(alert.get("to") or "\u2014"), RI, size=8.0)
+
+        doc.heading("Suspicious transaction", size=20.0)
+        doc.rule(rgb=P.RULE)
+
     if st["masthead"]:
         doc.masthead("Chain-of-evidence forensic report",
                      "Suspicious transaction", txid, accent, deep=st["header"])
-    else:
+    elif not st.get("rail"):
         doc.band(accent)
         doc.label(f"{sev}  \u00b7  chain-of-evidence forensic report", accent)
         doc.heading(f"Transaction {txid}")
@@ -1155,20 +1203,22 @@ def _report_pdf(alert: dict, report: str, style: str | None = None) -> bytes:
         doc.hero(f"{fused * 100:.1f}", "%", "Fused fraud confidence", accent,
                  segments=12, lit=lit, muted=P.MUTED, ink=P.INK, wash=P.WASH)
         doc.pill(f"{sev}  \u00b7  {used} of 3 detectors", accent, tint)
-    else:
+    elif not st.get("rail"):
         doc.para(
             f"Fused confidence {fused:.4f}  \u00b7  {used} of 3 detectors available",
             size=9.5, font="Courier", rgb=P.MUTED)
 
-    doc.rule(rgb=P.RULE)
-    doc.label("Transaction", P.MUTED)
-    doc.kv([
-        ("Amount", f"{alert['amount']:,.2f}"),
-        ("Originating account", str(alert.get("from") or "\u2014")),
-        ("Collection account", str(alert.get("to") or "\u2014")),
-        ("Pattern", str(alert.get("pattern") or "\u2014").replace("_", " ").title()),
-        ("Sink", str(alert.get("sink_account") or "\u2014")),
-    ])
+    # With a rail, these already appear down the side.
+    if not st.get("rail"):
+        doc.rule(rgb=P.RULE)
+        doc.label("Transaction", P.MUTED)
+        doc.kv([
+            ("Amount", f"{alert['amount']:,.2f}"),
+            ("Originating account", str(alert.get("from") or "\u2014")),
+            ("Collection account", str(alert.get("to") or "\u2014")),
+            ("Pattern", str(alert.get("pattern") or "\u2014").replace("_", " ").title()),
+            ("Sink", str(alert.get("sink_account") or "\u2014")),
+        ])
 
     scores = alert.get("scores") or {}
     if scores:
