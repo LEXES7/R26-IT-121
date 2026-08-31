@@ -1067,6 +1067,78 @@ async def graph_neighbourhood(
     return r.json()
 
 
+@app.post("/graph/demo/score-account", tags=["graph"])
+async def graph_demo_score_account(
+    body: dict,
+    user: User = Depends(require_any_user),
+):
+    """Score an account the relational model has never seen.
+
+    Demo surface, and deliberately separate from /analyze. The platform's
+    normal path answers about transactions between accounts the snapshot
+    already contains; this one exists to show the thing that path cannot show —
+    that an account which did not exist at training time still gets a real
+    embedding, aggregated from whoever it is attached to.
+
+    Only the relational detector runs. No fusion, no other modality, no
+    alerting, nothing written to a case. What is on screen is attributable to
+    one model.
+    """
+    import httpx
+
+    base = str(config.get("upstream", "graph_api_base")).rstrip("/")
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            r = await client.post(f"{base}/api/graph/demo/score-account", json=body)
+    except Exception as exc:                            # noqa: BLE001
+        raise HTTPException(
+            502, f"The network detector did not answer: {type(exc).__name__}"
+        ) from exc
+    if r.status_code >= 400:
+        # Pass the detector's own explanation through. These are the messages
+        # that say which counterparties it could not find, and replacing them
+        # with a generic 502 is what makes a demo impossible to debug on stage.
+        try:
+            detail = r.json()
+        except Exception:                               # noqa: BLE001
+            detail = {"message": r.text[:200]}
+        raise HTTPException(r.status_code if r.status_code < 500 else 502,
+                            detail.get("message", "The detector refused."))
+    return r.json()
+
+
+@app.post("/graph/demo/score-csv", tags=["graph"])
+async def graph_demo_score_csv(
+    file: UploadFile = File(...),
+    user: User = Depends(require_any_user),
+):
+    """Run a CSV through the relational model and nothing else."""
+    import httpx
+
+    base = str(config.get("upstream", "graph_api_base")).rstrip("/")
+    raw = await file.read()
+    if len(raw) > 4_000_000:
+        raise HTTPException(413, "That file is larger than the 4 MB demo limit.")
+    try:
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            r = await client.post(
+                f"{base}/api/graph/demo/score-csv",
+                files={"file": (file.filename or "demo.csv", raw, "text/csv")},
+            )
+    except Exception as exc:                            # noqa: BLE001
+        raise HTTPException(
+            502, f"The network detector did not answer: {type(exc).__name__}"
+        ) from exc
+    if r.status_code >= 400:
+        try:
+            detail = r.json()
+        except Exception:                               # noqa: BLE001
+            detail = {"message": r.text[:200]}
+        raise HTTPException(r.status_code if r.status_code < 500 else 502,
+                            detail.get("message", "The detector refused."))
+    return r.json()
+
+
 @app.get("/graph/settings", tags=["graph"])
 async def get_graph_settings(user: User = Depends(require_any_user)):
     """Whether the explorer is on, and how far it may reach. Readable by anyone

@@ -45,6 +45,7 @@ const I = {
   close: 'M18 6 6 18M6 6l12 12',
   out: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14 5-5-5-5m5 5H9',
   shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z',
+  flask: 'M9 3h6M10 3v6l-5.6 9.4A2 2 0 0 0 6.1 21h11.8a2 2 0 0 0 1.7-2.6L14 9V3M7.5 15h9',
   // A distribution with one point out in the tail — what the
   // behavioural model is looking for.
   curve: 'M3 18c3 0 4-12 7-12s4 12 7 12M20 8v.01',
@@ -80,6 +81,7 @@ const ADMIN_NAV = [
     ['/monitor', 'Live monitor', I.activity],
     ['/models', 'Detectors', I.network],
     ['/graph', 'Graph explorer', I.graph],
+    ['/graph/demo', 'Demo mode', I.flask],
   ]],
   ['Detectors', [
     ['/lab/behaviour', 'Behaviour', I.curve],
@@ -101,6 +103,7 @@ const OPS_NAV = [
     ['/monitor', 'Live monitor', I.activity],
     ['/analyzer', 'Analyzer', I.search],
     ['/graph', 'Graph explorer', I.graph],
+    ['/graph/demo', 'Demo mode', I.flask],
   ]],
   ['Detectors', [
     ['/lab/behaviour', 'Behaviour', I.curve],
@@ -120,6 +123,17 @@ const OPS_NAV = [
     ['/account', 'Account', I.settings],
   ]],
 ]
+
+/* An entry that is the prefix of another ('/graph' vs '/graph/demo') has to
+   match exactly, or landing on the child lights up the parent as well. Derived
+   from the tables rather than listed by hand, so adding a child route later
+   cannot quietly reintroduce the double highlight. */
+const PARENT_ROUTES = new Set(
+  [ADMIN_NAV, OPS_NAV].flatMap((nav) => {
+    const paths = nav.flatMap(([, items]) => items.map(([to]) => to))
+    return paths.filter((a) => paths.some((b) => b !== a && b.startsWith(`${a}/`)))
+  }),
+)
 
 export default function ConsoleShell({ eyebrow, title, subtitle, actions, children }) {
   const { user, signOut, isAdmin } = useAuth()
@@ -173,7 +187,7 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
                 <div className="ds-nav-label">{label}</div>
                 {items.map(([to, text, d]) => (
                   <NavLink
-                    key={to} to={to} end={to === '/'}
+                    key={to} to={to} end={to === '/' || PARENT_ROUTES.has(to)}
                     onClick={() => setOpen(false)}
                     // Administration owns four routes; its entry stays lit on
                     // all of them, not only the one it links to.

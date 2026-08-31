@@ -211,6 +211,22 @@ export const getStoredTransaction = (transactionId) =>
     .then((r) => r.data)
 
 /** Run one detector alone and return exactly what it said. */
+/* Demo mode — the relational model on its own.
+ *
+ * Separate from every other scoring call in this file because it deliberately
+ * does not fuse: one detector answers, and what is on screen is attributable
+ * to that detector alone. Used for showing the model's inductive behaviour,
+ * not for deciding anything. */
+export const demoScoreAccount = (account, transactions) =>
+  client.post('/graph/demo/score-account', { account, transactions })
+    .then((r) => r.data)
+
+export const demoScoreCsv = (file) => {
+  const body = new FormData()
+  body.append('file', file)
+  return client.post('/graph/demo/score-csv', body).then((r) => r.data)
+}
+
 export const scoreOneDetector = (name, transaction) =>
   client.post(`/detectors/${name}`, { transaction }).then((r) => r.data)
 
