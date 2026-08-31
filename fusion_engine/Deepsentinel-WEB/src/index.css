@@ -1503,3 +1503,149 @@ html.theme-transition * {
 @keyframes reveal-word {
   to { opacity: 1; filter: blur(0); }
 }
+
+/* ── the navigation bar as liquid glass ──────────────────────────────
+   It floats rather than sitting flush. An edge-to-edge bar reads as chrome
+   bolted to the top of the window; a detached pane with the page sliding
+   under it is what makes the material legible as glass at all — you can see
+   it has edges, and see through them.
+
+   .liquid does the pane, the refracting rim and the pointer highlight. What
+   is added here is only the shape and the behaviour on scroll. */
+.nav-liquid {
+  position: sticky;
+  top: 12px;
+  z-index: 50;
+  margin: 12px auto 0;
+  width: calc(100% - 24px);
+  max-width: 88rem;
+  border-radius: 18px;
+  transition: top .35s var(--ease-hover), width .35s var(--ease-hover),
+              border-radius .35s var(--ease-hover), box-shadow .35s var(--ease-hover);
+}
+/* Once the page has moved, the bar tightens and lifts — a small acknowledgement
+   that it is now floating over content rather than sitting at the top of it. */
+.nav-liquid[data-scrolled='true'] {
+  top: 8px;
+  width: calc(100% - 40px);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.16),
+    0 18px 46px -18px rgb(0 0 0 / 0.7);
+}
+
+/* The pill that slides between links. One element that moves, rather than a
+   background on each link: the movement is what ties the items together. */
+.nav-pill {
+  position: absolute;
+  top: 50%;
+  height: 32px;
+  translate: 0 -50%;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.09);
+  border: 1px solid rgb(255 255 255 / 0.10);
+  pointer-events: none;
+  opacity: 0;
+  transition: left .38s var(--ease-hover), width .38s var(--ease-hover),
+              opacity .25s ease;
+}
+.nav-pill[data-on='true'] { opacity: 1; }
+[data-theme='light'] .nav-pill {
+  background: rgb(16 30 40 / 0.06);
+  border-color: rgb(16 30 40 / 0.08);
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-liquid, .nav-pill { transition: none; }
+}
+
+/* ── shader buttons ───────────────────────────────────────────────────
+   The look of a fragment shader without one: layered conic and radial
+   gradients rotating behind the label, a fine grain over the top, and a
+   specular sweep on hover.
+
+   Done in CSS rather than WebGL on purpose. A canvas per button costs a GL
+   context each and keeps a rAF loop alive for something decorative — on a
+   machine already running five services and a 3.3M-node graph, that is a
+   bad trade for a gradient. This composites on the GPU and stops when the
+   pointer leaves.
+
+   @property is what makes the rotation smooth: an unregistered custom
+   property animates as a discrete swap, so the gradient would jump between
+   frames. Where it is unsupported the angle simply holds and the button is
+   a still gradient, which is a fine button. */
+@property --shader-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.btn-shader {
+  position: relative;
+  isolation: isolate;
+  /* The sweep travels from -130% to +130%, so without this it paints outside
+     the button and slides a white band across whatever sits beside it —
+     which reads as neighbouring elements glitching, not as this one animating. */
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  color: #05261a;
+  background:
+    conic-gradient(from var(--shader-angle) at 30% 110%,
+      /* The gradient turns, so the label passes over every stop — the
+         darkest one therefore sets the contrast, not the average. emerald-600
+         measured 4.29:1 against this ink and was raised until the whole ramp
+         clears 4.5:1. */
+      rgb(16 185 129) 0deg,     /* emerald      6.4:1 */
+      rgb(52 211 153) 80deg,    /* spring green 8.4:1 */
+      rgb(163 230 53) 150deg,   /* lime        10.7:1 */
+      rgb(34 197 138) 240deg,
+      rgb(16 185 129) 360deg);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 8px 26px -10px rgb(16 185 129 / 0.55);
+  animation: shader-drift 9s linear infinite;
+  transition: box-shadow .35s var(--ease-hover), transform .35s var(--ease-hover);
+}
+@keyframes shader-drift { to { --shader-angle: 360deg; } }
+
+/* Grain. A pure gradient reads as plastic; the speckle is what makes it read
+   as a material with a surface. */
+.btn-shader::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  /* Plain white speckle rather than an overlay blend. `mix-blend-mode` on a
+     pseudo-element inside `isolation: isolate` renders as a grey haze in
+     Safari, which greyed the button instead of texturing it. */
+  opacity: .10;
+  background-image: radial-gradient(rgb(255 255 255 / .8) .5px, transparent .5px);
+  background-size: 3px 3px;
+}
+
+/* The sweep, on hover only. */
+.btn-shader::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  transform: translateX(-130%);
+  background: linear-gradient(105deg,
+    transparent 32%, rgb(255 255 255 / .55) 50%, transparent 68%);
+}
+.btn-shader:hover { transform: translateY(-1px); box-shadow:
+  inset 0 1px 0 rgb(255 255 255 / 0.45),
+  0 14px 34px -12px rgb(16 185 129 / 0.7); }
+.btn-shader:hover::after { animation: shader-sweep .85s ease-out; }
+@keyframes shader-sweep { to { transform: translateX(130%); } }
+
+.btn-shader:disabled { animation-play-state: paused; filter: saturate(.5); }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-shader { animation: none; transition: none; }
+  .btn-shader:hover { transform: none; }
+  .btn-shader:hover::after { animation: none; }
+}
+

@@ -164,6 +164,10 @@ export const getSampleTransaction = () =>
 // Which commercial package this deployment holds, and which features it
 // unlocks. Detection, fusion, alerting and monitoring are never gated.
 
+/** The public price list. No auth — it is what an unsigned-in visitor reads. */
+export const getCatalogue = () =>
+  client.get('/packages/catalogue').then((r) => r.data)
+
 export const getPackage = () => client.get('/packages').then((r) => r.data)
 
 export const setPackage = (pkg) =>

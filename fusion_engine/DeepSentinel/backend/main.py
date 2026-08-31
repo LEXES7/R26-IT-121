@@ -1189,8 +1189,13 @@ async def analysis_report_pdf(
     """
     from fastapi.responses import Response
 
-    from backend import report_styles, sar
+    from backend import packages, report_styles, sar
     from monitor.engine import _report_pdf
+
+    # Same gate as the endpoint that returns this narrative as text. Without it
+    # the licence check was bypassable by asking for the PDF instead of the
+    # JSON — the paid feature handed over in a different content type.
+    packages.require("forensic_report")
 
     if style is not None and style not in report_styles.STYLES:
         raise HTTPException(404, f"No report style named {style!r}.")
@@ -1238,6 +1243,21 @@ async def analysis_report_pdf(
         content=pdf, media_type="application/pdf",
         headers={"Content-Disposition":
                  f'attachment; filename="deepsentinel-report-{stamp}.pdf"'})
+
+
+@app.get("/packages/catalogue", tags=["packages"])
+async def packages_catalogue():
+    """The plans as a buyer sees them.
+
+    Unauthenticated on purpose — it is the public pricing page's data, and a
+    price list nobody can read before signing up is not a price list.
+
+    Built from the same tables the gate enforces, so the website cannot end up
+    advertising a feature the software does not actually unlock.
+    """
+    from backend import packages
+
+    return packages.catalogue()
 
 
 @app.get("/report-styles", tags=["report"])

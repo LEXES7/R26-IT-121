@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { getMonitorRuntime } from '../services/api'
+import DotClock from './DotClock'
 
 /**
  * The signed-in application shell.
@@ -135,6 +136,10 @@ const PARENT_ROUTES = new Set(
 /* Every path the signed-in console owns, taken from the tables above.
    App.jsx uses this to decide whether to render the public header; keeping a
    second list by hand is what put the marketing nav on top of the console. */
+/* Pages that get left open on a second screen, where the time is worth having
+   in the chrome. Everywhere else it is furniture. */
+const WATCHED = new Set(['/', '/monitor'])
+
 export const CONSOLE_PATHS = [...new Set(
   [ADMIN_NAV, OPS_NAV].flatMap((nav) => nav.flatMap(([, items]) => items.map(([to]) => to))),
 )].filter((p) => p !== '/')
@@ -238,6 +243,9 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
                       aria-label="Toggle navigation">
                 <Icon d={open ? I.close : I.menu} />
               </button>
+              {WATCHED.has(pathname) && (
+                <DotClock className="mr-1 hidden sm:flex" />
+              )}
               <button className="ds-icon-btn" onClick={toggle}
                       aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
                 <Icon d={theme === 'dark' ? I.sun : I.moon} />

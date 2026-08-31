@@ -1,30 +1,34 @@
+import { useTheme } from '../context/ThemeContext'
+import markDark from '../assets/deepsentinel-logo.png'
+import markLight from '../assets/deepsentinel-logo-light.png'
+
 /**
  * Wordmark.
  *
- * The glyph is a shield built from three converging strokes — the three
- * detectors resolving into one verdict, which is the whole product in one
- * mark. Drawn as SVG rather than set as "DS" in a gradient box so it stays
- * crisp at any size and inherits the theme.
+ * The mark is a supplied image rather than the SVG this used to draw, so the
+ * artwork is whatever the brand file says it is.
+ *
+ * Two files, swapped on theme. The supplied artwork is navy line-work on a
+ * near-white plate, which disappears on a near-black ground — so the dark
+ * variant drops the plate to transparent and lifts the line-work, leaving the
+ * drawing itself. Tinting one file with a CSS filter would have flattened the
+ * inner detail; two files keep it.
  */
 export default function Logo({ className = '', showWord = true }) {
+  const { theme } = useTheme()
+  const mark = theme === 'light' ? markDark : markLight
+
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
-      <svg viewBox="0 0 32 32" className="h-8 w-8 shrink-0" aria-hidden>
-        <path
-          d="M16 3 5 7v9.2C5 22.6 9.6 27.6 16 29c6.4-1.4 11-6.4 11-12.8V7Z"
-          className="fill-accent-500/10 stroke-accent-500"
-          strokeWidth="1.6"
-        />
-        {/* Three signals converging on a single point */}
-        <path
-          d="M10.5 11.5 16 17M21.5 11.5 16 17M16 9.5V17"
-          className="stroke-accent-500"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          fill="none"
-        />
-        <circle cx="16" cy="18.6" r="2.1" className="fill-accent-500" />
-      </svg>
+      <img
+        src={mark}
+        alt=""
+        aria-hidden
+        width={32}
+        height={32}
+        className="h-8 w-8 shrink-0 select-none object-contain"
+        draggable={false}
+      />
       {showWord && (
         <span className="hidden text-base font-semibold tracking-tight text-slate-200 sm:block">
           Deep<span className="text-accent-500">Sentinel</span>
