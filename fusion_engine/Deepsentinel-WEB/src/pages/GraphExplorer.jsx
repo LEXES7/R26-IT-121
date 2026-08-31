@@ -86,6 +86,7 @@ export default function GraphExplorer() {
    * directly, because the draw effect already depends on `view`; a second
    * path into the canvas would be two sources of truth for where we are. */
   const tweenRef = useRef(0)
+  const viewRef = useRef({ x: 0, y: 0, z: 1 })
   const glideTo = useCallback((target, ms = 620) => {
     cancelAnimationFrame(tweenRef.current)
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
@@ -155,13 +156,13 @@ export default function GraphExplorer() {
         setView((v) => ({ ...v, x: v.x + dx, y: v.y + dy }))
       } else if (e.key === '+' || e.key === '=') {
         e.preventDefault()
-        setView((v) => ({ ...v, z: Math.min(3, v.z * 1.18) }))
+        glideTo({ z: Math.min(3, viewRef.current.z * 1.35) }, 320)
       } else if (e.key === '-' || e.key === '_') {
         e.preventDefault()
-        setView((v) => ({ ...v, z: Math.max(0.35, v.z / 1.18) }))
+        glideTo({ z: Math.max(0.35, viewRef.current.z / 1.35) }, 320)
       } else if (e.key === '0') {
         e.preventDefault()
-        setView({ x: 0, y: 0, z: 1 })
+        glideTo({ x: 0, y: 0, z: 1 }, 460)
       }
     }
     el.addEventListener('keydown', onKey)
@@ -169,7 +170,7 @@ export default function GraphExplorer() {
     // Re-run when the explorer opens: the frame does not exist while it is
     // closed, so binding once on mount would attach to nothing and the arrow
     // keys would silently do nothing for the rest of the session.
-  }, [expanded])
+  }, [expanded, glideTo])
 
   useEffect(() => {
     getGraphSettings().then(setSettings).catch(() => setSettings({ enabled: true }))
@@ -310,6 +311,36 @@ export default function GraphExplorer() {
     return ((h >>> 0) % 10000) / 10000        // 0..1
   }
 
+  /* A starfield with depth, tiled so it never runs out.
+   *
+   * The old field was 150 specks painted in screen space: they did not move
+   * when you panned and did not spread when you zoomed, so the graph slid
+   * across a fixed backdrop and the zoom felt like scaling a picture.
+   *
+   * Three layers at different depths fix that. A layer at depth d takes only
+   * d of the pan and d of the zoom, so the near field slides past quickly
+   * while the far field barely stirs — the parallax the eye reads as distance.
+   * Positions are modulo a tile, so panning any distance keeps finding stars
+   * instead of running off the edge of a generated patch. */
+  const starsRef = useRef(null)
+  const stars = (() => {
+    if (starsRef.current) return starsRef.current
+    let seed = 7
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff)
+    const layers = [
+      { depth: 0.14, n: 190, size: 0.9, alpha: 0.20 },   // far, almost fixed
+      { depth: 0.42, n: 110, size: 1.3, alpha: 0.34 },
+      { depth: 0.78, n: 46, size: 2.0, alpha: 0.52 },    // near, races past
+    ].map((L) => ({
+      ...L,
+      pts: Array.from({ length: L.n }, () => ({
+        x: rnd(), y: rnd(), r: 0.3 + rnd() * L.size, a: 0.05 + rnd() * L.alpha,
+      })),
+    }))
+    starsRef.current = layers
+    return layers
+  })()
+
   const layout = useCallback((g, vw, vh) => {
     const W = vw * WORLD
     const H = vh * WORLD
@@ -444,20 +475,39 @@ export default function GraphExplorer() {
     layoutRef.current = []
 
     // Ground: a deep teal wash, brightest behind the centre.
-    const bg = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.7)
+    const bg = ctx.createRadialGradient(
+      W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.7 * (0.62 + view.z * 0.5))
     bg.addColorStop(0, '#0b2430')
     bg.addColorStop(1, '#05121a')
     ctx.fillStyle = bg
     ctx.fillRect(0, 0, W, H)
 
-    // Distant specks. Seeded, so they do not crawl between renders.
-    let seed = 7
-    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff)
-    for (let i = 0; i < 150; i += 1) {
-      const x = rnd() * W; const y = rnd() * H; const r = rnd() * 1.1 + 0.3
-      ctx.fillStyle = `rgba(180,235,255,${0.05 + rnd() * 0.22})`
-      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill()
-    }
+    // The field, one layer at a time, each taking its own share of the view.
+    const TW = W * 1.6
+    const TH = H * 1.6
+    stars.forEach(({ depth, pts }) => {
+      // A layer only feels `depth` of the zoom, so the near field spreads
+      // fast and the far field holds — which is what makes moving in read as
+      // travelling rather than as scaling.
+      const z = 1 + (view.z - 1) * depth
+      const px = view.x * depth
+      const py = view.y * depth
+      for (let i = 0; i < pts.length; i += 1) {
+        const p = pts[i]
+        // Tile, so panning keeps finding stars instead of leaving a void.
+        let x = (p.x * TW + px) % TW
+        let y = (p.y * TH + py) % TH
+        if (x < 0) x += TW
+        if (y < 0) y += TH
+        const sx = W / 2 + (x - TW / 2) * z
+        const sy = H / 2 + (y - TH / 2) * z
+        if (sx < -8 || sx > W + 8 || sy < -8 || sy > H + 8) continue
+        ctx.fillStyle = `rgba(180,235,255,${p.a})`
+        ctx.beginPath()
+        ctx.arc(sx, sy, p.r * (0.7 + z * 0.4), 0, Math.PI * 2)
+        ctx.fill()
+      }
+    })
     if (!graph) return
 
     // Everything after this is drawn in world space; the viewer's pan and zoom
@@ -588,6 +638,8 @@ export default function GraphExplorer() {
     return layoutRef.current.find(
       (p) => (w.x - p.x) ** 2 + (w.y - p.y) ** 2 <= (p.r + slack) ** 2) ?? null
   }
+
+  viewRef.current = view
 
   const counts = graph?.counts
   const off = settings && settings.enabled === false
