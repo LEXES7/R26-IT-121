@@ -150,11 +150,11 @@ export default function Pricing() {
                     {p.tagline}
                   </p>
 
-                  <p className="mt-5">
-                    <span className="text-[34px] font-bold tracking-tight">{p.price}</span>
-                    <span className="ml-2 text-[14px]" style={{ color: 'rgb(var(--ds-faint))' }}>
-                      {p.unit}
-                    </span>
+                  <p className="mt-5 text-[34px] font-bold leading-none tracking-tight">
+                    {p.price}
+                  </p>
+                  <p className="mt-2 text-[14px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+                    {p.unit}
                   </p>
                   <p className="mt-1 text-[14px]" style={{ color: 'rgb(var(--ds-muted))' }}>
                     {p.volume}
@@ -167,9 +167,12 @@ export default function Pricing() {
                       </li>
                     )}
                     {added.length === 0 ? (
-                      <li className="text-[15px]" style={{ color: 'rgb(var(--ds-muted))' }}>
-                        The whole screening pipeline, with nothing removed.
-                      </li>
+                      p.features.filter((f) => f.always_included).map((f) => (
+                        <li key={f.key} className="flex gap-2 text-[15px]"
+                            style={{ color: 'rgb(var(--ds-muted))' }}>
+                          <span style={{ color: 'rgb(var(--ds-accent))' }}>✓</span>{f.label}
+                        </li>
+                      ))
                     ) : added.map((f) => (
                       <li key={f.key} className="flex gap-2 text-[15px]"
                           style={{ color: 'rgb(var(--ds-muted))' }}>
@@ -179,7 +182,7 @@ export default function Pricing() {
                   </ul>
 
                   <Link to="/request-access"
-                        className="btn-shader mt-6 rounded-lg px-4 py-2.5 text-center text-[15px]">
+                        className="btn-shader mt-6 block w-full rounded-lg px-4 py-2.5 text-center text-[15px]">
                     {p.id === 'enterprise' ? 'Talk to us' : 'Request access'}
                   </Link>
                   <p className="mt-2 text-center text-[13px]"

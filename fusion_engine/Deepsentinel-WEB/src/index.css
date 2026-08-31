@@ -1616,9 +1616,11 @@ html.theme-transition * {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  opacity: .16;
-  mix-blend-mode: overlay;
-  background-image: radial-gradient(rgb(255 255 255 / .9) .5px, transparent .5px);
+  /* Plain white speckle rather than an overlay blend. `mix-blend-mode` on a
+     pseudo-element inside `isolation: isolate` renders as a grey haze in
+     Safari, which greyed the button instead of texturing it. */
+  opacity: .10;
+  background-image: radial-gradient(rgb(255 255 255 / .8) .5px, transparent .5px);
   background-size: 3px 3px;
 }
 
