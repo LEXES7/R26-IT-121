@@ -152,7 +152,7 @@ export default function ModalityVerdict({ c }) {
     <section>
       <div className="hair-b flex flex-wrap items-baseline gap-3 pb-2.5">
         <h2 className="text-sm font-semibold text-slate-100">How the verdict was reached</h2>
-        <span className="text-[13px] text-slate-500">
+        <span className="text-[15px] text-slate-500">
           three detectors, one number
         </span>
       </div>
@@ -172,7 +172,7 @@ export default function ModalityVerdict({ c }) {
               className="absolute top-0 h-10 w-px bg-slate-300"
               style={{ left: `${Math.min(100, Math.max(0, fused * 100))}%` }}
             >
-              <span className="numeric absolute -top-0.5 left-1.5 whitespace-nowrap text-[12px] text-slate-300">
+              <span className="numeric absolute -top-0.5 left-1.5 whitespace-nowrap text-[14px] text-slate-300">
                 fused {fmt(fused, 3)}
               </span>
             </div>
@@ -193,8 +193,8 @@ export default function ModalityVerdict({ c }) {
         </div>
 
         <div className="flex justify-between">
-          <span className="numeric text-[12px] text-slate-600">0.0</span>
-          <span className="numeric text-[12px] text-slate-600">1.0</span>
+          <span className="numeric text-[14px] text-slate-600">0.0</span>
+          <span className="numeric text-[14px] text-slate-600">1.0</span>
         </div>
       </div>
 
@@ -232,7 +232,7 @@ export default function ModalityVerdict({ c }) {
       {/* How much evidence stands behind that number. The amount of the
           adjustment is the fusion's to state, not this panel's to re-derive —
           only the fact of it, and which way it runs, are read from the case. */}
-      <p className="mt-3 text-[13px] leading-relaxed text-slate-500">
+      <p className="mt-3 text-[15px] leading-relaxed text-slate-500">
         {shrunk ? (
           <>
             Built from <span className="text-slate-300">{used} of 3</span> detectors.
@@ -267,7 +267,7 @@ function Line({ label, hue, value, muted, note }) {
       </dt>
 
       {note && (
-        <span className="truncate text-[12px] text-slate-600">{note}</span>
+        <span className="truncate text-[14px] text-slate-600">{note}</span>
       )}
 
       <dd

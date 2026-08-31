@@ -232,7 +232,7 @@ export default function Monitor() {
                 </span>
                 {!running ? 'Stopped' : paused ? 'Paused' : 'Monitoring'}
               </p>
-              <p className="mt-1 text-[13px] text-slate-500">
+              <p className="mt-1 text-[15px] text-slate-500">
                 {snap?.source === 'queue' ? 'ingested traffic' : running ? 'sample replay' : 'idle'}
               </p>
             </div>
@@ -242,7 +242,7 @@ export default function Monitor() {
                 are hidden here as a courtesy; require_admin on the monitor
                 routes is what actually enforces it. */}
             {!canControlPipeline ? (
-              <p className="max-w-[15rem] text-right text-[13px] leading-relaxed text-slate-500">
+              <p className="max-w-[15rem] text-right text-[15px] leading-relaxed text-slate-500">
                 Screening is controlled by an administrator.
               </p>
             ) : !running ? (
@@ -289,7 +289,7 @@ export default function Monitor() {
       <section className="mt-8">
         <div className="hair-b flex items-baseline justify-between pb-2.5">
           <h2 className="text-sm font-semibold text-slate-100">The pipeline, right now</h2>
-          <span className="text-[13px] text-slate-500">
+          <span className="text-[15px] text-slate-500">
             lit as each stage runs
           </span>
         </div>
@@ -307,7 +307,7 @@ export default function Monitor() {
             <div className="hair-b flex items-baseline justify-between gap-4 pb-2.5">
               <h2 className="text-sm font-semibold text-slate-100">Open alerts</h2>
               <div className="flex items-baseline gap-4">
-                <span className="text-[13px] text-slate-500">fused verdict ≥ medium</span>
+                <span className="text-[15px] text-slate-500">fused verdict ≥ medium</span>
                 {/* Administrators only: this list is shared, so clearing it
                     empties what every other dashboard is looking at. Two
                     clicks, because there is no undo — though nothing is lost
@@ -317,7 +317,7 @@ export default function Monitor() {
                     onClick={clearBoard}
                     disabled={busy}
                     className={cx(
-                      'shrink-0 text-[13px] transition-colors disabled:opacity-50',
+                      'shrink-0 text-[15px] transition-colors disabled:opacity-50',
                       confirmClear
                         ? 'font-medium text-risk-high'
                         : 'text-slate-500 hover:text-slate-300',
@@ -358,11 +358,11 @@ export default function Monitor() {
                     {canManageAlerts ? (
                       <Detectors alert={a} />
                     ) : (
-                      <span className="numeric hidden shrink-0 text-[13px] text-slate-600 sm:block">
+                      <span className="numeric hidden shrink-0 text-[15px] text-slate-600 sm:block">
                         graph {score3(a.graph_score)} · {a.modalities_used}/3
                       </span>
                     )}
-                    <span className="numeric w-24 shrink-0 text-right text-[13px] text-slate-500">
+                    <span className="numeric w-24 shrink-0 text-right text-[15px] text-slate-500">
                       {money(a.amount)}
                     </span>
                   </div>
@@ -375,7 +375,7 @@ export default function Monitor() {
           <section>
             <div className="hair-b flex items-baseline justify-between pb-2.5">
               <h2 className="text-sm font-semibold text-slate-100">Activity</h2>
-              <span className="text-[13px] text-slate-500">newest first · from the event stream</span>
+              <span className="text-[15px] text-slate-500">newest first · from the event stream</span>
             </div>
 
             <ul className="mt-2 max-h-[28rem] overflow-y-auto">
@@ -387,7 +387,7 @@ export default function Monitor() {
               {feed.map((e, i) => (
                 <li
                   key={`${e.transaction_id ?? e.kind}-${e.at}-${i}`}
-                  className="numeric flex items-baseline gap-3 py-1 text-[13px]"
+                  className="numeric flex items-baseline gap-3 py-1 text-[15px]"
                 >
                   <span
                     className={cx(
@@ -426,7 +426,7 @@ export default function Monitor() {
 
           <section>
             <h3 className="text-xs font-semibold text-slate-200">Fusion</h3>
-            <p className="mt-2 text-[13px] leading-relaxed text-slate-500">
+            <p className="mt-2 text-[15px] leading-relaxed text-slate-500">
               {runtime?.monitor?.fusion
                 ? <>Strategy <span className="numeric text-slate-300">{runtime.monitor.fusion}</span>.</>
                 : 'Strategy unavailable.'}{' '}
@@ -454,7 +454,7 @@ export default function Monitor() {
                 </Link>
               ))}
             </div>
-            <p className="mt-3 text-[12px] leading-relaxed text-slate-600">
+            <p className="mt-3 text-[14px] leading-relaxed text-slate-600">
               The assistant reads this same live state.
             </p>
           </section>
@@ -487,7 +487,7 @@ function Detectors({ alert }) {
   const driver = alert.driver
 
   return (
-    <span className="hidden shrink-0 items-center gap-3 text-[13px] sm:flex">
+    <span className="hidden shrink-0 items-center gap-3 text-[15px] sm:flex">
       {DETECTORS.map(([key, label]) => {
         const v = scores[key]
         const absent = v === null || v === undefined
@@ -525,7 +525,7 @@ function Figure({ value, label, note, suffix, accent, urgent }) {
         {suffix && typeof value === 'number' && <span className="text-slate-600">{suffix}</span>}
       </dd>
       <dt className="eyebrow mt-2 text-slate-500">{label}</dt>
-      {note && <p className="mt-1 text-[12px] text-slate-600">{note}</p>}
+      {note && <p className="mt-1 text-[14px] text-slate-600">{note}</p>}
     </div>
   )
 }

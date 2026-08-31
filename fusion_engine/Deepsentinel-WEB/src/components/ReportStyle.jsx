@@ -128,12 +128,12 @@ export default function ReportStyle() {
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-sm font-medium text-slate-100">{s.label}</span>
                   {inUse && (
-                    <span className="numeric shrink-0 text-[12px] uppercase tracking-wider text-accent-400">
+                    <span className="numeric shrink-0 text-[14px] uppercase tracking-wider text-accent-400">
                       in use
                     </span>
                   )}
                 </div>
-                <p className="mt-1 text-[13px] leading-relaxed text-slate-500">{s.blurb}</p>
+                <p className="mt-1 text-[15px] leading-relaxed text-slate-500">{s.blurb}</p>
                 {canManageAlerts && !inUse && (
                   <span
                     role="button"
@@ -144,7 +144,7 @@ export default function ReportStyle() {
                         e.preventDefault(); e.stopPropagation(); if (!busy) pick(s.name)
                       }
                     }}
-                    className="mt-2 inline-block text-[13px] text-slate-300 underline
+                    className="mt-2 inline-block text-[15px] text-slate-300 underline
                                decoration-slate-600 underline-offset-2 hover:text-slate-100"
                   >
                     {busy ? 'Applying…' : 'Use this one'}
@@ -185,7 +185,7 @@ export default function ReportStyle() {
         </div>
       </div>
 
-      <p className="text-[13px] text-slate-500">
+      <p className="text-[15px] text-slate-500">
         This is the real PDF, produced by the same code that builds the
         attachment — not a mock-up of it.
       </p>

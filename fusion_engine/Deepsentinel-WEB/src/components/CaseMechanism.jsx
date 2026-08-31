@@ -36,15 +36,15 @@ function MechanismPanel({ lens, status, children }) {
           style={{ background: `rgb(${lens.hue})` }}
         />
         <h3 className="text-xs font-semibold text-slate-200">{lens.axis}</h3>
-        <span className={cx('ml-auto text-[12px]', s.tone)}>{s.label}</span>
+        <span className={cx('ml-auto text-[14px]', s.tone)}>{s.label}</span>
       </div>
 
-      <p className="mt-2 text-[15px] font-medium text-slate-300">{lens.question}</p>
-      <p className="mt-1.5 text-[13px] leading-relaxed text-slate-500">{lens.mechanism}</p>
+      <p className="mt-2 text-[17px] font-medium text-slate-300">{lens.question}</p>
+      <p className="mt-1.5 text-[15px] leading-relaxed text-slate-500">{lens.mechanism}</p>
 
       <div className="mt-4 min-h-[5rem]">{children}</div>
 
-      <p className="hair-t mt-4 pt-2.5 text-[12px] leading-relaxed text-slate-600">
+      <p className="hair-t mt-4 pt-2.5 text-[14px] leading-relaxed text-slate-600">
         <span className="text-slate-500">Blind to</span> — {lens.blind}
       </p>
     </div>
@@ -54,7 +54,7 @@ function MechanismPanel({ lens, status, children }) {
 /** Shown in place of a visual when a detector produced nothing to draw. */
 function Absent({ children }) {
   return (
-    <p className="text-[13px] leading-relaxed text-slate-600">{children}</p>
+    <p className="text-[15px] leading-relaxed text-slate-600">{children}</p>
   )
 }
 
@@ -96,7 +96,7 @@ function BehaviouralMechanism({ evidence }) {
             <span
               key={name}
               className={cx(
-                'rounded px-1.5 py-1 text-[12px] leading-none',
+                'rounded px-1.5 py-1 text-[14px] leading-none',
                 active
                   ? 'bg-modality-behavioral/15 text-modality-behavioral'
                   : 'text-slate-600',
@@ -108,7 +108,7 @@ function BehaviouralMechanism({ evidence }) {
           )
         })}
       </div>
-      <p className="mt-2 text-[12px] leading-relaxed text-slate-600">
+      <p className="mt-2 text-[14px] leading-relaxed text-slate-600">
         One model per transaction type, each with its own threshold — a score is
         only ever compared against transactions of its own kind.
       </p>
@@ -134,7 +134,7 @@ function BehaviouralMechanism({ evidence }) {
           className="absolute top-1.5 h-6 w-px bg-slate-500"
           style={{ left: pos(threshold) }}
         >
-          <span className="numeric absolute -top-1 left-1.5 whitespace-nowrap text-[12px] text-slate-500">
+          <span className="numeric absolute -top-1 left-1.5 whitespace-nowrap text-[14px] text-slate-500">
             {threshold.toFixed(2)}
           </span>
         </div>
@@ -147,14 +147,14 @@ function BehaviouralMechanism({ evidence }) {
           }}
         />
         <span
-          className="numeric absolute top-[1.75rem] -translate-x-1/2 whitespace-nowrap text-[12px] text-slate-300"
+          className="numeric absolute top-[1.75rem] -translate-x-1/2 whitespace-nowrap text-[14px] text-slate-300"
           style={{ left: pos(score) }}
         >
           {score.toFixed(2)}
         </span>
       </div>
 
-      <p className="mt-3 text-[13px] leading-relaxed text-slate-500">
+      <p className="mt-3 text-[15px] leading-relaxed text-slate-500">
         {flagged
           ? `Above the ${stratum} line, so it was flagged.`
           : `Below the ${stratum} line, so it was not flagged.`}
@@ -166,13 +166,13 @@ function BehaviouralMechanism({ evidence }) {
       </p>
 
       {d.out_of_training_distribution && (
-        <p className="mt-2 text-[12px] leading-relaxed text-risk-medium">
+        <p className="mt-2 text-[14px] leading-relaxed text-risk-medium">
           This transaction type was not in any stratum's training data. The score
           is extrapolation and should carry little weight.
         </p>
       )}
       {d.is_control_stratum && (
-        <p className="mt-2 text-[12px] leading-relaxed text-slate-500">
+        <p className="mt-2 text-[14px] leading-relaxed text-slate-500">
           PAYMENT is carried as a false-positive control rather than a detector —
           a high score here is a finding about the model, not the transaction.
         </p>
@@ -239,7 +239,7 @@ function GraphMechanism({ evidence }) {
       <div className="space-y-1.5">
         {counts.map((n, ring) => (
           <div key={ring} className="flex items-center gap-2.5">
-            <span className="numeric w-14 shrink-0 text-[12px] text-slate-600">
+            <span className="numeric w-14 shrink-0 text-[14px] text-slate-600">
               {ring === 0 ? 'sink' : `ring ${ring}`}
             </span>
             <div className="flex flex-wrap gap-1">
@@ -254,11 +254,11 @@ function GraphMechanism({ evidence }) {
                 />
               ))}
             </div>
-            <span className="numeric ml-auto text-[12px] text-slate-500">{n}</span>
+            <span className="numeric ml-auto text-[14px] text-slate-500">{n}</span>
           </div>
         ))}
       </div>
-      <p className="mt-2 text-[12px] leading-relaxed text-slate-600">
+      <p className="mt-2 text-[14px] leading-relaxed text-slate-600">
         One ring is one hop of message passing — ring 1 paid the destination
         directly, ring 2 paid ring 1.
       </p>
@@ -266,7 +266,7 @@ function GraphMechanism({ evidence }) {
       {/* where the attention actually went */}
       <div className="mt-5">
         <div className="flex items-baseline justify-between">
-          <span className="text-[13px] text-slate-400">
+          <span className="text-[15px] text-slate-400">
             Top {Math.min(3, weights.length)} transfers carry
           </span>
           <span className="numeric text-xs text-slate-200">
@@ -282,7 +282,7 @@ function GraphMechanism({ evidence }) {
             }}
           />
         </div>
-        <p className="mt-1.5 text-[12px] leading-relaxed text-slate-600">
+        <p className="mt-1.5 text-[14px] leading-relaxed text-slate-600">
           of all the attention the model placed across {edges.length} transfers
           between {nodes.length} accounts.
         </p>
@@ -292,10 +292,10 @@ function GraphMechanism({ evidence }) {
         <dl className="mt-4 flex flex-wrap gap-x-5 gap-y-1">
           {facts.map(([label, v]) => (
             <div key={label} className="flex items-baseline gap-1.5">
-              <dd className="numeric text-[13px] text-slate-300">
+              <dd className="numeric text-[15px] text-slate-300">
                 {typeof v === 'number' && v < 1 && v > 0 ? v.toFixed(2) : v}
               </dd>
-              <dt className="text-[12px] text-slate-600">{label}</dt>
+              <dt className="text-[14px] text-slate-600">{label}</dt>
             </div>
           ))}
         </dl>
@@ -348,23 +348,23 @@ function TemporalMechanism({ evidence }) {
           )
         })}
       </div>
-      <div className="mt-1.5 flex justify-between text-[12px] text-slate-600">
+      <div className="mt-1.5 flex justify-between text-[14px] text-slate-600">
         <span>−{WINDOW - 1}</span>
         <span>now</span>
       </div>
 
       {predecessor?.predecessor_signal && (
-        <p className="mt-3 text-[13px] leading-relaxed text-slate-400">
+        <p className="mt-3 text-[15px] leading-relaxed text-slate-400">
           {predecessor.predecessor_signal}
         </p>
       )}
       {typeof predecessor?.attention_weight === 'number' && (
-        <p className="numeric mt-1.5 text-[12px] text-slate-600">
+        <p className="numeric mt-1.5 text-[14px] text-slate-600">
           attention {predecessor.attention_weight.toFixed(3)}
         </p>
       )}
       {typeof evidence.step_burstiness === 'number' && (
-        <p className="numeric mt-1 text-[12px] text-slate-600">
+        <p className="numeric mt-1 text-[14px] text-slate-600">
           burstiness {evidence.step_burstiness.toFixed(3)}
         </p>
       )}
@@ -403,7 +403,7 @@ export default function CaseMechanism({ c }) {
     <section>
       <div className="hair-b flex flex-wrap items-baseline gap-3 pb-2.5">
         <h2 className="text-sm font-semibold text-slate-100">How each model read this</h2>
-        <span className="text-[13px] text-slate-500">
+        <span className="text-[15px] text-slate-500">
           one transaction, three mechanisms
         </span>
       </div>

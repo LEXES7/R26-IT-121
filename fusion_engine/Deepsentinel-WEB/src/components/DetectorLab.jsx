@@ -51,8 +51,8 @@ export function Bar({ value, max = 1, tone = 'accent', label, right }) {
   return (
     <div style={{ display: 'grid', gap: 4 }}>
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[14px]" style={{ color: 'rgb(var(--ds-ink))' }}>{label}</span>
-        <span className="numeric text-[14px]" style={{ color: 'rgb(var(--ds-muted))' }}>{right}</span>
+        <span className="text-[16px]" style={{ color: 'rgb(var(--ds-ink))' }}>{label}</span>
+        <span className="numeric text-[16px]" style={{ color: 'rgb(var(--ds-muted))' }}>{right}</span>
       </div>
       <div style={{ height: 7, borderRadius: 4, background: 'rgb(var(--ds-line))' }}>
         <div style={{ width: `${pct}%`, height: '100%', borderRadius: 4, background: colour }} />
@@ -64,11 +64,11 @@ export function Bar({ value, max = 1, tone = 'accent', label, right }) {
 export function Stat({ label, value, note }) {
   return (
     <div>
-      <p className="ds-mono text-[12px] uppercase tracking-wider"
+      <p className="ds-mono text-[14px] uppercase tracking-wider"
          style={{ color: 'rgb(var(--ds-faint))' }}>{label}</p>
-      <p className="numeric mt-1 text-[25px] leading-none"
+      <p className="numeric mt-1 text-[28px] leading-none"
          style={{ color: 'rgb(var(--ds-ink))' }}>{value}</p>
-      {note && <p className="mt-1 text-[13px]" style={{ color: 'rgb(var(--ds-muted))' }}>{note}</p>}
+      {note && <p className="mt-1 text-[15px]" style={{ color: 'rgb(var(--ds-muted))' }}>{note}</p>}
     </div>
   )
 }
@@ -111,9 +111,9 @@ export default function DetectorLab({ detector, eyebrow, title, subtitle, childr
               i === pick ? 'border-accent-400/60' : 'border-slate-800 hover:border-slate-700')}
             style={{ background: i === pick ? 'rgba(45,212,191,.06)' : 'transparent' }}
           >
-            <span className="numeric block text-[14px]"
+            <span className="numeric block text-[16px]"
                   style={{ color: 'rgb(var(--ds-ink))' }}>{x.ref}</span>
-            <span className="block text-[12px]"
+            <span className="block text-[14px]"
                   style={{ color: 'rgb(var(--ds-faint))' }}>{x.note}</span>
           </button>
         ))}
@@ -122,7 +122,7 @@ export default function DetectorLab({ detector, eyebrow, title, subtitle, childr
         </Button>
       </div>
 
-      <p className="numeric text-[13px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+      <p className="numeric text-[15px]" style={{ color: 'rgb(var(--ds-faint))' }}>
         {p.txn.type} · {p.txn.amount.toLocaleString()} · {p.txn.nameOrig} → {p.txn.nameDest} · step {p.txn.step}
       </p>
 

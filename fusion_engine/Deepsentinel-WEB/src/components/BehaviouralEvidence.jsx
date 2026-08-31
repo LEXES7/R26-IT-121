@@ -107,7 +107,7 @@ export default function BehaviouralEvidence({ evidence }) {
           <p className="text-sm font-semibold text-slate-200">
             Scored by the {stratum ?? 'stratum'} model
             {isControl && (
-              <span className="ml-2 rounded bg-risk-medium/15 px-1.5 py-px text-[11px] font-semibold uppercase tracking-wide text-risk-medium">
+              <span className="ml-2 rounded bg-risk-medium/15 px-1.5 py-px text-[13px] font-semibold uppercase tracking-wide text-risk-medium">
                 control
               </span>
             )}
@@ -117,7 +117,7 @@ export default function BehaviouralEvidence({ evidence }) {
               ?? 'One variational autoencoder per transaction type, each trained only on that type&rsquo;s normal behaviour.'}
           </p>
           {featureSet && (
-            <p className="mt-1.5 font-mono text-[13px] text-slate-500">
+            <p className="mt-1.5 font-mono text-[15px] text-slate-500">
               feature set {featureSet}
               {calMethod ? ` · ${calMethod} calibration` : ''}
               {typeof metadata.inference_latency_ms === 'number'
@@ -186,11 +186,11 @@ export default function BehaviouralEvidence({ evidence }) {
                   <div className="flex items-baseline justify-between gap-3">
                     <p className="text-xs font-medium text-slate-300">
                       {label}
-                      <span className="ml-1.5 font-mono text-[12px] text-slate-500">
+                      <span className="ml-1.5 font-mono text-[14px] text-slate-500">
                         weight {num(w, 1)}
                       </span>
                     </p>
-                    <p className="shrink-0 font-mono text-[13px] text-slate-400">
+                    <p className="shrink-0 font-mono text-[15px] text-slate-400">
                       z {num(z)} → {num(contribution)}
                     </p>
                   </div>
@@ -205,7 +205,7 @@ export default function BehaviouralEvidence({ evidence }) {
                       }}
                     />
                   </div>
-                  <p className="mt-0.5 text-[12px] text-slate-500">{blurb}</p>
+                  <p className="mt-0.5 text-[14px] text-slate-500">{blurb}</p>
                 </div>
               )
             })}
@@ -224,7 +224,7 @@ export default function BehaviouralEvidence({ evidence }) {
           </p>
           {shownFeatures.some(hasGap) ? (
             <>
-              <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-slate-500">
+              <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-slate-500">
                 <span className="flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-modality-behavioral" />
                   what arrived
@@ -336,7 +336,7 @@ export default function BehaviouralEvidence({ evidence }) {
               </dl>
             </>
           )}
-          <p className="mt-3 border-t border-subtle pt-2.5 text-[12px] leading-relaxed text-slate-500">
+          <p className="mt-3 border-t border-subtle pt-2.5 text-[14px] leading-relaxed text-slate-500">
             Typologies are discovered by clustering attribution fingerprints with
             no label used at any point. The name is a post-hoc reading of what
             distinguishes the cluster, and the FATF tag is an advisory retrieval
@@ -354,7 +354,7 @@ function ShareBars({ items, tone }) {
     <div className="mt-3 space-y-2">
       {items.map(([name, share]) => (
         <div key={name} className="flex items-center gap-3">
-          <span className="w-40 shrink-0 truncate font-mono text-[13px] text-slate-400">
+          <span className="w-40 shrink-0 truncate font-mono text-[15px] text-slate-400">
             {name}
           </span>
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-overlay">
@@ -363,7 +363,7 @@ function ShareBars({ items, tone }) {
               style={{ width: `${Math.max(2, ((share ?? 0) / max) * 100)}%` }}
             />
           </div>
-          <span className="w-10 shrink-0 text-right font-mono text-[12px] text-slate-500">
+          <span className="w-10 shrink-0 text-right font-mono text-[14px] text-slate-500">
             {pct(share)}
           </span>
         </div>
@@ -463,7 +463,7 @@ function ReconstructionRow({ item }) {
         />
       </div>
 
-      <p className="mt-2 font-mono text-[12px] text-slate-500">
+      <p className="mt-2 font-mono text-[14px] text-slate-500">
         {sig(observed)}
         <span className="mx-1.5 text-slate-600">→</span>
         {sig(reconstructed)}
@@ -478,7 +478,7 @@ function ReconstructionRow({ item }) {
 function Fact({ label, value }) {
   return (
     <div>
-      <dt className="text-[12px] uppercase tracking-wider text-slate-500">{label}</dt>
+      <dt className="text-[14px] uppercase tracking-wider text-slate-500">{label}</dt>
       <dd className="mt-0.5 font-mono text-sm text-slate-200">{value}</dd>
     </div>
   )
@@ -488,7 +488,7 @@ function Stat({ value, label }) {
   return (
     <div className="text-right">
       <p className="font-mono text-xl font-semibold text-slate-200">{value ?? '—'}</p>
-      <p className="text-[12px] uppercase tracking-wider text-slate-500">{label}</p>
+      <p className="text-[14px] uppercase tracking-wider text-slate-500">{label}</p>
     </div>
   )
 }

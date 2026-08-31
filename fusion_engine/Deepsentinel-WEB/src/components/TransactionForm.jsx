@@ -146,7 +146,7 @@ export default function TransactionForm({ onSubmit, loading }) {
       </Field>
 
       <div className="space-y-3 rounded-xl border border-subtle bg-surface p-3.5">
-        <p className="text-[12px] font-semibold uppercase tracking-widest text-slate-500">
+        <p className="text-[14px] font-semibold uppercase tracking-widest text-slate-500">
           Balances
         </p>
         <div className="grid gap-3 sm:grid-cols-2">

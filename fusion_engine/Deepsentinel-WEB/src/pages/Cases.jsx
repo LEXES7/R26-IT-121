@@ -188,12 +188,12 @@ function CaseQueue() {
             </button>}
           />
           {brief?.sent && (
-            <div style={{ fontSize: 12, color: 'rgb(var(--ds-accent-strong))', marginBottom: 8 }}>
+            <div style={{ fontSize: 14, color: 'rgb(var(--ds-accent-strong))', marginBottom: 8 }}>
               Briefing sent.
             </div>
           )}
           <pre className="ds-mono ds-scroll" style={{ maxHeight: 240, overflow: 'auto',
-                whiteSpace: 'pre-wrap', fontSize: 12, lineHeight: 1.6, margin: 0,
+                whiteSpace: 'pre-wrap', fontSize: 14, lineHeight: 1.6, margin: 0,
                 color: 'rgb(var(--ds-muted))' }}>
             {brief?.text ?? 'Loading…'}
           </pre>
@@ -202,7 +202,7 @@ function CaseQueue() {
 
       {error && (
         <div style={{ background: 'rgb(var(--ds-signal-soft))', color: 'rgb(var(--ds-signal))',
-                      borderRadius: 6, padding: 11, fontSize: 13 }}>{error}</div>
+                      borderRadius: 6, padding: 11, fontSize: 15 }}>{error}</div>
       )}
 
       {/* ═══ list · preview ══════════════════════════════════════════ */}
@@ -213,7 +213,7 @@ function CaseQueue() {
         <Panel style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <div style={{ padding: '17px 17px 0' }}>
             <SectionHeading label="Queue" title={`${cases.length} in view`}
-              action={<span className="ds-mono" style={{ fontSize: 12,
+              action={<span className="ds-mono" style={{ fontSize: 14,
                       color: 'rgb(var(--ds-muted))' }}>newest first</span>} />
           </div>
           <div style={{ padding: '0 10px 12px' }}>
@@ -248,7 +248,7 @@ function CaseQueue() {
                     <span className="block truncate text-xs text-slate-400">
                       {tidy(c.graph_pattern) ?? tidy(c.typology_name) ?? 'no typology matched'}
                     </span>
-                    <span className="numeric block truncate text-[12px] text-slate-600">
+                    <span className="numeric block truncate text-[14px] text-slate-600">
                       {c.case_ref}
                     </span>
                   </span>
@@ -257,7 +257,7 @@ function CaseQueue() {
                       c.label_is_fraud ? 'bg-risk-critical' : 'bg-slate-700')}
                       title={c.label_is_fraud ? 'labelled fraud' : 'labelled clean'} />
                   )}
-                  <span className="w-8 shrink-0 text-right text-[12px] text-slate-600">
+                  <span className="w-8 shrink-0 text-right text-[14px] text-slate-600">
                     {since(c.detected_at)}
                   </span>
                 </button>
@@ -267,7 +267,7 @@ function CaseQueue() {
 
           </div>
           <div style={{ padding: '11px 17px 15px', borderTop: '1px solid rgb(var(--ds-line))',
-                        fontSize: 11, color: 'rgb(var(--ds-faint))', lineHeight: 1.7 }}>
+                        fontSize: 13, color: 'rgb(var(--ds-faint))', lineHeight: 1.7 }}>
             <Key>j</Key><Key>k</Key> move · <Key>f</Key> confirm fraud ·{' '}
             <Key>d</Key> false positive · <Key>i</Key> investigating · <Key>↵</Key> open in full
           </div>
@@ -315,7 +315,7 @@ function Preview({ c, busy, onDecide }) {
               {tidy(c.graph_pattern) ?? tidy(c.typology_name) ?? 'no typology matched'}
             </span>
           </p>
-          <p className="numeric mt-2 text-[13px] text-slate-600">{c.case_ref}</p>
+          <p className="numeric mt-2 text-[15px] text-slate-600">{c.case_ref}</p>
         </div>
         <button
           onClick={() => navigate(`/cases/${c.case_ref}`)}
@@ -359,7 +359,7 @@ function Preview({ c, busy, onDecide }) {
           Investigating
         </Verdict>
         {c.label_is_fraud !== null && c.label_is_fraud !== undefined && (
-          <span className="ml-auto text-[13px] text-slate-500">
+          <span className="ml-auto text-[15px] text-slate-500">
             Source file says{' '}
             <b style={{ color: c.label_is_fraud ? SEV.CRITICAL.hex : undefined }}
                className={c.label_is_fraud ? '' : 'text-slate-300'}>
@@ -395,13 +395,13 @@ function ModalityStrip({ c }) {
                    style={{ width: `${Math.max(2, v * 100)}%`, background: `rgb(${hue})` }} />
             )}
           </div>
-          <p className="mt-1.5 text-[12px] text-slate-600">
+          <p className="mt-1.5 text-[14px] text-slate-600">
             {ok ? 'contributed' : 'not deployed'}
           </p>
         </div>
       ))}
       {c.uncertainty_penalty_applied && (
-        <p className="text-[12px] leading-relaxed text-slate-500 sm:col-span-3">
+        <p className="text-[14px] leading-relaxed text-slate-500 sm:col-span-3">
           Only {c.modalities_used} of 3 detectors contributed, so an uncertainty
           penalty was applied.
         </p>
@@ -502,11 +502,11 @@ function CaseDetail({ caseRef }) {
             <section>
               <div className="hair-b flex flex-wrap items-baseline gap-3 pb-2.5">
                 <h2 className="text-sm font-semibold text-slate-100">The network</h2>
-                <span className="text-[13px] text-slate-500">
+                <span className="text-[15px] text-slate-500">
                   edge thickness is the attention the model paid
                 </span>
                 {c.sink_account && (
-                  <span className="numeric ml-auto text-[13px] text-slate-600">
+                  <span className="numeric ml-auto text-[15px] text-slate-600">
                     sink {c.sink_account}
                   </span>
                 )}
@@ -575,7 +575,7 @@ function CaseDetail({ caseRef }) {
             <section>
               <div className="hair-b flex items-baseline justify-between pb-2.5">
                 <h2 className="text-sm font-semibold text-slate-100">Forensic report</h2>
-                <span className="text-[13px] text-slate-500">generated at detection time</span>
+                <span className="text-[15px] text-slate-500">generated at detection time</span>
               </div>
               <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-400">
                 {c.forensic_report}
@@ -586,7 +586,7 @@ function CaseDetail({ caseRef }) {
           <section>
             <div className="hair-b flex items-baseline justify-between pb-2.5">
               <h2 className="text-sm font-semibold text-slate-100">What happened</h2>
-              <span className="text-[13px] text-slate-500">from the recorded timestamps</span>
+              <span className="text-[15px] text-slate-500">from the recorded timestamps</span>
             </div>
             <ol className="mt-5 space-y-0">
               {(c.timeline ?? []).map((t, i, arr) => (
@@ -598,7 +598,7 @@ function CaseDetail({ caseRef }) {
                   <div className="min-w-0 pb-1">
                     <p className="text-sm font-medium text-slate-200">{t.stage}</p>
                     <p className="mt-0.5 text-xs text-slate-400">{t.detail}</p>
-                    <p className="numeric mt-0.5 text-[12px] text-slate-600">{when(t.at)}</p>
+                    <p className="numeric mt-0.5 text-[14px] text-slate-600">{when(t.at)}</p>
                   </div>
                 </li>
               ))}
@@ -611,12 +611,12 @@ function CaseDetail({ caseRef }) {
           <section className="print:hidden">
             <div className="flex items-baseline justify-between">
               <h3 className="text-xs font-semibold text-slate-200">Review</h3>
-              <span className="text-[12px] text-slate-600">
+              <span className="text-[14px] text-slate-600">
                 {REVIEW_LABEL[c.review_status] ?? c.review_status}
               </span>
             </div>
             {c.reviewed_by && (
-              <p className="mt-2 text-[13px] text-slate-500">
+              <p className="mt-2 text-[15px] text-slate-500">
                 {c.reviewed_by} · {when(c.reviewed_at)}
               </p>
             )}
@@ -628,7 +628,7 @@ function CaseDetail({ caseRef }) {
               <Verdict onClick={() => decide('investigating')} k="" block>Investigating</Verdict>
               <Verdict onClick={() => decide('closed')} k="" block>Close</Verdict>
             </div>
-            <p className="mt-3 text-[12px] leading-relaxed text-slate-600">
+            <p className="mt-3 text-[14px] leading-relaxed text-slate-600">
               Recorded against your name and used to build the retraining set.
             </p>
           </section>
@@ -639,7 +639,7 @@ function CaseDetail({ caseRef }) {
               {c.typology_name ?? 'None matched'}
             </p>
             {c.typology_id && (
-              <p className="numeric mt-1 text-[12px] text-slate-600">{c.typology_id}</p>
+              <p className="numeric mt-1 text-[14px] text-slate-600">{c.typology_id}</p>
             )}
           </section>
 
@@ -648,7 +648,7 @@ function CaseDetail({ caseRef }) {
             {c.alert_sent ? (
               <>
                 <p className="mt-2 text-xs text-slate-400">Sent {when(c.alerted_at)}</p>
-                <p className="mt-1 text-[12px] text-slate-600">
+                <p className="mt-1 text-[14px] text-slate-600">
                   {(c.recipients ?? []).length} recipient
                   {(c.recipients ?? []).length === 1 ? '' : 's'}
                 </p>
@@ -668,7 +668,7 @@ function CaseDetail({ caseRef }) {
                   {c.label_is_fraud ? 'Fraud' : 'Not fraud'}
                 </span>
               </p>
-              <p className="mt-1.5 text-[12px] leading-relaxed text-slate-600">
+              <p className="mt-1.5 text-[14px] leading-relaxed text-slate-600">
                 From the source file. Shown for measuring the system after the
                 fact — it was not available to any model at scoring time.
               </p>
@@ -715,7 +715,7 @@ function Verdict({ onClick, disabled, k, primary, block, children }) {
     >
       {children}
       {k && (
-        <kbd className={cx('numeric rounded px-1 text-[12px]',
+        <kbd className={cx('numeric rounded px-1 text-[14px]',
           primary ? 'bg-black/20' : 'bg-surface-overlay text-slate-500')}>
           {k}
         </kbd>
@@ -727,7 +727,7 @@ function Verdict({ onClick, disabled, k, primary, block, children }) {
 function Key({ children }) {
   return (
     <kbd className="ds-mono" style={{ margin: '0 2px', borderRadius: 3, padding: '1px 4px',
-          background: 'rgb(var(--ds-surface-3))', color: 'rgb(var(--ds-muted))', fontSize: 11 }}>
+          background: 'rgb(var(--ds-surface-3))', color: 'rgb(var(--ds-muted))', fontSize: 13 }}>
       {children}
     </kbd>
   )

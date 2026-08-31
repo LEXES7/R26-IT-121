@@ -132,6 +132,13 @@ const PARENT_ROUTES = new Set(
   }),
 )
 
+/* Every path the signed-in console owns, taken from the tables above.
+   App.jsx uses this to decide whether to render the public header; keeping a
+   second list by hand is what put the marketing nav on top of the console. */
+export const CONSOLE_PATHS = [...new Set(
+  [ADMIN_NAV, OPS_NAV].flatMap((nav) => nav.flatMap(([, items]) => items.map(([to]) => to))),
+)].filter((p) => p !== '/')
+
 export default function ConsoleShell({ eyebrow, title, subtitle, actions, children }) {
   const { user, signOut, isAdmin } = useAuth()
   const { theme, toggle } = useTheme()

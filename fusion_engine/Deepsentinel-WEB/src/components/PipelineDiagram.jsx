@@ -220,7 +220,7 @@ export default function PipelineDiagram({ stages, running, live = false }) {
                 </p>
 
                 {/* Real measured duration, once the server reports it */}
-                <p className="mt-0.5 truncate text-[12px] leading-tight text-slate-600">
+                <p className="mt-0.5 truncate text-[14px] leading-tight text-slate-600">
                   {s?.durationMs != null ? formatDuration(s.durationMs) : meta.subtitle}
                 </p>
               </button>
@@ -249,12 +249,12 @@ export default function PipelineDiagram({ stages, running, live = false }) {
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-base font-semibold text-slate-200">{current.title}</h3>
               {state?.durationMs != null && (
-                <span className="rounded border border-subtle bg-surface-raised px-1.5 py-0.5 font-mono text-[12px] text-slate-500">
+                <span className="rounded border border-subtle bg-surface-raised px-1.5 py-0.5 font-mono text-[14px] text-slate-500">
                   {formatDuration(state.durationMs)}
                 </span>
               )}
               {!live && !hasLiveData && (
-                <span className="rounded border border-subtle bg-surface-raised px-1.5 py-0.5 text-[12px] text-slate-600">
+                <span className="rounded border border-subtle bg-surface-raised px-1.5 py-0.5 text-[14px] text-slate-600">
                   not yet run
                 </span>
               )}
@@ -302,7 +302,7 @@ function StageMark({ running, done, error, skipped, step, accentText }) {
   if (done) return <span className="text-xs text-green-400">✓</span>
   if (error) return <span className="text-xs text-red-400">✕</span>
   if (skipped) return <span className="text-xs text-slate-600">—</span>
-  return <span className={cx('font-mono text-[12px]', accentText)}>{step}</span>
+  return <span className={cx('font-mono text-[14px]', accentText)}>{step}</span>
 }
 
 function ModelsPanel({ data }) {
@@ -336,13 +336,13 @@ function ModelsPanel({ data }) {
             <div className="flex items-center justify-between gap-2">
               <span
                 className={cx(
-                  'text-[12px] font-semibold uppercase tracking-wider',
+                  'text-[14px] font-semibold uppercase tracking-wider',
                   m.available === false ? 'text-slate-500' : MODALITY_STYLE[m.key].split(' ')[0],
                 )}
               >
                 {m.modality}
               </span>
-              <span className="text-[12px] text-slate-600"></span>
+              <span className="text-[14px] text-slate-600"></span>
             </div>
 
             <p className="mt-2 text-sm font-semibold text-slate-200">{m.model}</p>
@@ -365,7 +365,7 @@ function ModelsPanel({ data }) {
                   <span className="font-mono text-2xl font-bold text-slate-200">
                     {m.score != null ? m.score.toFixed(3) : '—'}
                   </span>
-                  <span className="text-[12px] text-slate-600">risk score</span>
+                  <span className="text-[14px] text-slate-600">risk score</span>
                 </div>
 
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface">
@@ -444,7 +444,7 @@ function StagePanel({ stageId, data, accent }) {
 
   return (
     <div className="mt-5 rounded-xl border border-subtle bg-surface-raised p-4">
-      <p className="text-[12px] font-semibold uppercase tracking-wider text-slate-500">
+      <p className="text-[14px] font-semibold uppercase tracking-wider text-slate-500">
         {data ? 'This run' : 'Worked example'}
       </p>
       <dl className="mt-2.5 grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
@@ -453,7 +453,7 @@ function StagePanel({ stageId, data, accent }) {
             key={k}
             className="flex items-baseline justify-between gap-3 border-b border-white/[0.04] pb-1.5"
           >
-            <dt className="font-mono text-[13px] text-slate-600">{k}</dt>
+            <dt className="font-mono text-[15px] text-slate-600">{k}</dt>
             <dd className="truncate font-mono text-xs text-slate-300" title={String(v)}>
               {v}
             </dd>

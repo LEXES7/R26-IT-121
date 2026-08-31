@@ -186,14 +186,14 @@ export default function Dashboard() {
                             color: SEV[featured.classification]?.hex }}>
                       {featured.fused_score?.toFixed(3)}
                     </span>
-                    <span style={{ fontSize: 12, color: 'rgb(var(--ds-muted))', marginLeft: 9 }}>
+                    <span style={{ fontSize: 14, color: 'rgb(var(--ds-muted))', marginLeft: 9 }}>
                       fused confidence
                     </span>
                   </div>
                   <Badge tone={SEV[featured.classification]?.tone}>
                     {SEV[featured.classification]?.label ?? featured.classification}
                   </Badge>
-                  <span style={{ fontSize: 12, color: 'rgb(var(--ds-muted))' }}>
+                  <span style={{ fontSize: 14, color: 'rgb(var(--ds-muted))' }}>
                     {(featured.graph_pattern ?? 'no typology matched')
                       .toLowerCase().replace(/_/g, ' ')}
                   </span>
@@ -211,7 +211,7 @@ export default function Dashboard() {
           <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
           <Panel className="ds-panel-pad">
             <SectionHeading label="Runtime health" title="Models in service"
-              action={<span className="ds-mono" style={{ fontSize: 12, color: 'rgb(var(--ds-muted))' }}>
+              action={<span className="ds-mono" style={{ fontSize: 14, color: 'rgb(var(--ds-muted))' }}>
                 {runtime ? `${liveCount} / 3` : '—'}
               </span>} />
             <div style={{ display: 'grid', gap: 15 }}>
@@ -223,7 +223,7 @@ export default function Dashboard() {
                 return (
                   <div key={label}>
                     <div style={{ display: 'flex', justifyContent: 'space-between',
-                                  fontSize: 13, marginBottom: 7, gap: 8 }}>
+                                  fontSize: 15, marginBottom: 7, gap: 8 }}>
                       <span style={{ minWidth: 0 }}>
                         {label}
                         <span style={{ color: 'rgb(var(--ds-muted))', marginLeft: 6 }}>{sub}</span>
@@ -242,7 +242,7 @@ export default function Dashboard() {
               })}
             </div>
             <div style={{ borderRadius: 6, background: 'rgb(var(--ds-workspace))', padding: 11,
-                          marginTop: 18, fontSize: 12, lineHeight: 1.55,
+                          marginTop: 18, fontSize: 14, lineHeight: 1.55,
                           color: 'rgb(var(--ds-muted))' }}>
               {liveCount === 3 ? (
                 <>
@@ -265,7 +265,7 @@ export default function Dashboard() {
           <Panel className="ds-panel-pad">
             <SectionHeading label={`Last ${cases.length} cases`} title="Severity mix" />
             {cases.length === 0 ? (
-              <div style={{ fontSize: 12, color: 'rgb(var(--ds-faint))' }}>No cases recorded.</div>
+              <div style={{ fontSize: 14, color: 'rgb(var(--ds-faint))' }}>No cases recorded.</div>
             ) : (
               <>
                 <div style={{ display: 'flex', height: 6, gap: 2, marginBottom: 11 }}>
@@ -277,7 +277,7 @@ export default function Dashboard() {
                 </div>
                 {ORDER.filter((k) => bySeverity[k]).map((k) => (
                   <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 7,
-                                        fontSize: 12, padding: '3px 0' }}>
+                                        fontSize: 14, padding: '3px 0' }}>
                     <span style={{ width: 6, height: 6, borderRadius: 99, background: SEV[k].hex }} />
                     <span style={{ color: 'rgb(var(--ds-muted))' }}>{SEV[k].label}</span>
                     <span className="ds-mono" style={{ marginLeft: 'auto' }}>{bySeverity[k]}</span>
@@ -305,7 +305,7 @@ export default function Dashboard() {
                   </div>
                 </div>
               ) : (
-                <div style={{ fontSize: 12, lineHeight: 1.6, color: 'rgb(var(--ds-muted))' }}>
+                <div style={{ fontSize: 14, lineHeight: 1.6, color: 'rgb(var(--ds-muted))' }}>
                   Point this service and the Query Runner at the same database to
                   screen real arrivals.
                 </div>
@@ -316,11 +316,11 @@ export default function Dashboard() {
               <SectionHeading label="Throughput" title="Rate right now" />
               <div className="ds-mono" style={{ fontSize: 21 }}>
                 {typeof c.throughput_per_min === 'number' ? c.throughput_per_min : '—'}
-                <span style={{ fontSize: 12, color: 'rgb(var(--ds-muted))', marginLeft: 8 }}>
+                <span style={{ fontSize: 14, color: 'rgb(var(--ds-muted))', marginLeft: 8 }}>
                   per minute
                 </span>
               </div>
-              <div style={{ fontSize: 12, color: 'rgb(var(--ds-muted))', marginTop: 8 }}>
+              <div style={{ fontSize: 14, color: 'rgb(var(--ds-muted))', marginTop: 8 }}>
                 {state?.source === 'queue' ? 'Screening ingested traffic.'
                   : running ? 'Replaying sample transactions.' : 'Not screening.'}
               </div>
@@ -355,7 +355,7 @@ export default function Dashboard() {
                   {awaiting.slice(0, 8).map((x) => (
                     <tr key={x.case_ref} style={{ cursor: 'pointer' }}
                         onClick={() => navigate(`/cases/${x.case_ref}`)}>
-                      <td className="ds-mono" style={{ fontSize: 12 }}>{x.case_ref}</td>
+                      <td className="ds-mono" style={{ fontSize: 14 }}>{x.case_ref}</td>
                       <td className="ds-mono" style={{ color: SEV[x.classification]?.hex }}>
                         {typeof x.fused_score === 'number' ? x.fused_score.toFixed(3) : '—'}
                       </td>
@@ -365,8 +365,8 @@ export default function Dashboard() {
                       <td style={{ color: 'rgb(var(--ds-muted))' }}>
                         {(x.graph_pattern ?? x.typology_name ?? '—').toLowerCase().replace(/_/g, ' ')}
                       </td>
-                      <td className="ds-mono" style={{ fontSize: 12 }}>{x.modalities_used}/3</td>
-                      <td style={{ color: 'rgb(var(--ds-faint))', fontSize: 12 }}>
+                      <td className="ds-mono" style={{ fontSize: 14 }}>{x.modalities_used}/3</td>
+                      <td style={{ color: 'rgb(var(--ds-faint))', fontSize: 14 }}>
                         {since(x.detected_at)}
                       </td>
                       {/* Decide without leaving. The page opens by saying N cases

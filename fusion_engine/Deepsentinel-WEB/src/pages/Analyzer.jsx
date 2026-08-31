@@ -119,7 +119,7 @@ export default function Analyzer() {
           </button>
         ))}
         <span style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-          <label style={{ fontSize: 12, color: 'rgb(var(--ds-muted))',
+          <label style={{ fontSize: 14, color: 'rgb(var(--ds-muted))',
                           display: 'flex', gap: 6, alignItems: 'center' }}>
             <input type="checkbox" checked={includeBaseline}
                    onChange={(e) => setIncludeBaseline(e.target.checked)} />
@@ -133,7 +133,7 @@ export default function Analyzer() {
 
       {error && (
         <div style={{ background: 'rgb(var(--ds-signal-soft))', color: 'rgb(var(--ds-signal))',
-                      borderRadius: 6, padding: 11, fontSize: 13 }}>
+                      borderRadius: 6, padding: 11, fontSize: 15 }}>
           {error}
         </div>
       )}
@@ -158,7 +158,7 @@ export default function Analyzer() {
                        onChange={(e) => setQuery(e.target.value)} style={{ marginBottom: 10 }} />
                 <div className="ds-scroll" style={{ maxHeight: 168, overflowY: 'auto', marginBottom: 4 }}>
                   {hits.length === 0 ? (
-                    <div style={{ fontSize: 12, color: 'rgb(var(--ds-faint))', padding: '8px 0' }}>
+                    <div style={{ fontSize: 14, color: 'rgb(var(--ds-faint))', padding: '8px 0' }}>
                       {query ? 'Nothing matches that.'
                         : 'No ingested transactions yet — upload a file with the Query Runner.'}
                     </div>
@@ -168,14 +168,14 @@ export default function Analyzer() {
                                      gap: 10, alignItems: 'center', padding: '7px 6px', borderRadius: 5,
                                      background: txn?.transaction_id === t.transaction_id
                                        ? 'rgb(var(--ds-surface-2))' : undefined }}>
-                      <span className="ds-mono" style={{ fontSize: 12, flex: 1, minWidth: 0,
+                      <span className="ds-mono" style={{ fontSize: 14, flex: 1, minWidth: 0,
                                                          overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {t.transaction_id}
                       </span>
-                      <span style={{ fontSize: 11, color: 'rgb(var(--ds-muted))' }}>
+                      <span style={{ fontSize: 13, color: 'rgb(var(--ds-muted))' }}>
                         {t.type} · {money(t.amount)}
                       </span>
-                      <span className="ds-mono" style={{ fontSize: 11, flex: '0 0 auto',
+                      <span className="ds-mono" style={{ fontSize: 13, flex: '0 0 auto',
                               minWidth: 62, textAlign: 'right', whiteSpace: 'nowrap',
                               color: t.case_ref ? 'rgb(var(--ds-signal))' : 'rgb(var(--ds-faint))' }}>
                         {typeof t.fused_score === 'number' ? t.fused_score.toFixed(3) : 'not scored'}
@@ -203,7 +203,7 @@ export default function Analyzer() {
             {mode === 'scenario' && (
               <>
                 <div style={{ background: 'rgb(var(--ds-warn-soft))', color: 'rgb(var(--ds-warn))',
-                              borderRadius: 6, padding: 10, fontSize: 12, marginBottom: 11 }}>
+                              borderRadius: 6, padding: 10, fontSize: 14, marginBottom: 11 }}>
                   Scenario mode <strong>simulates</strong> the three detector scores. It exercises
                   fusion, retrieval and reporting — the scores are not measurements.
                 </div>
@@ -214,7 +214,7 @@ export default function Analyzer() {
                             className={`ds-btn ${scenario === s.value ? 'ds-btn-primary' : ''}`}
                             style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
                       <span>{s.label}</span>
-                      <span style={{ fontSize: 11, opacity: .8, fontWeight: 400 }}>{s.short}</span>
+                      <span style={{ fontSize: 13, opacity: .8, fontWeight: 400 }}>{s.short}</span>
                     </button>
                   ))}
                 </div>
@@ -236,7 +236,7 @@ export default function Analyzer() {
                   ['step', txn.step], ['balance after', money(txn.newbalanceOrig)]].map(([k, v]) => (
                   <div key={k}>
                     <div className="ds-section-label">{k}</div>
-                    <div className="ds-mono" style={{ fontSize: 13, marginTop: 5 }}>{v ?? '—'}</div>
+                    <div className="ds-mono" style={{ fontSize: 15, marginTop: 5 }}>{v ?? '—'}</div>
                   </div>
                 ))}
               </div>
@@ -249,7 +249,7 @@ export default function Analyzer() {
               <SectionHeading
                 label="Evidence stack"
                 title={result ? 'What each detector found' : 'Nothing has run yet'}
-                action={result && <span className="ds-mono" style={{ fontSize: 12 }}>
+                action={result && <span className="ds-mono" style={{ fontSize: 14 }}>
                   {result.modalities_used} / 3 contributed
                 </span>}
               />
@@ -271,7 +271,7 @@ export default function Analyzer() {
                      style={{ padding: '15px 19px', borderTop: '1px solid rgb(var(--ds-line))',
                               cursor: 'pointer' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{name}</div>
+                    <div style={{ flex: 1, fontSize: 16, fontWeight: 600 }}>{name}</div>
                     <span className="ds-mono" style={{ color: colour }}>
                       {available && typeof score === 'number' ? score.toFixed(3) : 'not deployed'}
                     </span>
@@ -282,10 +282,10 @@ export default function Analyzer() {
                       <span style={{ width: available && typeof score === 'number'
                                        ? `${score * 100}%` : '0%', background: colour }} />
                     </div>
-                    <span style={{ fontSize: 11, color: 'rgb(var(--ds-muted))' }}>{model}</span>
+                    <span style={{ fontSize: 13, color: 'rgb(var(--ds-muted))' }}>{model}</span>
                   </div>
                   {open === name && (
-                    <div className="ds-fade-up" style={{ fontSize: 12, lineHeight: 1.55,
+                    <div className="ds-fade-up" style={{ fontSize: 14, lineHeight: 1.55,
                                                          color: 'rgb(var(--ds-muted))', paddingTop: 3 }}>
                       {available ? blurb
                         : 'This detector did not answer, so it abstained. Fusion applied an '
@@ -320,14 +320,14 @@ export default function Analyzer() {
               <>
                 <div style={{ display: 'flex', alignItems: 'end',
                               justifyContent: 'space-between', marginTop: 9, gap: 10 }}>
-                  <div style={{ fontSize: 25, letterSpacing: '-.06em', fontWeight: 600 }}>
+                  <div style={{ fontSize: 28, letterSpacing: '-.06em', fontWeight: 600 }}>
                     {sev.label}
                   </div>
                   <div className="ds-mono" style={{ fontSize: 24, color: sev.hex }}>
                     {result.fraud_confidence_score?.toFixed(3)}
                   </div>
                 </div>
-                <p style={{ fontSize: 13, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
+                <p style={{ fontSize: 15, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
                             margin: '13px 0 0' }}>
                   {result.modalities_used < 3
                     ? `Only ${result.modalities_used} of 3 detectors contributed, so an
@@ -338,13 +338,13 @@ export default function Analyzer() {
                   <div style={{ marginTop: 14, paddingTop: 13,
                                 borderTop: '1px solid rgb(var(--ds-line))' }}>
                     <div className="ds-section-label">Matched typology</div>
-                    <div style={{ fontSize: 13, marginTop: 5 }}>
+                    <div style={{ fontSize: 15, marginTop: 5 }}>
                       {result.retrieval.typology_name}
                       <span className="ds-mono" style={{ color: 'rgb(var(--ds-muted))', marginLeft: 7 }}>
                         {result.retrieval.typology_id}
                       </span>
                     </div>
-                    <div className="ds-mono" style={{ fontSize: 11, color: 'rgb(var(--ds-faint))',
+                    <div className="ds-mono" style={{ fontSize: 13, color: 'rgb(var(--ds-faint))',
                                                       marginTop: 5 }}>
                       {(result.retrieval.similarity_score * 100).toFixed(1)}% similarity ·
                       retrieved, not generated
@@ -353,7 +353,7 @@ export default function Analyzer() {
                 )}
               </>
             ) : (
-              <div style={{ fontSize: 13, color: 'rgb(var(--ds-muted))', marginTop: 10,
+              <div style={{ fontSize: 15, color: 'rgb(var(--ds-muted))', marginTop: 10,
                             lineHeight: 1.6 }}>
                 No verdict yet. Figures appear here only once a run produces them.
               </div>
