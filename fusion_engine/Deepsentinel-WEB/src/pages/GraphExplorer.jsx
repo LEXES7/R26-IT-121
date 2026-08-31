@@ -43,7 +43,11 @@ const BUSY = [
   ['C2083562754', '73 accounts, 2 collectors'],
 ]
 
-const FRAME_H = 460
+const FRAME_H = 620
+// The layout runs on a world larger than the frame, so there is somewhere to
+// move to. Packing 90 accounts into 620px makes a dense blob; spreading them
+// over twice that and letting the viewer travel makes the structure legible.
+const WORLD = 2.1
 
 export default function GraphExplorer() {
   const { isAdmin } = useAuth()
@@ -57,8 +61,45 @@ export default function GraphExplorer() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [hover, setHover] = useState(null)
+  // Where the viewer is looking. Kept in a ref as well as state: the draw
+  // effect reads it every frame, and a drag would otherwise re-run the force
+  // layout on every mouse move.
+  const [view, setView] = useState({ x: 0, y: 0, z: 1 })
+  const dragRef = useRef(null)
+  const frameRef = useRef(null)
   const canvasRef = useRef(null)
   const layoutRef = useRef([])          // [{id, x, y, r, node}] for hit-testing
+
+  // Arrow keys move the view; +/- zoom; 0 returns to the searched account.
+  // Bound to the frame rather than the window so typing an account name in
+  // the search box does not scroll the graph out from under you.
+  useEffect(() => {
+    const el = frameRef.current
+    if (!el) return undefined
+    const onKey = (e) => {
+      const step = e.shiftKey ? 160 : 60
+      const moves = {
+        ArrowLeft: [step, 0], ArrowRight: [-step, 0],
+        ArrowUp: [0, step], ArrowDown: [0, -step],
+      }
+      if (moves[e.key]) {
+        e.preventDefault()
+        const [dx, dy] = moves[e.key]
+        setView((v) => ({ ...v, x: v.x + dx, y: v.y + dy }))
+      } else if (e.key === '+' || e.key === '=') {
+        e.preventDefault()
+        setView((v) => ({ ...v, z: Math.min(3, v.z * 1.18) }))
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault()
+        setView((v) => ({ ...v, z: Math.max(0.35, v.z / 1.18) }))
+      } else if (e.key === '0') {
+        e.preventDefault()
+        setView({ x: 0, y: 0, z: 1 })
+      }
+    }
+    el.addEventListener('keydown', onKey)
+    return () => el.removeEventListener('keydown', onKey)
+  }, [])
 
   useEffect(() => {
     getGraphSettings().then(setSettings).catch(() => setSettings({ enabled: true }))
@@ -72,6 +113,7 @@ export default function GraphExplorer() {
       const d = await getNeighbourhood(account, { scope, hops: h })
       setGraph(d)
       setCentre(account)
+      setView({ x: 0, y: 0, z: 1 })
       if (remember) {
         setTrail((t) => (t[t.length - 1] === account ? t : [...t, account]).slice(-8))
       }
@@ -88,7 +130,9 @@ export default function GraphExplorer() {
   // held toward the middle. Deterministic — same graph, same picture — because
   // an investigator comparing two accounts should not have to re-read a new
   // arrangement each time.
-  const layout = useCallback((g, w, h) => {
+  const layout = useCallback((g, vw, vh) => {
+    const w = vw * WORLD
+    const h = vh * WORLD
     const nodes = g.nodes.map((n, i) => {
       // Seeded spiral start. Random starts settle to a different shape on
       // every render, which makes the same account look like a different
@@ -107,7 +151,7 @@ export default function GraphExplorer() {
       .map((e) => ({ a: byId.get(e.source), b: byId.get(e.target), e }))
       .filter((l) => l.a && l.b)
 
-    const pad = 46
+    const pad = 60
     for (let step = 0; step < 190; step += 1) {
       const cool = 1 - step / 190
       for (let i = 0; i < nodes.length; i += 1) {
@@ -116,7 +160,12 @@ export default function GraphExplorer() {
           let dx = B.x - A.x; let dy = B.y - A.y
           let d2 = dx * dx + dy * dy
           if (d2 < 1) { dx = (i - j) || 1; dy = 1; d2 = 1 }
-          const f = 2600 / d2
+          // Collectors push each other apart much harder than leaves do.
+          // Without this the hubs settle next to one another and the picture
+          // reads as one blob when it is actually three lobes joined by two
+          // accounts — which is the finding.
+          const hubbish = (A.in_degree >= 3 ? 5 : 1) * (B.in_degree >= 3 ? 5 : 1)
+          const f = (5200 * hubbish) / d2
           const d = Math.sqrt(d2)
           A.vx -= (dx / d) * f; A.vy -= (dy / d) * f
           B.vx += (dx / d) * f; B.vy += (dy / d) * f
@@ -125,7 +174,7 @@ export default function GraphExplorer() {
       links.forEach(({ a, b }) => {
         const dx = b.x - a.x; const dy = b.y - a.y
         const d = Math.hypot(dx, dy) || 1
-        const f = (d - Math.min(w, h) / 4.2) * 0.012
+        const f = (d - Math.min(w, h) / 7) * 0.012
         a.vx += (dx / d) * f; a.vy += (dy / d) * f
         b.vx -= (dx / d) * f; b.vy -= (dy / d) * f
       })
@@ -172,6 +221,13 @@ export default function GraphExplorer() {
       ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill()
     }
     if (!graph) return
+
+    // Everything after this is drawn in world space; the viewer's pan and zoom
+    // are one transform rather than an offset threaded through every call.
+    ctx.save()
+    ctx.translate(W / 2 + view.x, H / 2 + view.y)
+    ctx.scale(view.z, view.z)
+    ctx.translate(-W / 2, -H / 2)
 
     const { nodes, links } = layout(graph, W, H)
     const maxAtt = Math.max(...graph.edges.map((e) => e.attention ?? 0), 0.0001)
@@ -246,16 +302,34 @@ export default function GraphExplorer() {
       ctx.fillStyle = n.is_centre ? '#dffbff' : '#cfe6ee'
       ctx.fillText(text, n.x, n.y - r - 9)
     })
-  }, [graph, hover, layout])
+    ctx.restore()
+  }, [graph, hover, layout, view])
 
-  const hit = (evt) => {
+  // Screen point back to world point — the inverse of the transform the draw
+  // applies. Without this, hit-testing is correct only at zoom 1 with no pan,
+  // which is exactly the state nobody is in after they start looking around.
+  const toWorld = (evt) => {
     const canvas = canvasRef.current
     if (!canvas) return null
     const r = canvas.getBoundingClientRect()
-    const x = evt.clientX - r.left
-    const y = evt.clientY - r.top
+    const W = r.width
+    const H = FRAME_H
+    const sx = evt.clientX - r.left
+    const sy = evt.clientY - r.top
+    return {
+      x: (sx - W / 2 - view.x) / view.z + W / 2,
+      y: (sy - H / 2 - view.y) / view.z + H / 2,
+    }
+  }
+
+  const hit = (evt) => {
+    const w = toWorld(evt)
+    if (!w) return null
+    // The hit radius grows as you zoom out, so a node stays clickable when it
+    // is drawn at four pixels.
+    const slack = 5 / view.z
     return layoutRef.current.find(
-      (p) => (x - p.x) ** 2 + (y - p.y) ** 2 <= (p.r + 5) ** 2) ?? null
+      (p) => (w.x - p.x) ** 2 + (w.y - p.y) ** 2 <= (p.r + slack) ** 2) ?? null
   }
 
   const counts = graph?.counts
@@ -340,20 +414,56 @@ export default function GraphExplorer() {
             </p>
           )}
 
-          <div className="overflow-hidden rounded-xl border"
-               style={{ borderColor: 'rgb(var(--ds-line))',
-                        background: 'rgb(var(--ds-surface))' }}>
+          <div
+            ref={frameRef}
+            tabIndex={0}
+            className="relative overflow-hidden rounded-xl border outline-none"
+            style={{ borderColor: 'rgb(var(--ds-line))',
+                     background: 'rgb(var(--ds-surface))' }}
+          >
             <canvas
               ref={canvasRef}
               style={{ display: 'block', width: '100%', height: FRAME_H,
-                       cursor: hover ? 'pointer' : 'default' }}
-              onMouseMove={(e) => setHover(hit(e)?.id ?? null)}
-              onMouseLeave={() => setHover(null)}
-              onClick={(e) => {
-                const h = hit(e)
-                if (h && h.id !== centre) { setQuery(h.id); load(h.id) }
+                       cursor: dragRef.current ? 'grabbing'
+                             : hover ? 'pointer' : 'grab' }}
+              onMouseDown={(e) => {
+                frameRef.current?.focus()
+                dragRef.current = { x: e.clientX, y: e.clientY,
+                                    vx: view.x, vy: view.y, moved: false }
+              }}
+              onMouseMove={(e) => {
+                const d = dragRef.current
+                if (d) {
+                  const dx = e.clientX - d.x
+                  const dy = e.clientY - d.y
+                  if (Math.abs(dx) + Math.abs(dy) > 3) d.moved = true
+                  setView((v) => ({ ...v, x: d.vx + dx, y: d.vy + dy }))
+                  return
+                }
+                setHover(hit(e)?.id ?? null)
+              }}
+              onMouseUp={(e) => {
+                const d = dragRef.current
+                dragRef.current = null
+                // A drag that happened to end on a node is not a click on it.
+                if (d && !d.moved) {
+                  const h = hit(e)
+                  if (h && h.id !== centre) { setQuery(h.id); load(h.id) }
+                }
+              }}
+              onMouseLeave={() => { dragRef.current = null; setHover(null) }}
+              onWheel={(e) => {
+                e.preventDefault()
+                setView((v) => ({
+                  ...v,
+                  z: Math.max(0.35, Math.min(3, v.z * (e.deltaY < 0 ? 1.1 : 1 / 1.1))),
+                }))
               }}
             />
+            <p className="pointer-events-none absolute bottom-2 right-3 text-[10px]"
+               style={{ color: 'rgb(var(--ds-faint))' }}>
+              arrow keys move · +/− zoom · 0 recentres · drag to pan
+            </p>
             {!graph && !loading && (
               <p className="pb-6 text-center text-xs" style={{ color: 'rgb(var(--ds-faint))' }}>
                 Nothing loaded. Search an account above.
