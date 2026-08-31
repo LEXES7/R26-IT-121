@@ -3,6 +3,8 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { getMonitorRuntime } from '../services/api'
+import markLight from '../assets/deepsentinel-mark.png'
+import markDark from '../assets/deepsentinel-mark-dark.png'
 
 /**
  * The signed-in application shell.
@@ -42,7 +44,6 @@ const I = {
   menu: 'M3 6h18M3 12h18M3 18h18',
   close: 'M18 6 6 18M6 6l12 12',
   out: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14 5-5-5-5m5 5H9',
-  shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z',
 }
 
 function Icon({ d, size = 15 }) {
@@ -135,9 +136,17 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
       <div className="ds-shell">
         <aside className={`ds-sidebar ${open ? 'open' : ''}`}>
           <div className="ds-brand">
-            <span style={{ color: 'rgb(var(--ds-accent))', display: 'grid' }}>
-              <Icon d={I.shield} size={26} />
-            </span>
+            {/* The real mark, not the outline glyph that used to sit here: that
+                was a bare shield with nothing inside it, so the globe and the
+                eye the brand is built around were simply absent. Rendered at
+                34px against a 220px source, so it stays sharp at any display
+                scaling, and switched by theme because the artwork is navy on
+                one ground and white on the other. */}
+            <img
+              src={theme === 'light' ? markLight : markDark}
+              alt=""
+              className="ds-brand-mark"
+            />
             <div className="ds-brand-copy">
               <div className="ds-brand-name">DeepSentinel</div>
               <div className="ds-brand-sub">

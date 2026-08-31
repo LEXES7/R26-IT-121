@@ -201,7 +201,7 @@ export default function PipelineLive({ stages, escalating, counters }) {
             <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
           </filter>
           <linearGradient id="pl-clear" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="rgb(var(--ds-accent))" stopOpacity="0.22" />
+            <stop offset="0%" stopColor="rgb(var(--ds-accent))" stopOpacity="0.22" className="pl-clear-stop" />
             <stop offset="100%" stopColor="rgb(var(--ds-accent))" stopOpacity="0" />
           </linearGradient>
         </defs>
@@ -210,25 +210,25 @@ export default function PipelineLive({ stages, escalating, counters }) {
         <g>
           {/* the same stream to all three, at the same width, at once */}
           <path d={ribbon(stream, left(NODES.graph), inWidth)}
-                fill="rgb(var(--ds-accent))" opacity="0.14" />
+                fill="rgb(var(--ds-accent))" opacity="0.14" className="pl-ribbon" />
           <path d={ribbon(stream, left(NODES.behavioural), inWidth)}
-                fill="rgb(var(--ds-signal))" opacity="0.13" />
+                fill="rgb(var(--ds-signal))" opacity="0.13" className="pl-ribbon" />
           <path d={ribbon(stream, left(NODES.temporal), inWidth)}
-                fill="rgb(var(--ds-warn))" opacity="0.12" />
+                fill="rgb(var(--ds-warn))" opacity="0.12" className="pl-ribbon" />
 
           {/* three scores converging on the meta-classifier */}
           <path d={ribbon(right(NODES.graph), fuseAt('graph'), inWidth)}
-                fill="rgb(var(--ds-accent))" opacity="0.14" />
+                fill="rgb(var(--ds-accent))" opacity="0.14" className="pl-ribbon" />
           <path d={ribbon(right(NODES.behavioural), fuseAt('behavioural'), inWidth)}
-                fill="rgb(var(--ds-signal))" opacity="0.13" />
+                fill="rgb(var(--ds-signal))" opacity="0.13" className="pl-ribbon" />
           <path d={ribbon(right(NODES.temporal), fuseAt('temporal'), inWidth)}
-                fill="rgb(var(--ds-warn))" opacity="0.12" />
+                fill="rgb(var(--ds-warn))" opacity="0.12" className="pl-ribbon" />
 
           {/* The one decision in the system, and the only fork in the picture:
               most of the stream is cleared here, a little of it is flagged. */}
           <path d={vribbon(fuseBottom, dropEnd, clearWidth)} fill="url(#pl-clear)" />
           <path d={ribbon(right(NODES.fusion), left(NODES.alert), alertWidth)}
-                fill="rgb(var(--ds-signal))" opacity="0.26" />
+                fill="rgb(var(--ds-signal))" opacity="0.26" className="pl-ribbon-alert" />
         </g>
 
         {/* ── flow ── */}
