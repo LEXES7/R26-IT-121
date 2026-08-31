@@ -65,6 +65,11 @@ export default function GraphExplorer() {
   const [error, setError] = useState(null)
   const [hover, setHover] = useState(null)
 
+  // Closed until asked for. The explorer is the one screen that makes the
+  // network detector do real work, and a page that quietly loads a few hundred
+  // nodes on every visit is how a demo machine runs out of memory.
+  const [expanded, setExpanded] = useState(false)
+
   // ── Demo mode ──────────────────────────────────────────────────────────
   // Folded into this page rather than living on its own, because the point of
   // the demo is the picture: an account that did not exist gets scored, and
@@ -118,7 +123,10 @@ export default function GraphExplorer() {
     }
     el.addEventListener('keydown', onKey)
     return () => el.removeEventListener('keydown', onKey)
-  }, [])
+    // Re-run when the explorer opens: the frame does not exist while it is
+    // closed, so binding once on mount would attach to nothing and the arrow
+    // keys would silently do nothing for the rest of the session.
+  }, [expanded])
 
   useEffect(() => {
     getGraphSettings().then(setSettings).catch(() => setSettings({ enabled: true }))
@@ -202,6 +210,28 @@ export default function GraphExplorer() {
       setCsvBusy(false)
       if (fileRef.current) fileRef.current.value = ''
     }
+  }, [])
+
+  /* Closing does not just hide the graph — it drops it.
+   *
+   * Leaving a loaded neighbourhood in state while the panel is collapsed keeps
+   * the nodes, the edges and the layout resident for the rest of the session,
+   * which is precisely the cost the switch exists to avoid. */
+  const toggleExplorer = useCallback(() => {
+    setExpanded((was) => {
+      if (was) {
+        setGraph(null)
+        setCentre(null)
+        setTrail([])
+        setHover(null)
+        setError(null)
+        setCsv(null)
+        setRuns([])
+        setDemo(false)
+        setView({ x: 0, y: 0, z: 1 })
+      }
+      return !was
+    })
   }, [])
 
   // ── layout ────────────────────────────────────────────────────────────
@@ -486,334 +516,378 @@ export default function GraphExplorer() {
     >
       {error && <Alert tone="error">{error}</Alert>}
 
-      {/* Demo mode. Off by default: this page is normally for looking at the
-          graph, and the demo runs real forward passes on top of that. */}
-      {!off && (
-        <div className="flex flex-wrap items-center gap-3">
+      <div style={{ display: "grid", gap: 18 }}>
+      {/* One switch, at the top, before anything else.
+        *
+        * The explorer is the only screen here that can put real load on the
+        * network detector: every search walks the served graph. Closed it
+        * fetches nothing and holds nothing, and closing it drops whatever was
+        * loaded rather than leaving a few hundred nodes resident for the rest
+        * of the session. So it opens on request, like a map that streams in
+        * only once you look at it. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3"
+           style={{ borderColor: expanded ? 'rgba(45,212,191,.4)' : 'rgb(var(--ds-line))',
+                    background: expanded ? 'rgba(45,212,191,.05)' : 'transparent' }}>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={expanded}
+            aria-label="Graph explorer"
+            disabled={off}
+            onClick={toggleExplorer}
+            style={{
+              width: 44, height: 24, borderRadius: 999, padding: 3,
+              display: 'flex', alignItems: 'center',
+              justifyContent: expanded ? 'flex-end' : 'flex-start',
+              background: expanded ? 'rgb(var(--ds-accent))' : 'rgb(var(--ds-line))',
+              opacity: off ? 0.4 : 1,
+              cursor: off ? 'not-allowed' : 'pointer',
+              transition: 'background .15s',
+            }}
+          >
+            <span style={{ width: 18, height: 18, borderRadius: 999,
+                           background: '#fff', display: 'block' }} />
+          </button>
+          <div>
+            <p className="text-[13px] font-semibold" style={{ color: 'rgb(var(--ds-ink))' }}>
+              {off ? 'Switched off by an administrator'
+                : expanded ? 'Explorer is open' : 'Explorer is closed'}
+            </p>
+            <p className="text-[11px]" style={{ color: 'rgb(var(--ds-muted))' }}>
+              {off
+                ? 'The network detector is reserved for the pipeline.'
+                : expanded
+                  ? 'Search an account to stream in the network around it.'
+                  : 'Nothing is loaded until you open it.'}
+            </p>
+          </div>
+        </div>
+
+        {expanded && !off && (
           <Button size="sm" variant={demo ? 'primary' : 'secondary'}
                   onClick={() => setDemo((v) => !v)}>
             {demo ? 'Demo mode is on' : 'Demo mode'}
           </Button>
-          <span className="text-[11px]" style={{ color: 'rgb(var(--ds-muted))' }}>
-            {demo
-              ? 'Only the relational model runs. Nothing is recorded, alerted on, or written to the graph.'
-              : 'For demonstrating the model on accounts it has never seen. For testing only.'}
-          </span>
-        </div>
+        )}
+      </div>
+
+      {!off && !expanded && (
+        <p className="rounded-xl border border-dashed px-4 py-8 text-center text-[12px]"
+           style={{ borderColor: 'rgb(var(--ds-line))', color: 'rgb(var(--ds-faint))' }}>
+          3.27M accounts and 2.77M transfers. Open the explorer above to search
+          it, or to score an account the model has never seen.
+        </p>
       )}
 
-      {!off && demo && (
-        <section className="rounded-xl border"
-                 style={{ borderColor: 'rgba(168,85,247,.35)',
-                          background: 'rgba(168,85,247,.05)' }}>
-          <div className="grid gap-px md:grid-cols-[1.15fr_1fr]"
-               style={{ background: 'rgba(168,85,247,.18)' }}>
-
-            {/* ── Invent an account ───────────────────────────────────── */}
-            <div className="p-4" style={{ display: 'grid', gap: 12,
-                                          background: 'rgb(var(--ds-surface))',
-                                          alignContent: 'start' }}>
-              <div>
-                <p className="ds-mono text-[10px] uppercase tracking-wider"
-                   style={{ color: 'rgb(var(--ds-faint))' }}>
-                  Invent an account the model has never seen
-                </p>
-                <p className="mt-1 text-[11px] leading-relaxed"
-                   style={{ color: 'rgb(var(--ds-muted))' }}>
-                  Change only the sender and score again. The account is
-                  identical, so any change came from the company it keeps.
-                </p>
-              </div>
-
-              <div className="grid gap-2 sm:grid-cols-3">
-                {[['New account', newAccount, setNewAccount],
-                  ['Received from', from, setFrom],
-                  ['Amount', amount, setAmount]].map(([label, value, set]) => (
-                  <label key={label} style={{ display: 'grid', gap: 3 }}>
-                    <span className="ds-mono text-[9px] uppercase tracking-wider"
-                          style={{ color: 'rgb(var(--ds-faint))' }}>{label}</span>
-                    <Input value={value} onChange={(e) => set(e.target.value)} />
-                  </label>
-                ))}
-              </div>
-              <Button size="sm" onClick={scoreInvented} loading={scoring}
-                      disabled={!newAccount.trim() || !from.trim()}>
-                Score and place it in the graph
-              </Button>
-
-              {runs.length > 0 && (() => {
-                const top = Math.max(...runs.map((r) => r.score), 0.0001)
-                const spread = new Set(runs.map((r) => r.score)).size
-                return (
-                  <div style={{ display: 'grid', gap: 8 }}>
-                    <div className="flex items-baseline gap-2">
-                      <span className="numeric text-[30px] leading-none"
-                            style={{ color: '#c084fc' }}>
-                        {runs[0].score.toFixed(4)}
-                      </span>
-                      <span className="text-[10px]" style={{ color: 'rgb(var(--ds-faint))' }}>
-                        raw · from {runs[0].accounts.toLocaleString()} accounts
-                      </span>
-                    </div>
-
-                    {/* The comparison, drawn. A panel at the back of the room
-                        reads bar lengths; it does not read four decimals. */}
-                    <div style={{ display: 'grid', gap: 4 }}>
-                      {runs.map((r, i) => (
-                        <div key={r.at} className="flex items-center gap-2">
-                          <span className="numeric w-[92px] shrink-0 truncate text-[10px]"
-                                title={r.from}
-                                style={{ color: 'rgb(var(--ds-muted))' }}>{r.from}</span>
-                          <span className="h-[6px] flex-1 rounded"
-                                style={{ background: 'rgb(var(--ds-line))' }}>
-                            <span className="block h-full rounded"
-                                  style={{ width: `${Math.max(2, (r.score / top) * 100)}%`,
-                                           background: i === 0 ? '#c084fc'
-                                             : 'rgba(168,85,247,.45)' }} />
-                          </span>
-                          <span className="numeric w-[52px] shrink-0 text-right text-[10px]"
-                                style={{ color: 'rgb(var(--ds-ink))' }}>
-                            {r.score.toFixed(4)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {runs.length > 1 && (
-                      <p className="text-[10px]"
-                         style={{ color: spread > 1 ? '#c084fc' : 'rgb(var(--ds-muted))' }}>
-                        {spread > 1
-                          ? `${spread} different scores across ${runs.length} runs — only the sender changed.`
-                          : 'Same score so far. Try a different sender.'}
-                      </p>
-                    )}
-                  </div>
-                )
-              })()}
-            </div>
-
-            {/* ── A file, through this model alone ────────────────────── */}
-            <div className="p-4" style={{ display: 'grid', gap: 10,
-                                          background: 'rgb(var(--ds-surface))',
-                                          alignContent: 'start' }}>
-              <div>
-                <p className="ds-mono text-[10px] uppercase tracking-wider"
-                   style={{ color: 'rgb(var(--ds-faint))' }}>
-                  Or score a file through this model alone
-                </p>
-                <p className="mt-1 text-[11px] leading-relaxed"
-                   style={{ color: 'rgb(var(--ds-muted))' }}>
-                  No fusion, no other detector. Rows whose destination is new are
-                  scored from their neighbourhood instead of looked up.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <input ref={fileRef} type="file" accept=".csv,text/csv"
-                       onChange={onDemoFile} className="hidden" />
-                <Button size="sm" variant="secondary" loading={csvBusy}
-                        onClick={() => fileRef.current?.click()}>
-                  Upload a CSV
-                </Button>
-                {csv && (
-                  <span className="numeric text-[10px]" style={{ color: 'rgb(var(--ds-muted))' }}>
-                    {csv.counts.precomputed} looked up · {csv.counts.inductive} new
-                    · {csv.counts.unscored} not scoreable
-                  </span>
-                )}
-              </div>
-
-              {csv && (
-                <div style={{ overflow: 'auto', maxHeight: 210 }}>
-                  <table className="w-full text-[10px]" style={{ borderCollapse: 'collapse' }}>
-                    <thead className="sticky top-0"
-                           style={{ background: 'rgb(var(--ds-surface))' }}>
-                      <tr style={{ color: 'rgb(var(--ds-faint))' }}>
-                        {['To', 'Score', 'How'].map((h) => (
-                          <th key={h}
-                              className="ds-mono px-2 py-1 text-left text-[9px] uppercase tracking-wider"
-                              style={{ borderBottom: '1px solid rgb(var(--ds-line))' }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {csv.rows.map((r) => (
-                        <tr key={r.row}>
-                          <td className="numeric px-2 py-1"
-                              style={{ color: 'rgb(var(--ds-ink))' }}>{r.nameDest}</td>
-                          <td className="numeric px-2 py-1"
-                              style={{ color: r.score == null ? 'rgb(var(--ds-faint))'
-                                : 'rgb(var(--ds-ink))' }}>
-                            {r.score == null ? '—' : r.score.toFixed(4)}
-                          </td>
-                          <td className="px-2 py-1" style={{
-                            color: r.source === 'inductive' ? '#c084fc'
-                              : 'rgb(var(--ds-muted))' }}>
-                            {r.source === 'precomputed' ? 'in the graph'
-                              : r.source === 'inductive' ? 'new · from neighbours'
-                                : 'not scoreable'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* The caveat belongs with the numbers, but not above them. */}
-          <p className="px-4 py-2 text-[10px] leading-relaxed"
-             style={{ color: 'rgb(var(--ds-faint))',
-                      borderTop: '1px solid rgba(168,85,247,.18)' }}>
-            Scores here are the raw network output, not the calibrated numbers the
-            rest of the platform reports — the isotonic calibrator was never saved
-            as a reusable artefact. Runs are comparable with each other, which is
-            what the demonstration turns on. Nothing is recorded, alerted on, or
-            written to the graph.
-          </p>
-        </section>
-      )}
-      {off ? (
-        <Alert tone="warning">
-          The graph explorer is switched off.{' '}
-          {isAdmin ? 'Turn it back on below.' : 'An administrator can turn it back on.'}
-        </Alert>
-      ) : (
+      {!off && expanded && (
         <>
-          <form
-            onSubmit={(e) => { e.preventDefault(); load(query.trim()) }}
-            className="flex flex-wrap items-center gap-3"
-          >
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Account, e.g. C1166671647"
-              className="numeric w-64 rounded-md border px-3 py-2 text-[13px]"
-              style={{ borderColor: 'rgb(var(--ds-line))',
-                       background: 'rgb(var(--ds-surface))',
-                       color: 'rgb(var(--ds-ink))' }}
-            />
-            <Button type="submit" loading={loading} disabled={!query.trim()}>
-              {loading ? 'Loading…' : 'Show the network'}
-            </Button>
-            <span className="text-[11px]" style={{ color: 'rgb(var(--ds-faint))' }}>
-              largest networks:{' '}
-              {BUSY.map(([a, note], i) => (
-                <span key={a}>
-                  {i > 0 && ' · '}
-                  <button type="button" title={note}
-                          onClick={() => { setQuery(a); load(a) }}
-                          className="numeric underline decoration-dotted underline-offset-2">
-                    {a}
-                  </button>
-                </span>
-              ))}
-            </span>
-            <label className="flex items-center gap-2 text-[12px]"
-                   style={{ color: 'rgb(var(--ds-muted))' }}>
-              Hops
-              <select
-                value={hops}
-                onChange={(e) => {
-                  const h = Number(e.target.value)
-                  setHops(h)
-                  if (centre) load(centre, h, false)
-                }}
-                className="rounded-md border px-2 py-1 text-[12px]"
+            <form
+              onSubmit={(e) => { e.preventDefault(); load(query.trim()) }}
+              className="flex flex-wrap items-center gap-3"
+            >
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Account, e.g. C1166671647"
+                className="numeric w-64 rounded-md border px-3 py-2 text-[13px]"
                 style={{ borderColor: 'rgb(var(--ds-line))',
                          background: 'rgb(var(--ds-surface))',
                          color: 'rgb(var(--ds-ink))' }}
-              >
-                <option value={1}>1</option>
-                <option value={2} disabled={settings?.max_hops < 2}>2</option>
-              </select>
-            </label>
-          </form>
+              />
+              <Button type="submit" loading={loading} disabled={!query.trim()}>
+                {loading ? 'Loading…' : 'Show the network'}
+              </Button>
+              <span className="text-[11px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+                largest networks:{' '}
+                {BUSY.map(([a, note], i) => (
+                  <span key={a}>
+                    {i > 0 && ' · '}
+                    <button type="button" title={note}
+                            onClick={() => { setQuery(a); load(a) }}
+                            className="numeric underline decoration-dotted underline-offset-2">
+                      {a}
+                    </button>
+                  </span>
+                ))}
+              </span>
+              <label className="flex items-center gap-2 text-[12px]"
+                     style={{ color: 'rgb(var(--ds-muted))' }}>
+                Hops
+                <select
+                  value={hops}
+                  onChange={(e) => {
+                    const h = Number(e.target.value)
+                    setHops(h)
+                    if (centre) load(centre, h, false)
+                  }}
+                  className="rounded-md border px-2 py-1 text-[12px]"
+                  style={{ borderColor: 'rgb(var(--ds-line))',
+                           background: 'rgb(var(--ds-surface))',
+                           color: 'rgb(var(--ds-ink))' }}
+                >
+                  <option value={1}>1</option>
+                  <option value={2} disabled={settings?.max_hops < 2}>2</option>
+                </select>
+              </label>
+            </form>
 
-          {trail.length > 1 && (
-            <p className="text-[11px]" style={{ color: 'rgb(var(--ds-faint))' }}>
-              {trail.map((a, i) => (
-                <span key={`${a}-${i}`}>
-                  {i > 0 && ' → '}
-                  <button onClick={() => load(a, hops, false)}
-                          className="underline decoration-dotted underline-offset-2">
-                    {a}
-                  </button>
-                </span>
-              ))}
-            </p>
-          )}
+            {demo && (
+              <section className="rounded-xl border"
+                       style={{ borderColor: 'rgba(168,85,247,.35)',
+                                background: 'rgba(168,85,247,.05)' }}>
+                <div className="grid gap-px md:grid-cols-[1.15fr_1fr]"
+                     style={{ background: 'rgba(168,85,247,.18)' }}>
 
-          <div
-            ref={frameRef}
-            tabIndex={0}
-            className="relative overflow-hidden rounded-xl border outline-none"
-            style={{ borderColor: 'rgb(var(--ds-line))',
-                     background: 'rgb(var(--ds-surface))' }}
-          >
-            <canvas
-              ref={canvasRef}
-              style={{ display: 'block', width: '100%', height: FRAME_H,
-                       cursor: dragRef.current ? 'grabbing'
-                             : hover ? 'pointer' : 'grab' }}
-              onMouseDown={(e) => {
-                frameRef.current?.focus()
-                dragRef.current = { x: e.clientX, y: e.clientY,
-                                    vx: view.x, vy: view.y, moved: false }
-              }}
-              onMouseMove={(e) => {
-                const d = dragRef.current
-                if (d) {
-                  const dx = e.clientX - d.x
-                  const dy = e.clientY - d.y
-                  if (Math.abs(dx) + Math.abs(dy) > 3) d.moved = true
-                  setView((v) => ({ ...v, x: d.vx + dx, y: d.vy + dy }))
-                  return
-                }
-                setHover(hit(e)?.id ?? null)
-              }}
-              onMouseUp={(e) => {
-                const d = dragRef.current
-                dragRef.current = null
-                // A drag that happened to end on a node is not a click on it.
-                if (d && !d.moved) {
-                  const h = hit(e)
-                  if (h && h.id !== centre) { setQuery(h.id); load(h.id) }
-                }
-              }}
-              onMouseLeave={() => { dragRef.current = null; setHover(null) }}
-              onWheel={(e) => {
-                e.preventDefault()
-                setView((v) => ({
-                  ...v,
-                  z: Math.max(0.35, Math.min(3, v.z * (e.deltaY < 0 ? 1.1 : 1 / 1.1))),
-                }))
-              }}
-            />
-            <p className="pointer-events-none absolute bottom-2 right-3 text-[10px]"
-               style={{ color: 'rgb(var(--ds-faint))' }}>
-              arrow keys move · +/− zoom · 0 recentres · drag to pan
-            </p>
-            {!graph && !loading && (
-              <p className="pb-6 text-center text-xs" style={{ color: 'rgb(var(--ds-faint))' }}>
-                Nothing loaded. Search an account above.
+                  {/* ── Invent an account ───────────────────────────────────── */}
+                  <div className="p-4" style={{ display: 'grid', gap: 12,
+                                                background: 'rgb(var(--ds-surface))',
+                                                alignContent: 'start' }}>
+                    <div>
+                      <p className="ds-mono text-[10px] uppercase tracking-wider"
+                         style={{ color: 'rgb(var(--ds-faint))' }}>
+                        Invent an account the model has never seen
+                      </p>
+                      <p className="mt-1 text-[11px] leading-relaxed"
+                         style={{ color: 'rgb(var(--ds-muted))' }}>
+                        Change only the sender and score again. The account is
+                        identical, so any change came from the company it keeps.
+                      </p>
+                    </div>
+
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      {[['New account', newAccount, setNewAccount],
+                        ['Received from', from, setFrom],
+                        ['Amount', amount, setAmount]].map(([label, value, set]) => (
+                        <label key={label} style={{ display: 'grid', gap: 3 }}>
+                          <span className="ds-mono text-[9px] uppercase tracking-wider"
+                                style={{ color: 'rgb(var(--ds-faint))' }}>{label}</span>
+                          <Input value={value} onChange={(e) => set(e.target.value)} />
+                        </label>
+                      ))}
+                    </div>
+                    <Button size="sm" onClick={scoreInvented} loading={scoring}
+                            disabled={!newAccount.trim() || !from.trim()}>
+                      Score and place it in the graph
+                    </Button>
+
+                    {runs.length > 0 && (() => {
+                      const top = Math.max(...runs.map((r) => r.score), 0.0001)
+                      const spread = new Set(runs.map((r) => r.score)).size
+                      return (
+                        <div style={{ display: 'grid', gap: 8 }}>
+                          <div className="flex items-baseline gap-2">
+                            <span className="numeric text-[30px] leading-none"
+                                  style={{ color: '#c084fc' }}>
+                              {runs[0].score.toFixed(4)}
+                            </span>
+                            <span className="text-[10px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+                              raw · from {runs[0].accounts.toLocaleString()} accounts
+                            </span>
+                          </div>
+
+                          {/* The comparison, drawn. A panel at the back of the room
+                              reads bar lengths; it does not read four decimals. */}
+                          <div style={{ display: 'grid', gap: 4 }}>
+                            {runs.map((r, i) => (
+                              <div key={r.at} className="flex items-center gap-2">
+                                <span className="numeric w-[92px] shrink-0 truncate text-[10px]"
+                                      title={r.from}
+                                      style={{ color: 'rgb(var(--ds-muted))' }}>{r.from}</span>
+                                <span className="h-[6px] flex-1 rounded"
+                                      style={{ background: 'rgb(var(--ds-line))' }}>
+                                  <span className="block h-full rounded"
+                                        style={{ width: `${Math.max(2, (r.score / top) * 100)}%`,
+                                                 background: i === 0 ? '#c084fc'
+                                                   : 'rgba(168,85,247,.45)' }} />
+                                </span>
+                                <span className="numeric w-[52px] shrink-0 text-right text-[10px]"
+                                      style={{ color: 'rgb(var(--ds-ink))' }}>
+                                  {r.score.toFixed(4)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {runs.length > 1 && (
+                            <p className="text-[10px]"
+                               style={{ color: spread > 1 ? '#c084fc' : 'rgb(var(--ds-muted))' }}>
+                              {spread > 1
+                                ? `${spread} different scores across ${runs.length} runs — only the sender changed.`
+                                : 'Same score so far. Try a different sender.'}
+                            </p>
+                          )}
+                        </div>
+                      )
+                    })()}
+                  </div>
+
+                  {/* ── A file, through this model alone ────────────────────── */}
+                  <div className="p-4" style={{ display: 'grid', gap: 10,
+                                                background: 'rgb(var(--ds-surface))',
+                                                alignContent: 'start' }}>
+                    <div>
+                      <p className="ds-mono text-[10px] uppercase tracking-wider"
+                         style={{ color: 'rgb(var(--ds-faint))' }}>
+                        Or score a file through this model alone
+                      </p>
+                      <p className="mt-1 text-[11px] leading-relaxed"
+                         style={{ color: 'rgb(var(--ds-muted))' }}>
+                        No fusion, no other detector. Rows whose destination is new are
+                        scored from their neighbourhood instead of looked up.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input ref={fileRef} type="file" accept=".csv,text/csv"
+                             onChange={onDemoFile} className="hidden" />
+                      <Button size="sm" variant="secondary" loading={csvBusy}
+                              onClick={() => fileRef.current?.click()}>
+                        Upload a CSV
+                      </Button>
+                      {csv && (
+                        <span className="numeric text-[10px]" style={{ color: 'rgb(var(--ds-muted))' }}>
+                          {csv.counts.precomputed} looked up · {csv.counts.inductive} new
+                          · {csv.counts.unscored} not scoreable
+                        </span>
+                      )}
+                    </div>
+
+                    {csv && (
+                      <div style={{ overflow: 'auto', maxHeight: 210 }}>
+                        <table className="w-full text-[10px]" style={{ borderCollapse: 'collapse' }}>
+                          <thead className="sticky top-0"
+                                 style={{ background: 'rgb(var(--ds-surface))' }}>
+                            <tr style={{ color: 'rgb(var(--ds-faint))' }}>
+                              {['To', 'Score', 'How'].map((h) => (
+                                <th key={h}
+                                    className="ds-mono px-2 py-1 text-left text-[9px] uppercase tracking-wider"
+                                    style={{ borderBottom: '1px solid rgb(var(--ds-line))' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {csv.rows.map((r) => (
+                              <tr key={r.row}>
+                                <td className="numeric px-2 py-1"
+                                    style={{ color: 'rgb(var(--ds-ink))' }}>{r.nameDest}</td>
+                                <td className="numeric px-2 py-1"
+                                    style={{ color: r.score == null ? 'rgb(var(--ds-faint))'
+                                      : 'rgb(var(--ds-ink))' }}>
+                                  {r.score == null ? '—' : r.score.toFixed(4)}
+                                </td>
+                                <td className="px-2 py-1" style={{
+                                  color: r.source === 'inductive' ? '#c084fc'
+                                    : 'rgb(var(--ds-muted))' }}>
+                                  {r.source === 'precomputed' ? 'in the graph'
+                                    : r.source === 'inductive' ? 'new · from neighbours'
+                                      : 'not scoreable'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* The caveat belongs with the numbers, but not above them. */}
+                <p className="px-4 py-2 text-[10px] leading-relaxed"
+                   style={{ color: 'rgb(var(--ds-faint))',
+                            borderTop: '1px solid rgba(168,85,247,.18)' }}>
+                  Scores here are the raw network output, not the calibrated numbers the
+                  rest of the platform reports — the isotonic calibrator was never saved
+                  as a reusable artefact. Runs are comparable with each other, which is
+                  what the demonstration turns on. Nothing is recorded, alerted on, or
+                  written to the graph.
+                </p>
+              </section>
+            )}
+
+            {trail.length > 1 && (
+              <p className="text-[11px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+                {trail.map((a, i) => (
+                  <span key={`${a}-${i}`}>
+                    {i > 0 && ' → '}
+                    <button onClick={() => load(a, hops, false)}
+                            className="underline decoration-dotted underline-offset-2">
+                      {a}
+                    </button>
+                  </span>
+                ))}
               </p>
             )}
-          </div>
 
-          {counts && (
-            <p className="text-[11px]" style={{ color: 'rgb(var(--ds-muted))' }}>
-              {counts.nodes_returned} accounts, {counts.edges_returned} transfers
-              {counts.truncated
-                ? ` — ${counts.edges_in_ball} exist here, showing the ${counts.edges_returned}
-                    the model weighted most heavily`
-                : ''}
-              . Teal is the account you searched, amber scores above the medium
-              band, and a thicker line is an edge the model attended to more.
-              Click any account to move there.
-            </p>
-          )}
+            <div
+              ref={frameRef}
+              tabIndex={0}
+              className="relative overflow-hidden rounded-xl border outline-none"
+              style={{ borderColor: 'rgb(var(--ds-line))',
+                       background: 'rgb(var(--ds-surface))' }}
+            >
+              <canvas
+                ref={canvasRef}
+                style={{ display: 'block', width: '100%', height: FRAME_H,
+                         cursor: dragRef.current ? 'grabbing'
+                               : hover ? 'pointer' : 'grab' }}
+                onMouseDown={(e) => {
+                  frameRef.current?.focus()
+                  dragRef.current = { x: e.clientX, y: e.clientY,
+                                      vx: view.x, vy: view.y, moved: false }
+                }}
+                onMouseMove={(e) => {
+                  const d = dragRef.current
+                  if (d) {
+                    const dx = e.clientX - d.x
+                    const dy = e.clientY - d.y
+                    if (Math.abs(dx) + Math.abs(dy) > 3) d.moved = true
+                    setView((v) => ({ ...v, x: d.vx + dx, y: d.vy + dy }))
+                    return
+                  }
+                  setHover(hit(e)?.id ?? null)
+                }}
+                onMouseUp={(e) => {
+                  const d = dragRef.current
+                  dragRef.current = null
+                  // A drag that happened to end on a node is not a click on it.
+                  if (d && !d.moved) {
+                    const h = hit(e)
+                    if (h && h.id !== centre) { setQuery(h.id); load(h.id) }
+                  }
+                }}
+                onMouseLeave={() => { dragRef.current = null; setHover(null) }}
+                onWheel={(e) => {
+                  e.preventDefault()
+                  setView((v) => ({
+                    ...v,
+                    z: Math.max(0.35, Math.min(3, v.z * (e.deltaY < 0 ? 1.1 : 1 / 1.1))),
+                  }))
+                }}
+              />
+              <p className="pointer-events-none absolute bottom-2 right-3 text-[10px]"
+                 style={{ color: 'rgb(var(--ds-faint))' }}>
+                arrow keys move · +/− zoom · 0 recentres · drag to pan
+              </p>
+              {!graph && !loading && (
+                <p className="pb-6 text-center text-xs" style={{ color: 'rgb(var(--ds-faint))' }}>
+                  Nothing loaded. Search an account above.
+                </p>
+              )}
+            </div>
+
+            {counts && (
+              <p className="text-[11px]" style={{ color: 'rgb(var(--ds-muted))' }}>
+                {counts.nodes_returned} accounts, {counts.edges_returned} transfers
+                {counts.truncated
+                  ? ` — ${counts.edges_in_ball} exist here, showing the ${counts.edges_returned}
+                      the model weighted most heavily`
+                  : ''}
+                . Teal is the account you searched, amber scores above the medium
+                band, and a thicker line is an edge the model attended to more.
+                Click any account to move there.
+              </p>
+            )}
         </>
       )}
 
@@ -845,6 +919,7 @@ export default function GraphExplorer() {
           </div>
         </div>
       )}
+      </div>
     </ConsoleShell>
   )
 }
