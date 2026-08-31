@@ -57,7 +57,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
               <div key={l}>
                 <dd className="numeric text-2xl text-slate-100">{v}</dd>
                 <dt className="eyebrow mt-2 text-slate-500">{l}</dt>
-                <p className="mt-1 text-[10px] text-slate-600">{note}</p>
+                <p className="mt-1 text-[12px] text-slate-600">{note}</p>
               </div>
             ))}
           </dl>

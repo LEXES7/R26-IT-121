@@ -142,7 +142,7 @@ export default function Navbar() {
                 Administration
                 <span
                   className={cx(
-                    'text-[9px] transition-transform',
+                    'text-[11px] transition-transform',
                     openMenu === 'admin' && 'rotate-180',
                   )}
                 >
@@ -170,7 +170,7 @@ export default function Navbar() {
                         )}
                       >
                         <span className="block text-sm text-slate-200">{l.label}</span>
-                        <span className="mt-0.5 block text-[11px] text-slate-600">
+                        <span className="mt-0.5 block text-[13px] text-slate-600">
                           {l.detail}
                         </span>
                       </Link>
@@ -192,7 +192,7 @@ export default function Navbar() {
                 aria-haspopup="menu"
                 className="flex items-center gap-2 rounded-lg py-1.5 pl-1.5 pr-2.5 transition-colors hover:bg-surface-raised"
               >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-slate-600 to-slate-700 text-[11px] font-semibold text-white">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-slate-600 to-slate-700 text-[13px] font-semibold text-white">
                   {initials}
                 </span>
                 <span className="max-w-[9rem] truncate text-sm text-slate-300">
@@ -200,7 +200,7 @@ export default function Navbar() {
                 </span>
                 <span
                   className={cx(
-                    'text-[9px] text-slate-600 transition-transform',
+                    'text-[11px] text-slate-600 transition-transform',
                     openMenu === 'user' && 'rotate-180',
                   )}
                 >
@@ -294,7 +294,7 @@ export default function Navbar() {
 
           {adminLinks.length > 0 && (
             <div className="pt-3">
-              <p className="px-4 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+              <p className="px-4 pb-1.5 text-[12px] font-semibold uppercase tracking-wider text-slate-600">
                 Administration
               </p>
               {adminLinks.map((l) => (
@@ -316,7 +316,7 @@ export default function Navbar() {
                   >
                     {l.label}
                   </span>
-                  <span className="mt-0.5 block text-[11px] text-slate-600">{l.detail}</span>
+                  <span className="mt-0.5 block text-[13px] text-slate-600">{l.detail}</span>
                 </Link>
               ))}
             </div>

@@ -460,7 +460,7 @@ export default function GraphExplorer() {
     // Labels last, so nothing is drawn over them. The centre, anything risky,
     // and whatever is under the cursor — labelling every node turns a full
     // frame into overlapping text.
-    ctx.font = '10px ui-monospace, SFMono-Regular, monospace'
+    ctx.font = '12px ui-monospace, SFMono-Regular, monospace'
     ctx.textAlign = 'center'
     nodes.forEach((n) => {
       const risky = (n.score ?? 0) >= 0.09
@@ -471,9 +471,9 @@ export default function GraphExplorer() {
       const text = n.id
       const w = ctx.measureText(text).width
       ctx.fillStyle = 'rgba(3,16,22,.72)'
-      ctx.fillRect(n.x - w / 2 - 4, n.y - r - 20, w + 8, 14)
+      ctx.fillRect(n.x - w / 2 - 5, n.y - r - 23, w + 10, 17)
       ctx.fillStyle = n.invented ? '#eaddff' : n.is_centre ? '#dffbff' : '#cfe6ee'
-      ctx.fillText(text, n.x, n.y - r - 9)
+      ctx.fillText(text, n.x, n.y - r - 11)
     })
     ctx.restore()
   }, [graph, hover, layout, view])
@@ -550,11 +550,11 @@ export default function GraphExplorer() {
                            background: '#fff', display: 'block' }} />
           </button>
           <div>
-            <p className="text-[13px] font-semibold" style={{ color: 'rgb(var(--ds-ink))' }}>
+            <p className="text-[15px] font-semibold" style={{ color: 'rgb(var(--ds-ink))' }}>
               {off ? 'Switched off by an administrator'
                 : expanded ? 'Explorer is open' : 'Explorer is closed'}
             </p>
-            <p className="text-[11px]" style={{ color: 'rgb(var(--ds-muted))' }}>
+            <p className="text-[13px]" style={{ color: 'rgb(var(--ds-muted))' }}>
               {off
                 ? 'The network detector is reserved for the pipeline.'
                 : expanded
@@ -582,7 +582,7 @@ export default function GraphExplorer() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Account, e.g. C1166671647"
-                className="numeric w-64 rounded-md border px-3 py-2 text-[13px]"
+                className="numeric w-64 rounded-md border px-3 py-2 text-[15px]"
                 style={{ borderColor: 'rgb(var(--ds-line))',
                          background: 'rgb(var(--ds-surface))',
                          color: 'rgb(var(--ds-ink))' }}
@@ -590,7 +590,7 @@ export default function GraphExplorer() {
               <Button type="submit" loading={loading} disabled={!query.trim()}>
                 {loading ? 'Loading…' : 'Show the network'}
               </Button>
-              <span className="text-[11px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+              <span className="text-[13px]" style={{ color: 'rgb(var(--ds-faint))' }}>
                 largest networks:{' '}
                 {BUSY.map(([a, note], i) => (
                   <span key={a}>
@@ -603,7 +603,7 @@ export default function GraphExplorer() {
                   </span>
                 ))}
               </span>
-              <label className="flex items-center gap-2 text-[12px]"
+              <label className="flex items-center gap-2 text-[14px]"
                      style={{ color: 'rgb(var(--ds-muted))' }}>
                 Hops
                 <select
@@ -613,7 +613,7 @@ export default function GraphExplorer() {
                     setHops(h)
                     if (centre) load(centre, h, false)
                   }}
-                  className="rounded-md border px-2 py-1 text-[12px]"
+                  className="rounded-md border px-2 py-1 text-[14px]"
                   style={{ borderColor: 'rgb(var(--ds-line))',
                            background: 'rgb(var(--ds-surface))',
                            color: 'rgb(var(--ds-ink))' }}
@@ -636,11 +636,11 @@ export default function GraphExplorer() {
                                                 background: 'rgb(var(--ds-surface))',
                                                 alignContent: 'start' }}>
                     <div>
-                      <p className="ds-mono text-[10px] uppercase tracking-wider"
+                      <p className="ds-mono text-[12px] uppercase tracking-wider"
                          style={{ color: 'rgb(var(--ds-faint))' }}>
                         Invent an account
                       </p>
-                      <p className="mt-1 text-[11px] leading-relaxed"
+                      <p className="mt-1 text-[13px] leading-relaxed"
                          style={{ color: 'rgb(var(--ds-muted))' }}>
                         Change the sender and score again.
                       </p>
@@ -651,7 +651,7 @@ export default function GraphExplorer() {
                         ['Received from', from, setFrom],
                         ['Amount', amount, setAmount]].map(([label, value, set]) => (
                         <label key={label} style={{ display: 'grid', gap: 3 }}>
-                          <span className="ds-mono text-[9px] uppercase tracking-wider"
+                          <span className="ds-mono text-[11px] uppercase tracking-wider"
                                 style={{ color: 'rgb(var(--ds-faint))' }}>{label}</span>
                           <Input value={value} onChange={(e) => set(e.target.value)} />
                         </label>
@@ -668,11 +668,11 @@ export default function GraphExplorer() {
                       return (
                         <div style={{ display: 'grid', gap: 8 }}>
                           <div className="flex items-baseline gap-2">
-                            <span className="numeric text-[30px] leading-none"
+                            <span className="numeric text-[34px] leading-none"
                                   style={{ color: '#c084fc' }}>
                               {runs[0].score.toFixed(4)}
                             </span>
-                            <span className="text-[10px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+                            <span className="text-[12px]" style={{ color: 'rgb(var(--ds-faint))' }}>
                               raw · from {runs[0].accounts.toLocaleString()} accounts
                             </span>
                           </div>
@@ -682,7 +682,7 @@ export default function GraphExplorer() {
                           <div style={{ display: 'grid', gap: 4 }}>
                             {runs.map((r, i) => (
                               <div key={r.at} className="flex items-center gap-2">
-                                <span className="numeric w-[92px] shrink-0 truncate text-[10px]"
+                                <span className="numeric w-[110px] shrink-0 truncate text-[12px]"
                                       title={r.from}
                                       style={{ color: 'rgb(var(--ds-muted))' }}>{r.from}</span>
                                 <span className="h-[6px] flex-1 rounded"
@@ -692,7 +692,7 @@ export default function GraphExplorer() {
                                                  background: i === 0 ? '#c084fc'
                                                    : 'rgba(168,85,247,.45)' }} />
                                 </span>
-                                <span className="numeric w-[52px] shrink-0 text-right text-[10px]"
+                                <span className="numeric w-[62px] shrink-0 text-right text-[12px]"
                                       style={{ color: 'rgb(var(--ds-ink))' }}>
                                   {r.score.toFixed(4)}
                                 </span>
@@ -701,7 +701,7 @@ export default function GraphExplorer() {
                           </div>
 
                           {runs.length > 1 && (
-                            <p className="text-[10px]"
+                            <p className="text-[12px]"
                                style={{ color: spread > 1 ? '#c084fc' : 'rgb(var(--ds-muted))' }}>
                               {spread > 1
                                 ? `${spread} different scores across ${runs.length} runs — only the sender changed.`
@@ -718,11 +718,11 @@ export default function GraphExplorer() {
                                                 background: 'rgb(var(--ds-surface))',
                                                 alignContent: 'start' }}>
                     <div>
-                      <p className="ds-mono text-[10px] uppercase tracking-wider"
+                      <p className="ds-mono text-[12px] uppercase tracking-wider"
                          style={{ color: 'rgb(var(--ds-faint))' }}>
                         Or score a file
                       </p>
-                      <p className="mt-1 text-[11px] leading-relaxed"
+                      <p className="mt-1 text-[13px] leading-relaxed"
                          style={{ color: 'rgb(var(--ds-muted))' }}>
                         This model only. No fusion.
                       </p>
@@ -736,7 +736,7 @@ export default function GraphExplorer() {
                         Upload a CSV
                       </Button>
                       {csv && (
-                        <span className="numeric text-[10px]" style={{ color: 'rgb(var(--ds-muted))' }}>
+                        <span className="numeric text-[12px]" style={{ color: 'rgb(var(--ds-muted))' }}>
                           {csv.counts.precomputed} looked up · {csv.counts.inductive} new
                           · {csv.counts.unscored} not scoreable
                         </span>
@@ -745,13 +745,13 @@ export default function GraphExplorer() {
 
                     {csv && (
                       <div style={{ overflow: 'auto', maxHeight: 210 }}>
-                        <table className="w-full text-[10px]" style={{ borderCollapse: 'collapse' }}>
+                        <table className="w-full text-[12px]" style={{ borderCollapse: 'collapse' }}>
                           <thead className="sticky top-0"
                                  style={{ background: 'rgb(var(--ds-surface))' }}>
                             <tr style={{ color: 'rgb(var(--ds-faint))' }}>
                               {['To', 'Score', 'How'].map((h) => (
                                 <th key={h}
-                                    className="ds-mono px-2 py-1 text-left text-[9px] uppercase tracking-wider"
+                                    className="ds-mono px-2 py-1 text-left text-[11px] uppercase tracking-wider"
                                     style={{ borderBottom: '1px solid rgb(var(--ds-line))' }}>{h}</th>
                               ))}
                             </tr>
@@ -783,7 +783,7 @@ export default function GraphExplorer() {
                 </div>
 
                 {/* The caveat belongs with the numbers, but not above them. */}
-                <p className="px-4 py-2 text-[10px] leading-relaxed"
+                <p className="px-4 py-2 text-[12px] leading-relaxed"
                    style={{ color: 'rgb(var(--ds-faint))',
                             borderTop: '1px solid rgba(168,85,247,.18)' }}>
                   Raw model output, not calibrated. Runs are comparable with each other.
@@ -792,7 +792,7 @@ export default function GraphExplorer() {
             )}
 
             {trail.length > 1 && (
-              <p className="text-[11px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+              <p className="text-[13px]" style={{ color: 'rgb(var(--ds-faint))' }}>
                 {trail.map((a, i) => (
                   <span key={`${a}-${i}`}>
                     {i > 0 && ' → '}
@@ -851,7 +851,7 @@ export default function GraphExplorer() {
                   }))
                 }}
               />
-              <p className="pointer-events-none absolute bottom-2 right-3 text-[10px]"
+              <p className="pointer-events-none absolute bottom-2 right-3 text-[12px]"
                  style={{ color: 'rgb(var(--ds-faint))' }}>
                 arrow keys move · +/− zoom · 0 recentres · drag to pan
               </p>
@@ -863,7 +863,7 @@ export default function GraphExplorer() {
             </div>
 
             {counts && (
-              <p className="text-[11px]" style={{ color: 'rgb(var(--ds-muted))' }}>
+              <p className="text-[13px]" style={{ color: 'rgb(var(--ds-muted))' }}>
                 {counts.nodes_returned} accounts, {counts.edges_returned} transfers
                 {counts.truncated
                   ? ` — ${counts.edges_in_ball} exist here, showing the ${counts.edges_returned}
@@ -880,10 +880,10 @@ export default function GraphExplorer() {
       {isAdmin && settings && (
         <div className="mt-6 rounded-xl border p-4"
              style={{ borderColor: 'rgb(var(--ds-line))' }}>
-          <p className="text-[13px] font-semibold" style={{ color: 'rgb(var(--ds-ink))' }}>
+          <p className="text-[15px] font-semibold" style={{ color: 'rgb(var(--ds-ink))' }}>
             Explorer availability
           </p>
-          <p className="mt-1 text-[11px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
+          <p className="mt-1 text-[13px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
             Switch off to keep the network detector free for the pipeline.
           </p>
           <div className="mt-3 flex items-center gap-3">
@@ -897,7 +897,7 @@ export default function GraphExplorer() {
             >
               {settings.enabled ? 'Switch off' : 'Switch on'}
             </Button>
-            <span className="text-[11px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+            <span className="text-[13px]" style={{ color: 'rgb(var(--ds-faint))' }}>
               Currently {settings.enabled ? 'on' : 'off'} · up to {settings.max_hops} hop
               {settings.max_hops === 1 ? '' : 's'}, {settings.max_edges} transfers
             </span>

@@ -290,7 +290,7 @@ export function Severity({ level, showLabel = true, className, title }) {
         ))}
       </span>
       {showLabel && (
-        <span className="text-[11px] font-semibold uppercase tracking-[0.09em]">
+        <span className="text-[13px] font-semibold uppercase tracking-[0.09em]">
           {sev.label}
         </span>
       )}

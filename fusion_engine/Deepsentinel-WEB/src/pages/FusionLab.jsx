@@ -86,9 +86,9 @@ export default function FusionLab() {
                 i === pick ? 'border-accent-400/60' : 'border-slate-800 hover:border-slate-700')}
               style={{ background: i === pick ? 'rgba(45,212,191,.06)' : 'transparent' }}
             >
-              <span className="numeric block text-[12px]"
+              <span className="numeric block text-[14px]"
                     style={{ color: 'rgb(var(--ds-ink))' }}>{x.ref}</span>
-              <span className="block text-[10px]"
+              <span className="block text-[12px]"
                     style={{ color: 'rgb(var(--ds-faint))' }}>{x.note}</span>
             </button>
           ))}
@@ -107,27 +107,27 @@ export default function FusionLab() {
             <div className="flex flex-wrap items-end gap-x-6 gap-y-2 rounded-xl border p-4"
                  style={{ borderColor: 'rgb(var(--ds-line))' }}>
               <div>
-                <p className="numeric text-[38px] leading-none"
+                <p className="numeric text-[44px] leading-none"
                    style={{ color: BAND_COLOURS[r.classification] ?? 'rgb(var(--ds-ink))' }}>
                   {(r.fraud_confidence_score ?? 0).toFixed(4)}
                 </p>
-                <p className="ds-mono mt-1 text-[10px] uppercase tracking-wider"
+                <p className="ds-mono mt-1 text-[12px] uppercase tracking-wider"
                    style={{ color: 'rgb(var(--ds-faint))' }}>Fused confidence</p>
               </div>
               <div>
-                <p className="text-[19px] leading-none"
+                <p className="text-[22px] leading-none"
                    style={{ color: BAND_COLOURS[r.classification] ?? 'rgb(var(--ds-ink))' }}>
                   {r.classification ?? '—'}
                 </p>
-                <p className="numeric mt-1 text-[10px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+                <p className="numeric mt-1 text-[12px]" style={{ color: 'rgb(var(--ds-faint))' }}>
                   {bands ? `critical ${bands.critical} · high ${bands.high} · medium ${bands.medium}`
                     : 'live operating point'}
                 </p>
               </div>
               <div className="ml-auto text-right">
-                <p className="numeric text-[19px] leading-none"
+                <p className="numeric text-[22px] leading-none"
                    style={{ color: 'rgb(var(--ds-ink))' }}>{r.modalities_used ?? 0} of 3</p>
-                <p className="text-[10px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+                <p className="text-[12px]" style={{ color: 'rgb(var(--ds-faint))' }}>
                   {r.modalities_used === 3 ? 'detectors answered' : 'shrunk toward neutral'}
                 </p>
               </div>
@@ -139,7 +139,7 @@ export default function FusionLab() {
                 <tr>
                   {['Detector', 'Score', 'Moved the verdict', ''].map((h, i) => (
                     <th key={h || i}
-                        className="ds-mono px-2 pb-2 text-left text-[10px] uppercase tracking-wider"
+                        className="ds-mono px-2 pb-2 text-left text-[12px] uppercase tracking-wider"
                         style={{ color: 'rgb(var(--ds-faint))',
                                  borderBottom: '1px solid rgb(var(--ds-line))' }}>{h}</th>
                   ))}
@@ -151,21 +151,21 @@ export default function FusionLab() {
                   const lead = driver && driver[1] === key
                   return (
                     <tr key={key}>
-                      <td className="px-2 py-2 text-[13px]"
+                      <td className="px-2 py-2 text-[15px]"
                           style={{ color: 'rgb(var(--ds-ink))' }}>
                         {label}
                         {lead && (
-                          <span className="ml-2 text-[10px]"
+                          <span className="ml-2 text-[12px]"
                                 style={{ color: 'rgb(var(--ds-sev-high))' }}>decided it</span>
                         )}
                       </td>
-                      <td className="numeric px-2 py-2 text-[13px]"
+                      <td className="numeric px-2 py-2 text-[15px]"
                           style={{ color: available ? 'rgb(var(--ds-ink))' : 'rgb(var(--ds-faint))' }}>
                         {available ? Number(score ?? 0).toFixed(4) : 'abstained'}
                       </td>
                       <td className="px-2 py-2" style={{ width: '55%' }}>
                         {v === undefined ? (
-                          <span className="text-[11px]" style={{ color: 'rgb(var(--ds-faint))' }}>—</span>
+                          <span className="text-[13px]" style={{ color: 'rgb(var(--ds-faint))' }}>—</span>
                         ) : (
                           <span style={{ position: 'relative', display: 'block', height: 8,
                                          borderRadius: 4, background: 'rgb(var(--ds-line))' }}>
@@ -181,7 +181,7 @@ export default function FusionLab() {
                           </span>
                         )}
                       </td>
-                      <td className="numeric px-2 py-2 text-right text-[12px]"
+                      <td className="numeric px-2 py-2 text-right text-[14px]"
                           style={{ color: v > 0 ? 'rgb(var(--ds-sev-high))'
                             : 'rgb(var(--ds-muted))' }}>
                         {v === undefined ? '' : `${v > 0 ? '+' : ''}${v.toFixed(2)}`}
@@ -191,19 +191,19 @@ export default function FusionLab() {
                 })}
               </tbody>
             </table>
-            <p className="text-[11px]" style={{ color: 'rgb(var(--ds-muted))' }}>
+            <p className="text-[13px]" style={{ color: 'rgb(var(--ds-muted))' }}>
               Right of centre argues for fraud, left against.
             </p>
 
             {/* The deciding detector's own sentence — one, not three. */}
             {driver?.[4] && (
-              <p className="rounded-lg border p-3 text-[12px] leading-relaxed"
+              <p className="rounded-lg border p-3 text-[14px] leading-relaxed"
                  style={{ borderColor: 'rgb(var(--ds-line))', color: 'rgb(var(--ds-ink))' }}>
                 {driver[4]}
               </p>
             )}
 
-            <div className="flex flex-wrap items-center justify-between gap-3 text-[11px]">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-[13px]">
               {r.retrieval && (
                 <span style={{ color: 'rgb(var(--ds-muted))' }}>
                   Closest typology{' '}
@@ -242,7 +242,7 @@ export default function FusionLab() {
                       Download PDF
                     </Button>
                   )}
-                  <pre className="mt-2 overflow-x-auto rounded-lg border p-3 text-[11px]"
+                  <pre className="mt-2 overflow-x-auto rounded-lg border p-3 text-[13px]"
                        style={{ borderColor: 'rgb(var(--ds-line))',
                                 color: 'rgb(var(--ds-muted))', whiteSpace: 'pre-wrap',
                                 maxHeight: 320 }}>

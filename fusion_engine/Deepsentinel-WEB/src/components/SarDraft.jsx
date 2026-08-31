@@ -127,7 +127,7 @@ export default function SarDraft({ analysisId, classification }) {
             Draft report
           </Button>
           {classification === 'LOW' && (
-            <p className="mt-2 text-[11px] text-slate-500">
+            <p className="mt-2 text-[13px] text-slate-500">
               This alert is classified LOW. A report is usually drafted for
               escalated cases.
             </p>
@@ -148,7 +148,7 @@ export default function SarDraft({ analysisId, classification }) {
           >
             <p
               className={cx(
-                'text-[11px] font-semibold uppercase tracking-wide',
+                'text-[13px] font-semibold uppercase tracking-wide',
                 draft.status === 'approved' ? 'text-risk-low' : 'text-risk-medium',
               )}
             >
@@ -161,10 +161,10 @@ export default function SarDraft({ analysisId, classification }) {
             className="mt-4 rounded-xl border border-subtle bg-surface-raised p-5 sm:p-6"
           >
             <div className="border-b border-subtle pb-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                 Suspicious Activity Report · draft
               </p>
-              <p className="mt-1 text-[10px] text-slate-500">{draft.watermark}</p>
+              <p className="mt-1 text-[12px] text-slate-500">{draft.watermark}</p>
             </div>
 
             {editing ? (
@@ -214,7 +214,7 @@ export default function SarDraft({ analysisId, classification }) {
                 />
               </dl>
               {draft.was_edited && (
-                <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+                <p className="mt-2 text-[12px] leading-relaxed text-slate-500">
                   The originally generated text is retained unchanged alongside
                   these edits, so what the model wrote can always be compared
                   with what was approved.
@@ -267,7 +267,7 @@ export default function SarDraft({ analysisId, classification }) {
             )}
           </div>
 
-          <p className="mt-3 text-[10px] leading-relaxed text-slate-500 print:hidden">
+          <p className="mt-3 text-[12px] leading-relaxed text-slate-500 print:hidden">
             Approving records that you accepted this text. It does not submit
             anything — filing remains a separate action in your own system of
             record.
@@ -281,7 +281,7 @@ export default function SarDraft({ analysisId, classification }) {
 function Fact({ label, value }) {
   return (
     <div>
-      <dt className="text-[10px] uppercase tracking-wider text-slate-500">{label}</dt>
+      <dt className="text-[12px] uppercase tracking-wider text-slate-500">{label}</dt>
       <dd className="mt-0.5 text-xs text-slate-300">{value}</dd>
     </div>
   )

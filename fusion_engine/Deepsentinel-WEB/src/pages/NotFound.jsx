@@ -12,7 +12,7 @@ export default function NotFound() {
   const { pathname } = useLocation()
   return (
     <div className="mx-auto flex min-h-[60vh] max-w-2xl flex-col justify-center px-5 py-20 sm:px-8">
-      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">
+      <p className="font-mono text-[13px] uppercase tracking-[0.18em] text-slate-500">
         404 · page not found
       </p>
       <h1 className="display mt-4 text-[2.6rem] leading-[1.05] text-slate-100">

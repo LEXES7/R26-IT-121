@@ -172,7 +172,7 @@ export default function AuditLog() {
                         {e.action}
                       </code>
                       {e.detail && (
-                        <p className="mt-1 max-w-xs truncate text-[11px] text-slate-600" title={e.detail}>
+                        <p className="mt-1 max-w-xs truncate text-[13px] text-slate-600" title={e.detail}>
                           {e.detail}
                         </p>
                       )}

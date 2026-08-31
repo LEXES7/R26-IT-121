@@ -127,14 +127,14 @@ export default function Models() {
                              gap: 10, padding: '6px 6px', borderRadius: 5, alignItems: 'center',
                              background: txn?.transaction_id === t.transaction_id
                                ? 'rgb(var(--ds-surface-2))' : undefined }}>
-              <span className="ds-mono" style={{ fontSize: 10, flex: 1 }}>{t.transaction_id}</span>
-              <span style={{ fontSize: 9, color: 'rgb(var(--ds-muted))' }}>
+              <span className="ds-mono" style={{ fontSize: 12, flex: 1 }}>{t.transaction_id}</span>
+              <span style={{ fontSize: 11, color: 'rgb(var(--ds-muted))' }}>
                 {t.type} · {Number(t.amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </span>
             </button>
           ))}
           {hits.length === 0 && (
-            <div style={{ fontSize: 10, color: 'rgb(var(--ds-faint))', padding: '8px 0' }}>
+            <div style={{ fontSize: 12, color: 'rgb(var(--ds-faint))', padding: '8px 0' }}>
               No ingested transactions yet — upload a file on Batch upload.
             </div>
           )}
@@ -142,7 +142,7 @@ export default function Models() {
         {error && (
           <div style={{ marginTop: 10, background: 'rgb(var(--ds-signal-soft))',
                         color: 'rgb(var(--ds-signal))', borderRadius: 6,
-                        padding: 10, fontSize: 11 }}>{error}</div>
+                        padding: 10, fontSize: 13 }}>{error}</div>
         )}
       </Panel>
 
@@ -168,7 +168,7 @@ export default function Models() {
               }
             />
 
-            <p style={{ fontSize: 10, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
+            <p style={{ fontSize: 12, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
                         margin: '0 0 14px', maxWidth: 720 }}>
               {d.novelty}
             </p>
@@ -181,7 +181,7 @@ export default function Models() {
             ) : r.error ? (
               <div style={{ background: 'rgb(var(--ds-signal-soft))',
                             color: 'rgb(var(--ds-signal))', borderRadius: 6,
-                            padding: 11, fontSize: 11 }}>{r.error}</div>
+                            padding: 11, fontSize: 13 }}>{r.error}</div>
             ) : (
               <>
                 <div style={{ display: 'grid', gap: 16, alignItems: 'center',
@@ -196,19 +196,19 @@ export default function Models() {
                   </div>
                   <div>
                     <div className="ds-section-label">Answered</div>
-                    <div style={{ fontSize: 11, marginTop: 8 }}>
+                    <div style={{ fontSize: 13, marginTop: 8 }}>
                       {r.available ? 'yes' : 'no — it abstained'}
                     </div>
                   </div>
                   <div>
                     <div className="ds-section-label">Latency</div>
-                    <div className="ds-mono" style={{ fontSize: 11, marginTop: 8 }}>
+                    <div className="ds-mono" style={{ fontSize: 13, marginTop: 8 }}>
                       {r.latency_ms} ms
                     </div>
                   </div>
                   <div>
                     <div className="ds-section-label">Served from</div>
-                    <div className="ds-mono" style={{ fontSize: 9, marginTop: 8,
+                    <div className="ds-mono" style={{ fontSize: 11, marginTop: 8,
                           color: 'rgb(var(--ds-muted))' }}>{r.endpoint}</div>
                   </div>
                 </div>
@@ -223,7 +223,7 @@ export default function Models() {
 
                 {r.summary && (
                   <div style={{ background: 'rgb(var(--ds-workspace))', borderRadius: 6,
-                                padding: 12, fontSize: 11, lineHeight: 1.6, marginBottom: 14 }}>
+                                padding: 12, fontSize: 13, lineHeight: 1.6, marginBottom: 14 }}>
                     <span className="ds-section-label">In its own words</span>
                     <div style={{ marginTop: 6 }}>{r.summary}</div>
                   </div>
@@ -232,12 +232,12 @@ export default function Models() {
                 {d.evidence(r)}
 
                 <details style={{ marginTop: 14 }}>
-                  <summary style={{ cursor: 'pointer', fontSize: 10,
+                  <summary style={{ cursor: 'pointer', fontSize: 12,
                                     color: 'rgb(var(--ds-muted))' }}>
                     Raw response from this service
                   </summary>
                   <pre className="ds-mono ds-scroll" style={{ maxHeight: 260, overflow: 'auto',
-                        fontSize: 9.5, lineHeight: 1.5, marginTop: 9, padding: 11,
+                        fontSize: 11.5, lineHeight: 1.5, marginTop: 9, padding: 11,
                         background: 'rgb(var(--ds-workspace))', borderRadius: 6 }}>
                     {JSON.stringify(r.raw, null, 2)}
                   </pre>
@@ -257,7 +257,7 @@ export default function Models() {
             ? <Link to="/analyzer" className="ds-btn">Open the analyzer →</Link>
             : null}
         />
-        <p style={{ fontSize: 10, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
+        <p style={{ fontSize: 12, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
                     margin: '0 0 12px', maxWidth: 720 }}>
           A meta-classifier combines the three scores above into one calibrated
           probability, applying an uncertainty penalty when a detector abstains.
@@ -281,8 +281,8 @@ export default function Models() {
               <Tag key={t} {...(canRunAnalysis ? { to } : {})}
                    style={{ all: 'unset', cursor: canRunAnalysis ? 'pointer' : 'default',
                             background: 'rgb(var(--ds-workspace))', borderRadius: 6, padding: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 600 }}>{t}</div>
-                <div style={{ fontSize: 10, color: 'rgb(var(--ds-muted))', marginTop: 5 }}>{sub}</div>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{t}</div>
+                <div style={{ fontSize: 12, color: 'rgb(var(--ds-muted))', marginTop: 5 }}>{sub}</div>
               </Tag>
             )
           })}

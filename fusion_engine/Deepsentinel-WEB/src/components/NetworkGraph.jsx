@@ -322,14 +322,14 @@ export default function NetworkGraph({ evidence, height = 420 }) {
           step further away, and thicker lines counted for more.
         </p>
         <div className="ml-auto flex items-center gap-3">
-          <span className="numeric text-[11px] text-slate-500">
+          <span className="numeric text-[13px] text-slate-500">
             {nodes.length} accounts · {edges.length} transfers
           </span>
           {steps.length > 1 ? (
             <button
               onClick={() => setPlaying((p) => !p)}
               className={cx(
-                'rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors',
+                'rounded-md px-2.5 py-1 text-[13px] font-medium transition-colors',
                 playing
                   ? 'text-slate-400 hover:text-slate-200'
                   : 'bg-accent-500/15 text-accent-300 hover:bg-accent-500/25',
@@ -340,7 +340,7 @@ export default function NetworkGraph({ evidence, height = 420 }) {
           ) : (
             // Say why there is nothing to play rather than omitting the control
             // and leaving the reader to wonder whether it failed.
-            <span className="text-[10px] text-slate-600">single transfer</span>
+            <span className="text-[12px] text-slate-600">single transfer</span>
           )}
         </div>
       </div>
@@ -551,14 +551,14 @@ export default function NetworkGraph({ evidence, height = 420 }) {
         {[...new Set(nodes.map((n) => n.role))].map((r) => {
           const rl = ROLE[r] ?? FALLBACK
           return (
-            <span key={r} className="flex items-center gap-1.5 text-[11px] text-slate-400">
+            <span key={r} className="flex items-center gap-1.5 text-[13px] text-slate-400">
               <span className="inline-block h-2.5 w-2.5 rounded-full"
                     style={{ background: rl.fill }} />
               {rl.label}
             </span>
           )
         })}
-        <span className="flex items-center gap-1.5 text-[11px] text-slate-600">
+        <span className="flex items-center gap-1.5 text-[13px] text-slate-600">
           <svg width="18" height="8" aria-hidden>
             <circle cx="3" cy="4" r="2" fill={LABEL} opacity="0.7" />
             <circle cx="10" cy="4" r="2" fill={LABEL} opacity="0.45" />
@@ -567,7 +567,7 @@ export default function NetworkGraph({ evidence, height = 420 }) {
           direction of funds
         </span>
         {clock !== null && (
-          <span className="numeric ml-auto text-[11px] text-accent-400">
+          <span className="numeric ml-auto text-[13px] text-accent-400">
             step {clock}
           </span>
         )}
@@ -582,7 +582,7 @@ export default function NetworkGraph({ evidence, height = 420 }) {
                 {detail.account_id}
               </p>
               <span
-                className="rounded-md px-2 py-0.5 text-[11px] font-medium"
+                className="rounded-md px-2 py-0.5 text-[13px] font-medium"
                 style={{
                   color: role(detail).fill,
                   background: `${role(detail).fill}1f`,
@@ -606,7 +606,7 @@ export default function NetworkGraph({ evidence, height = 420 }) {
                       : `${detail.first_seen_step}–${detail.last_seen_step}`} />
             </dl>
             {detail.first_seen_step === detail.last_seen_step && detail.out_degree > 0 && (
-              <p className="mt-2.5 text-[11px] leading-relaxed text-slate-500">
+              <p className="mt-2.5 text-[13px] leading-relaxed text-slate-500">
                 Active in a single step only — the pattern of an account created to
                 make one transfer.
               </p>

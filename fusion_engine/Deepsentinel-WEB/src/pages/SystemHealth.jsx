@@ -69,18 +69,18 @@ function DetectorCard({ id, name, model, what, data }) {
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: tone.dot }} />
-            <h3 className="text-[15px] font-semibold text-[rgb(var(--ds-ink))]">{name}</h3>
+            <h3 className="text-[17px] font-semibold text-[rgb(var(--ds-ink))]">{name}</h3>
           </div>
-          <p className="mt-1 text-[12px] text-[rgb(var(--ds-muted))]">{what}</p>
+          <p className="mt-1 text-[14px] text-[rgb(var(--ds-muted))]">{what}</p>
         </div>
-        <span className="shrink-0 font-mono text-[11px] font-semibold uppercase tracking-[0.09em]"
+        <span className="shrink-0 font-mono text-[13px] font-semibold uppercase tracking-[0.09em]"
               style={{ color: tone.text }}>
           {v.label}
         </span>
       </div>
 
       {v.why && (
-        <p className="mt-3 rounded-lg px-3 py-2 text-[12px] leading-relaxed"
+        <p className="mt-3 rounded-lg px-3 py-2 text-[14px] leading-relaxed"
            style={{ background: 'rgb(var(--ds-surface-2))', color: 'rgb(var(--ds-muted))' }}>
           {v.why}
         </p>
@@ -97,12 +97,12 @@ function DetectorCard({ id, name, model, what, data }) {
             <dt className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[rgb(var(--ds-faint))]">
               {k}
             </dt>
-            <dd className="numeric mt-0.5 truncate text-[13px] text-[rgb(var(--ds-ink))]">{val}</dd>
+            <dd className="numeric mt-0.5 truncate text-[15px] text-[rgb(var(--ds-ink))]">{val}</dd>
           </div>
         ))}
       </dl>
 
-      <p className="mt-3 font-mono text-[10px] text-[rgb(var(--ds-faint))]">{model}</p>
+      <p className="mt-3 font-mono text-[12px] text-[rgb(var(--ds-faint))]">{model}</p>
     </Panel>
   )
 }
@@ -114,8 +114,8 @@ function ServiceRow({ label, svc }) {
     <div className="flex items-start justify-between gap-4 border-b py-2.5 last:border-b-0"
          style={{ borderColor: 'rgb(var(--ds-line))' }}>
       <div className="min-w-0">
-        <p className="text-[13px] text-[rgb(var(--ds-ink))]">{label}</p>
-        <p className="mt-0.5 text-[11px] leading-snug text-[rgb(var(--ds-muted))]">
+        <p className="text-[15px] text-[rgb(var(--ds-ink))]">{label}</p>
+        <p className="mt-0.5 text-[13px] leading-snug text-[rgb(var(--ds-muted))]">
           {svc?.detail ?? '—'}
         </p>
       </div>
@@ -174,7 +174,7 @@ export default function SystemHealth() {
 
       {/* The headline is the answer to "is it working", not a count. */}
       <div className="mb-8">
-        <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[rgb(var(--ds-faint))]">
+        <p className="font-mono text-[12px] uppercase tracking-[0.15em] text-[rgb(var(--ds-faint))]">
           Detector readiness
         </p>
         <h2 className="ds-page-title mt-2 text-[2.4rem] leading-none">
@@ -185,7 +185,7 @@ export default function SystemHealth() {
               : 'All answering.'}
           </span>
         </h2>
-        <p className="mt-3 max-w-xl text-[13px] leading-relaxed text-[rgb(var(--ds-muted))]">
+        <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-[rgb(var(--ds-muted))]">
           {broken.length > 0
             ? 'A detector that cannot answer abstains — the others still produce a verdict, and the '
               + 'fused confidence is reduced to say the system knows less than usual. Screening does '
@@ -218,7 +218,7 @@ export default function SystemHealth() {
         label="Reachability"
         title="Detectors"
         action={at && (
-          <span className="font-mono text-[10px] text-[rgb(var(--ds-faint))]">
+          <span className="font-mono text-[12px] text-[rgb(var(--ds-faint))]">
             checked {at.toLocaleTimeString()}
           </span>
         )}
@@ -239,7 +239,7 @@ export default function SystemHealth() {
               of zero is a broken configuration. They read very differently to
               someone on call, so they are not phrased the same way. */}
           {missed > 0 && (
-            <p className="mb-3 rounded-lg px-3 py-2 text-[12px] leading-relaxed"
+            <p className="mb-3 rounded-lg px-3 py-2 text-[14px] leading-relaxed"
                style={{
                  background: delivery.delivered === 0
                    ? 'rgb(var(--ds-signal-soft))' : 'rgb(var(--ds-warn-soft))',
@@ -257,7 +257,7 @@ export default function SystemHealth() {
                     ? 'rgb(var(--ds-signal))' : 'rgb(var(--ds-ink))' }}>
               {delivery.delivered ?? '—'}
             </span>
-            <span className="text-[13px] text-[rgb(var(--ds-muted))]">
+            <span className="text-[15px] text-[rgb(var(--ds-muted))]">
               {delivery.raised == null
                 ? 'no alert record on this database'
                 : `of ${delivery.raised.toLocaleString()} alerts delivered`}
@@ -297,7 +297,7 @@ export default function SystemHealth() {
                         ? 'rgb(var(--ds-warn))' : 'rgb(var(--ds-ink))' }}>
                   {queue.pending ?? 0}
                 </span>
-                <span className="text-[13px] text-[rgb(var(--ds-muted))]">waiting</span>
+                <span className="text-[15px] text-[rgb(var(--ds-muted))]">waiting</span>
               </div>
               <dl className="mt-4">
                 <ServiceRow label="In flight"
@@ -311,7 +311,7 @@ export default function SystemHealth() {
               </dl>
             </>
           ) : (
-            <p className="text-[12px] leading-relaxed text-[rgb(var(--ds-muted))]">
+            <p className="text-[14px] leading-relaxed text-[rgb(var(--ds-muted))]">
               No ingestion queue. The monitor is replaying sample transactions rather
               than reading submitted traffic, so there is no backlog to report.
             </p>
@@ -337,8 +337,8 @@ export default function SystemHealth() {
             )}
             style={{ background: 'rgb(var(--ds-surface))' }}
           >
-            <p className="text-[14px] font-semibold text-[rgb(var(--ds-ink))]">{label}</p>
-            <p className="mt-1 text-[12px] leading-relaxed text-[rgb(var(--ds-muted))]">{desc}</p>
+            <p className="text-[16px] font-semibold text-[rgb(var(--ds-ink))]">{label}</p>
+            <p className="mt-1 text-[14px] leading-relaxed text-[rgb(var(--ds-muted))]">{desc}</p>
           </button>
         ))}
       </div>

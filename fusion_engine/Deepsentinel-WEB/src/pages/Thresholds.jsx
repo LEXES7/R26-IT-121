@@ -125,7 +125,7 @@ export default function Thresholds() {
                 <SectionHeading
                   label="Every line, on the same history"
                   title="Choose which threshold to tune"
-                  action={<span className="ds-mono" style={{ fontSize: 10,
+                  action={<span className="ds-mono" style={{ fontSize: 12,
                           color: 'rgb(var(--ds-muted))' }}>
                     {data?.sample_size ?? 0} scored
                   </span>}
@@ -174,7 +174,7 @@ export default function Thresholds() {
                   </tbody>
                 </table>
               </div>
-              <p style={{ padding: '11px 19px 15px', fontSize: 9, lineHeight: 1.6,
+              <p style={{ padding: '11px 19px 15px', fontSize: 11, lineHeight: 1.6,
                           color: 'rgb(var(--ds-faint))', margin: 0 }}>
                 A detector with no history on this window cannot be tuned.
                 Changes here are simulated against past decisions and do not
@@ -193,7 +193,7 @@ export default function Thresholds() {
                       {DETECTORS.find(([k]) => k === selected)?.[1]} — alert volume
                       across every threshold
                     </h2>
-                    <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500">
+                    <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-slate-500">
                       {hasLabels ? (
                         <>
                           <Legend hex={HUE.real}>real</Legend>
@@ -219,7 +219,7 @@ export default function Thresholds() {
                       className="w-full accent-teal-400"
                       aria-label="Decision threshold"
                     />
-                    <div className="mt-1 flex justify-between text-[10px] text-slate-600">
+                    <div className="mt-1 flex justify-between text-[12px] text-slate-600">
                       <span>0.00 — alert on everything</span>
                       {active?.best && (
                         <button
@@ -241,7 +241,7 @@ export default function Thresholds() {
                       <h2 className="text-sm font-semibold text-slate-100">
                         What this line costs
                       </h2>
-                      <span className="text-[11px] text-slate-500">
+                      <span className="text-[13px] text-slate-500">
                         at {point.threshold.toFixed(2)}, over {active.labelled} labelled records
                       </span>
                     </div>
@@ -270,7 +270,7 @@ export default function Thresholds() {
                   <p className="numeric mt-3 text-[2.5rem] leading-none text-accent-400">
                     {t.toFixed(2)}
                   </p>
-                  <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+                  <p className="mt-2 text-[13px] leading-relaxed text-slate-500">
                     Everything scored at or above this raises an alert.
                   </p>
 
@@ -281,14 +281,14 @@ export default function Thresholds() {
                     <div style={{ marginTop: 14, paddingTop: 13,
                                   borderTop: '1px solid rgb(var(--ds-line))' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between',
-                                    fontSize: 10, marginBottom: 4 }}>
+                                    fontSize: 12, marginBottom: 4 }}>
                         <span style={{ color: 'rgb(var(--ds-muted))' }}>Monitor is using</span>
                         <span className="ds-mono">
                           {Number(live.bands?.critical ?? 0).toFixed(2)}
                           <span style={{ color: 'rgb(var(--ds-faint))' }}> critical</span>
                         </span>
                       </div>
-                      <div style={{ fontSize: 9, color: 'rgb(var(--ds-faint))',
+                      <div style={{ fontSize: 11, color: 'rgb(var(--ds-faint))',
                                     marginBottom: 11 }}>
                         {live.source === 'operator'
                           ? 'set here previously'
@@ -338,7 +338,7 @@ export default function Thresholds() {
                       <Row label="Recall" value={pct(active.best.recall)} />
                       <Row label="Alerts" value={active.best.alerts} />
                     </div>
-                    <p className="mt-3 text-[10px] leading-relaxed text-slate-600">
+                    <p className="mt-3 text-[12px] leading-relaxed text-slate-600">
                       The optimum on this history. It is not automatically the
                       right operating point — that depends on how much an analyst
                       hour costs against a missed case.
@@ -348,7 +348,7 @@ export default function Thresholds() {
 
                 {data?.message && (
                   <Panel className="ds-panel-pad">
-                    <p style={{ fontSize: 11, lineHeight: 1.6,
+                    <p style={{ fontSize: 13, lineHeight: 1.6,
                                 color: 'rgb(var(--ds-warn))', margin: 0 }}>
                       {data.message}
                     </p>
@@ -410,14 +410,14 @@ function Curve({ curve, point, maxAlerts, hasLabels, onPick }) {
                 <div className={cx('rounded-t-sm', active ? 'bg-accent-400' : 'bg-modality-graph/45')}
                      style={{ height: `${Math.max(1.5, h)}%` }} />
               )}
-              <span className="numeric pointer-events-none absolute -top-5 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-surface-overlay px-1.5 py-0.5 text-[9px] text-slate-200 opacity-0 transition-opacity group-hover:opacity-100">
+              <span className="numeric pointer-events-none absolute -top-5 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-surface-overlay px-1.5 py-0.5 text-[11px] text-slate-200 opacity-0 transition-opacity group-hover:opacity-100">
                 {p.alerts}
               </span>
             </button>
           )
         })}
       </div>
-      <div className="hair-t mt-1.5 flex justify-between pt-1.5 text-[10px] text-slate-600">
+      <div className="hair-t mt-1.5 flex justify-between pt-1.5 text-[12px] text-slate-600">
         <span>0.00</span><span>0.25</span><span>0.50</span><span>0.75</span><span>1.00</span>
       </div>
     </>
@@ -449,7 +449,7 @@ function Outcomes({ point }) {
           <div key={label}>
             <p className="numeric text-[1.75rem] leading-none" style={{ color: hex }}>{n}</p>
             <p className="eyebrow mt-2 text-slate-400">{label}</p>
-            <p className="mt-1 text-[10px] leading-relaxed text-slate-600">{note}</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-slate-600">{note}</p>
           </div>
         ))}
       </div>
@@ -475,7 +475,7 @@ function Figure({ value, label, accent, percent }) {
 
 function Row({ label, value }) {
   return (
-    <div className="flex items-baseline justify-between py-1.5 text-[11px]">
+    <div className="flex items-baseline justify-between py-1.5 text-[13px]">
       <span className="text-slate-500">{label}</span>
       <span className="numeric text-slate-200">{value}</span>
     </div>

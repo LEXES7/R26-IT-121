@@ -93,7 +93,7 @@ export default function GraphEvidence({ evidence }) {
           <p className="text-sm font-semibold text-slate-200">{copy.label}</p>
           <p className="mt-1 text-xs leading-relaxed text-slate-400">{copy.blurb}</p>
           {typeof patternConfidence === 'number' && (
-            <p className="mt-1.5 font-mono text-[11px] text-slate-500">
+            <p className="mt-1.5 font-mono text-[13px] text-slate-500">
               pattern confidence {patternConfidence.toFixed(2)}
             </p>
           )}
@@ -123,7 +123,7 @@ export default function GraphEvidence({ evidence }) {
         <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
           {facts.map(([k, v]) => (
             <div key={k}>
-              <dt className="text-[10px] uppercase tracking-wider text-slate-500">{k}</dt>
+              <dt className="text-[12px] uppercase tracking-wider text-slate-500">{k}</dt>
               <dd className="mt-0.5 font-mono text-sm text-slate-200">{v}</dd>
             </div>
           ))}
@@ -143,7 +143,7 @@ export default function GraphEvidence({ evidence }) {
           <div className="mt-3 -mx-1 overflow-x-auto px-1">
             <table className="w-full min-w-[34rem] text-left text-xs">
               <thead>
-                <tr className="text-[10px] uppercase tracking-wider text-slate-500">
+                <tr className="text-[12px] uppercase tracking-wider text-slate-500">
                   <th className="pb-2 font-medium">From</th>
                   <th className="pb-2 font-medium">To</th>
                   <th className="pb-2 text-right font-medium">Amount</th>
@@ -161,18 +161,18 @@ export default function GraphEvidence({ evidence }) {
                         e.is_trigger_edge && 'bg-accent-500/[0.07]',
                       )}
                     >
-                      <td className="py-2 pr-3 font-mono text-[11px] text-slate-400">
+                      <td className="py-2 pr-3 font-mono text-[13px] text-slate-400">
                         {e.src}
                         {e.is_trigger_edge && (
-                          <span className="ml-1.5 rounded bg-accent-500/15 px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-accent-400">
+                          <span className="ml-1.5 rounded bg-accent-500/15 px-1 py-px text-[11px] font-semibold uppercase tracking-wide text-accent-400">
                             trigger
                           </span>
                         )}
                       </td>
-                      <td className="py-2 pr-3 font-mono text-[11px] text-slate-400">
+                      <td className="py-2 pr-3 font-mono text-[13px] text-slate-400">
                         {e.dst}
                       </td>
-                      <td className="py-2 text-right font-mono text-[11px] text-slate-200">
+                      <td className="py-2 text-right font-mono text-[13px] text-slate-200">
                         {fmtAmount(e.amount)}
                       </td>
                       <td className="py-2 pl-3">
@@ -181,7 +181,7 @@ export default function GraphEvidence({ evidence }) {
                             className="h-1.5 min-w-[2px] rounded-full bg-accent-500"
                             style={{ width: `${Math.max(2, Math.min(w * 100, 100))}%` }}
                           />
-                          <span className="shrink-0 font-mono text-[10px] text-slate-500">
+                          <span className="shrink-0 font-mono text-[12px] text-slate-500">
                             {w.toFixed(3)}
                           </span>
                         </div>
@@ -216,7 +216,7 @@ export default function GraphEvidence({ evidence }) {
                 key={n.account_id}
                 title={`${n.role} · risk ${(n.node_risk_score ?? 0).toFixed(4)}`}
                 className={cx(
-                  'rounded-md border border-subtle bg-surface px-2 py-1 font-mono text-[10px]',
+                  'rounded-md border border-subtle bg-surface px-2 py-1 font-mono text-[12px]',
                   ROLE_TONE[n.role] ?? 'text-slate-400',
                   n.account_id === sink && 'border-risk-critical/40 font-semibold',
                 )}
@@ -225,7 +225,7 @@ export default function GraphEvidence({ evidence }) {
               </span>
             ))}
             {!showAll && nodes.length > 14 && (
-              <span className="px-2 py-1 text-[10px] text-slate-500">
+              <span className="px-2 py-1 text-[12px] text-slate-500">
                 +{nodes.length - 14} more
               </span>
             )}
@@ -240,7 +240,7 @@ function Stat({ value, label }) {
   return (
     <div className="text-right">
       <p className="font-mono text-xl font-semibold text-slate-200">{value ?? '—'}</p>
-      <p className="text-[10px] uppercase tracking-wider text-slate-500">{label}</p>
+      <p className="text-[12px] uppercase tracking-wider text-slate-500">{label}</p>
     </div>
   )
 }
