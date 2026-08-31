@@ -74,7 +74,7 @@ export default function FusionLab() {
     <ConsoleShell
       eyebrow="Detector · Fusion"
       title="Fusion and chain-of-evidence"
-      subtitle="Three independent opinions, one verdict, and an exact account of how each opinion moved it."
+      subtitle="Three detectors, one verdict, and how much each moved it."
     >
       {error && <Alert tone="error">{error}</Alert>}
 
@@ -135,12 +135,6 @@ export default function FusionLab() {
                      tone={available ? ((score ?? 0) > 0.6 ? 'risk' : 'accent') : 'warn'}
                      right={available ? Number(score ?? 0).toFixed(4) : 'abstained'} />
               ))}
-              <p className="text-[11px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
-                A detector that abstains is imputed at its own training mean, not
-                at zero — an absent opinion is neutral, not an argument for
-                innocence. The verdict is then shrunk toward 0.5 to say, in the
-                number itself, that less evidence went into it.
-              </p>
             </section>
 
             <section style={{ display: 'grid', gap: 10 }}>
@@ -175,16 +169,11 @@ export default function FusionLab() {
               })}
               {Object.keys(contrib).length === 0 && (
                 <p className="text-[11px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
-                  The saved meta-classifier this instance loaded does not report
-                  its terms. The verdict above is unaffected — decomposition is
-                  read off the model, it is not part of computing the score.
+                  This saved model does not report its terms. The verdict is unaffected.
                 </p>
               )}
-              <p className="text-[11px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
-                Right of centre argues for fraud, left against. These are exact,
-                not estimated: the meta-classifier is linear, so each term is
-                literally coefficient × standardised score, and the three sum to
-                the decision function minus its intercept.
+              <p className="text-[11px]" style={{ color: 'rgb(var(--ds-muted))' }}>
+                Right of centre argues for fraud, left against.
               </p>
             </section>
           </div>
@@ -224,11 +213,6 @@ export default function FusionLab() {
                   {' · similarity '}{Number(r.retrieval.similarity_score ?? 0).toFixed(3)}
                 </p>
               </div>
-              <p className="text-[11px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
-                The report writer may only cite what is retrieved here and what
-                the three detectors returned. Nothing else is available to it,
-                which is what makes the narrative checkable against the record.
-              </p>
             </section>
           )}
 

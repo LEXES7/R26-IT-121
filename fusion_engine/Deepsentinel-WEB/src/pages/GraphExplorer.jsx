@@ -512,7 +512,7 @@ export default function GraphExplorer() {
     <ConsoleShell
       eyebrow="Explore"
       title="The payment graph"
-      subtitle="Search an account to see the network around it. The graph is 3.27M accounts; this loads only what you are looking at."
+      subtitle="Search an account to see the network around it."
     >
       {error && <Alert tone="error">{error}</Alert>}
 
@@ -558,7 +558,7 @@ export default function GraphExplorer() {
               {off
                 ? 'The network detector is reserved for the pipeline.'
                 : expanded
-                  ? 'Search an account to stream in the network around it.'
+                  ? 'Search an account to see its network.'
                   : 'Nothing is loaded until you open it.'}
             </p>
           </div>
@@ -571,14 +571,6 @@ export default function GraphExplorer() {
           </Button>
         )}
       </div>
-
-      {!off && !expanded && (
-        <p className="rounded-xl border border-dashed px-4 py-8 text-center text-[12px]"
-           style={{ borderColor: 'rgb(var(--ds-line))', color: 'rgb(var(--ds-faint))' }}>
-          3.27M accounts and 2.77M transfers. Open the explorer above to search
-          it, or to score an account the model has never seen.
-        </p>
-      )}
 
       {!off && expanded && (
         <>
@@ -646,12 +638,11 @@ export default function GraphExplorer() {
                     <div>
                       <p className="ds-mono text-[10px] uppercase tracking-wider"
                          style={{ color: 'rgb(var(--ds-faint))' }}>
-                        Invent an account the model has never seen
+                        Invent an account
                       </p>
                       <p className="mt-1 text-[11px] leading-relaxed"
                          style={{ color: 'rgb(var(--ds-muted))' }}>
-                        Change only the sender and score again. The account is
-                        identical, so any change came from the company it keeps.
+                        Change the sender and score again.
                       </p>
                     </div>
 
@@ -729,12 +720,11 @@ export default function GraphExplorer() {
                     <div>
                       <p className="ds-mono text-[10px] uppercase tracking-wider"
                          style={{ color: 'rgb(var(--ds-faint))' }}>
-                        Or score a file through this model alone
+                        Or score a file
                       </p>
                       <p className="mt-1 text-[11px] leading-relaxed"
                          style={{ color: 'rgb(var(--ds-muted))' }}>
-                        No fusion, no other detector. Rows whose destination is new are
-                        scored from their neighbourhood instead of looked up.
+                        This model only. No fusion.
                       </p>
                     </div>
 
@@ -796,11 +786,7 @@ export default function GraphExplorer() {
                 <p className="px-4 py-2 text-[10px] leading-relaxed"
                    style={{ color: 'rgb(var(--ds-faint))',
                             borderTop: '1px solid rgba(168,85,247,.18)' }}>
-                  Scores here are the raw network output, not the calibrated numbers the
-                  rest of the platform reports — the isotonic calibrator was never saved
-                  as a reusable artefact. Runs are comparable with each other, which is
-                  what the demonstration turns on. Nothing is recorded, alerted on, or
-                  written to the graph.
+                  Raw model output, not calibrated. Runs are comparable with each other.
                 </p>
               </section>
             )}
@@ -898,8 +884,7 @@ export default function GraphExplorer() {
             Explorer availability
           </p>
           <p className="mt-1 text-[11px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
-            Every search walks the served graph. Switching this off during a
-            demo keeps the network detector free for the pipeline.
+            Switch off to keep the network detector free for the pipeline.
           </p>
           <div className="mt-3 flex items-center gap-3">
             <Button

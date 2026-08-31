@@ -18,7 +18,7 @@ export default function TimingLab() {
       detector="temporal"
       eyebrow="Detector · Timing"
       title="Transaction-Sequence TCN"
-      subtitle="No transaction happens in isolation. Each one is read alongside the thirty-two that arrived before it."
+      subtitle="Each transaction is read alongside the thirty-two before it."
     >
       {(r) => {
         const ev = r.evidence ?? {}
@@ -116,10 +116,6 @@ export default function TimingLab() {
                     No single predecessor stood out for this transaction.
                   </p>
                 )}
-                <p className="text-[11px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
-                  A named transaction rather than an index. That is the whole
-                  point of the mechanism — an investigator can go and look at it.
-                </p>
               </section>
 
               {/* What this transaction itself looks like. */}
@@ -145,13 +141,6 @@ export default function TimingLab() {
               </section>
             </div>
 
-            <p className="text-[11px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
-              The window runs over arrival order across the whole stream, not
-              per account — PaySim averages one transaction per originating
-              account, so there is no per-account history to read. The first 31
-              transactions after a restart return <span className="ds-mono">503
-              WarmingUp</span>, and the platform treats that as abstaining.
-            </p>
           </div>
         )
       }}
