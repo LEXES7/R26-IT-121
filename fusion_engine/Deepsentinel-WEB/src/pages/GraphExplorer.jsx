@@ -46,7 +46,12 @@ const BUSY = [
   ['C2083562754', '73 accounts, 2 collectors'],
 ]
 
-const FRAME_H = 620
+// The hubs sit on an ellipse sized from the frame, but that ellipse is
+// width-dominated: dropping from 620 moves the closest pair by 15px and the
+// layout was only ever using ~36% of the height. So the frame can be shorter
+// without crowding anything, and the page stops needing a scroll to see the
+// caption under it.
+const FRAME_H = 480
 // The layout runs on a world larger than the frame, so there is somewhere to
 // move to. Packing 90 accounts into 620px makes a dense blob; spreading them
 // over twice that and letting the viewer travel makes the structure legible.
