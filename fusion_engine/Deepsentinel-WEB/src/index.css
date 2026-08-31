@@ -1110,7 +1110,15 @@ html.theme-transition * {
   z-index: 200;
   display: grid;
   place-items: center;
-  background: rgb(var(--sentinel-950));
+  /* Two washes over the flat ground rather than a flat fill. The accent one
+     pools low, behind where the mark lands; the neutral one sits high, so the
+     panel has a light source. Both are far too faint to read as colour — they
+     exist so the ground has somewhere to fall away to, which a single flat
+     value never gives you. */
+  background:
+    radial-gradient(122% 80% at 50% 116%, rgb(var(--accent-500) / 0.17), transparent 62%),
+    radial-gradient(74% 54% at 50% 4%, rgb(var(--slate-200) / 0.055), transparent 70%),
+    rgb(var(--sentinel-950));
   transform: translateY(0);
   transition: transform 0.8s cubic-bezier(0.76, 0, 0.24, 1),
               border-radius 0.8s cubic-bezier(0.76, 0, 0.24, 1);
@@ -1164,6 +1172,104 @@ html.theme-transition * {
 }
 @keyframes greeting-in {
   from { opacity: 0; transform: translateY(0.32em); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── the mark, once the greetings have finished ──────────────────────
+   It enters slightly too large and eases down to its own size. Scaling *down*
+   into place is what makes it read as settling; the same animation run upward
+   reads as a pop, which is a notification, not an identity. */
+.greeting-mark {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.4rem;
+}
+
+.greeting-mark-img {
+  /* Sized to sit in the same register as the greetings it replaces, which run
+     to 4.6rem. The source is 220px, so past about 165px a 2x panel is
+     interpolating rather than reading pixels — swap in a larger export and
+     this can grow further without touching anything else. */
+  width: clamp(118px, 15.5vw, 165px);
+  height: clamp(118px, 15.5vw, 165px);
+  position: relative;
+  z-index: 1;
+  animation: greeting-mark-settle 0.62s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.greeting-mark-glow {
+  position: absolute;
+  /* Positioned elements paint above static ones, so without this the glow
+     would sit on top of the mark it is meant to sit behind — invisible at the
+     old alpha, but `screen` at 0.44 would have washed the shield out. The mark
+     and the word are lifted to 1 rather than the glow being pushed to -1: a
+     negative index would drop it behind the curtain's own background, and
+     then it would have nothing to add its light to. */
+  z-index: 0;
+  top: -20%;
+  left: 50%;
+  /* Tied to the mark's own scale, so growing one does not leave the other
+     sitting as a halo of the wrong size. */
+  width: clamp(260px, 34vw, 380px);
+  height: clamp(260px, 34vw, 380px);
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: greeting-glow-in 0.9s ease-out both;
+
+  /* Dark is the base case, not the override, because the inline theme script
+     in index.html can fail — and if it does the tokens fall back to the dark
+     ramp, so the glow must already agree with them.
+
+     `screen` is what makes this read as light rather than as a wash of paint.
+     Over a near-black ground normal compositing at any usable alpha stays
+     within a few values of the background and the teal simply is not there;
+     screen adds to what is beneath it, which is what a glow physically does.
+     The same blend over the light theme's near-white ground would wash out to
+     nothing, so it is scoped here rather than applied to both. */
+  background: radial-gradient(circle,
+                rgb(var(--accent-400) / 0.44) 0%,
+                rgb(var(--accent-500) / 0.26) 40%,
+                transparent 68%);
+  filter: blur(20px);
+  mix-blend-mode: screen;
+}
+
+/* The light theme was already right — this is the original treatment, kept
+   exactly, and only restated because the base case above moved to dark. */
+[data-theme='light'] .greeting-mark-glow {
+  background: radial-gradient(circle, rgb(var(--accent-400) / 0.2), transparent 66%);
+  filter: blur(14px);
+  mix-blend-mode: normal;
+}
+
+/* The wordmark follows the mark rather than arriving with it, so the eye is
+   given the shield first and the name second. */
+.greeting-mark-word {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  /* Close to the greetings' own 4.6rem ceiling, so the name lands with the
+     weight they had rather than shrinking to a caption under the mark. */
+  font-size: clamp(2.1rem, 5.4vw, 3.35rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  color: rgb(var(--slate-200));
+  position: relative;
+  z-index: 1;
+  animation: greeting-word-rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both;
+}
+.greeting-mark-word-accent { color: rgb(var(--accent-400)); }
+
+@keyframes greeting-mark-settle {
+  from { opacity: 0; transform: scale(1.16); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes greeting-glow-in {
+  from { opacity: 0; transform: translateX(-50%) scale(0.82); }
+  to   { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+@keyframes greeting-word-rise {
+  from { opacity: 0; transform: translateY(0.5em); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
