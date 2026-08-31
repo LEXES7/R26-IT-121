@@ -249,7 +249,7 @@ export default function Monitor() {
               <button
                 onClick={() => control(() => startMonitor(1.2))}
                 disabled={busy}
-                className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-medium text-[#04231f] transition-colors hover:bg-accent-400 disabled:opacity-50"
+                className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-medium text-[#04231f] transition-colors hover:bg-accent-400 disabled:bg-surface-raised disabled:text-slate-500"
               >
                 {busy ? 'Starting…' : 'Start monitoring'}
               </button>

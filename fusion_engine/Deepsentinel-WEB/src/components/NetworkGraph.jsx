@@ -534,7 +534,7 @@ export default function NetworkGraph({ evidence, height = 420 }) {
                 {named && (
                   <text
                     y={arcR + 12} textAnchor="middle" fontSize="8.5"
-                    fill={focused ? '#f0ede7' : LABEL}
+                    fill={focused ? 'rgb(var(--ds-ink))' : LABEL}
                     fontFamily="ui-monospace, monospace"
                   >
                     {n.account_id.slice(0, 9)}

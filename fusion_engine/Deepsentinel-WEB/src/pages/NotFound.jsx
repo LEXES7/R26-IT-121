@@ -25,7 +25,7 @@ export default function NotFound() {
       <div className="mt-8 flex flex-wrap gap-3">
         <Link
           to="/"
-          className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-900 transition-colors hover:bg-white"
+          className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-400"
         >
           Back to the start
         </Link>

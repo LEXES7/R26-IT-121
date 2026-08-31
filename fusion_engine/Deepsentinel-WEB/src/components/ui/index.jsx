@@ -42,7 +42,14 @@ export const Button = forwardRef(function Button(
         'inline-flex items-center justify-center rounded-lg font-semibold',
         'transition-colors duration-150',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-sentinel-950',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
+        // A flat disabled look, not a faded one. `opacity-50` dims a
+        // variant's own colour toward the page behind it — fine on the
+        // light theme's paper ground, but `bg-accent-500 text-white`
+        // (primary) and `bg-red-600/90 text-white` (danger) both collapse
+        // toward the dark theme's near-black page at 50%, landing under
+        // 3:1. These two tokens already invert per theme, so the result
+        // reads the same "dimmed but legible" on both.
+        'disabled:cursor-not-allowed disabled:bg-surface-raised disabled:text-slate-500 disabled:shadow-none',
         BUTTON_VARIANTS[variant],
         BUTTON_SIZES[size],
         className,

@@ -64,7 +64,7 @@ function DetectorCard({ id, name, model, what, data }) {
   const scored = data?.transactions_scored ?? data?.model?.inferences
 
   return (
-    <Panel>
+    <Panel className="ds-panel-pad">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -233,7 +233,7 @@ export default function SystemHealth() {
           appearing. These three stop nothing and change no number on the
           operations dashboard, which is why they need somewhere to be seen. */}
       <div className="mt-10 grid gap-4 lg:grid-cols-3">
-        <Panel>
+        <Panel className="ds-panel-pad">
           <SectionHeading label="Are alerts arriving" title="Delivery" />
           {/* A handful of failures in a long run is an SMTP hiccup; a total
               of zero is a broken configuration. They read very differently to
@@ -277,7 +277,7 @@ export default function SystemHealth() {
           </dl>
         </Panel>
 
-        <Panel>
+        <Panel className="ds-panel-pad">
           <SectionHeading label="Not detectors" title="Supporting services" />
           <div>
             <ServiceRow label="Fusion model" svc={svc.fusion} />
@@ -287,7 +287,7 @@ export default function SystemHealth() {
           </div>
         </Panel>
 
-        <Panel>
+        <Panel className="ds-panel-pad">
           <SectionHeading label="Work waiting" title="Ingestion queue" />
           {queue.available ? (
             <>
