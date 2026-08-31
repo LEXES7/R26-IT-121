@@ -97,14 +97,10 @@ export default function GraphModelPanel() {
 
           <p className="mt-3 text-[13px] leading-relaxed"
              style={{ color: 'rgb(var(--ds-sev-high))' }}>
-            Accuracy is the misleading one here and is shown only so it cannot
-            be quoted out of context: mules are {perf.actual_mules && perf.evaluated_accounts
-              ? `${((perf.actual_mules / perf.evaluated_accounts) * 100).toFixed(1)}%`
-              : 'a small share'} of this population, so a model that flagged
-            nothing at all would score about{' '}
+            Ignore accuracy: flagging nothing would score{' '}
             {perf.actual_mules && perf.evaluated_accounts
               ? (1 - perf.actual_mules / perf.evaluated_accounts).toFixed(3) : '—'}.
-            Precision and recall are the figures that mean something.
+            Precision and recall are the real figures.
           </p>
         </div>
       )}
