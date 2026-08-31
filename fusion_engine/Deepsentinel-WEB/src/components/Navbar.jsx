@@ -62,15 +62,6 @@ export default function Navbar() {
     setPill({ left: r.left - b.left, width: r.width, on: true })
   }, [])
 
-  useEffect(() => {
-    // After paint: the links have to be laid out before they can be measured.
-    const id = requestAnimationFrame(restPill)
-    window.addEventListener('resize', restPill)
-    return () => {
-      cancelAnimationFrame(id)
-      window.removeEventListener('resize', restPill)
-    }
-  }, [restPill, pathname, primary.length])
 
   const primary = auth.isAuthenticated
     ? [
@@ -141,6 +132,16 @@ export default function Navbar() {
     .slice(0, 2)
     .join('')
     .toUpperCase()
+
+  useEffect(() => {
+    // After paint: the links have to be laid out before they can be measured.
+    const id = requestAnimationFrame(restPill)
+    window.addEventListener('resize', restPill)
+    return () => {
+      cancelAnimationFrame(id)
+      window.removeEventListener('resize', restPill)
+    }
+  }, [restPill, pathname, primary.length])
 
   const isAdminSectionActive = adminLinks.some((l) => l.to === pathname)
 
