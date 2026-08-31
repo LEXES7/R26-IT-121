@@ -126,66 +126,116 @@ export default function GraphExplorer() {
   }, [hops, scope])
 
   // ── layout ────────────────────────────────────────────────────────────
-  // A small force pass: neighbours repel, edges pull, and the whole thing is
-  // held toward the middle. Deterministic — same graph, same picture — because
-  // an investigator comparing two accounts should not have to re-read a new
-  // arrangement each time.
+  //
+  // Structural, not a force simulation. A generic force pass scatters this
+  // graph into a starburst because it has no idea what the nodes mean; the
+  // graph is in fact hub-and-spoke — collectors with senders converging — and
+  // a layout that knows that reads immediately.
+  //
+  // Collectors are placed on a ring, well apart. Each collector's senders sit
+  // in arcs on the far side of it, facing away from the middle, so no cluster
+  // grows into another. Senders that paid more than one collector go on the
+  // line between them, which is where they belong: they are the only reason
+  // the component is one network rather than several.
   const layout = useCallback((g, vw, vh) => {
-    const w = vw * WORLD
-    const h = vh * WORLD
-    const nodes = g.nodes.map((n, i) => {
-      // Seeded spiral start. Random starts settle to a different shape on
-      // every render, which makes the same account look like a different
-      // network each time you visit it.
-      const a = i * 2.399963
-      const r = Math.sqrt(i + 0.5) * (Math.min(w, h) / 2.6) / Math.sqrt(g.nodes.length)
-      return {
-        ...n,
-        x: n.is_centre ? w / 2 : w / 2 + Math.cos(a) * r,
-        y: n.is_centre ? h / 2 : h / 2 + Math.sin(a) * r,
-        vx: 0, vy: 0,
-      }
+    const W = vw * WORLD
+    const H = vh * WORLD
+    const cx = W / 2
+    const cy = H / 2
+    const byId = new Map(g.nodes.map((n) => [n.id, { ...n, x: cx, y: cy }]))
+
+    // Who pays whom, so a sender can be attached to its collector.
+    const paysTo = new Map()
+    g.edges.forEach((e) => {
+      if (!paysTo.has(e.source)) paysTo.set(e.source, [])
+      paysTo.get(e.source).push(e.target)
     })
-    const byId = new Map(nodes.map((n) => [n.id, n]))
+
+    // Collectors: anything two or more accounts pay into, biggest first. The
+    // searched account is always treated as one so it keeps the middle.
+    const hubs = g.nodes
+      .filter((n) => n.in_degree >= 2 || n.is_centre)
+      .sort((a, b) => (b.is_centre - a.is_centre) || (b.in_degree - a.in_degree))
+    const hubIds = new Set(hubs.map((h) => h.id))
+
+    // Collectors on an ellipse rather than a circle, sized to the frame. A
+    // circle in a 2:1 world leaves the sides empty and stacks everything down
+    // the middle — with two collectors either side of the centre it put all
+    // three on one vertical line and used 15% of the available width.
+    const rx = W * 0.30
+    const ry = H * 0.26
+    const others = hubs.filter((x) => !x.is_centre)
+    hubs.forEach((h) => {
+      const node = byId.get(h.id)
+      if (hubs.length === 1 || h.is_centre) { node.x = cx; node.y = cy; return }
+      const k = others.findIndex((x) => x.id === h.id)
+      // Tilted off the axes. Two collectors either side of a centre are always
+      // collinear with it, so an unrotated ring lays all three along one edge
+      // of the frame — vertically at offset 0, horizontally at a quarter turn,
+      // using a third of the space either way. 0.6rad puts the line on a
+      // diagonal, which measured best across both axes: 62% of the width and
+      // 54% of the height, with 23px between the closest pair.
+      const a = (k / others.length) * Math.PI * 2 + 0.6
+      node.x = cx + Math.cos(a) * rx
+      node.y = cy + Math.sin(a) * ry
+    })
+
+    // Senders, grouped by the collector they paid.
+    const groups = new Map(hubs.map((h) => [h.id, []]))
+    const bridges = []
+    g.nodes.forEach((n) => {
+      if (hubIds.has(n.id)) return
+      const targets = (paysTo.get(n.id) ?? []).filter((t) => hubIds.has(t))
+      if (targets.length > 1) bridges.push({ node: n, targets })
+      else if (targets.length === 1) groups.get(targets[0]).push(n)
+      else (groups.get(hubs[0]?.id) ?? []).push(n)
+    })
+
+    groups.forEach((members, hubId) => {
+      if (!members.length) return
+      const hub = byId.get(hubId)
+      // Face away from the middle, so clusters open outward instead of
+      // overlapping. A lone hub fans out in every direction.
+      const away = hubs.length === 1
+        ? 0 : Math.atan2(hub.y - cy, hub.x - cx)
+      const full = hubs.length === 1 ? Math.PI * 2 : Math.PI * 1.25
+      // Rings sized so arc length between neighbours stays readable rather
+      // than packing everything onto one circle.
+      const perRing = Math.max(7, Math.ceil(Math.sqrt(members.length) * 2.6))
+      const rings = Math.ceil(members.length / perRing)
+      members.forEach((m, i) => {
+        const ring = Math.floor(i / perRing)
+        const inRing = members.slice(ring * perRing, (ring + 1) * perRing).length
+        const idx = i % perRing
+        const r = 92 + ring * 74
+        const t = inRing === 1 ? 0.5 : idx / (inRing - 1)
+        const a = away + (t - 0.5) * full
+        const node = byId.get(m.id)
+        node.x = hub.x + Math.cos(a) * r
+        node.y = hub.y + Math.sin(a) * r
+      })
+    })
+
+    // Bridges sit midway between the collectors they paid, nudged outward so
+    // they are not hidden under the line joining them.
+    bridges.forEach(({ node: n, targets }, i) => {
+      const pts = targets.map((t) => byId.get(t)).filter(Boolean)
+      const mx = pts.reduce((s, p2) => s + p2.x, 0) / pts.length
+      const my = pts.reduce((s, p2) => s + p2.y, 0) / pts.length
+      const off = (i % 2 ? 1 : -1) * (34 + Math.floor(i / 2) * 26)
+      const dx = (pts[1]?.x ?? mx) - (pts[0]?.x ?? mx)
+      const dy = (pts[1]?.y ?? my) - (pts[0]?.y ?? my)
+      const len = Math.hypot(dx, dy) || 1
+      const node = byId.get(n.id)
+      node.x = mx + (-dy / len) * off
+      node.y = my + (dx / len) * off
+      node.is_bridge = true
+    })
+
+    const nodes = [...byId.values()]
     const links = g.edges
       .map((e) => ({ a: byId.get(e.source), b: byId.get(e.target), e }))
       .filter((l) => l.a && l.b)
-
-    const pad = 60
-    for (let step = 0; step < 190; step += 1) {
-      const cool = 1 - step / 190
-      for (let i = 0; i < nodes.length; i += 1) {
-        for (let j = i + 1; j < nodes.length; j += 1) {
-          const A = nodes[i]; const B = nodes[j]
-          let dx = B.x - A.x; let dy = B.y - A.y
-          let d2 = dx * dx + dy * dy
-          if (d2 < 1) { dx = (i - j) || 1; dy = 1; d2 = 1 }
-          // Collectors push each other apart much harder than leaves do.
-          // Without this the hubs settle next to one another and the picture
-          // reads as one blob when it is actually three lobes joined by two
-          // accounts — which is the finding.
-          const hubbish = (A.in_degree >= 3 ? 5 : 1) * (B.in_degree >= 3 ? 5 : 1)
-          const f = (5200 * hubbish) / d2
-          const d = Math.sqrt(d2)
-          A.vx -= (dx / d) * f; A.vy -= (dy / d) * f
-          B.vx += (dx / d) * f; B.vy += (dy / d) * f
-        }
-      }
-      links.forEach(({ a, b }) => {
-        const dx = b.x - a.x; const dy = b.y - a.y
-        const d = Math.hypot(dx, dy) || 1
-        const f = (d - Math.min(w, h) / 7) * 0.012
-        a.vx += (dx / d) * f; a.vy += (dy / d) * f
-        b.vx -= (dx / d) * f; b.vy -= (dy / d) * f
-      })
-      nodes.forEach((n) => {
-        if (n.is_centre) { n.x = w / 2; n.y = h / 2; n.vx = 0; n.vy = 0; return }
-        n.x += (n.vx *= 0.82) * cool
-        n.y += (n.vy *= 0.82) * cool
-        n.x = Math.max(pad, Math.min(w - pad, n.x))
-        n.y = Math.max(pad, Math.min(h - pad, n.y))
-      })
-    }
     return { nodes, links, byId }
   }, [])
 
