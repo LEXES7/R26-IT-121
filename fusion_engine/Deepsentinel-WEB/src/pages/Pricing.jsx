@@ -77,14 +77,17 @@ export default function Pricing() {
         }
       `}</style>
 
-      <div className="ds-rise">
-        <p className="ds-mono text-[13px] uppercase tracking-[.18em]"
-           style={{ color: 'rgb(var(--ds-accent-strong))' }}>Pricing</p>
-        <h1 className="mt-3 text-[42px] leading-[1.05] tracking-tight"
-            style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+      <div className="ds-rise text-center">
+        <p className="ds-mono mx-auto inline-block rounded-full border px-3 py-1 text-[12px] uppercase tracking-[.16em]"
+           style={{ borderColor: 'rgb(var(--ds-line))', color: 'rgb(var(--ds-muted))' }}>
+          Pricing
+        </p>
+        <h1 className="mx-auto mt-5 max-w-[16ch] text-[52px] leading-[1.02] tracking-tight"
+            style={{ fontFamily: "'Instrument Serif', Georgia, serif", textWrap: 'balance' }}>
           Detection is never the thing you pay for
         </h1>
-        <p className="mt-5 max-w-[58ch] text-[17px]" style={{ color: 'rgb(var(--ds-muted))' }}>
+        <p className="mx-auto mt-5 max-w-[54ch] text-[17px]"
+           style={{ color: 'rgb(var(--ds-muted))' }}>
           Every plan screens every transaction through all three detectors. The
           plans differ on how much the product helps you understand a result and
           answer for it afterwards.
@@ -122,71 +125,88 @@ export default function Pricing() {
             {plans.map((p, i) => {
               // Only what this tier adds over the one before it.
               const prev = new Set((plans[i - 1]?.features ?? []).map((f) => f.key))
-              const added = p.features.filter((f) => !f.always_included && !prev.has(f.key))
+              const own = p.features.filter((f) => !f.always_included && !prev.has(f.key))
+              const rows = i === 0
+                ? p.features.filter((f) => f.always_included).map((f) => f.label)
+                : [`Everything in ${plans[i - 1].name}`, ...own.map((f) => f.label)]
               const mid = p.id === 'professional'
+
+              // The featured card is filled rather than outlined, so every
+              // colour on it has to come from the fill, not the page.
+              const ink = mid ? 'rgb(6 44 38)' : 'rgb(var(--ds-ink))'
+              const soft = mid ? 'rgb(6 44 38 / .82)' : 'rgb(var(--ds-muted))'
+              const line = mid ? 'rgb(6 44 38 / .16)' : 'rgb(var(--ds-line))'
+
               return (
                 <section
                   key={p.id}
                   className="ds-card ds-rise flex w-[86%] shrink-0 snap-center flex-col
-                             rounded-xl border p-6 sm:w-[58%] lg:w-[calc((100%-2.5rem)/3)]"
+                             rounded-2xl border p-7 sm:w-[58%] lg:w-[calc((100%-2.5rem)/3)]"
                   style={{
-                    borderColor: mid ? 'rgb(var(--ds-accent))' : 'rgb(var(--ds-line))',
-                    background: 'rgb(var(--ds-surface))',
-                    boxShadow: mid ? '0 10px 40px rgba(45,212,191,.10)' : 'none',
+                    borderColor: mid ? 'transparent' : 'rgb(var(--ds-line))',
+                    background: mid ? 'rgb(var(--ds-accent))' : 'rgb(var(--ds-surface))',
+                    color: ink,
+                    boxShadow: mid ? '0 24px 60px -24px rgb(45 212 191 / .45)' : 'none',
                     animationDelay: `${0.14 + i * 0.09}s`,
                   }}
                 >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <h2 className="text-[21px] font-bold tracking-tight">{p.name}</h2>
-                    {mid && (
-                      <span className="ds-mono rounded-full px-2 py-1 text-[12px]"
-                            style={{ background: 'rgb(var(--ds-accent-soft))',
-                                     color: 'rgb(var(--ds-accent-strong))' }}>
-                        most chosen
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 text-[15px]" style={{ color: 'rgb(var(--ds-muted))' }}>
-                    {p.tagline}
-                  </p>
+                  {mid && (
+                    <p className="ds-mono mx-auto rounded-full px-3 py-1 text-[11px] uppercase tracking-[.14em]"
+                       style={{ background: 'rgb(6 44 38)', color: 'rgb(var(--ds-accent))' }}>
+                      Most chosen
+                    </p>
+                  )}
 
-                  <p className="mt-5 text-[34px] font-bold leading-none tracking-tight">
-                    {p.price}
+                  {/* The number, at the size the decision deserves. */}
+                  <p className="mt-7 text-center">
+                    <span className="text-[52px] font-bold leading-none tracking-tight">
+                      {p.price}
+                    </span>
                   </p>
-                  <p className="mt-2 text-[14px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+                  <p className="mt-2 text-center text-[13px]" style={{ color: soft }}>
                     {p.unit}
                   </p>
-                  <p className="mt-1 text-[14px]" style={{ color: 'rgb(var(--ds-muted))' }}>
-                    {p.volume}
+
+                  <div className="mx-auto mt-4 h-px w-10" style={{ background: line }} />
+                  <p className="ds-mono mt-3 text-center text-[12px] uppercase tracking-[.18em]"
+                     style={{ color: soft }}>
+                    {p.name}
                   </p>
 
-                  <ul className="mt-6 grid flex-1 gap-2">
-                    {i > 0 && (
-                      <li className="text-[15px] font-semibold">
-                        Everything in {plans[i - 1].name}, plus
-                      </li>
-                    )}
-                    {added.length === 0 ? (
-                      p.features.filter((f) => f.always_included).map((f) => (
-                        <li key={f.key} className="flex gap-2 text-[15px]"
-                            style={{ color: 'rgb(var(--ds-muted))' }}>
-                          <span style={{ color: 'rgb(var(--ds-accent))' }}>✓</span>{f.label}
-                        </li>
-                      ))
-                    ) : added.map((f) => (
-                      <li key={f.key} className="flex gap-2 text-[15px]"
-                          style={{ color: 'rgb(var(--ds-muted))' }}>
-                        <span style={{ color: 'rgb(var(--ds-accent))' }}>✓</span>{f.label}
+                  <p className="mt-7 text-[15px] font-semibold">Includes</p>
+                  {/* Divided rows rather than a tick per line: at seven items a
+                      column of ticks is texture, and the rule already says
+                      "these are separate things". */}
+                  <ul className="mt-2 flex-1">
+                    {rows.map((label, r) => (
+                      <li key={label}
+                          className="py-3 text-[15px]"
+                          style={{
+                            color: r === 0 && i > 0 ? ink : soft,
+                            fontWeight: r === 0 && i > 0 ? 600 : 400,
+                            borderTop: r === 0 ? 'none' : `1px solid ${line}`,
+                          }}>
+                        {label}
                       </li>
                     ))}
                   </ul>
 
+                  <p className="mt-6 text-center text-[13px] leading-relaxed"
+                     style={{ color: soft }}>
+                    {p.who}
+                  </p>
+
                   <Link to="/request-access"
-                        className="btn-shader mt-6 block w-full rounded-lg px-4 py-2.5 text-center text-[15px]">
+                        className={mid
+                          ? 'mt-5 block w-full rounded-lg px-4 py-3 text-center text-[15px] font-semibold'
+                          : 'btn-shader mt-5 block w-full rounded-lg px-4 py-3 text-center text-[15px]'}
+                        style={mid ? { background: 'rgb(6 44 38)', color: 'rgb(var(--ds-accent))' }
+                          : undefined}>
                     {p.id === 'enterprise' ? 'Talk to us' : 'Request access'}
                   </Link>
-                  <p className="mt-2 text-center text-[13px]"
-                     style={{ color: 'rgb(var(--ds-faint))' }}>{p.overage}</p>
+                  <p className="mt-3 text-center text-[12px]" style={{ color: soft }}>
+                    {p.overage}
+                  </p>
                 </section>
               )
             })}
