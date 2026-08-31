@@ -163,7 +163,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
     allow_credentials=_cors_origins != ["*"],
-    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    # PUT is used by the settings writes — thresholds, package tier, graph
+    # settings, report style. Leaving it out let the preflight fail, and the
+    # browser reports a blocked preflight as no response at all, so the
+    # console said the backend was down while it was answering fine.
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
 
