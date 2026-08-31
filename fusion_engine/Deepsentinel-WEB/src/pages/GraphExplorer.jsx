@@ -70,6 +70,44 @@ export default function GraphExplorer() {
   // nodes on every visit is how a demo machine runs out of memory.
   const [expanded, setExpanded] = useState(false)
 
+  /* Move the view rather than jump it.
+   *
+   * Every recentre used to be an instant setView, which on a graph this size
+   * is disorienting: the picture is replaced and you have to find your place
+   * again. Gliding costs nothing and keeps the eye anchored — the node you
+   * asked for is the one thing that does not move.
+   *
+   * The tween writes state each frame rather than driving the canvas
+   * directly, because the draw effect already depends on `view`; a second
+   * path into the canvas would be two sources of truth for where we are. */
+  const tweenRef = useRef(0)
+  const glideTo = useCallback((target, ms = 620) => {
+    cancelAnimationFrame(tweenRef.current)
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setView((v) => ({ ...v, ...target }))
+      return
+    }
+    let from = null
+    const t0 = performance.now()
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / ms)
+      // easeOutCubic: quick to leave, gentle to arrive.
+      const e = 1 - (1 - k) ** 3
+      setView((v) => {
+        if (!from) from = { x: v.x, y: v.y, z: v.z }
+        return {
+          x: from.x + ((target.x ?? from.x) - from.x) * e,
+          y: from.y + ((target.y ?? from.y) - from.y) * e,
+          z: from.z + ((target.z ?? from.z) - from.z) * e,
+        }
+      })
+      if (k < 1) tweenRef.current = requestAnimationFrame(step)
+    }
+    tweenRef.current = requestAnimationFrame(step)
+  }, [])
+
+  useEffect(() => () => cancelAnimationFrame(tweenRef.current), [])
+
   // ── Demo mode ──────────────────────────────────────────────────────────
   // Folded into this page rather than living on its own, because the point of
   // the demo is the picture: an account that did not exist gets scored, and
@@ -140,7 +178,11 @@ export default function GraphExplorer() {
       const d = await getNeighbourhood(account, { scope, hops: h })
       setGraph(d)
       setCentre(account)
-      setView({ x: 0, y: 0, z: 1 })
+      // The searched account is laid out at the centre, so the view only has
+      // to settle back to the origin — done as a short zoom-out from slightly
+      // in, which reads as arriving rather than cutting.
+      setView({ x: 0, y: 0, z: 1.22 })
+      glideTo({ x: 0, y: 0, z: 1 }, 560)
       if (remember) {
         setTrail((t) => (t[t.length - 1] === account ? t : [...t, account]).slice(-8))
       }
@@ -150,7 +192,7 @@ export default function GraphExplorer() {
     } finally {
       setLoading(false)
     }
-  }, [hops, scope])
+  }, [hops, scope, glideTo])
 
   /* Score an account that does not exist, then draw it where it landed.
    *
@@ -839,7 +881,24 @@ export default function GraphExplorer() {
                   // A drag that happened to end on a node is not a click on it.
                   if (d && !d.moved) {
                     const h = hit(e)
-                    if (h && h.id !== centre) { setQuery(h.id); load(h.id) }
+                    if (h && h.id !== centre) {
+                      // Glide the node you picked into the middle first, so
+                      // the new network arrives where you were already
+                      // looking rather than somewhere else entirely.
+                      // The draw transform is
+                      //   translate(W/2 + x, H/2 + y) · scale(z) · translate(-W/2, -H/2)
+                      // so a world point lands at the middle when
+                      //   x = -z (wx - W/2).  Solved, not guessed at.
+                      const W = canvasRef.current?.clientWidth ?? 0
+                      if (W) {
+                        glideTo({
+                          x: -view.z * (h.x - W / 2),
+                          y: -view.z * (h.y - FRAME_H / 2),
+                        }, 420)
+                      }
+                      setQuery(h.id)
+                      setTimeout(() => load(h.id), 300)
+                    }
                   }
                 }}
                 onMouseLeave={() => { dragRef.current = null; setHover(null) }}
