@@ -6,6 +6,8 @@ import { PRESETS } from '../components/DetectorLab'
 import ConsoleShell from '../components/ConsoleShell'
 import FusionModelPanel from '../components/FusionModelPanel'
 import FusionStages from '../components/FusionStages'
+import FusionLive from '../components/FusionLive'
+import TypologyBook from '../components/TypologyBook'
 import { Alert, Button, cx } from '../components/ui'
 
 /**
@@ -258,6 +260,9 @@ export default function FusionLab() {
 
         <div style={{ marginTop: 14, display: 'grid', gap: 18 }}>
           <FusionStages />
+          <FusionLive />
+          <TypologyBook matched={r?.retrieval?.typology_name}
+                        similarity={r?.retrieval?.similarity_score} />
           <FusionModelPanel />
         </div>
       </div>

@@ -603,6 +603,12 @@ class MonitorEngine:
             "fusion_method": fusion_method,
             "modalities_used": len(available),
             "scores": {k: (round(v, 4) if v is not None else None) for k, v in scores.items()},
+            # The arithmetic, not just the answer. These were already computed
+            # for the runlog and then dropped on the floor; carrying them on
+            # the event lets a watcher see how each verdict was arrived at
+            # while it happens, rather than reconstructing it afterwards.
+            "contributions": contributions,
+            "driver": driver,
         })
 
         # The queue row is closed on the fused answer, not the relational one.
