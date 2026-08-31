@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { scoreOneDetector, warmTemporalWindow } from '../services/api'
 import { Alert, Button, cx } from './ui'
 import ConsoleShell from './ConsoleShell'
+import DetectorRuntime from './DetectorRuntime'
 
 /**
  * The shell the three detector pages share: pick a transaction, run one
@@ -73,7 +74,7 @@ export function Stat({ label, value, note }) {
   )
 }
 
-export default function DetectorLab({ detector, eyebrow, title, subtitle, children }) {
+export default function DetectorLab({ detector, eyebrow, title, subtitle, model, children }) {
   const [pick, setPick] = useState(0)
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -107,6 +108,8 @@ export default function DetectorLab({ detector, eyebrow, title, subtitle, childr
       {/* .ds-content sets padding but no gap, so blocks rendered straight into
           it sit flush against one another. The page owns its own rhythm. */}
       <div style={{ display: 'grid', gap: 18 }}>
+      <DetectorRuntime detector={detector === 'behavioural' ? 'behavioural' : detector}
+                       model={model} />
       {error && <Alert tone="error">{error}</Alert>}
 
       <div className="flex flex-wrap items-center gap-2">

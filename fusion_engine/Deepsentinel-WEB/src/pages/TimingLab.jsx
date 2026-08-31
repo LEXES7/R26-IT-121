@@ -18,6 +18,7 @@ export default function TimingLab() {
       detector="temporal"
       eyebrow="Detector · Timing"
       title="Transaction-Sequence TCN"
+      model="Transaction-Sequence TCN"
       subtitle="Each transaction is read alongside the thirty-two before it."
     >
       {(r) => {

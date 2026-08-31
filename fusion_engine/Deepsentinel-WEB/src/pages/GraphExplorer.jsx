@@ -6,6 +6,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { Alert, Button, Input, cx } from '../components/ui'
 import ConsoleShell from '../components/ConsoleShell'
+import DetectorRuntime from '../components/DetectorRuntime'
 
 /**
  * Walk the payment graph one account at a time.
@@ -653,6 +654,7 @@ export default function GraphExplorer() {
       {error && <Alert tone="error">{error}</Alert>}
 
       <div style={{ display: "grid", gap: 18 }}>
+      <DetectorRuntime detector="graph" model="Edge-Enhanced GraphSAGE" />
       {/* One switch, at the top, before anything else.
         *
         * The explorer is the only screen here that can put real load on the
