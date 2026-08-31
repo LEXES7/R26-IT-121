@@ -729,6 +729,11 @@ async def analyze_batch(
                 "temporal_score": (fusion.temporal_score
                                    if fusion.temporal_available else None),
                 "modalities_used": fusion.modalities_used,
+                # The per-detector terms, so a caller can show how each row was
+                # decided rather than only what it was decided to be. Already
+                # computed on the way to the score; carrying them costs nothing.
+                "contributions": fusion.contributions,
+                "driver": fusion.driver,
             }
             scored.append(record)
             yield sse("progress", record)
