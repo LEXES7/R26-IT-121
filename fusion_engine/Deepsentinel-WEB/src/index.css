@@ -1554,23 +1554,88 @@ html.theme-transition * {
   border-color: rgb(16 30 40 / 0.08);
 }
 
-/* A light sweep across the primary action. Slow, and only on hover — a
-   permanent shimmer is a distraction on a bar that is always on screen. */
-.nav-cta { position: relative; overflow: hidden; isolation: isolate; }
-.nav-cta::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  transform: translateX(-120%);
-  background: linear-gradient(105deg,
-    transparent 30%, rgb(255 255 255 / 0.42) 50%, transparent 70%);
-  pointer-events: none;
-}
-.nav-cta:hover::after { animation: nav-sheen 0.9s ease-out; }
-@keyframes nav-sheen { to { transform: translateX(120%); } }
 
 @media (prefers-reduced-motion: reduce) {
   .nav-liquid, .nav-pill { transition: none; }
-  .nav-cta:hover::after { animation: none; }
+}
+
+/* ── shader buttons ───────────────────────────────────────────────────
+   The look of a fragment shader without one: layered conic and radial
+   gradients rotating behind the label, a fine grain over the top, and a
+   specular sweep on hover.
+
+   Done in CSS rather than WebGL on purpose. A canvas per button costs a GL
+   context each and keeps a rAF loop alive for something decorative — on a
+   machine already running five services and a 3.3M-node graph, that is a
+   bad trade for a gradient. This composites on the GPU and stops when the
+   pointer leaves.
+
+   @property is what makes the rotation smooth: an unregistered custom
+   property animates as a discrete swap, so the gradient would jump between
+   frames. Where it is unsupported the angle simply holds and the button is
+   a still gradient, which is a fine button. */
+@property --shader-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.btn-shader {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  color: #04211d;
+  background:
+    conic-gradient(from var(--shader-angle) at 30% 110%,
+      rgb(var(--ds-accent)) 0deg,
+      rgb(94 231 213) 90deg,
+      rgb(120 200 255) 170deg,
+      rgb(var(--ds-accent)) 260deg,
+      rgb(var(--ds-accent)) 360deg);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 8px 26px -10px rgb(45 212 191 / 0.55);
+  animation: shader-drift 9s linear infinite;
+  transition: box-shadow .35s var(--ease-hover), transform .35s var(--ease-hover);
+}
+@keyframes shader-drift { to { --shader-angle: 360deg; } }
+
+/* Grain. A pure gradient reads as plastic; the speckle is what makes it read
+   as a material with a surface. */
+.btn-shader::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: .16;
+  mix-blend-mode: overlay;
+  background-image: radial-gradient(rgb(255 255 255 / .9) .5px, transparent .5px);
+  background-size: 3px 3px;
+}
+
+/* The sweep, on hover only. */
+.btn-shader::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  transform: translateX(-130%);
+  background: linear-gradient(105deg,
+    transparent 32%, rgb(255 255 255 / .55) 50%, transparent 68%);
+}
+.btn-shader:hover { transform: translateY(-1px); box-shadow:
+  inset 0 1px 0 rgb(255 255 255 / 0.45),
+  0 14px 34px -12px rgb(45 212 191 / 0.7); }
+.btn-shader:hover::after { animation: shader-sweep .85s ease-out; }
+@keyframes shader-sweep { to { transform: translateX(130%); } }
+
+.btn-shader:disabled { animation-play-state: paused; filter: saturate(.5); }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-shader { animation: none; transition: none; }
+  .btn-shader:hover { transform: none; }
+  .btn-shader:hover::after { animation: none; }
 }
 

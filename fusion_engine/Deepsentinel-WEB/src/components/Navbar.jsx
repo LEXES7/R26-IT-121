@@ -308,7 +308,7 @@ export default function Navbar() {
               </Link>
               <Link
                 to="/login"
-                className="nav-cta rounded-lg bg-accent-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-400"
+                className="btn-shader rounded-lg px-4 py-2 text-sm font-semibold"
               >
                 Sign in
               </Link>

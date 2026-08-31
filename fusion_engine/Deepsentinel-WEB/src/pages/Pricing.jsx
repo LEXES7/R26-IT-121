@@ -179,11 +179,13 @@ export default function Pricing() {
                   </ul>
 
                   <Link to="/request-access"
-                        className="mt-6 rounded-lg px-4 py-2.5 text-center text-[15px] font-semibold transition-opacity hover:opacity-85"
-                        style={{
-                          background: mid ? 'rgb(var(--ds-accent))' : 'transparent',
-                          color: mid ? 'rgb(8 44 39)' : 'rgb(var(--ds-ink))',
-                          border: `1px solid rgb(var(--ds-${mid ? 'accent' : 'line'}))`,
+                        className={mid
+                          ? 'btn-shader mt-6 rounded-lg px-4 py-2.5 text-center text-[15px]'
+                          : 'mt-6 rounded-lg px-4 py-2.5 text-center text-[15px] font-semibold transition-opacity hover:opacity-85'}
+                        style={mid ? undefined : {
+                          background: 'transparent',
+                          color: 'rgb(var(--ds-ink))',
+                          border: '1px solid rgb(var(--ds-line))',
                         }}>
                     {p.id === 'enterprise' ? 'Talk to us' : 'Request access'}
                   </Link>

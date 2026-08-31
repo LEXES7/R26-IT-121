@@ -16,6 +16,11 @@ const cx = (...parts) => parts.filter(Boolean).join(' ')
 const BUTTON_VARIANTS = {
   primary:
     'bg-accent-500 text-white hover:bg-accent-400 focus-visible:ring-blue-400 shadow-lg shadow-accent-500/20',
+  /* The loud one. For the single action a page is asking for — signing in,
+     requesting access, running the thing the page exists to run. Putting it
+     on every Save in the console would make none of them mean anything. */
+  shader:
+    'btn-shader font-semibold focus-visible:ring-accent-400',
   secondary:
     'bg-surface-raised text-slate-200 border border-subtle hover:bg-surface-hover hover:border-strong focus-visible:ring-slate-400',
   danger:
