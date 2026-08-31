@@ -719,7 +719,7 @@ export default function BatchAnalysis() {
       {perModel && !scoring && (
         <Panel className="ds-panel-pad">
           <SectionHeading
-            label={`Each detector scored on its own · alert at ${ALERT_AT}`}
+            label="Each detector scored at its own operating point"
             title="What each part of the system contributed"
             action={<span className="ds-mono" style={{ fontSize: 10,
                     color: 'rgb(var(--ds-muted))' }}>this file only</span>}
@@ -777,8 +777,12 @@ export default function BatchAnalysis() {
           </p>
           <p style={{ fontSize: 9, lineHeight: 1.6, color: 'rgb(var(--ds-faint))',
                       marginTop: 8 }}>
-            Each detector's own score at {ALERT_AT}, against the labels in this
-            file. Figures describe this file only.
+            Each detector is measured at its own threshold — graph{' '}
+            {OWN_THRESHOLD.graph}, behaviour {OWN_THRESHOLD.behavioural},
+            timing {OWN_THRESHOLD.temporal} — and the fused row at {fusedAt},
+            the line this run was scored at. Measuring all four at one shared
+            number asked GraphSAGE to clear a line above its own critical band.
+              Figures describe this file only.
           </p>
         </Panel>
       )}
