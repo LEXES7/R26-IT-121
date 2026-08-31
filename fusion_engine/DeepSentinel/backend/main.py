@@ -1245,6 +1245,21 @@ async def analysis_report_pdf(
                  f'attachment; filename="deepsentinel-report-{stamp}.pdf"'})
 
 
+@app.get("/packages/catalogue", tags=["packages"])
+async def packages_catalogue():
+    """The plans as a buyer sees them.
+
+    Unauthenticated on purpose — it is the public pricing page's data, and a
+    price list nobody can read before signing up is not a price list.
+
+    Built from the same tables the gate enforces, so the website cannot end up
+    advertising a feature the software does not actually unlock.
+    """
+    from backend import packages
+
+    return packages.catalogue()
+
+
 @app.get("/report-styles", tags=["report"])
 async def list_report_styles(user: User = Depends(require_any_user)):
     """The available looks for the forensic report PDF, and which is in force.

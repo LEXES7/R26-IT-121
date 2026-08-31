@@ -175,3 +175,88 @@ def status() -> dict:
         "always_included": sorted(ALWAYS_INCLUDED),
         "upsells": {name: upsell(name) for name in FEATURES if not has(name)},
     }
+
+# ── What a buyer sees ────────────────────────────────────────────────────────
+#
+# The plan names, prices and included features the public pricing page renders.
+# It lives here, beside the gate, on purpose: a pricing page maintained
+# separately drifts from what the software actually enforces, and then the site
+# is selling something the product does not do. `catalogue()` reads FEATURES
+# and ALWAYS_INCLUDED directly, so a feature moved between tiers moves on the
+# website in the same commit.
+#
+# Figures are indicative and derived from measured cost drivers, not from
+# surveyed market rates. Nothing here charges anyone — see backend/billing.py.
+
+FEATURE_LABELS: dict[str, str] = {
+    "detection":          "All three detectors on every transaction",
+    "fusion":             "Combined into one confidence score",
+    "alerting":           "Email alerts to nominated risk managers",
+    "monitoring":         "Always-on live monitor",
+    "analysis_history":   "Analysis history and audit log",
+    "attribution_panels": "Per-detector attribution — which signal fired, and why",
+    "forensic_report":    "Grounded forensic report, as a filed PDF",
+    "ablation_view":      "Grounded-vs-ungrounded comparison",
+    "ai_assistant":       "Operator assistant",
+    "batch_analysis":     "Batch analysis — score a file of transactions",
+    "sar_draft":          "Suspicious activity report drafting",
+    "threshold_sim":      "Threshold simulator",
+    "governance_pack":    "Governance pack — model cards and validation evidence",
+    "drift_monitoring":   "Drift monitoring",
+    "custom_training":    "Training on the institution's own data",
+}
+
+_PLANS = {
+    Package.ESSENTIAL: {
+        "tagline": "Detection and alerting",
+        "who": "A small institution that needs transactions screened and staff notified.",
+        "price": "$40", "unit": "per analyst / month",
+        "volume": "100,000 transactions a month included",
+        "overage": "$0.30 per 1,000 after that",
+        "term": "Monthly",
+    },
+    Package.PROFESSIONAL: {
+        "tagline": "Investigation and evidence",
+        "who": "A bank with a compliance function that has to justify its decisions.",
+        "price": "$120", "unit": "per analyst / month",
+        "volume": "1,000,000 transactions a month included",
+        "overage": "$0.20 per 1,000 after that · 500 reports, then $0.40 each",
+        "term": "Annual",
+    },
+    Package.ENTERPRISE: {
+        "tagline": "Your institution, your governance",
+        "who": "A bank that needs the system trained on its own data and governed under its own regulator.",
+        "price": "From $25,000", "unit": "engagement, then annual licence",
+        "volume": "Negotiated",
+        "overage": "Negotiated",
+        "term": "Annual",
+    },
+}
+
+
+def catalogue() -> dict:
+    """The plans, priced, with each one's features read off the gate table."""
+    plans = []
+    for pkg in (Package.ESSENTIAL, Package.PROFESSIONAL, Package.ENTERPRISE):
+        included = sorted(ALWAYS_INCLUDED) + [
+            f for f, need in FEATURES.items() if _RANK[need] <= _RANK[pkg]
+        ]
+        plans.append({
+            "id": pkg.value,
+            "name": _LABELS[pkg],
+            **_PLANS[pkg],
+            "features": [
+                {"key": f, "label": FEATURE_LABELS.get(f, f),
+                 "always_included": f in ALWAYS_INCLUDED}
+                for f in included
+            ],
+        })
+    return {
+        "plans": plans,
+        "current": current().value,
+        # The claim the whole structure rests on, served rather than retyped
+        # into the page, so it cannot quietly diverge from the code.
+        "never_gated": [FEATURE_LABELS.get(f, f) for f in sorted(ALWAYS_INCLUDED)],
+        "note": ("Indicative pricing, derived from measured cost drivers rather "
+                 "than surveyed market rates."),
+    }

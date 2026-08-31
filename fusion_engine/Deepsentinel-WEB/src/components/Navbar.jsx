@@ -42,6 +42,7 @@ export default function Navbar() {
         { to: '/', label: 'Overview' },
         { to: '/components/network', label: 'Components' },
         { to: '/about', label: 'Architecture' },
+        { to: '/pricing', label: 'Pricing' },
         { to: '/faq', label: 'FAQ' },
       ]
 

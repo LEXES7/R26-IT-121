@@ -35,6 +35,7 @@ import AuditLog from './pages/AuditLog'
 import Account from './pages/Account'
 import About from './pages/About'
 import FAQ from './pages/FAQ'
+import Pricing from './pages/Pricing'
 import ComponentDetail from './pages/ComponentDetail'
 import RequestAccess from './pages/RequestAccess'
 
@@ -95,6 +96,7 @@ function Shell() {
             <Route path="/" element={<RootPage />} />
             <Route path="/about" element={<About />} />
             <Route path="/faq" element={<FAQ />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/components/:slug" element={<ComponentDetail />} />
             {/* Signed in, both of these send you home — and "/" resolves to
                 the console your role actually has. Sending everyone to the
