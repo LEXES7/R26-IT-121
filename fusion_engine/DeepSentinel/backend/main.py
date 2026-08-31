@@ -289,6 +289,10 @@ class AnalyzeResponse(BaseModel):
     behavioral_available: bool
     temporal_available: bool
     modalities_used: int
+    # Signed per-detector contribution to the fused log-odds, summing
+    # to z minus the intercept. Empty for an older saved model that
+    # cannot be decomposed.
+    contributions: dict[str, float] = {}
     retrieval: RetrievalInfo
     forensic_report: Optional[str]
     baseline_report: Optional[str]

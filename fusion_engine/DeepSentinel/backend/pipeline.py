@@ -399,6 +399,11 @@ async def run_pipeline(
             "behavioral_available": fusion.behavioral_available,
             "temporal_available": fusion.temporal_available,
             "modalities_used": fusion.modalities_used,
+            # Each detector's signed contribution to the fused
+            # log-odds. Already computed on every verdict; reporting it
+            # costs nothing and is the only exact answer to "which
+            # detector decided this" that the meta-classifier can give.
+            "contributions": fusion.contributions,
             "retrieval": {
                 "typology_id": top.typology_id,
                 "typology_name": top.typology_name,

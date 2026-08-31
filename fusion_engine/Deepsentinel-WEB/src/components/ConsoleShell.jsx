@@ -45,6 +45,13 @@ const I = {
   close: 'M18 6 6 18M6 6l12 12',
   out: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14 5-5-5-5m5 5H9',
   shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z',
+  // A distribution with one point out in the tail — what the
+  // behavioural model is looking for.
+  curve: 'M3 18c3 0 4-12 7-12s4 12 7 12M20 8v.01',
+  // A sequence of steps with one taller than the rest.
+  sequence: 'M4 20V14m4 6V8m4 12V4m4 16v-9m4 9v-6',
+  // Three inputs converging on one output.
+  merge: 'M4 5h4c4 0 4 7 8 7h4M4 19h4c4 0 4-7 8-7M4 12h4m12 0 -3-3m3 3-3 3',
 }
 
 function Icon({ d, size = 15 }) {
@@ -74,6 +81,11 @@ const ADMIN_NAV = [
     ['/models', 'Detectors', I.network],
     ['/graph', 'Graph explorer', I.graph],
   ]],
+  ['Detectors', [
+    ['/lab/behaviour', 'Behaviour', I.curve],
+    ['/lab/timing', 'Timing', I.sequence],
+    ['/lab/fusion', 'Fusion', I.merge],
+  ]],
   ['Configure', [
     ['/thresholds', 'Thresholds', I.sliders],
     ['/settings', 'Administration', I.settings],
@@ -89,6 +101,11 @@ const OPS_NAV = [
     ['/monitor', 'Live monitor', I.activity],
     ['/analyzer', 'Analyzer', I.search],
     ['/graph', 'Graph explorer', I.graph],
+  ]],
+  ['Detectors', [
+    ['/lab/behaviour', 'Behaviour', I.curve],
+    ['/lab/timing', 'Timing', I.sequence],
+    ['/lab/fusion', 'Fusion', I.merge],
   ]],
   ['Investigate', [
     ['/cases', 'Cases', I.archive],
