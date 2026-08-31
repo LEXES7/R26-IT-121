@@ -126,6 +126,9 @@ export default function GraphExplorer() {
   const [demo, setDemo] = useState(false)
   const [csv, setCsv] = useState(null)
   const [csvBusy, setCsvBusy] = useState(false)
+  // Kept separate from the page-level error, which renders at the very top:
+  // a rejected upload has to say so next to the button that was pressed.
+  const [csvError, setCsvError] = useState(null)
   const fileRef = useRef(null)
   const [newAccount, setNewAccount] = useState('DEMO-NEW-001')
   const [from, setFrom] = useState('C1988852187')
@@ -251,11 +254,11 @@ export default function GraphExplorer() {
   const onDemoFile = useCallback(async (e) => {
     const f = e.target.files?.[0]
     if (!f) return
-    setCsvBusy(true); setError(null)
+    setCsvBusy(true); setCsvError(null)
     try {
       setCsv(await demoScoreCsv(f))
     } catch (err) {
-      setError(err?.userMessage ?? 'That file could not be scored.')
+      setCsvError(err?.userMessage ?? 'That file could not be scored.')
       setCsv(null)
     } finally {
       setCsvBusy(false)
@@ -888,6 +891,17 @@ export default function GraphExplorer() {
                         </span>
                       )}
                     </div>
+
+                    {/* Why the file was refused, said where the button is. */}
+                    {csvError && <Alert tone="error">{csvError}</Alert>}
+
+                    {/* Scored, but with something the reader should know. */}
+                    {csv?.notes?.length > 0 && (
+                      <p className="text-[14px] leading-relaxed"
+                         style={{ color: 'rgb(var(--ds-sev-medium))' }}>
+                        {csv.notes.join(' ')}
+                      </p>
+                    )}
 
                     {csv && (
                       <Validation rows={csv.rows} threshold={0.39}
