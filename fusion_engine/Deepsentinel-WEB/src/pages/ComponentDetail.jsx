@@ -143,7 +143,7 @@ export default function ComponentDetail() {
                   {live?.[m.label]?.(caps[c.slug] ?? {}) ?? m.value}
                 </p>
                 <p className="mt-2 text-sm font-semibold text-accent-500">{m.label}</p>
-                <p className="mt-0.5 text-[11px] text-slate-600">{m.note}</p>
+                <p className="mt-0.5 text-[15px] text-slate-600">{m.note}</p>
               </div></Reveal>
             ))}
           </div>
@@ -236,7 +236,7 @@ export default function ComponentDetail() {
           className="group arrow-slide glass card-hover mt-6 flex items-center justify-between rounded-2xl p-5 hover:border-strong"
         >
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-slate-600">Next component</p>
+            <p className="text-[14px] uppercase tracking-wider text-slate-600">Next component</p>
             <p className="mt-1 font-semibold text-slate-200">{next.title}</p>
           </div>
           <ArrowLink className="pointer-events-none">Read</ArrowLink>

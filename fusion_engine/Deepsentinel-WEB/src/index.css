@@ -1,6 +1,6 @@
 /* @import must come first — CSS drops any @import that follows another rule,
    which is why the font previously failed to load. */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -466,43 +466,55 @@ html.theme-transition * {
 
 /* shell */
 .ds-shell { min-height: 100dvh; display: flex; background: rgb(var(--ds-workspace)); color: rgb(var(--ds-ink)); }
-.ds-sidebar { width: 232px; border-right: 1px solid rgb(var(--ds-line)); background: rgb(var(--ds-surface)); display: flex; flex-direction: column; flex: 0 0 auto; }
-.ds-brand { height: 78px; padding: 20px 19px; border-bottom: 1px solid rgb(var(--ds-line)); display: flex; align-items: center; gap: 10px; }
-.ds-brand-name { font-size: 15px; font-weight: 700; letter-spacing: -.04em; }
-.ds-brand-sub { font-size: 9px; color: rgb(var(--ds-faint)); letter-spacing: .12em; text-transform: uppercase; margin-top: 2px; }
+.ds-sidebar { width: 248px; border-right: 1px solid rgb(var(--ds-line)); background: rgb(var(--ds-surface)); display: flex; flex-direction: column; flex: 0 0 auto; }
+.ds-brand { height: 84px; padding: 20px 19px; border-bottom: 1px solid rgb(var(--ds-line)); display: flex; align-items: center; gap: 10px; }
+.ds-brand-name { font-size: 17px; font-weight: 700; letter-spacing: -.04em; }
+.ds-brand-sub { font-size: 11px; color: rgb(var(--ds-faint)); letter-spacing: .12em; text-transform: uppercase; margin-top: 2px; }
 .ds-nav { padding: 17px 11px; flex: 1; overflow-y: auto; }
-.ds-nav-label { font-size: 9px; text-transform: uppercase; letter-spacing: .16em; color: rgb(var(--ds-faint)); padding: 0 9px 9px; }
-.ds-nav-btn { width: 100%; display: flex; align-items: center; gap: 10px; border: 0; background: transparent; color: rgb(var(--ds-muted)); padding: 9px 10px; border-radius: 6px; font-size: 12px; text-align: left; text-decoration: none; transition: background .18s ease, color .18s ease, transform .18s ease; }
+.ds-nav-label { font-size: 11px; text-transform: uppercase; letter-spacing: .16em; color: rgb(var(--ds-faint)); padding: 0 9px 9px; }
+.ds-nav-btn { width: 100%; display: flex; align-items: center; gap: 10px; border: 0; background: transparent; color: rgb(var(--ds-muted)); padding: 9px 10px; border-radius: 6px; font-size: 14px; text-align: left; text-decoration: none; transition: background .18s ease, color .18s ease, transform .18s ease; }
 .ds-nav-btn:hover { background: rgb(var(--ds-surface-2)); color: rgb(var(--ds-ink)); transform: translateX(2px); }
 .ds-nav-btn.active { background: rgb(var(--ds-accent-soft)); color: rgb(var(--ds-accent-strong)); font-weight: 600; }
-.ds-nav-btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.ds-nav-btn svg { width: 17px; height: 17px; flex: 0 0 auto; }
 .ds-sidebar-foot { padding: 13px 16px 15px; border-top: 1px solid rgb(var(--ds-line)); }
-.ds-statusline { display: flex; align-items: center; justify-content: space-between; color: rgb(var(--ds-muted)); font-size: 10px; }
+.ds-statusline { display: flex; align-items: center; justify-content: space-between; color: rgb(var(--ds-muted)); font-size: 12px; }
 .ds-status-dot { width: 7px; height: 7px; border-radius: 50%; background: rgb(var(--ds-accent)); box-shadow: 0 0 0 3px rgb(var(--ds-accent-soft)); flex: 0 0 auto; }
 .ds-status-dot.off { background: rgb(var(--ds-faint)); box-shadow: 0 0 0 3px rgb(var(--ds-surface-3)); }
 .ds-status-dot.warn { background: rgb(var(--ds-warn)); box-shadow: 0 0 0 3px rgb(var(--ds-warn-soft)); }
 
 .ds-main { min-width: 0; flex: 1; display: flex; flex-direction: column; }
 .ds-topbar { min-height: 78px; padding: 17px 30px; border-bottom: 1px solid rgb(var(--ds-line)); display: flex; align-items: center; justify-content: space-between; gap: 16px; background: rgb(var(--ds-workspace)); }
-.ds-eyebrow { color: rgb(var(--ds-accent-strong)); font-size: 10px; text-transform: uppercase; letter-spacing: .17em; font-weight: 600; }
+.ds-eyebrow { color: rgb(var(--ds-accent-strong)); font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: .17em; font-weight: 600; }
 /* The one thing kept from the public site's voice. */
-.ds-page-title { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: clamp(24px, 2.4vw, 34px); letter-spacing: -.015em; line-height: 1.02; margin-top: 6px; }
+.ds-page-title { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: clamp(28px, 2.7vw, 38px); letter-spacing: -.015em; line-height: 1.02; margin-top: 6px; }
 .ds-page-title em { font-style: italic; color: rgb(var(--ds-accent-strong)); }
-.ds-page-sub { font-size: 11px; color: rgb(var(--ds-muted)); margin-top: 6px; }
+.ds-page-sub { font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; font-size: 16px; color: rgb(var(--ds-muted)); margin-top: 6px; }
 .ds-top-actions { display: flex; align-items: center; gap: 8px; }
 .ds-icon-btn { width: 31px; height: 31px; border: 1px solid rgb(var(--ds-line)); color: rgb(var(--ds-muted)); background: rgb(var(--ds-surface)); border-radius: 6px; display: grid; place-items: center; transition: border .18s ease, color .18s ease, transform .18s ease; }
 .ds-icon-btn:hover { color: rgb(var(--ds-accent-strong)); border-color: rgb(var(--ds-accent)); transform: translateY(-1px); }
-.ds-user { display: flex; align-items: center; gap: 8px; margin-left: 7px; padding-left: 12px; border-left: 1px solid rgb(var(--ds-line)); font-size: 11px; color: rgb(var(--ds-muted)); }
-.ds-avatar { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; background: rgb(var(--ds-surface-3)); color: rgb(var(--ds-accent-strong)); font-size: 10px; font-weight: 700; flex: 0 0 auto; }
-.ds-content { padding: 26px 30px 44px; max-width: 1560px; width: 100%; margin: 0 auto; }
+.ds-user { display: flex; align-items: center; gap: 8px; margin-left: 7px; padding-left: 12px; border-left: 1px solid rgb(var(--ds-line)); font-size: 13px; color: rgb(var(--ds-muted)); }
+.ds-avatar { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; background: rgb(var(--ds-surface-3)); color: rgb(var(--ds-accent-strong)); font-size: 12px; font-weight: 700; flex: 0 0 auto; }
+/* Console content sets its own face and base size.
+ *
+ * Scoped here rather than on body so the sidebar, top bar and footer keep the
+ * type they were designed with — the chrome is not what anyone is reading from
+ * across a room. Plus Jakarta Sans has more character than Inter at these
+ * sizes and holds up in dense tables, which is most of this application.
+ *
+ * The 15px base matters as much as the family: a great deal of console text is
+ * unstyled and inherited the browser default before this. */
+.ds-content { padding: 26px 30px 44px; max-width: 1560px; width: 100%; margin: 0 auto;
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  font-size: 15px; line-height: 1.55; }
+.ds-content h1, .ds-content h2, .ds-content h3 { letter-spacing: -.015em; }
 
 /* pieces */
 .ds-panel { align-self: start; background: rgb(var(--ds-surface)); border: 1px solid rgb(var(--ds-line)); border-radius: 8px; box-shadow: 0 4px 20px rgba(var(--ds-shadow), .035); }
 .ds-panel-pad { padding: 19px; }
-.ds-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: .13em; color: rgb(var(--ds-faint)); }
-.ds-section-title { font-size: 14px; font-weight: 600; letter-spacing: -.025em; }
+.ds-section-label { font-size: 12px; text-transform: uppercase; letter-spacing: .13em; color: rgb(var(--ds-faint)); }
+.ds-section-title { font-size: 16px; font-weight: 600; letter-spacing: -.025em; }
 .ds-divider { height: 1px; background: rgb(var(--ds-line)); }
-.ds-btn { border: 1px solid rgb(var(--ds-line)); background: rgb(var(--ds-surface)); color: rgb(var(--ds-ink)); border-radius: 5px; padding: 8px 12px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px; transition: transform .18s ease, border .18s ease, background .18s ease; }
+.ds-btn { border: 1px solid rgb(var(--ds-line)); background: rgb(var(--ds-surface)); color: rgb(var(--ds-ink)); border-radius: 5px; padding: 8px 12px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px; transition: transform .18s ease, border .18s ease, background .18s ease; }
 .ds-btn:hover:not(:disabled) { transform: translateY(-1px); border-color: rgb(var(--ds-accent)); }
 /* `opacity: .5` used to carry every disabled state — it fades foreground
    and background together against the page behind them, which sank
@@ -523,24 +535,24 @@ html.theme-transition * {
 .ds-btn-quiet { background: transparent; border-color: transparent; color: rgb(var(--ds-muted)); }
 .ds-btn-quiet:hover:not(:disabled) { background: rgb(var(--ds-surface-2)); border-color: transparent; color: rgb(var(--ds-ink)); }
 .ds-btn-quiet:disabled { background: transparent; }
-.ds-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 99px; border: 1px solid rgb(var(--ds-line)); padding: 3px 7px; color: rgb(var(--ds-muted)); font-size: 10px; white-space: nowrap; }
+.ds-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 99px; border: 1px solid rgb(var(--ds-line)); padding: 3px 7px; color: rgb(var(--ds-muted)); font-size: 12px; white-space: nowrap; }
 .ds-badge.good { color: rgb(var(--ds-accent-strong)); background: rgb(var(--ds-accent-soft)); border-color: transparent; }
 .ds-badge.alert { color: rgb(var(--ds-signal)); background: rgb(var(--ds-signal-soft)); border-color: transparent; }
 .ds-badge.warn { color: rgb(var(--ds-warn)); background: rgb(var(--ds-warn-soft)); border-color: transparent; }
 .ds-kpi { padding: 15px 17px 16px; }
-.ds-kpi-value { margin-top: 9px; font-size: 34px; font-weight: 600; letter-spacing: -.055em; line-height: 1; }
-.ds-kpi-meta { font-size: 10px; color: rgb(var(--ds-muted)); margin-top: 7px; }
+.ds-kpi-value { margin-top: 9px; font-size: 38px; font-weight: 600; letter-spacing: -.055em; line-height: 1; }
+.ds-kpi-meta { font-size: 12px; color: rgb(var(--ds-muted)); margin-top: 7px; }
 .ds-kpi-accent { border-top: 2px solid rgb(var(--ds-accent)); }
 .ds-kpi-alert { border-top: 2px solid rgb(var(--ds-signal)); }
 .ds-kpi-warn { border-top: 2px solid rgb(var(--ds-warn)); }
 .ds-progress { height: 6px; background: rgb(var(--ds-surface-3)); border-radius: 99px; overflow: hidden; }
 .ds-progress > span { display: block; height: 100%; background: rgb(var(--ds-accent)); border-radius: inherit; transition: width .4s ease; }
-.ds-field { width: 100%; border: 1px solid rgb(var(--ds-line)); background: rgb(var(--ds-workspace)); color: rgb(var(--ds-ink)); border-radius: 5px; padding: 9px 10px; outline: none; font-size: 11px; transition: border .18s ease, box-shadow .18s ease; }
+.ds-field { width: 100%; border: 1px solid rgb(var(--ds-line)); background: rgb(var(--ds-workspace)); color: rgb(var(--ds-ink)); border-radius: 5px; padding: 9px 10px; outline: none; font-size: 13px; transition: border .18s ease, box-shadow .18s ease; }
 .ds-field:focus { border-color: rgb(var(--ds-accent)); box-shadow: 0 0 0 3px rgb(var(--ds-accent-soft)); }
-.ds-empty { border: 1px dashed rgb(var(--ds-line)); border-radius: 7px; padding: 29px; text-align: center; color: rgb(var(--ds-muted)); background: rgb(var(--ds-workspace)); font-size: 11px; }
-.ds-footer { border-top: 1px solid rgb(var(--ds-line)); padding-top: 13px; color: rgb(var(--ds-faint)); font-size: 10px; display: flex; justify-content: space-between; gap: 12px; }
-.ds-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-.ds-table th { color: rgb(var(--ds-faint)); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; font-weight: 500; text-align: left; padding: 10px 12px; border-bottom: 1px solid rgb(var(--ds-line)); }
+.ds-empty { border: 1px dashed rgb(var(--ds-line)); border-radius: 7px; padding: 29px; text-align: center; color: rgb(var(--ds-muted)); background: rgb(var(--ds-workspace)); font-size: 13px; }
+.ds-footer { border-top: 1px solid rgb(var(--ds-line)); padding-top: 13px; color: rgb(var(--ds-faint)); font-size: 12px; display: flex; justify-content: space-between; gap: 12px; }
+.ds-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ds-table th { color: rgb(var(--ds-faint)); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 500; text-align: left; padding: 10px 12px; border-bottom: 1px solid rgb(var(--ds-line)); }
 .ds-table td { padding: 12px; border-bottom: 1px solid rgb(var(--ds-line)); vertical-align: middle; }
 .ds-table tbody tr { transition: background .18s ease; }
 .ds-table tbody tr:hover { background: rgb(var(--ds-surface-2)); }
@@ -615,7 +627,7 @@ html.theme-transition * {
 .ds-prose {
   --measure: 64ch;
   max-width: var(--measure);
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.68;
   /* Body copy carries ink, not the muted tone the surrounding UI uses.
      A document whose text is quieter than its labels reads as a caption. */
@@ -623,7 +635,7 @@ html.theme-transition * {
   text-wrap: pretty;
 }
 .ds-prose--wide { --measure: 74ch; }
-.ds-prose--tight { font-size: 15px; line-height: 1.62; }
+.ds-prose--tight { font-size: 17px; line-height: 1.62; }
 
 /* Vertical rhythm comes from the flow, not from per-element margins that
    collapse differently depending on what precedes them. */
@@ -743,7 +755,7 @@ html.theme-transition * {
   background: rgb(var(--ds-ink));
   color: rgb(var(--ds-workspace));
   padding: 10px 16px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   transition: top .18s ease;
 }

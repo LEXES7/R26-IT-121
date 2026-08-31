@@ -281,7 +281,7 @@ export default function Users() {
                     <p className="mt-0.5 truncate text-xs text-slate-500">
                       {u.username} · {u.email}
                     </p>
-                    <p className="mt-0.5 text-[11px] text-slate-600">
+                    <p className="mt-0.5 text-[15px] text-slate-600">
                       {u.last_login
                         ? `Last signed in ${new Date(u.last_login).toLocaleString()}`
                         : 'Never signed in'}

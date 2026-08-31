@@ -199,24 +199,24 @@ function Turn({ message }) {
         <p className="whitespace-pre-wrap">{message.content}</p>
 
         {message.truncated && (
-          <p className="mt-2 text-[11px] text-amber-400">
+          <p className="mt-2 text-[15px] text-amber-400">
             Stopped at the configured step limit — the answer may be partial.
           </p>
         )}
 
         {message.steps?.length > 0 && (
           <details className="mt-3 border-t border-subtle pt-2">
-            <summary className="cursor-pointer text-[11px] text-slate-400 hover:text-slate-200">
+            <summary className="cursor-pointer text-[15px] text-slate-400 hover:text-slate-200">
               {message.steps.length} tool call{message.steps.length > 1 ? 's' : ''} — show evidence
             </summary>
             <div className="mt-2 space-y-2">
               {message.steps.map((s, i) => (
                 <div key={i} className="rounded-lg border border-subtle bg-sentinel-900/60 p-2">
-                  <p className="text-[11px] font-semibold text-slate-300">
+                  <p className="text-[15px] font-semibold text-slate-300">
                     {s.tool}
                     {s.error && <span className="ml-2 text-red-400">failed</span>}
                   </p>
-                  <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-all text-[10px] leading-snug text-slate-500">
+                  <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-all text-[14px] leading-snug text-slate-500">
                     {s.error || JSON.stringify(s.result, null, 2)}
                   </pre>
                 </div>

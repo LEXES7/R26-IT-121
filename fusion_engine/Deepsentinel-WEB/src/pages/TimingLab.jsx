@@ -18,7 +18,7 @@ export default function TimingLab() {
       detector="temporal"
       eyebrow="Detector · Timing"
       title="Transaction-Sequence TCN"
-      subtitle="No transaction happens in isolation. Each one is read alongside the thirty-two that arrived before it."
+      subtitle="Each transaction is read alongside the thirty-two before it."
     >
       {(r) => {
         const ev = r.evidence ?? {}
@@ -48,7 +48,7 @@ export default function TimingLab() {
 
             {/* The window itself. Position carries the meaning here. */}
             <section style={{ display: 'grid', gap: 8 }}>
-              <h3 className="ds-mono text-[10px] uppercase tracking-wider"
+              <h3 className="ds-mono text-[14px] uppercase tracking-wider"
                   style={{ color: 'rgb(var(--ds-faint))' }}>
                 The rolling window · newest on the right
               </h3>
@@ -69,7 +69,7 @@ export default function TimingLab() {
                   )
                 })}
               </div>
-              <div className="flex justify-between text-[10px]"
+              <div className="flex justify-between text-[14px]"
                    style={{ color: 'rgb(var(--ds-faint))' }}>
                 <span>32 back</span>
                 {attendedSlot && <span>attended: {attendedSlot - 1} back</span>}
@@ -80,20 +80,20 @@ export default function TimingLab() {
             <div className="grid gap-8 md:grid-cols-2">
               {/* The named predecessor — the novelty's actual output. */}
               <section style={{ display: 'grid', gap: 8 }}>
-                <h3 className="ds-mono text-[10px] uppercase tracking-wider"
+                <h3 className="ds-mono text-[14px] uppercase tracking-wider"
                     style={{ color: 'rgb(var(--ds-faint))' }}>
                   Why · the transaction it attended to
                 </h3>
                 {pred.nameOrig ? (
                   <div className="rounded-lg border p-3"
                        style={{ borderColor: 'rgb(var(--ds-line))' }}>
-                    <p className="numeric text-[13px]" style={{ color: 'rgb(var(--ds-ink))' }}>
+                    <p className="numeric text-[17px]" style={{ color: 'rgb(var(--ds-ink))' }}>
                       {pred.nameOrig}
                     </p>
-                    <p className="text-[11px]" style={{ color: 'rgb(var(--ds-muted))' }}>
+                    <p className="text-[15px]" style={{ color: 'rgb(var(--ds-muted))' }}>
                       step {pred.step} · {offset} transactions before this one
                     </p>
-                    <dl className="mt-3 grid gap-1 text-[11px]">
+                    <dl className="mt-3 grid gap-1 text-[15px]">
                       {[['type', pf.type], ['amount', pf.amount?.toLocaleString?.()],
                         ['drain ratio', pf.drain_ratio?.toFixed?.(4)]]
                         .filter(([, v]) => v != null && v !== undefined)
@@ -105,26 +105,22 @@ export default function TimingLab() {
                         ))}
                     </dl>
                     {pred.predecessor_signal && (
-                      <p className="mt-2 text-[11px] leading-relaxed"
+                      <p className="mt-2 text-[15px] leading-relaxed"
                          style={{ color: 'rgb(var(--ds-sev-high))' }}>
                         {pred.predecessor_signal}
                       </p>
                     )}
                   </div>
                 ) : (
-                  <p className="text-[11px]" style={{ color: 'rgb(var(--ds-muted))' }}>
+                  <p className="text-[15px]" style={{ color: 'rgb(var(--ds-muted))' }}>
                     No single predecessor stood out for this transaction.
                   </p>
                 )}
-                <p className="text-[11px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
-                  A named transaction rather than an index. That is the whole
-                  point of the mechanism — an investigator can go and look at it.
-                </p>
               </section>
 
               {/* What this transaction itself looks like. */}
               <section style={{ display: 'grid', gap: 10 }}>
-                <h3 className="ds-mono text-[10px] uppercase tracking-wider"
+                <h3 className="ds-mono text-[14px] uppercase tracking-wider"
                     style={{ color: 'rgb(var(--ds-faint))' }}>
                   This transaction&rsquo;s own features
                 </h3>
@@ -138,20 +134,13 @@ export default function TimingLab() {
                          tone={v > 0.9 ? 'risk' : 'accent'} right={Number(v).toFixed(3)} />
                   ))}
                 {cur.fraud_signal_summary && (
-                  <p className="text-[11px]" style={{ color: 'rgb(var(--ds-sev-high))' }}>
+                  <p className="text-[15px]" style={{ color: 'rgb(var(--ds-sev-high))' }}>
                     {cur.fraud_signal_summary}
                   </p>
                 )}
               </section>
             </div>
 
-            <p className="text-[11px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
-              The window runs over arrival order across the whole stream, not
-              per account — PaySim averages one transaction per originating
-              account, so there is no per-account history to read. The first 31
-              transactions after a restart return <span className="ds-mono">503
-              WarmingUp</span>, and the platform treats that as abstaining.
-            </p>
           </div>
         )
       }}

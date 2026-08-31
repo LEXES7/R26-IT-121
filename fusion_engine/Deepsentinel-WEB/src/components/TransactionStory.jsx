@@ -144,7 +144,7 @@ export default function TransactionStory() {
         {/* ── Right: the panel that animates ──────────────────────────── */}
         <div className="rounded-2xl border border-subtle bg-surface p-5 shadow-2xl sm:p-6">
           {/* Record */}
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+          <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-slate-600">
             Incoming record
           </p>
           <dl className="mt-3 space-y-1.5 font-mono text-xs">
@@ -170,7 +170,7 @@ export default function TransactionStory() {
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="text-xs font-semibold text-slate-200">{m.label}</span>
-                  <span className="font-mono text-[10px] text-slate-600">{m.model}</span>
+                  <span className="font-mono text-[14px] text-slate-600">{m.model}</span>
                 </div>
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
                   <div
@@ -182,7 +182,7 @@ export default function TransactionStory() {
                   className={`story-finding-${m.key} overflow-hidden opacity-0`}
                   style={{ height: 0 }}
                 >
-                  <p className="pt-2 text-[11px] leading-snug text-slate-400">{m.finding}</p>
+                  <p className="pt-2 text-[15px] leading-snug text-slate-400">{m.finding}</p>
                 </div>
               </div>
             ))}
@@ -207,14 +207,14 @@ export default function TransactionStory() {
 
           {/* Report */}
           <div className="story-report mt-5 rounded-xl border border-subtle bg-sentinel-950 p-3 opacity-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+            <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-slate-600">
               Forensic report
             </p>
             <div className="mt-2 space-y-1">
               {REPORT.map((line, i) => (
                 <p
                   key={line}
-                  className={`story-report-line font-mono text-[11px] leading-relaxed opacity-0 ${
+                  className={`story-report-line font-mono text-[15px] leading-relaxed opacity-0 ${
                     i === 0 ? 'font-semibold text-risk-critical' : 'text-slate-400'
                   }`}
                   style={{ transform: 'translateY(6px)' }}

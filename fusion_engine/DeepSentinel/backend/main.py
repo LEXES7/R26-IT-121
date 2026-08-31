@@ -1067,6 +1067,78 @@ async def graph_neighbourhood(
     return r.json()
 
 
+@app.post("/graph/demo/score-account", tags=["graph"])
+async def graph_demo_score_account(
+    body: dict,
+    user: User = Depends(require_any_user),
+):
+    """Score an account the relational model has never seen.
+
+    Demo surface, and deliberately separate from /analyze. The platform's
+    normal path answers about transactions between accounts the snapshot
+    already contains; this one exists to show the thing that path cannot show —
+    that an account which did not exist at training time still gets a real
+    embedding, aggregated from whoever it is attached to.
+
+    Only the relational detector runs. No fusion, no other modality, no
+    alerting, nothing written to a case. What is on screen is attributable to
+    one model.
+    """
+    import httpx
+
+    base = str(config.get("upstream", "graph_api_base")).rstrip("/")
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            r = await client.post(f"{base}/api/graph/demo/score-account", json=body)
+    except Exception as exc:                            # noqa: BLE001
+        raise HTTPException(
+            502, f"The network detector did not answer: {type(exc).__name__}"
+        ) from exc
+    if r.status_code >= 400:
+        # Pass the detector's own explanation through. These are the messages
+        # that say which counterparties it could not find, and replacing them
+        # with a generic 502 is what makes a demo impossible to debug on stage.
+        try:
+            detail = r.json()
+        except Exception:                               # noqa: BLE001
+            detail = {"message": r.text[:200]}
+        raise HTTPException(r.status_code if r.status_code < 500 else 502,
+                            detail.get("message", "The detector refused."))
+    return r.json()
+
+
+@app.post("/graph/demo/score-csv", tags=["graph"])
+async def graph_demo_score_csv(
+    file: UploadFile = File(...),
+    user: User = Depends(require_any_user),
+):
+    """Run a CSV through the relational model and nothing else."""
+    import httpx
+
+    base = str(config.get("upstream", "graph_api_base")).rstrip("/")
+    raw = await file.read()
+    if len(raw) > 4_000_000:
+        raise HTTPException(413, "That file is larger than the 4 MB demo limit.")
+    try:
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            r = await client.post(
+                f"{base}/api/graph/demo/score-csv",
+                files={"file": (file.filename or "demo.csv", raw, "text/csv")},
+            )
+    except Exception as exc:                            # noqa: BLE001
+        raise HTTPException(
+            502, f"The network detector did not answer: {type(exc).__name__}"
+        ) from exc
+    if r.status_code >= 400:
+        try:
+            detail = r.json()
+        except Exception:                               # noqa: BLE001
+            detail = {"message": r.text[:200]}
+        raise HTTPException(r.status_code if r.status_code < 500 else 502,
+                            detail.get("message", "The detector refused."))
+    return r.json()
+
+
 @app.get("/graph/settings", tags=["graph"])
 async def get_graph_settings(user: User = Depends(require_any_user)):
     """Whether the explorer is on, and how far it may reach. Readable by anyone
@@ -1096,6 +1168,76 @@ async def set_graph_settings(body: GraphSettings,
     await audit("graph.settings", actor=user.username, target="graph explorer",
                 detail=str(cfg))
     return cfg
+
+
+@app.get("/analyses/{analysis_id}/report.pdf", tags=["report"])
+async def analysis_report_pdf(
+    analysis_id: int,
+    style: str | None = None,
+    user: User = Depends(require_any_user),
+):
+    """The forensic narrative for one analysis, as a filed document.
+
+    The console could already show this narrative as text and the monitor could
+    already attach it to an alert email, but there was no way to get the
+    document itself out of a screen you were looking at — which is the thing an
+    investigator actually keeps. Same writer, same styles, same bytes the alert
+    attaches, so what is downloaded is what gets filed.
+
+    Built from the stored record rather than from whatever the browser happens
+    to be holding: the PDF is evidence, and it should say what was persisted.
+    """
+    from fastapi.responses import Response
+
+    from backend import report_styles, sar
+    from monitor.engine import _report_pdf
+
+    if style is not None and style not in report_styles.STYLES:
+        raise HTTPException(404, f"No report style named {style!r}.")
+
+    record = await sar.get_analysis(analysis_id)
+    if not record.forensic_report:
+        raise HTTPException(
+            409,
+            "This analysis has no forensic narrative recorded, so there is "
+            "nothing to render. Re-run it with report generation enabled.",
+        )
+
+    # _report_pdf speaks the monitor's alert shape; a stored analysis carries
+    # the same facts under different names.
+    scores = {
+        "graph": record.graph_score,
+        "behavioural": record.behavioral_score,
+        "temporal": record.temporal_score,
+    }
+    answered = {k: v for k, v in scores.items() if v is not None}
+    alert = {
+        "transaction_id": record.transaction_id,
+        "severity": record.classification,
+        "fused_score": record.fraud_confidence_score,
+        "graph_score": record.graph_score,
+        "pattern": None,
+        "sink_account": record.name_dest,
+        "amount": record.amount,
+        "from": record.name_orig,
+        "to": record.name_dest,
+        "modalities_used": record.modalities_used,
+        "fusion_method": "meta_classifier",
+        # The loudest detector that actually answered. Not a contribution —
+        # those are not persisted on the record — so it is named for what it
+        # is rather than dressed up as an attribution.
+        "driver": max(answered, key=answered.get) if answered else None,
+        "scores": scores,
+        "at": 0,
+    }
+
+    pdf = _report_pdf(alert, record.forensic_report,
+                      style=style or report_styles.selected())
+    stamp = (record.transaction_id or str(analysis_id))[:18]
+    return Response(
+        content=pdf, media_type="application/pdf",
+        headers={"Content-Disposition":
+                 f'attachment; filename="deepsentinel-report-{stamp}.pdf"'})
 
 
 @app.get("/report-styles", tags=["report"])

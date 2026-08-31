@@ -86,7 +86,7 @@ export default function TemporalEvidence({ evidence }) {
         <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
           {currentFacts.map(([k, v]) => (
             <div key={k}>
-              <dt className="text-[10px] uppercase tracking-wider text-slate-500">{k}</dt>
+              <dt className="text-[14px] uppercase tracking-wider text-slate-500">{k}</dt>
               <dd className="mt-0.5 font-mono text-sm text-slate-200">{v}</dd>
             </div>
           ))}
@@ -118,7 +118,7 @@ export default function TemporalEvidence({ evidence }) {
 
             {typeof predecessor.attention_weight === 'number' && (
               <div className="mt-3">
-                <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-slate-500">
+                <div className="flex items-center justify-between text-[14px] uppercase tracking-wider text-slate-500">
                   <span>Attention weight</span>
                   <span className="font-mono text-slate-400">
                     {predecessor.attention_weight.toFixed(3)}
@@ -145,7 +145,7 @@ export default function TemporalEvidence({ evidence }) {
               <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 border-t border-subtle pt-3 sm:grid-cols-3">
                 {predecessorFeatures.map(([k, v]) => (
                   <div key={k}>
-                    <dt className="text-[10px] uppercase tracking-wider text-slate-500">
+                    <dt className="text-[14px] uppercase tracking-wider text-slate-500">
                       {FEATURE_LABEL[k] ?? k}
                     </dt>
                     <dd className="mt-0.5 font-mono text-sm text-slate-200">{fmtVal(k, v)}</dd>
@@ -162,7 +162,7 @@ export default function TemporalEvidence({ evidence }) {
       )}
 
       {typeof inferenceMs === 'number' && (
-        <p className="mt-4 text-[10px] text-slate-600">
+        <p className="mt-4 text-[14px] text-slate-600">
           Served in {inferenceMs.toFixed(1)} ms
         </p>
       )}

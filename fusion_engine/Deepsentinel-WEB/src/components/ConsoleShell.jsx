@@ -78,13 +78,13 @@ const ADMIN_NAV = [
   ['Operate', [
     ['/', 'System', I.gauge],
     ['/monitor', 'Live monitor', I.activity],
-    ['/models', 'Detectors', I.network],
-    ['/graph', 'Graph explorer', I.graph],
   ]],
   ['Detectors', [
+    ['/graph', 'Network', I.graph],
     ['/lab/behaviour', 'Behaviour', I.curve],
     ['/lab/timing', 'Timing', I.sequence],
     ['/lab/fusion', 'Fusion', I.merge],
+    ['/models', 'Side by side', I.network],
   ]],
   ['Configure', [
     ['/thresholds', 'Thresholds', I.sliders],
@@ -100,9 +100,9 @@ const OPS_NAV = [
     ['/', 'Overview', I.gauge],
     ['/monitor', 'Live monitor', I.activity],
     ['/analyzer', 'Analyzer', I.search],
-    ['/graph', 'Graph explorer', I.graph],
   ]],
   ['Detectors', [
+    ['/graph', 'Network', I.graph],
     ['/lab/behaviour', 'Behaviour', I.curve],
     ['/lab/timing', 'Timing', I.sequence],
     ['/lab/fusion', 'Fusion', I.merge],
@@ -120,6 +120,24 @@ const OPS_NAV = [
     ['/account', 'Account', I.settings],
   ]],
 ]
+
+/* An entry that is the prefix of another has to match exactly, or landing on
+   the child lights up the parent as well. Derived from the tables rather than
+   listed by hand, so adding a child route later cannot quietly reintroduce
+   the double highlight. */
+const PARENT_ROUTES = new Set(
+  [ADMIN_NAV, OPS_NAV].flatMap((nav) => {
+    const paths = nav.flatMap(([, items]) => items.map(([to]) => to))
+    return paths.filter((a) => paths.some((b) => b !== a && b.startsWith(`${a}/`)))
+  }),
+)
+
+/* Every path the signed-in console owns, taken from the tables above.
+   App.jsx uses this to decide whether to render the public header; keeping a
+   second list by hand is what put the marketing nav on top of the console. */
+export const CONSOLE_PATHS = [...new Set(
+  [ADMIN_NAV, OPS_NAV].flatMap((nav) => nav.flatMap(([, items]) => items.map(([to]) => to))),
+)].filter((p) => p !== '/')
 
 export default function ConsoleShell({ eyebrow, title, subtitle, actions, children }) {
   const { user, signOut, isAdmin } = useAuth()
@@ -173,7 +191,7 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
                 <div className="ds-nav-label">{label}</div>
                 {items.map(([to, text, d]) => (
                   <NavLink
-                    key={to} to={to} end={to === '/'}
+                    key={to} to={to} end={to === '/' || PARENT_ROUTES.has(to)}
                     onClick={() => setOpen(false)}
                     // Administration owns four routes; its entry stays lit on
                     // all of them, not only the one it links to.

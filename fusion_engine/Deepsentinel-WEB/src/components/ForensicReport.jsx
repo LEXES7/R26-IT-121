@@ -152,12 +152,12 @@ export default function ForensicReport({
       {plain && (
         <div className="mt-5 rounded-xl border border-accent-500/25 bg-accent-500/[0.06] p-5">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-accent-400">
+            <p className="text-[14px] font-semibold uppercase tracking-wider text-accent-400">
               In plain language
             </p>
             <button
               onClick={() => setPlain(null)}
-              className="shrink-0 text-[11px] text-slate-500 hover:text-slate-300 print:hidden"
+              className="shrink-0 text-[15px] text-slate-500 hover:text-slate-300 print:hidden"
             >
               hide
             </button>
@@ -167,7 +167,7 @@ export default function ForensicReport({
           </p>
           {/* Said plainly, because a reader must not mistake this for a second
               opinion that independently agrees with the first. */}
-          <p className="mt-3 text-[10px] leading-relaxed text-slate-500">
+          <p className="mt-3 text-[14px] leading-relaxed text-slate-500">
             A restatement of the report below — same evidence, no new analysis.
           </p>
         </div>
@@ -179,14 +179,14 @@ export default function ForensicReport({
       >
         {/* Document header — carries identity into print, where page chrome is gone */}
         <div className="border-b border-subtle pb-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          <p className="text-[14px] font-semibold uppercase tracking-[0.18em] text-slate-500">
             DeepSentinel · Case investigation report
           </p>
           <p className="mt-1 break-all font-mono text-xs text-slate-400">
             {transactionId ?? meta.find(([k]) => k === 'Transaction ID')?.[1]}
           </p>
           {!grounded && (
-            <p className="mt-2 text-[11px] font-medium text-risk-medium">
+            <p className="mt-2 text-[15px] font-medium text-risk-medium">
               Ungrounded baseline — generated without retrieved context, for
               comparison only.
             </p>
@@ -197,7 +197,7 @@ export default function ForensicReport({
           <dl className="mt-4 grid gap-x-8 gap-y-2 sm:grid-cols-2">
             {meta.map(([k, v]) => (
               <div key={k} className="min-w-0">
-                <dt className="text-[10px] uppercase tracking-wider text-slate-500">{k}</dt>
+                <dt className="text-[14px] uppercase tracking-wider text-slate-500">{k}</dt>
                 <dd className="mt-0.5 break-words text-xs text-slate-200">{v}</dd>
               </div>
             ))}
@@ -233,7 +233,7 @@ export default function ForensicReport({
           ))}
         </div>
 
-        <p className="mt-6 border-t border-subtle pt-3 text-[10px] leading-relaxed text-slate-500">
+        <p className="mt-6 border-t border-subtle pt-3 text-[14px] leading-relaxed text-slate-500">
           Every claim above traces to a pipeline stage that produced it. Scores
           come from the deployed models; the typology comes from the FATF
           retrieval step; the narrative may not introduce facts absent from
