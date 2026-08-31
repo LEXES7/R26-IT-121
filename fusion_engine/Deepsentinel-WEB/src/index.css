@@ -1583,6 +1583,10 @@ html.theme-transition * {
 .btn-shader {
   position: relative;
   isolation: isolate;
+  /* The sweep travels from -130% to +130%, so without this it paints outside
+     the button and slides a white band across whatever sits beside it —
+     which reads as neighbouring elements glitching, not as this one animating. */
+  overflow: hidden;
   border: 1px solid rgb(255 255 255 / 0.16);
   color: #05261a;
   background:

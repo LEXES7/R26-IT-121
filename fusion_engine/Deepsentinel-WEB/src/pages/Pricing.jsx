@@ -63,8 +63,8 @@ export default function Pricing() {
   return (
     <main className="mx-auto w-full max-w-6xl px-6 py-20">
       <style>{`
-        @keyframes ds-rise { from { opacity: 0; transform: translateY(18px) }
-                             to   { opacity: 1; transform: none } }
+        @keyframes ds-rise { from { opacity: 0; translate: 0 18px }
+                             to   { opacity: 1; translate: 0 0 } }
         .ds-rise { animation: ds-rise .6s cubic-bezier(.22,.7,.3,1) both }
         .ds-card { transition: transform .35s cubic-bezier(.22,.7,.3,1),
                                border-color .35s ease, box-shadow .35s ease }
@@ -72,7 +72,7 @@ export default function Pricing() {
         .ds-track { scrollbar-width: none; -ms-overflow-style: none }
         .ds-track::-webkit-scrollbar { display: none }
         @media (prefers-reduced-motion: reduce) {
-          .ds-rise { animation: none }
+          .ds-rise { animation: none; opacity: 1; translate: none }
           .ds-card, .ds-card:hover { transition: none; transform: none }
         }
       `}</style>
@@ -179,14 +179,7 @@ export default function Pricing() {
                   </ul>
 
                   <Link to="/request-access"
-                        className={mid
-                          ? 'btn-shader mt-6 rounded-lg px-4 py-2.5 text-center text-[15px]'
-                          : 'mt-6 rounded-lg px-4 py-2.5 text-center text-[15px] font-semibold transition-opacity hover:opacity-85'}
-                        style={mid ? undefined : {
-                          background: 'transparent',
-                          color: 'rgb(var(--ds-ink))',
-                          border: '1px solid rgb(var(--ds-line))',
-                        }}>
+                        className="btn-shader mt-6 rounded-lg px-4 py-2.5 text-center text-[15px]">
                     {p.id === 'enterprise' ? 'Talk to us' : 'Request access'}
                   </Link>
                   <p className="mt-2 text-center text-[13px]"
