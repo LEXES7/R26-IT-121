@@ -97,6 +97,9 @@ export default function DetectorLab({ detector, eyebrow, title, subtitle, childr
   const p = PRESETS[pick]
   return (
     <ConsoleShell eyebrow={eyebrow} title={title} subtitle={subtitle}>
+      {/* .ds-content sets padding but no gap, so blocks rendered straight into
+          it sit flush against one another. The page owns its own rhythm. */}
+      <div style={{ display: 'grid', gap: 18 }}>
       {error && <Alert tone="error">{error}</Alert>}
 
       <div className="flex flex-wrap items-center gap-2">
@@ -135,6 +138,7 @@ export default function DetectorLab({ detector, eyebrow, title, subtitle, childr
       ) : result ? (
         children(result)
       ) : null}
+      </div>
     </ConsoleShell>
   )
 }
