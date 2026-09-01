@@ -314,7 +314,10 @@ export const getEmailStatus = () => client.get('/email/status').then((r) => r.da
  *  the line the live monitor is alerting on. It used to default to 0.6 here —
  *  a third copy of that number, and the one that actually won, so the same
  *  file scored in batch and screened live disagreed. */
-export function analyzeBatch(file, { onEvent, onDone, onError, alertThreshold } = {}) {
+export function analyzeBatch(
+  file,
+  { onEvent, onDone, onError, onBytes, alertThreshold } = {},
+) {
   const controller = new AbortController()
   const form = new FormData()
   form.append('file', file)
@@ -348,9 +351,16 @@ export function analyzeBatch(file, { onEvent, onDone, onError, alertThreshold } 
       const decoder = new TextDecoder()
       let buffer = ''
 
+      // Measured, not estimated. Each chunk off the reader is a Uint8Array of
+      // exactly the bytes that arrived, so the stream monitor reports what the
+      // socket actually delivered rather than a guess from the row count.
+      let bytes = 0
+      let frames = 0
+
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
+        bytes += value.byteLength
         buffer += decoder.decode(value, { stream: true })
 
         const chunks = buffer.split('\n\n')
@@ -366,11 +376,14 @@ export function analyzeBatch(file, { onEvent, onDone, onError, alertThreshold } 
           if (!data.length) continue
           try {
             onEvent?.(name, JSON.parse(data.join('\n')))
+            frames += 1
           } catch {
             /* skip an unparseable frame rather than aborting the run */
           }
         }
+        onBytes?.({ bytes, frames, at: performance.now() })
       }
+      onBytes?.({ bytes, frames, at: performance.now(), done: true })
       onDone?.()
     } catch (err) {
       if (err.name !== 'AbortError') {

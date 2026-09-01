@@ -12,6 +12,7 @@ import {
   cx,
 } from '../components/ui'
 import { Badge as DsBadge, Footer, Panel, SectionHeading } from '../components/ConsoleShell'
+import StreamMonitor from '../components/StreamMonitor'
 
 /**
  * Batch analysis of an uploaded transaction file.
@@ -37,6 +38,31 @@ const CLASSIFICATION_BAR = {
   LOW: 'bg-risk-low',
 }
 
+
+/** One readable line per SSE frame, for the stream monitor's log.
+ *  Reads only fields the server actually sends — an event whose shape is
+ *  unfamiliar shows its name rather than a fabricated description. */
+function describe(name, d) {
+  if (name === 'meta') {
+    return { name, label: `${d.rows} rows accepted \u00b7 alerting at ${d.alert_threshold}` }
+  }
+  if (name === 'progress') {
+    const score = typeof d.score === 'number' ? d.score : null
+    const cls = (d.classification || '').toLowerCase()
+    const who = d.nameDest ? `\u2192 ${d.nameDest}` : ''
+    return {
+      name,
+      label: `row ${d.index} ${who} \u00b7 ${score != null ? score.toFixed(4) : '—'}`,
+      tone: ['critical', 'high', 'medium', 'low'].includes(cls) ? cls : undefined,
+    }
+  }
+  if (name === 'narrative') return { name, label: 'forensic narrative generated' }
+  if (name === 'summary') return { name, label: 'run complete' }
+  if (name === 'upstream') return { name, label: `${d.modality} unavailable`, tone: 'medium' }
+  if (name === 'error') return { name, label: d.message ?? 'error', tone: 'critical' }
+  return { name, label: '' }
+}
+
 export default function BatchAnalysis() {
   const [file, setFile] = useState(null)
   const [dragging, setDragging] = useState(false)
@@ -49,6 +75,9 @@ export default function BatchAnalysis() {
   const [narratives, setNarratives] = useState([])
   const [upstreamNotices, setUpstreamNotices] = useState([])
   const [running, setRunning] = useState(false)
+  // Measured off the socket by analyzeBatch, plus a short log of what landed.
+  const [stream, setStream] = useState(null)
+  const [events, setEvents] = useState([])
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState('all')
   // Scoring 50 rows takes about three seconds, so every row lands inside one
@@ -67,6 +96,8 @@ export default function BatchAnalysis() {
   const inputRef = useRef(null)
 
   const reset = () => {
+    setStream(null)
+    setEvents([])
     setMeta(null)
     setRows([])
     setQueue([])
@@ -126,7 +157,9 @@ export default function BatchAnalysis() {
     const custom = thresholdInput.trim() === '' ? undefined : Number(thresholdInput)
     abortRef.current = analyzeBatch(file, {
       alertThreshold: Number.isFinite(custom) ? custom : undefined,
+      onBytes: setStream,
       onEvent: (name, data) => {
+        setEvents((prev) => [...prev.slice(-59), describe(name, data)])
         if (name === 'meta') setMeta(data)
         else if (name === 'progress') setQueue((prev) => [...prev, data])
         else if (name === 'narrative') setNarratives((prev) => [...prev, data])
@@ -583,6 +616,23 @@ export default function BatchAnalysis() {
           </p>
         </div>
       </Panel>
+
+      {/* ── The stream, while it is running ──
+          Sits above the progress panel because during a demo this is the thing
+          being looked at. It disappears once the run finishes and the
+          scorecard becomes the answer. */}
+      {(scoring || stream) && (
+        <Panel className="ds-panel-pad">
+          <StreamMonitor
+            running={scoring}
+            fileSize={file?.size}
+            stream={stream}
+            events={events}
+            rowsScored={rows.length}
+            rowsTotal={meta?.rows}
+          />
+        </Panel>
+      )}
 
       {/* ── Progress ── */}
       {meta && (
