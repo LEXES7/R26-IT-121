@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { scoreOneDetector } from '../services/api'
 import { parseCsv, refOf, labelOf } from '../lib/csv'
 import { Alert, Button } from './ui'
@@ -24,19 +24,53 @@ import { Alert, Button } from './ui'
  */
 
 const CAP = 250
+const STORE = 'ds.timing.batch.v1'
+const FEED_MAX = 400
+
+/* localStorage throws in a private window and on quota, and neither is worth
+   losing the panel over. */
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+function save(v) {
+  try { localStorage.setItem(STORE, JSON.stringify(v)) } catch { /* full or blocked */ }
+}
+function drop() {
+  try { localStorage.removeItem(STORE) } catch { /* nothing to do */ }
+}
+
+const BUCKETS = [[1, 4], [5, 8], [9, 16], [17, 24], [25, 32]]
 
 export default function BatchScoreTemporal() {
   const fileRef = useRef(null)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(0)
   const [total, setTotal] = useState(0)
+  const [feed, setFeed] = useState([])
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+
+  // A run from a previous visit, if there was one.
+  useEffect(() => {
+    const prev = load()
+    if (prev?.all) {
+      setResult(prev)
+      setFeed([...prev.all].reverse().slice(0, FEED_MAX))
+    }
+  }, [])
+
+  const clear = useCallback(() => {
+    setResult(null); setFeed([]); setError(null); setDone(0); setTotal(0)
+    drop()
+  }, [])
 
   const onFile = useCallback(async (e) => {
     const f = e.target.files?.[0]
     if (!f) return
-    setBusy(true); setError(null); setResult(null); setDone(0)
+    setBusy(true); setError(null); setResult(null); setFeed([]); setDone(0)
     try {
       const rows = parseCsv(await f.text()).slice(0, CAP)
       if (!rows.length) throw new Error('No rows in that file.')
@@ -50,7 +84,7 @@ export default function BatchScoreTemporal() {
         } catch { /* recorded below as unanswered */ }
         const ev = r?.evidence ?? {}
         const pred = ev.triggering_predecessor ?? {}
-        scored.push({
+        const row = {
           ref: refOf(rows[i], i),
           label: labelOf(rows[i]),
           score: r?.score ?? null,
@@ -59,7 +93,11 @@ export default function BatchScoreTemporal() {
             ? Math.abs(pred.offset_from_current) : null,
           signal: pred.predecessor_signal ?? null,
           summary: ev.current_transaction?.fraud_signal_summary ?? null,
-        })
+        }
+        scored.push(row)
+        // Newest first and capped, so a long file does not make the page
+        // heavier the further it gets.
+        setFeed((prev) => [row, ...prev].slice(0, FEED_MAX))
         setDone(i + 1)
       }
 
@@ -68,13 +106,14 @@ export default function BatchScoreTemporal() {
 
       // Buckets across the window rather than one bar per offset: thirty-two
       // bars would be mostly empty on a file this size and would read as noise.
-      const BUCKETS = [[1, 4], [5, 8], [9, 16], [17, 24], [25, 32]]
       const hist = BUCKETS.map(([lo, hi]) => ({
         label: lo === hi ? `${lo}` : `${lo}–${hi}`,
         n: withPred.filter((s) => s.offset >= lo && s.offset <= hi).length,
       }))
 
-      setResult({
+      const summary = {
+        file: f.name,
+        at: Date.now(),
         rows: scored.length,
         warming: scored.length - answered.length,
         answered: answered.length,
@@ -82,9 +121,10 @@ export default function BatchScoreTemporal() {
         actualFraud: scored.filter((s) => s.label === 1).length,
         hist,
         withPred: withPred.length,
-        top: answered.filter((s) => s.score != null)
-          .sort((a, b) => b.score - a.score).slice(0, 8),
-      })
+        all: scored,
+      }
+      setResult(summary)
+      save(summary)
     } catch (err) {
       setError(err?.userMessage ?? err?.message ?? 'That file could not be scored.')
     } finally {
@@ -94,13 +134,25 @@ export default function BatchScoreTemporal() {
   }, [])
 
   const maxBar = result ? Math.max(...result.hist.map((h) => h.n), 1) : 1
+  const when = result?.at ? new Date(result.at).toLocaleString() : null
+  const top = result
+    ? [...result.all].filter((s) => s.answered && s.score != null)
+        .sort((a, b) => b.score - a.score).slice(0, 8)
+    : []
 
   return (
     <section style={{ display: 'grid', gap: 10 }}>
-      <h3 className="ds-mono text-[14px] uppercase tracking-wider"
-          style={{ color: 'rgb(var(--ds-faint))' }}>
-        Score a whole file
-      </h3>
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="ds-mono text-[14px] uppercase tracking-wider"
+            style={{ color: 'rgb(var(--ds-faint))' }}>
+          Score a whole file
+        </h3>
+        {result && !busy && when && (
+          <span className="text-[12px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+            {result.file} · {when} · kept in this browser
+          </span>
+        )}
+      </div>
 
       <div className="rounded-lg border p-4" style={{ borderColor: 'rgb(var(--ds-line))' }}>
         <div className="flex flex-wrap items-center gap-3">
@@ -110,14 +162,70 @@ export default function BatchScoreTemporal() {
                   onClick={() => fileRef.current?.click()}>
             {busy ? `Scoring ${done} of ${total}` : 'Choose a CSV'}
           </Button>
+          {(result || feed.length > 0) && !busy && (
+            <Button size="sm" variant="ghost" onClick={clear}>Clear</Button>
+          )}
           <span className="text-[13px]" style={{ color: 'rgb(var(--ds-muted))' }}>
             One row at a time, in file order — this model reads each transaction
             against the ones before it, so the order is the measurement. First
-            {' '}{CAP} rows, nothing saved.
+            {' '}{CAP} rows, nothing written to the platform.
           </span>
         </div>
 
+        {busy && (
+          <div className="mt-3 h-[5px] overflow-hidden rounded-full"
+               style={{ background: 'rgb(var(--ds-surface-3))' }}>
+            <div className="h-full rounded-full"
+                 style={{
+                   width: `${total ? (done / total) * 100 : 0}%`,
+                   background: 'rgb(var(--ds-warn))',
+                   transition: 'width .15s linear',
+                 }} />
+          </div>
+        )}
+
         {error && <div className="mt-3"><Alert tone="error">{error}</Alert></div>}
+
+        {/* Rows as they come back, in the order they were sent. */}
+        {feed.length > 0 && (
+          <div className="mt-4">
+            <p className="ds-mono mb-1 text-[12px] uppercase tracking-wider"
+               style={{ color: 'rgb(var(--ds-faint))' }}>
+              rows through the model · newest first
+            </p>
+            <ul className="max-h-[15rem] overflow-y-auto rounded-md border"
+                style={{ borderColor: 'rgb(var(--ds-line))' }}>
+              {feed.map((s, i) => (
+                <li key={`${s.ref}-${i}`}
+                    className="numeric flex items-baseline gap-3 px-2.5 py-[3px] text-[13px]"
+                    style={{ borderTop: i ? '1px solid rgb(var(--ds-line))' : 'none' }}>
+                  <span className="w-[86px] shrink-0 truncate"
+                        style={{
+                          color: !s.answered ? 'rgb(var(--ds-warn))'
+                            : 'rgb(var(--ds-faint))',
+                        }}>
+                    {!s.answered ? 'filling' : 'scored'}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate"
+                        style={{ color: 'rgb(var(--ds-ink))' }}>
+                    {s.ref}
+                    {s.offset != null && (
+                      <span style={{ color: 'rgb(var(--ds-faint))' }}>
+                        {'  '}triggered by {s.offset} back
+                      </span>
+                    )}
+                  </span>
+                  <span className="shrink-0" style={{ color: 'rgb(var(--ds-muted))' }}>
+                    {s.score == null ? '—' : s.score.toFixed(4)}
+                    {s.label === 1 && (
+                      <span style={{ color: 'rgb(var(--ds-sev-critical))' }}> · fraud</span>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {result && (
           <div className="mt-4" style={{ display: 'grid', gap: 16 }}>
@@ -175,14 +283,14 @@ export default function BatchScoreTemporal() {
               </p>
             </div>
 
-            {result.top.length > 0 && (
+            {top.length > 0 && (
               <div>
                 <p className="ds-mono mb-2 text-[12px] uppercase tracking-wider"
                    style={{ color: 'rgb(var(--ds-faint))' }}>
                   highest scoring
                 </p>
                 <div style={{ display: 'grid', gap: 3 }}>
-                  {result.top.map((s, i) => (
+                  {top.map((s, i) => (
                     <div key={`${s.ref}-${i}`}
                          className="numeric flex items-baseline justify-between gap-3 text-[13px]">
                       <span style={{ color: 'rgb(var(--ds-ink))' }}>

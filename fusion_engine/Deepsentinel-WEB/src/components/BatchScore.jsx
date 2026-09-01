@@ -3,6 +3,7 @@ import { scoreOneDetector } from '../services/api'
 import { parseCsv, refOf, labelOf } from '../lib/csv'
 import { Alert, Button } from './ui'
 import TypologyChart from './TypologyChart'
+import ClusterPlot from './ClusterPlot'
 
 /**
  * Score a whole file through this detector alone, one row at a time, in view.
@@ -114,6 +115,14 @@ export default function BatchScore() {
           try { r = await scoreOneDetector('behavioural', rows[i]) } catch { /* recorded below */ }
           const ev = r?.evidence ?? {}
           const d = ev.vae_diagnostics ?? {}
+          // The fingerprint as a fixed-order vector. The API returns shares
+          // sorted by size, so sorting by name here is what makes position i
+          // mean the same feature in every row.
+          const sh = ev.fingerprint?.signal_1_reconstruction_error?.shares ?? []
+          const fp = sh.length
+            ? [...sh].sort((a, b) => a.feature.localeCompare(b.feature))
+                .map((x) => x.share ?? 0)
+            : null
           const row = {
             ref: refOf(rows[i], i),
             type: rows[i].type,
@@ -124,6 +133,7 @@ export default function BatchScore() {
             typology: ev.fraud_typology?.typology_label ?? null,
             purity: ev.fraud_typology?.cluster_fraud_purity ?? null,
             answered: Boolean(r),
+            fp,
           }
           out[i] = row
           // Newest first and capped: an unbounded list makes the page slower
@@ -263,8 +273,11 @@ export default function BatchScore() {
                   Nothing in this file was flagged, so there is nothing to group.
                 </p>
               ) : (
-                <TypologyChart groups={result.groups} rows={result.all}
-                               labelled={result.labelled} />
+                <div style={{ display: 'grid', gap: 16 }}>
+                  <ClusterPlot rows={result.all} groups={result.groups} />
+                  <TypologyChart groups={result.groups} rows={result.all}
+                                 labelled={result.labelled} />
+                </div>
               )}
               <p className="mt-2 text-[12px] leading-relaxed"
                  style={{ color: 'rgb(var(--ds-faint))' }}>
