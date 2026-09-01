@@ -466,7 +466,21 @@ html.theme-transition * {
 
 /* shell */
 .ds-shell { min-height: 100dvh; display: flex; background: rgb(var(--ds-workspace)); color: rgb(var(--ds-ink)); }
-.ds-sidebar { width: 248px; border-right: 1px solid rgb(var(--ds-line)); background: rgb(var(--ds-surface)); display: flex; flex-direction: column; flex: 0 0 auto; }
+/* Sticky, and sized to the viewport rather than to the document.
+   `.ds-shell` is min-height:100dvh, so on a long page it grows past the
+   viewport, and the sidebar stretching to its full height as a flex child
+   takes its footer with it. Sign out then sits at the bottom of the *document*,
+   several screens down, which is what makes it feel unreachable.
+
+   Sticky rather than fixed: fixed would take it out of flow and the main
+   column would slide underneath, needing a margin to compensate. Sticky keeps
+   the flex row intact. `align-self: flex-start` is required, or the default
+   `stretch` overrides the height and puts the bug straight back.
+
+   Everything before the positioning properties is untouched. This has been
+   lost to a merge once already, so if Sign out drifts to the bottom of the
+   page again, this is the line to check first. */
+.ds-sidebar { width: 248px; border-right: 1px solid rgb(var(--ds-line)); background: rgb(var(--ds-surface)); display: flex; flex-direction: column; flex: 0 0 auto; position: sticky; top: 0; align-self: flex-start; height: 100dvh; }
 .ds-brand { height: 68px; padding: 16px 19px; border-bottom: 1px solid rgb(var(--ds-line)); display: flex; align-items: center; gap: 10px; }
 .ds-brand-sub { font-size: 11px; color: rgb(var(--ds-faint)); letter-spacing: .12em; text-transform: uppercase; }
 .ds-nav { padding: 17px 11px; flex: 1; overflow-y: auto; }
@@ -569,7 +583,7 @@ html.theme-transition * {
 }
 @media (max-width: 640px) {
   .ds-sidebar { display: none; }
-  .ds-sidebar.open { display: flex; position: fixed; inset: 0 auto 0 0; z-index: 30; width: 232px; box-shadow: 12px 0 30px rgba(var(--ds-shadow), .16); }
+  .ds-sidebar.open { display: flex; position: fixed; inset: 0 auto 0 0; height: auto; z-index: 30; width: 232px; box-shadow: 12px 0 30px rgba(var(--ds-shadow), .16); }
   .ds-sidebar.open .ds-brand-copy, .ds-sidebar.open .ds-nav-label, .ds-sidebar.open .ds-nav-btn span, .ds-sidebar.open .ds-sidebar-foot .ds-statusline span { display: block; }
   .ds-sidebar.open .ds-nav-btn { justify-content: flex-start; padding: 9px 10px; }
   .ds-topbar { min-height: 72px; padding: 13px 15px; }
@@ -1648,3 +1662,43 @@ html.theme-transition * {
   .btn-shader:hover::after { animation: none; }
 }
 
+
+
+/* ── the detector lab's sliders ──────────────────────────────────────
+   A range input is one of the few controls browsers still draw entirely
+   themselves, and the default light-grey track vanishes against the console's
+   dark surface while reading as a system dialog against its light one.
+
+   The WebKit and Firefox pseudo-elements are separate rules on purpose: a
+   selector list containing a pseudo-element the browser does not recognise is
+   dropped whole, so pairing them would silently style neither. */
+.ds-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 3px;
+  background: rgb(var(--ds-surface-3));
+  outline: none;
+  cursor: pointer;
+}
+.ds-range:focus-visible { box-shadow: 0 0 0 3px rgb(var(--ds-accent) / 0.3); }
+.ds-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px; height: 15px; border-radius: 50%;
+  background: rgb(var(--ds-accent));
+  border: 2px solid rgb(var(--ds-surface));
+  box-shadow: 0 1px 4px rgba(var(--ds-shadow), .3);
+  transition: transform .12s ease;
+}
+.ds-range::-webkit-slider-thumb:hover { transform: scale(1.15); }
+.ds-range::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%;
+  background: rgb(var(--ds-accent));
+  border: 2px solid rgb(var(--ds-surface));
+  box-shadow: 0 1px 4px rgba(var(--ds-shadow), .3);
+}
+.ds-range::-moz-range-track {
+  height: 4px; border-radius: 3px; background: rgb(var(--ds-surface-3));
+}

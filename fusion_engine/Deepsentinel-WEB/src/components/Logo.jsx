@@ -14,19 +14,25 @@ import markLight from '../assets/deepsentinel-logo-light.png'
  * drawing itself. Tinting one file with a CSS filter would have flattened the
  * inner detail; two files keep it.
  */
-export default function Logo({ className = '', showWord = true }) {
+export default function Logo({ className = '', showWord = true, size = 50 }) {
   const { theme } = useTheme()
   const mark = theme === 'light' ? markDark : markLight
 
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
+      {/* Sized from a prop through `style` rather than a Tailwind class. A class
+          name built from a variable is not in the source for the compiler to
+          find, so it is purged from the production build — the mark then looks
+          right in dev and comes out unsized once built. 50px sits inside the
+          navbar's 60px row with five pixels above and below. */}
       <img
         src={mark}
         alt=""
         aria-hidden
-        width={32}
-        height={32}
-        className="h-8 w-8 shrink-0 select-none object-contain"
+        width={size}
+        height={size}
+        className="shrink-0 select-none object-contain"
+        style={{ width: size, height: size }}
         draggable={false}
       />
       {showWord && (

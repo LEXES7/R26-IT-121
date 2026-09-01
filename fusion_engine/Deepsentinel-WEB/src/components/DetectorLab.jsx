@@ -4,6 +4,7 @@ import {
 } from '../services/api'
 import { Alert, Button, cx } from './ui'
 import ConsoleShell from './ConsoleShell'
+import TransactionEditor from './TransactionEditor'
 import DetectorRuntime from './DetectorRuntime'
 
 /**
@@ -76,7 +77,9 @@ export function Stat({ label, value, note }) {
   )
 }
 
-export default function DetectorLab({ detector, eyebrow, title, subtitle, model, children }) {
+export default function DetectorLab({
+  detector, eyebrow, title, subtitle, model, children, editable = false,
+}) {
   const [pick, setPick] = useState(0)
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -85,6 +88,9 @@ export default function DetectorLab({ detector, eyebrow, title, subtitle, model,
   const warmedRef = useRef(false)
   const [liveRows, setLiveRows] = useState([])
   const [source, setSource] = useState('fixed')
+  // The row actually scored. Seeded from whichever preset is selected, so
+  // an edit always starts from a real transaction rather than a blank form.
+  const [txn, setTxn] = useState(PRESETS[0].txn)
 
   /* The three fixed rows are known cases you can rehearse against. These are
    * whatever the monitor screened most recently — genuinely live, and so
@@ -121,7 +127,7 @@ export default function DetectorLab({ detector, eyebrow, title, subtitle, model,
 
   const presets = source === 'live' && liveRows.length ? liveRows : PRESETS
 
-  const run = useCallback(async (i) => {
+  const run = useCallback(async (t) => {
     setLoading(true)
     setError(null)
     try {
@@ -130,18 +136,31 @@ export default function DetectorLab({ detector, eyebrow, title, subtitle, model,
         warmedRef.current = true
         try { await warmTemporalWindow() } catch { /* score anyway; it will say */ }
       }
-      setResult(await scoreOneDetector(detector, presets[i].txn))
+      setResult(await scoreOneDetector(detector, t))
     } catch (err) {
       setError(err?.userMessage ?? 'The detector did not answer.')
       setResult(null)
     } finally {
       setLoading(false)
     }
-  }, [detector, presets])
-
-  useEffect(() => { run(pick) }, [run, pick])
+  }, [detector])
 
   const p = presets[Math.min(pick, presets.length - 1)] ?? presets[0]
+
+  // Choosing a different preset, or switching between the fixed and live
+  // lists, replaces the working row outright. Any edits go with it, which is
+  // what picking a different transaction should mean.
+  useEffect(() => { if (p?.txn) setTxn(p.txn) }, [p])
+
+  // Debounced: a slider fires on every pixel and each change is a round trip
+  // to the model. 300ms makes one request at the end of a drag and still feels
+  // immediate. Unedited pages score straight away.
+  useEffect(() => {
+    const id = setTimeout(() => run(txn), editable ? 300 : 0)
+    return () => clearTimeout(id)
+  }, [run, txn, editable])
+
+  const dirty = editable && JSON.stringify(txn) !== JSON.stringify(p?.txn)
   return (
     <ConsoleShell eyebrow={eyebrow} title={title} subtitle={subtitle}>
       {/* .ds-content sets padding but no gap, so blocks rendered straight into
@@ -166,7 +185,7 @@ export default function DetectorLab({ detector, eyebrow, title, subtitle, model,
                   style={{ color: 'rgb(var(--ds-faint))' }}>{x.note}</span>
           </button>
         ))}
-        <Button size="sm" variant="ghost" onClick={() => run(pick)} loading={loading}>
+        <Button size="sm" variant="ghost" onClick={() => run(txn)} loading={loading}>
           Run again
         </Button>
 
@@ -192,10 +211,24 @@ export default function DetectorLab({ detector, eyebrow, title, subtitle, model,
       </div>
 
       <p className="numeric text-[15px]" style={{ color: 'rgb(var(--ds-faint))' }}>
-        {p.txn.type} · {Number(p.txn.amount).toLocaleString()} · {p.txn.nameOrig} → {p.txn.nameDest}
-        {' · '}step {p.txn.step}
+        {txn.type} · {Number(txn.amount).toLocaleString()} · {txn.nameOrig} → {txn.nameDest}
+        {' · '}step {txn.step}
         {source === 'live' && ' · from the monitor, so this set changes'}
+        {dirty && (
+          <span style={{ color: 'rgb(var(--ds-warn))' }}>
+            {' · '}edited, no longer the labelled row
+          </span>
+        )}
       </p>
+
+      {editable && (
+        <TransactionEditor
+          txn={txn}
+          onChange={setTxn}
+          onReset={() => setTxn(p.txn)}
+          dirty={dirty}
+        />
+      )}
 
       {loading && !result ? (
         <p className="py-16 text-center text-xs" style={{ color: 'rgb(var(--ds-faint))' }}>

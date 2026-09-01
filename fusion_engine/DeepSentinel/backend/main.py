@@ -2479,7 +2479,16 @@ async def score_one_detector(
     if name == "graph":
         evidence = (res.extra or {}).get("suspicious_subgraph")
     elif name == "behavioural":
-        evidence = behavioural_evidence(res.extra or {})
+        # The adapter has already built the full decomposition and parked it
+        # under `extra["evidence"]`. Running the flattener over `extra` instead
+        # re-reads `extra["anomaly_fingerprint"]`, which is the two-string
+        # headline summary the adapter keeps for backward compatibility, not
+        # the fingerprint — so the per-feature and per-dimension shares, the
+        # typology and the engineered feature values were all being dropped on
+        # the way to the caller. The fall-back keeps the old behaviour for any
+        # response that predates that key.
+        evidence = ((res.extra or {}).get("evidence")
+                    or behavioural_evidence(res.extra or {}))
     elif name == "temporal":
         evidence = (res.extra or {}).get("temporal_evidence")
 
