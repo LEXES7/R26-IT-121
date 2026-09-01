@@ -631,6 +631,9 @@ async def analyze_batch(
                 "alert_threshold": threshold,
                 "threshold_source": threshold_source,
                 "live_bands": live_bands,
+                # So the per-detector rows are measured at each model's own
+                # operating point rather than a copy kept in the browser.
+                "own_thresholds": await detector_own_thresholds(),
             },
         )
 
@@ -2097,6 +2100,59 @@ def _typology_count() -> int | None:
 
 _CAPS_CACHE: dict = {"at": 0.0, "body": None}
 _CAPS_TTL = 60.0
+
+
+async def detector_own_thresholds() -> dict:
+    """Each detector's own decision threshold, asked of the detector.
+
+    A per-model row measured at a number typed into the console is a number
+    about the console, not about the model. These are read from the services
+    themselves so the table cannot drift when someone retunes upstream.
+
+    The behavioural service publishes none, so 0.5 is used and reported as a
+    midpoint rather than a tuned value — the difference matters when reading
+    that row.
+    """
+    async def probe(key: str) -> dict:
+        base = str(config.get("upstream", key)).rstrip("/")
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as c:
+                r = await c.get(f"{base}/health")
+            return r.json() if r.status_code == 200 else {}
+        except Exception:                               # noqa: BLE001
+            return {}
+
+    graph, behav, temp = await asyncio.gather(
+        probe("graph_api_base"),
+        probe("behavioral_api_base"),
+        probe("temporal_api_base"),
+    )
+
+    def num(*candidates):
+        for c in candidates:
+            if isinstance(c, (int, float)):
+                return float(c)
+        return None
+
+    return {
+        "graph": {
+            "value": num(graph.get("tuned_threshold"),
+                         (graph.get("risk_bands") or {}).get("high"), 0.1830),
+            "source": "tuned on the validation window"
+                      if graph.get("tuned_threshold") is not None
+                      else "last known value — the detector did not answer",
+        },
+        "behavioural": {
+            "value": num(behav.get("threshold"), 0.5),
+            "source": "tuned" if behav.get("threshold") is not None
+                      else "midpoint — this model publishes no threshold",
+        },
+        "temporal": {
+            "value": num(temp.get("threshold"), 0.4545),
+            "source": "tuned" if temp.get("threshold") is not None
+                      else "last known value — the detector did not answer",
+        },
+    }
 
 
 class SimulationReset(BaseModel):
