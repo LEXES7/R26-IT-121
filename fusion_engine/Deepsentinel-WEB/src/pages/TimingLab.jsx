@@ -1,4 +1,5 @@
 import DetectorLab, { Bar, Stat } from '../components/DetectorLab'
+import BatchScoreTemporal from '../components/BatchScoreTemporal'
 
 /**
  * What the timing model saw in the thirty-two transactions before this one.
@@ -149,6 +150,10 @@ export default function TimingLab() {
               The window is filled on arrival with real transactions from the
               served graph, so the predecessor it names is a genuine one.
             </p>
+
+            {/* A file is a stream, which is the one thing a single-row page
+                cannot give this model. */}
+            <BatchScoreTemporal />
           </div>
         )
       }}
