@@ -74,7 +74,10 @@ DEFAULT_INTERVAL = 1.2     # seconds between screenings
 # precision barely improves as the band rises — the fused score does not rank
 # well at the top end, which is a statement about the detectors and not about
 # fusion. An operator can move all three on the Thresholds page.
-FUSED_BANDS = {"medium": 0.03, "high": 0.09, "critical": 0.925}
+# The alerting line comes from backend.thresholds, which is where the API and
+# the console both read it. Holding a second copy here is how the monitor came
+# to fire on a line the page did not display.
+from backend.thresholds import DEFAULT_BANDS as FUSED_BANDS
 
 
 # How long a claim may sit before it is treated as abandoned, and how often to
