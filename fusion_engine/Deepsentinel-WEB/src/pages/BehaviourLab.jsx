@@ -1,6 +1,7 @@
 import DetectorLab, { Bar, Stat } from '../components/DetectorLab'
 import { ExpectationGap, FingerprintStrip } from '../components/Fingerprint'
 import TypologyPanel from '../components/TypologyPanel'
+import BatchScore from '../components/BatchScore'
 
 /**
  * What the behavioural model saw, and which part of it was wrong.
@@ -115,6 +116,11 @@ export default function BehaviourLab() {
             )}
 
             <TypologyPanel typology={ev.fraud_typology} />
+
+            {/* One transaction shows how an alert is explained. A file shows
+                that the explanations group — which is the part a single row
+                cannot demonstrate. */}
+            <BatchScore />
 
             {d.out_of_training_distribution && (
               <p className="text-[15px]" style={{ color: 'rgb(var(--ds-sev-high))' }}>

@@ -391,7 +391,11 @@ export default function Monitor() {
                 >
                   <span
                     className={cx(
-                      'w-[4.5rem] shrink-0',
+                      // Wide enough for the longest kind — 'notification', 12
+                      // characters of JetBrains Mono at 15px. `truncate` so a
+                      // longer one added later clips rather than painting over
+                      // the detail beside it.
+                      'w-28 shrink-0 truncate',
                       e.kind === 'alert' && 'text-risk-critical',
                       e.kind === 'escalated' && 'text-accent-400',
                       e.kind === 'notification' && 'text-risk-medium',
@@ -401,6 +405,7 @@ export default function Monitor() {
                     {e.kind}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-slate-400">
+                    {e.kind === 'source' && `${e.source} · ${e.detail}`}
                     {e.kind === 'screened' &&
                       `${e.transaction_id} · ${e.risk_level} · ${e.graph_score}${e.escalated ? ' → early flag' : ''}`}
                     {e.kind === 'escalated' &&
@@ -412,6 +417,11 @@ export default function Monitor() {
                     {e.kind === 'notification' &&
                       `${e.transaction_id} · ${e.stage} email ${e.sent ? 'sent' : 'not sent'}`}
                     {e.kind === 'monitor' && `monitor ${e.status}`}
+                    {e.kind === 'stage' && `${e.stage} · ${e.status}`}
+                    {/* `removed` is a breakdown, not a count — printing it
+                        directly would read as [object Object]. */}
+                    {e.kind === 'cleared' &&
+                      `${e.by} cleared ${e.removed?.alerts ?? 0} alerts, ${e.removed?.events ?? 0} events`}
                     {e.kind === 'error' && e.message}
                   </span>
                 </li>
