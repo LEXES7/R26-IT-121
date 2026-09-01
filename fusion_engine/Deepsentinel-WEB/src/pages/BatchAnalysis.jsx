@@ -196,13 +196,19 @@ export default function BatchAnalysis() {
   //
   // The fused row uses whatever line this run was scored at, which is the
   // live monitor's band unless it was overridden for the run.
+  // Each detector's own operating point, read from the detector itself and
+  // sent with the run. Previously these were copied into this file, and the
+  // graph row used 0.0915 — GraphSAGE's *medium band*, half its actual
+  // decision threshold — so that row was measured at a line the model does
+  // not use. The fallbacks below apply only if a detector did not answer.
+  const own = meta?.own_thresholds
   const OWN_THRESHOLD = {
-    graph: 0.0915,        // GraphSAGE medium band, from its /health
-    behavioural: 0.5,     // the VAE publishes none; 0.5 is its midpoint
-    temporal: 0.4545,     // TS-TCN tuned threshold, from its /health
+    graph: own?.graph?.value ?? 0.1830,
+    behavioural: own?.behavioural?.value ?? 0.5,
+    temporal: own?.temporal?.value ?? 0.4545,
   }
   // The line this run was actually scored at, reported by the backend.
-  const fusedAt = meta?.alert_threshold ?? 0.03
+  const fusedAt = meta?.alert_threshold ?? meta?.live_bands?.medium ?? 0.5
 
   const perModel = useMemo(() => {
     const labelled = rows.filter((r) => r.label === 0 || r.label === 1)
@@ -778,7 +784,9 @@ export default function BatchAnalysis() {
           <p style={{ fontSize: 13, lineHeight: 1.6, color: 'rgb(var(--ds-faint))',
                       marginTop: 8 }}>
             Each detector is measured at its own threshold — graph{' '}
-            {OWN_THRESHOLD.graph}, behaviour {OWN_THRESHOLD.behavioural},
+            {OWN_THRESHOLD.graph}, behaviour {OWN_THRESHOLD.behavioural}
+            {own?.behavioural?.source?.startsWith('midpoint') ? ' (a midpoint, '
+              + 'not a tuned value — this model publishes none)' : ''},
             timing {OWN_THRESHOLD.temporal} — and the fused row at {fusedAt},
             the line this run was scored at. Measuring all four at one shared
             number asked GraphSAGE to clear a line above its own critical band.

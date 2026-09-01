@@ -923,8 +923,13 @@ export default function GraphExplorer() {
                       </p>
                     )}
 
+                    {/* Scored at the model's own decision threshold, as it
+                        publishes it. This read 0.39 — the critical band, more
+                        than twice the line the model actually decides on —
+                        which understated recall on every demo file. */}
                     {csv && (
-                      <Validation rows={csv.rows} threshold={0.39}
+                      <Validation rows={csv.rows}
+                                  threshold={csv.bands?.high ?? 0.183}
                                   scoreOf={(r) => r.score} />
                     )}
 
