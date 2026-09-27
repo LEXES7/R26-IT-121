@@ -1,0 +1,90 @@
+05:30:01.943  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 05:30:01 ────────
+05:30:37.802  INFO                                               ──────── monitor stopped · screened 0, flagged 0, alerts 0 · 2026-09-01 05:30:37 ────────
+05:47:08.720  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 05:47:08 ────────
+05:57:09.136  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 05:57:09 ────────
+06:09:21.766  INFO                                               ──────── monitor stopped · screened 0, flagged 0, alerts 0 · 2026-09-01 06:09:21 ────────
+06:09:21.766  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 06:09:21 ────────
+06:09:30.540  INFO                                               ──────── monitor stopped · screened 0, flagged 0, alerts 0 · 2026-09-01 06:09:30 ────────
+06:09:43.088  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 06:09:43 ────────
+06:41:12.943  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 06:41:12 ────────
+06:45:27.768  INFO  deepsentinel_showcase_100_LKR (1)-00000000   timing: OK     /api/v1/classify → temporal_risk_score=0.146180 in 321ms
+06:45:29.611  INFO  deepsentinel_showcase_100_LKR (1)-00000001   timing: OK     /api/v1/classify → temporal_risk_score=0.198697 in 265ms
+06:45:32.069  INFO  deepsentinel_showcase_100_LKR (1)-00000005   timing: OK     /api/v1/classify → temporal_risk_score=0.206609 in 258ms
+06:45:34.345  INFO  deepsentinel_showcase_100_LKR (1)-00000006   timing: OK     /api/v1/classify → temporal_risk_score=0.223169 in 63ms
+06:45:35.933  INFO  deepsentinel_showcase_100_LKR (1)-00000007   timing: OK     /api/v1/classify → temporal_risk_score=0.206766 in 66ms
+06:45:37.805  INFO  deepsentinel_showcase_100_LKR (1)-00000011   timing: OK     /api/v1/classify → temporal_risk_score=0.227203 in 61ms
+06:45:40.315  INFO  deepsentinel_showcase_100_LKR (1)-00000012   timing: OK     /api/v1/classify → temporal_risk_score=0.211384 in 234ms
+06:45:43.311  INFO  deepsentinel_showcase_100_LKR (1)-00000013   timing: OK     /api/v1/classify → temporal_risk_score=0.263755 in 63ms
+06:45:45.498  INFO  deepsentinel_showcase_100_LKR (1)-00000017   timing: OK     /api/v1/classify → temporal_risk_score=0.213887 in 61ms
+06:45:47.144  INFO  deepsentinel_showcase_100_LKR (1)-00000018   timing: OK     /api/v1/classify → temporal_risk_score=0.165238 in 58ms
+06:45:48.788  INFO  deepsentinel_showcase_100_LKR (1)-00000016   timing: OK     /api/v1/classify → temporal_risk_score=0.233402 in 68ms
+06:45:50.766  INFO  deepsentinel_showcase_100_LKR (1)-00000023   timing: OK     /api/v1/classify → temporal_risk_score=0.201072 in 66ms
+06:45:52.676  INFO  deepsentinel_showcase_100_LKR (1)-00000025   timing: OK     /api/v1/classify → temporal_risk_score=0.147902 in 66ms
+06:45:54.300  INFO  deepsentinel_showcase_100_LKR (1)-00000024   timing: OK     /api/v1/classify → temporal_risk_score=0.096572 in 60ms
+06:45:56.544  INFO  deepsentinel_showcase_100_LKR (1)-00000028   timing: OK     /api/v1/classify → temporal_risk_score=0.092395 in 67ms
+06:45:58.124  INFO  deepsentinel_showcase_100_LKR (1)-00000029   timing: OK     /api/v1/classify → temporal_risk_score=0.175312 in 69ms
+06:46:00.256  INFO  deepsentinel_showcase_100_LKR (1)-00000032   timing: OK     /api/v1/classify → temporal_risk_score=0.192584 in 68ms
+06:46:02.838  INFO  deepsentinel_showcase_100_LKR (1)-00000034   timing: OK     /api/v1/classify → temporal_risk_score=0.089533 in 63ms
+06:46:04.787  INFO  deepsentinel_showcase_100_LKR (1)-00000035   timing: OK     /api/v1/classify → temporal_risk_score=0.092648 in 252ms
+06:46:06.586  INFO  deepsentinel_showcase_100_LKR (1)-00000033   timing: OK     /api/v1/classify → temporal_risk_score=0.092536 in 69ms
+06:46:08.907  INFO  deepsentinel_showcase_100_LKR (1)-00000040   timing: OK     /api/v1/classify → temporal_risk_score=0.773775 in 63ms
+06:46:11.486  INFO  deepsentinel_showcase_100_LKR (1)-00000039   timing: OK     /api/v1/classify → temporal_risk_score=0.186366 in 58ms
+06:46:13.064  INFO  deepsentinel_showcase_100_LKR (1)-00000041   timing: OK     /api/v1/classify → temporal_risk_score=0.086174 in 61ms
+06:46:15.272  INFO  deepsentinel_showcase_100_LKR (1)-00000047   timing: OK     /api/v1/classify → temporal_risk_score=0.167479 in 63ms
+06:46:18.212  INFO  deepsentinel_showcase_100_LKR (1)-00000049   timing: OK     /api/v1/classify → temporal_risk_score=0.166140 in 69ms
+06:46:20.034  INFO  deepsentinel_showcase_100_LKR (1)-00000048   timing: OK     /api/v1/classify → temporal_risk_score=0.214891 in 59ms
+06:46:28.175  INFO  deepsentinel_showcase_100_LKR (1)-00000059   timing: OK     /api/v1/classify → temporal_risk_score=0.211256 in 305ms
+06:46:29.959  INFO  deepsentinel_showcase_100_LKR (1)-00000056   timing: OK     /api/v1/classify → temporal_risk_score=0.214647 in 68ms
+06:46:31.558  INFO  deepsentinel_showcase_100_LKR (1)-00000057   timing: OK     /api/v1/classify → temporal_risk_score=0.911388 in 74ms
+06:46:34.469  INFO  deepsentinel_showcase_100_LKR (1)-00000058   timing: OK     /api/v1/classify → temporal_risk_score=0.376864 in 68ms
+06:46:37.258  INFO  deepsentinel_showcase_100_LKR (1)-00000068   timing: OK     /api/v1/classify → temporal_risk_score=0.296410 in 215ms
+06:46:38.880  INFO  deepsentinel_showcase_100_LKR (1)-00000067   timing: OK     /api/v1/classify → temporal_risk_score=0.270061 in 64ms
+06:46:41.064  INFO  deepsentinel_showcase_100_LKR (1)-00000069   timing: OK     /api/v1/classify → temporal_risk_score=0.410243 in 66ms
+06:46:44.516  INFO  deepsentinel_showcase_100_LKR (1)-00000071   timing: OK     /api/v1/classify → temporal_risk_score=0.169593 in 60ms
+06:46:46.418  INFO  deepsentinel_showcase_100_LKR (1)-00000070   timing: OK     /api/v1/classify → temporal_risk_score=0.163483 in 59ms
+06:46:48.564  INFO  deepsentinel_showcase_100_LKR (1)-00000079   timing: OK     /api/v1/classify → temporal_risk_score=0.216293 in 83ms
+06:46:50.146  INFO  deepsentinel_showcase_100_LKR (1)-00000072   timing: OK     /api/v1/classify → temporal_risk_score=0.166298 in 65ms
+06:46:52.020  INFO  deepsentinel_showcase_100_LKR (1)-00000077   timing: OK     /api/v1/classify → temporal_risk_score=0.154021 in 209ms
+06:46:53.734  INFO  deepsentinel_showcase_100_LKR (1)-00000076   timing: OK     /api/v1/classify → temporal_risk_score=0.161338 in 66ms
+06:46:55.573  INFO  deepsentinel_showcase_100_LKR (1)-00000075   timing: OK     /api/v1/classify → temporal_risk_score=0.148930 in 62ms
+06:46:57.295  INFO  deepsentinel_showcase_100_LKR (1)-00000073   timing: OK     /api/v1/classify → temporal_risk_score=0.182771 in 217ms
+06:46:58.871  INFO  deepsentinel_showcase_100_LKR (1)-00000078   timing: OK     /api/v1/classify → temporal_risk_score=0.174863 in 62ms
+06:47:00.740  INFO  deepsentinel_showcase_100_LKR (1)-00000074   timing: OK     /api/v1/classify → temporal_risk_score=0.156831 in 66ms
+06:47:03.243  INFO  deepsentinel_showcase_100_LKR (1)-00000092   timing: OK     /api/v1/classify → temporal_risk_score=0.291604 in 63ms
+06:47:04.813  INFO  deepsentinel_showcase_100_LKR (1)-00000087   timing: OK     /api/v1/classify → temporal_risk_score=0.890538 in 61ms
+06:47:07.580  INFO  deepsentinel_showcase_100_LKR (1)-00000086   timing: OK     /api/v1/classify → temporal_risk_score=0.407434 in 65ms
+06:47:09.270  INFO  deepsentinel_showcase_100_LKR (1)-00000085   timing: OK     /api/v1/classify → temporal_risk_score=0.834165 in 62ms
+06:47:12.155  INFO  deepsentinel_showcase_100_LKR (1)-00000093   timing: OK     /api/v1/classify → temporal_risk_score=0.942424 in 71ms
+06:47:14.817  INFO  deepsentinel_showcase_100_LKR (1)-00000089   timing: OK     /api/v1/classify → temporal_risk_score=0.298702 in 72ms
+06:47:16.716  INFO  deepsentinel_showcase_100_LKR (1)-00000091   timing: OK     /api/v1/classify → temporal_risk_score=0.865511 in 194ms
+06:47:23.613  INFO  deepsentinel_showcase_100_LKR (1)-00000090   timing: OK     /api/v1/classify → temporal_risk_score=0.329243 in 308ms
+06:47:25.351  INFO  deepsentinel_showcase_100_LKR (1)-00000088   timing: OK     /api/v1/classify → temporal_risk_score=0.843511 in 60ms
+06:47:28.402  INFO  deepsentinel_showcase_100_LKR (1)-00000098   timing: OK     /api/v1/classify → temporal_risk_score=0.490415 in 63ms
+06:47:29.983  INFO  deepsentinel_showcase_100_LKR (1)-00000094   timing: OK     /api/v1/classify → temporal_risk_score=0.270962 in 70ms
+06:47:31.631  INFO  deepsentinel_showcase_100_LKR (1)-00000095   timing: OK     /api/v1/classify → temporal_risk_score=0.860715 in 66ms
+06:47:39.117  INFO  deepsentinel_showcase_100_LKR (1)-00000099   timing: OK     /api/v1/classify → temporal_risk_score=0.402349 in 311ms
+06:47:40.794  INFO  deepsentinel_showcase_100_LKR (1)-00000097   timing: OK     /api/v1/classify → temporal_risk_score=0.326280 in 57ms
+06:47:43.816  INFO  deepsentinel_showcase_100_LKR (1)-00000096   timing: OK     /api/v1/classify → temporal_risk_score=0.333386 in 71ms
+09:21:16.426  INFO  deepsentinel_test_window_50-00000001         timing: OK     /api/v1/classify → temporal_risk_score=0.274307 in 343ms
+09:21:18.869  INFO  deepsentinel_test_window_50-00000002         timing: OK     /api/v1/classify → temporal_risk_score=0.202180 in 74ms
+09:21:22.551  INFO  deepsentinel_test_window_50-00000005         timing: OK     /api/v1/classify → temporal_risk_score=0.360192 in 105ms
+09:21:24.528  INFO  deepsentinel_test_window_50-00000006         timing: OK     /api/v1/classify → temporal_risk_score=0.175106 in 98ms
+09:21:26.335  INFO  deepsentinel_test_window_50-00000007         timing: OK     /api/v1/classify → temporal_risk_score=0.200585 in 70ms
+09:21:28.830  INFO  deepsentinel_test_window_50-00000011         timing: OK     /api/v1/classify → temporal_risk_score=0.194424 in 84ms
+09:21:31.729  INFO  deepsentinel_test_window_50-00000012         timing: OK     /api/v1/classify → temporal_risk_score=0.265819 in 80ms
+09:21:33.670  INFO  deepsentinel_test_window_50-00000013         timing: OK     /api/v1/classify → temporal_risk_score=0.204007 in 100ms
+09:21:36.474  INFO  deepsentinel_test_window_50-00000017         timing: OK     /api/v1/classify → temporal_risk_score=0.184018 in 219ms
+09:21:39.068  INFO  deepsentinel_test_window_50-00000018         timing: OK     /api/v1/classify → temporal_risk_score=0.187897 in 80ms
+09:21:41.306  INFO  deepsentinel_test_window_50-00000019         timing: OK     /api/v1/classify → temporal_risk_score=0.865404 in 74ms
+09:21:45.682  INFO  deepsentinel_test_window_50-00000020         timing: OK     /api/v1/classify → temporal_risk_score=0.212717 in 73ms
+09:21:49.071  INFO  deepsentinel_test_window_50-00000026         timing: OK     /api/v1/classify → temporal_risk_score=0.206590 in 81ms
+09:21:56.899  INFO  deepsentinel_test_window_50-00000033         timing: OK     /api/v1/classify → temporal_risk_score=0.849818 in 312ms
+09:22:00.889  INFO  deepsentinel_test_window_50-00000031         timing: OK     /api/v1/classify → temporal_risk_score=0.804826 in 67ms
+09:22:04.765  INFO  deepsentinel_test_window_50-00000032         timing: OK     /api/v1/classify → temporal_risk_score=0.368969 in 72ms
+09:22:07.682  INFO  deepsentinel_test_window_50-00000040         timing: OK     /api/v1/classify → temporal_risk_score=0.187727 in 76ms
+09:22:10.163  INFO  deepsentinel_test_window_50-00000041         timing: OK     /api/v1/classify → temporal_risk_score=0.242184 in 85ms
+09:22:12.024  INFO  deepsentinel_test_window_50-00000042         timing: OK     /api/v1/classify → temporal_risk_score=0.181095 in 81ms
+09:22:14.576  INFO  deepsentinel_test_window_50-00000045         timing: OK     /api/v1/classify → temporal_risk_score=0.199825 in 68ms
+09:22:17.094  INFO  deepsentinel_test_window_50-00000046         timing: OK     /api/v1/classify → temporal_risk_score=0.183918 in 67ms
+09:22:20.261  INFO  deepsentinel_test_window_50-00000047         timing: OK     /api/v1/classify → temporal_risk_score=0.198819 in 74ms
+09:22:22.116  INFO  deepsentinel_test_window_50-00000048         timing: OK     /api/v1/classify → temporal_risk_score=0.180790 in 78ms

@@ -1,0 +1,90 @@
+05:30:01.940  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 05:30:01 ────────
+05:30:37.802  INFO                                               ──────── monitor stopped · screened 0, flagged 0, alerts 0 · 2026-09-01 05:30:37 ────────
+05:47:08.720  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 05:47:08 ────────
+05:57:09.135  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 05:57:09 ────────
+06:09:21.766  INFO                                               ──────── monitor stopped · screened 0, flagged 0, alerts 0 · 2026-09-01 06:09:21 ────────
+06:09:21.766  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 06:09:21 ────────
+06:09:30.540  INFO                                               ──────── monitor stopped · screened 0, flagged 0, alerts 0 · 2026-09-01 06:09:30 ────────
+06:09:43.088  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 06:09:43 ────────
+06:41:12.941  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 06:41:12 ────────
+06:45:27.515  INFO  deepsentinel_showcase_100_LKR (1)-00000000   graph: OK     score=0.017100 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C375991142 in 70ms
+06:45:29.378  INFO  deepsentinel_showcase_100_LKR (1)-00000001   graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C1952824232 in 31ms
+06:45:31.841  INFO  deepsentinel_showcase_100_LKR (1)-00000005   graph: OK     score=0.031300 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1957902809 in 32ms
+06:45:34.316  INFO  deepsentinel_showcase_100_LKR (1)-00000006   graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C1517654592 in 34ms
+06:45:35.901  INFO  deepsentinel_showcase_100_LKR (1)-00000007   graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C407396226 in 35ms
+06:45:37.775  INFO  deepsentinel_showcase_100_LKR (1)-00000011   graph: OK     score=0.036600 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1174143356 in 31ms
+06:45:40.313  INFO  deepsentinel_showcase_100_LKR (1)-00000012   graph: OK     score=0.107800 risk=MEDIUM pattern=ACCOUNT_TAKEOVER sink=C1286878889 in 234ms
+06:45:43.280  INFO  deepsentinel_showcase_100_LKR (1)-00000013   graph: OK     score=0.017100 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C300377332 in 33ms
+06:45:45.466  INFO  deepsentinel_showcase_100_LKR (1)-00000017   graph: OK     score=0.017200 risk=LOW pattern=HUB_AND_SPOKE sink=C1701030656 in 31ms
+06:45:47.114  INFO  deepsentinel_showcase_100_LKR (1)-00000018   graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C803100374 in 29ms
+06:45:48.753  INFO  deepsentinel_showcase_100_LKR (1)-00000016   graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C1430807750 in 34ms
+06:45:50.731  INFO  deepsentinel_showcase_100_LKR (1)-00000023   graph: OK     score=0.074600 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C2029252184 in 33ms
+06:45:52.641  INFO  deepsentinel_showcase_100_LKR (1)-00000025   graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C1039518331 in 32ms
+06:45:54.272  INFO  deepsentinel_showcase_100_LKR (1)-00000024   graph: OK     score=0.018300 risk=LOW pattern=HUB_AND_SPOKE sink=C195075307 in 32ms
+06:45:56.507  INFO  deepsentinel_showcase_100_LKR (1)-00000028   graph: OK     score=0.017200 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C983498224 in 32ms
+06:45:58.092  INFO  deepsentinel_showcase_100_LKR (1)-00000029   graph: OK     score=0.014600 risk=LOW pattern=HUB_AND_SPOKE sink=C1175684124 in 38ms
+06:46:00.223  INFO  deepsentinel_showcase_100_LKR (1)-00000032   graph: OK     score=0.014600 risk=LOW pattern=HUB_AND_SPOKE sink=C1162496639 in 35ms
+06:46:02.810  INFO  deepsentinel_showcase_100_LKR (1)-00000034   graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C128079794 in 35ms
+06:46:04.787  INFO  deepsentinel_showcase_100_LKR (1)-00000035   graph: OK     score=0.017200 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C2085477612 in 252ms
+06:46:06.547  INFO  deepsentinel_showcase_100_LKR (1)-00000033   graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C1254890312 in 32ms
+06:46:08.875  INFO  deepsentinel_showcase_100_LKR (1)-00000040   graph: OK     score=0.060700 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C149688378 in 33ms
+06:46:11.457  INFO  deepsentinel_showcase_100_LKR (1)-00000039   graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C497482843 in 30ms
+06:46:13.033  INFO  deepsentinel_showcase_100_LKR (1)-00000041   graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C1131768031 in 30ms
+06:46:15.240  INFO  deepsentinel_showcase_100_LKR (1)-00000047   graph: OK     score=0.183000 risk=MEDIUM pattern=HUB_AND_SPOKE sink=C660984985 in 32ms
+06:46:18.177  INFO  deepsentinel_showcase_100_LKR (1)-00000049   graph: OK     score=0.017200 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C631936189 in 35ms
+06:46:20.004  INFO  deepsentinel_showcase_100_LKR (1)-00000048   graph: OK     score=0.285700 risk=HIGH pattern=ACCOUNT_TAKEOVER sink=C1457459211 in 30ms
+06:46:27.903  INFO  deepsentinel_showcase_100_LKR (1)-00000059   graph: OK     score=0.018300 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C212872222 in 34ms
+06:46:29.923  INFO  deepsentinel_showcase_100_LKR (1)-00000056   graph: OK     score=0.031300 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1450501634 in 33ms
+06:46:31.516  INFO  deepsentinel_showcase_100_LKR (1)-00000057   graph: OK     score=0.250000 risk=HIGH pattern=ACCOUNT_TAKEOVER sink=C601312976 in 33ms
+06:46:34.449  INFO  deepsentinel_showcase_100_LKR (1)-00000058   graph: OK     score=0.017100 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C715490116 in 48ms
+06:46:37.072  INFO  deepsentinel_showcase_100_LKR (1)-00000068   graph: OK     score=0.017200 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1880568765 in 30ms
+06:46:38.847  INFO  deepsentinel_showcase_100_LKR (1)-00000067   graph: OK     score=0.017100 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C358538252 in 32ms
+06:46:41.027  INFO  deepsentinel_showcase_100_LKR (1)-00000069   graph: OK     score=0.107800 risk=MEDIUM pattern=HUB_AND_SPOKE sink=C374945137 in 31ms
+06:46:44.488  INFO  deepsentinel_showcase_100_LKR (1)-00000071   graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C1587003840 in 33ms
+06:46:46.389  INFO  deepsentinel_showcase_100_LKR (1)-00000070   graph: OK     score=0.018300 risk=LOW pattern=HUB_AND_SPOKE sink=C134792067 in 31ms
+06:46:48.514  INFO  deepsentinel_showcase_100_LKR (1)-00000079   graph: OK     score=0.030500 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1585851601 in 34ms
+06:46:50.110  INFO  deepsentinel_showcase_100_LKR (1)-00000072   graph: OK     score=0.017200 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C2104221637 in 30ms
+06:46:52.020  INFO  deepsentinel_showcase_100_LKR (1)-00000077   graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C1947366750 in 209ms
+06:46:53.701  INFO  deepsentinel_showcase_100_LKR (1)-00000076   graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C1027874243 in 33ms
+06:46:55.543  INFO  deepsentinel_showcase_100_LKR (1)-00000075   graph: OK     score=0.030500 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1628591097 in 32ms
+06:46:57.108  INFO  deepsentinel_showcase_100_LKR (1)-00000073   graph: OK     score=0.017200 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1283983266 in 31ms
+06:46:58.843  INFO  deepsentinel_showcase_100_LKR (1)-00000078   graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C557503188 in 36ms
+06:47:00.706  INFO  deepsentinel_showcase_100_LKR (1)-00000074   graph: OK     score=0.031300 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C149346978 in 33ms
+06:47:03.212  INFO  deepsentinel_showcase_100_LKR (1)-00000092   graph: OK     score=0.017100 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C610717957 in 33ms
+06:47:04.783  INFO  deepsentinel_showcase_100_LKR (1)-00000087   graph: OK     score=0.031300 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C833307608 in 32ms
+06:47:07.547  INFO  deepsentinel_showcase_100_LKR (1)-00000086   graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C51409599 in 33ms
+06:47:09.239  INFO  deepsentinel_showcase_100_LKR (1)-00000085   graph: OK     score=0.985100 risk=CRITICAL pattern=ACCOUNT_TAKEOVER sink=C270374999 in 31ms
+06:47:12.118  INFO  deepsentinel_showcase_100_LKR (1)-00000093   graph: OK     score=0.285700 risk=HIGH pattern=ACCOUNT_TAKEOVER sink=C846200321 in 34ms
+06:47:14.780  INFO  deepsentinel_showcase_100_LKR (1)-00000089   graph: OK     score=0.030500 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1342636720 in 35ms
+06:47:16.715  INFO  deepsentinel_showcase_100_LKR (1)-00000091   graph: OK     score=0.063200 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1495765075 in 194ms
+06:47:23.339  INFO  deepsentinel_showcase_100_LKR (1)-00000090   graph: OK     score=0.031300 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1665325568 in 34ms
+06:47:25.322  INFO  deepsentinel_showcase_100_LKR (1)-00000088   graph: OK     score=0.017100 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C934061897 in 32ms
+06:47:28.371  INFO  deepsentinel_showcase_100_LKR (1)-00000098   graph: OK     score=0.031300 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C2109905271 in 33ms
+06:47:29.951  INFO  deepsentinel_showcase_100_LKR (1)-00000094   graph: OK     score=0.031300 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1406817938 in 38ms
+06:47:31.596  INFO  deepsentinel_showcase_100_LKR (1)-00000095   graph: OK     score=0.183000 risk=MEDIUM pattern=ACCOUNT_TAKEOVER sink=C357888969 in 31ms
+06:47:38.839  INFO  deepsentinel_showcase_100_LKR (1)-00000099   graph: OK     score=0.030500 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C846260566 in 34ms
+06:47:40.766  INFO  deepsentinel_showcase_100_LKR (1)-00000097   graph: OK     score=0.107800 risk=MEDIUM pattern=ACCOUNT_TAKEOVER sink=C2069429837 in 31ms
+06:47:43.777  INFO  deepsentinel_showcase_100_LKR (1)-00000096   graph: OK     score=0.243900 risk=HIGH pattern=ACCOUNT_TAKEOVER sink=C1049862186 in 33ms
+09:21:16.156  INFO  deepsentinel_test_window_50-00000001         graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C1430807750 in 75ms
+09:21:18.833  INFO  deepsentinel_test_window_50-00000002         graph: OK     score=0.031300 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1566908106 in 39ms
+09:21:22.494  INFO  deepsentinel_test_window_50-00000005         graph: OK     score=0.017200 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1657955938 in 49ms
+09:21:24.487  INFO  deepsentinel_test_window_50-00000006         graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C2098269276 in 58ms
+09:21:26.307  INFO  deepsentinel_test_window_50-00000007         graph: OK     score=0.017200 risk=LOW pattern=HUB_AND_SPOKE sink=C9837383 in 42ms
+09:21:28.792  INFO  deepsentinel_test_window_50-00000011         graph: OK     score=0.014600 risk=LOW pattern=HUB_AND_SPOKE sink=C387251817 in 46ms
+09:21:31.687  INFO  deepsentinel_test_window_50-00000012         graph: OK     score=0.017100 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1851882105 in 41ms
+09:21:33.619  INFO  deepsentinel_test_window_50-00000013         graph: OK     score=0.031300 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C706515095 in 50ms
+09:21:36.473  INFO  deepsentinel_test_window_50-00000017         graph: OK     score=0.017200 risk=LOW pattern=HUB_AND_SPOKE sink=C694195876 in 219ms
+09:21:39.031  INFO  deepsentinel_test_window_50-00000018         graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C1610267199 in 45ms
+09:21:41.269  INFO  deepsentinel_test_window_50-00000019         graph: OK     score=0.017200 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C2099952089 in 42ms
+09:21:45.654  INFO  deepsentinel_test_window_50-00000020         graph: OK     score=0.014600 risk=LOW pattern=HUB_AND_SPOKE sink=C220655618 in 46ms
+09:21:49.032  INFO  deepsentinel_test_window_50-00000026         graph: OK     score=0.243900 risk=HIGH pattern=ACCOUNT_TAKEOVER sink=C1647842444 in 43ms
+09:21:56.629  INFO  deepsentinel_test_window_50-00000033         graph: OK     score=0.017100 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1450998839 in 42ms
+09:22:00.855  INFO  deepsentinel_test_window_50-00000031         graph: OK     score=0.017100 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1367473638 in 35ms
+09:22:04.727  INFO  deepsentinel_test_window_50-00000032         graph: OK     score=0.017200 risk=LOW pattern=HUB_AND_SPOKE sink=C1046914187 in 35ms
+09:22:07.643  INFO  deepsentinel_test_window_50-00000040         graph: OK     score=0.017100 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1170389991 in 37ms
+09:22:10.121  INFO  deepsentinel_test_window_50-00000041         graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C1360951164 in 43ms
+09:22:11.989  INFO  deepsentinel_test_window_50-00000042         graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C1991548326 in 47ms
+09:22:14.543  INFO  deepsentinel_test_window_50-00000045         graph: OK     score=0.017200 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C64203405 in 36ms
+09:22:17.063  INFO  deepsentinel_test_window_50-00000046         graph: OK     score=0.017200 risk=LOW pattern=ACCOUNT_TAKEOVER sink=C1679852456 in 36ms
+09:22:20.235  INFO  deepsentinel_test_window_50-00000047         graph: OK     score=0.014600 risk=LOW pattern=HUB_AND_SPOKE sink=C1851982775 in 48ms
+09:22:22.083  INFO  deepsentinel_test_window_50-00000048         graph: OK     score=0.017100 risk=LOW pattern=HUB_AND_SPOKE sink=C757212877 in 45ms

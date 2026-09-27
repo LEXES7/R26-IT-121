@@ -1,0 +1,90 @@
+05:30:01.941  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 05:30:01 ────────
+05:30:37.802  INFO                                               ──────── monitor stopped · screened 0, flagged 0, alerts 0 · 2026-09-01 05:30:37 ────────
+05:47:08.720  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 05:47:08 ────────
+05:57:09.136  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 05:57:09 ────────
+06:09:21.766  INFO                                               ──────── monitor stopped · screened 0, flagged 0, alerts 0 · 2026-09-01 06:09:21 ────────
+06:09:21.766  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 06:09:21 ────────
+06:09:30.540  INFO                                               ──────── monitor stopped · screened 0, flagged 0, alerts 0 · 2026-09-01 06:09:30 ────────
+06:09:43.088  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 06:09:43 ────────
+06:41:12.941  INFO                                               ──────── monitor started · interval 1.2s · 2026-09-01 06:41:12 ────────
+06:45:27.714  INFO  deepsentinel_showcase_100_LKR (1)-00000000   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 267ms
+06:45:29.353  INFO  deepsentinel_showcase_100_LKR (1)-00000001   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 6ms
+06:45:31.819  INFO  deepsentinel_showcase_100_LKR (1)-00000005   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000002 in 7ms
+06:45:34.290  INFO  deepsentinel_showcase_100_LKR (1)-00000006   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000002 in 7ms
+06:45:35.875  INFO  deepsentinel_showcase_100_LKR (1)-00000007   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000002 in 7ms
+06:45:37.751  INFO  deepsentinel_showcase_100_LKR (1)-00000011   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.042818 in 6ms
+06:45:40.312  INFO  deepsentinel_showcase_100_LKR (1)-00000012   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000032 in 230ms
+06:45:43.256  INFO  deepsentinel_showcase_100_LKR (1)-00000013   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 7ms
+06:45:45.444  INFO  deepsentinel_showcase_100_LKR (1)-00000017   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000032 in 6ms
+06:45:47.093  INFO  deepsentinel_showcase_100_LKR (1)-00000018   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 7ms
+06:45:48.727  INFO  deepsentinel_showcase_100_LKR (1)-00000016   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000002 in 6ms
+06:45:50.708  INFO  deepsentinel_showcase_100_LKR (1)-00000023   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000032 in 7ms
+06:45:52.619  INFO  deepsentinel_showcase_100_LKR (1)-00000025   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000002 in 9ms
+06:45:54.247  INFO  deepsentinel_showcase_100_LKR (1)-00000024   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 7ms
+06:45:56.484  INFO  deepsentinel_showcase_100_LKR (1)-00000028   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 7ms
+06:45:58.063  INFO  deepsentinel_showcase_100_LKR (1)-00000029   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000002 in 8ms
+06:46:00.197  INFO  deepsentinel_showcase_100_LKR (1)-00000032   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 8ms
+06:46:02.784  INFO  deepsentinel_showcase_100_LKR (1)-00000034   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000032 in 8ms
+06:46:04.785  INFO  deepsentinel_showcase_100_LKR (1)-00000035   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 249ms
+06:46:06.524  INFO  deepsentinel_showcase_100_LKR (1)-00000033   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 6ms
+06:46:08.851  INFO  deepsentinel_showcase_100_LKR (1)-00000040   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.208016 in 7ms
+06:46:11.435  INFO  deepsentinel_showcase_100_LKR (1)-00000039   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.310365 in 7ms
+06:46:13.011  INFO  deepsentinel_showcase_100_LKR (1)-00000041   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 8ms
+06:46:15.217  INFO  deepsentinel_showcase_100_LKR (1)-00000047   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000032 in 7ms
+06:46:18.152  INFO  deepsentinel_showcase_100_LKR (1)-00000049   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 8ms
+06:46:19.983  INFO  deepsentinel_showcase_100_LKR (1)-00000048   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.310365 in 7ms
+06:46:28.130  INFO  deepsentinel_showcase_100_LKR (1)-00000059   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000002 in 260ms
+06:46:29.899  INFO  deepsentinel_showcase_100_LKR (1)-00000056   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 7ms
+06:46:31.492  INFO  deepsentinel_showcase_100_LKR (1)-00000057   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.139494 in 8ms
+06:46:34.408  INFO  deepsentinel_showcase_100_LKR (1)-00000058   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000000 in 7ms
+06:46:37.050  INFO  deepsentinel_showcase_100_LKR (1)-00000068   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000000 in 7ms
+06:46:38.823  INFO  deepsentinel_showcase_100_LKR (1)-00000067   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000000 in 6ms
+06:46:41.006  INFO  deepsentinel_showcase_100_LKR (1)-00000069   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 7ms
+06:46:44.463  INFO  deepsentinel_showcase_100_LKR (1)-00000071   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 7ms
+06:46:46.372  INFO  deepsentinel_showcase_100_LKR (1)-00000070   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000002 in 12ms
+06:46:48.490  INFO  deepsentinel_showcase_100_LKR (1)-00000079   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000002 in 8ms
+06:46:50.089  INFO  deepsentinel_showcase_100_LKR (1)-00000072   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 7ms
+06:46:52.018  INFO  deepsentinel_showcase_100_LKR (1)-00000077   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000002 in 204ms
+06:46:53.676  INFO  deepsentinel_showcase_100_LKR (1)-00000076   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000002 in 7ms
+06:46:55.520  INFO  deepsentinel_showcase_100_LKR (1)-00000075   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.018945 in 7ms
+06:46:57.086  INFO  deepsentinel_showcase_100_LKR (1)-00000073   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 7ms
+06:46:58.818  INFO  deepsentinel_showcase_100_LKR (1)-00000078   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000002 in 8ms
+06:47:00.683  INFO  deepsentinel_showcase_100_LKR (1)-00000074   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 9ms
+06:47:03.188  INFO  deepsentinel_showcase_100_LKR (1)-00000092   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.018945 in 8ms
+06:47:04.759  INFO  deepsentinel_showcase_100_LKR (1)-00000087   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.099339 in 7ms
+06:47:07.524  INFO  deepsentinel_showcase_100_LKR (1)-00000086   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.042818 in 8ms
+06:47:09.216  INFO  deepsentinel_showcase_100_LKR (1)-00000085   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=1.000000 in 7ms
+06:47:12.093  INFO  deepsentinel_showcase_100_LKR (1)-00000093   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.139494 in 7ms
+06:47:14.753  INFO  deepsentinel_showcase_100_LKR (1)-00000089   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.028522 in 7ms
+06:47:16.713  INFO  deepsentinel_showcase_100_LKR (1)-00000091   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.099339 in 191ms
+06:47:23.569  INFO  deepsentinel_showcase_100_LKR (1)-00000090   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.028522 in 263ms
+06:47:25.297  INFO  deepsentinel_showcase_100_LKR (1)-00000088   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.139494 in 7ms
+06:47:28.348  INFO  deepsentinel_showcase_100_LKR (1)-00000098   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.042818 in 8ms
+06:47:29.927  INFO  deepsentinel_showcase_100_LKR (1)-00000094   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.018945 in 8ms
+06:47:31.573  INFO  deepsentinel_showcase_100_LKR (1)-00000095   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.139494 in 7ms
+06:47:39.071  INFO  deepsentinel_showcase_100_LKR (1)-00000099   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.059890 in 265ms
+06:47:40.744  INFO  deepsentinel_showcase_100_LKR (1)-00000097   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.042818 in 7ms
+06:47:43.753  INFO  deepsentinel_showcase_100_LKR (1)-00000096   behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.310365 in 7ms
+09:21:16.354  INFO  deepsentinel_test_window_50-00000001         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000002 in 269ms
+09:21:18.805  INFO  deepsentinel_test_window_50-00000002         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 9ms
+09:21:22.458  INFO  deepsentinel_test_window_50-00000005         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 12ms
+09:21:24.438  INFO  deepsentinel_test_window_50-00000006         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 8ms
+09:21:26.277  INFO  deepsentinel_test_window_50-00000007         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.018945 in 11ms
+09:21:28.755  INFO  deepsentinel_test_window_50-00000011         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.018945 in 9ms
+09:21:31.658  INFO  deepsentinel_test_window_50-00000012         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000032 in 9ms
+09:21:33.587  INFO  deepsentinel_test_window_50-00000013         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000000 in 15ms
+09:21:36.470  INFO  deepsentinel_test_window_50-00000017         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000002 in 214ms
+09:21:38.997  INFO  deepsentinel_test_window_50-00000018         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 9ms
+09:21:41.241  INFO  deepsentinel_test_window_50-00000019         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.099339 in 9ms
+09:21:45.618  INFO  deepsentinel_test_window_50-00000020         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000000 in 7ms
+09:21:48.999  INFO  deepsentinel_test_window_50-00000026         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 9ms
+09:21:56.849  INFO  deepsentinel_test_window_50-00000033         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.208016 in 260ms
+09:22:00.848  INFO  deepsentinel_test_window_50-00000031         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.208016 in 25ms
+09:22:04.700  INFO  deepsentinel_test_window_50-00000032         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000002 in 6ms
+09:22:07.615  INFO  deepsentinel_test_window_50-00000040         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 7ms
+09:22:10.089  INFO  deepsentinel_test_window_50-00000041         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.310365 in 9ms
+09:22:11.955  INFO  deepsentinel_test_window_50-00000042         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 11ms
+09:22:14.517  INFO  deepsentinel_test_window_50-00000045         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 9ms
+09:22:17.035  INFO  deepsentinel_test_window_50-00000046         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000000 in 6ms
+09:22:20.197  INFO  deepsentinel_test_window_50-00000047         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 9ms
+09:22:22.046  INFO  deepsentinel_test_window_50-00000048         behaviour: OK     /api/v1/behavioral/classify → behavioral_risk_score=0.000001 in 8ms
