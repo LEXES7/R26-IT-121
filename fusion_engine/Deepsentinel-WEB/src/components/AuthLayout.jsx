@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import Logo from './Logo'
+import DotField from './DotField'
 import Globe from './Globe'
 
 /**
@@ -15,7 +16,9 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
     <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-2">
       {/* Argument */}
       <aside className="relative hidden overflow-hidden border-r border-subtle bg-sentinel-900 lg:block">
-        <div aria-hidden className="pointer-events-none absolute inset-0 grid-bg" />
+        {/* Behind the globe, not instead of it: the field reads as the network
+            the globe is a picture of. */}
+        <DotField />
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-40 [mask-image:radial-gradient(circle,black_35%,transparent_70%)]"
@@ -54,7 +57,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
               <div key={l}>
                 <dd className="numeric text-2xl text-slate-100">{v}</dd>
                 <dt className="eyebrow mt-2 text-slate-500">{l}</dt>
-                <p className="mt-1 text-[10px] text-slate-600">{note}</p>
+                <p className="mt-1 text-[14px] text-slate-600">{note}</p>
               </div>
             ))}
           </dl>

@@ -16,6 +16,7 @@ Per stratum it holds:
 
 from __future__ import annotations
 
+import hashlib
 import time
 from pathlib import Path
 
@@ -55,6 +56,30 @@ STRATA = ("TRANSFER", "CASH_OUT", "PAYMENT", "GLOBAL")
 OUT_OF_TRAINING_TYPES = frozenset({"CASH_IN", "DEBIT"})
 
 
+def _digest(path: Path) -> str | None:
+    """Short content hash of a weights file, or None if it is not there.
+
+    `MODEL_VERSION` is a constant in this module, so it answers "which release
+    is this" and cannot answer "which weights are actually loaded" — swap a
+    bundle and the string is unchanged. The sibling timing service shows what
+    that costs: its health response names a version and a degraded status, but
+    nothing identifying the checkpoint, so when its README pointed at one
+    filename and its loader read another, the API could not be used to tell
+    which of the two was serving.
+
+    Twelve hex characters is far more than enough to tell two checkpoints
+    apart, and short enough to read in a health response.
+    """
+    try:
+        h = hashlib.sha256()
+        with path.open("rb") as fh:
+            for chunk in iter(lambda: fh.read(1 << 20), b""):
+                h.update(chunk)
+        return h.hexdigest()[:12]
+    except OSError:
+        return None
+
+
 class StratumBundle:
     """One stratum's serving state."""
 
@@ -65,6 +90,7 @@ class StratumBundle:
         self.calibrator = Calibrator.load(path)
         self.typology = TypologyIndex.load(path)
         self.manifest = self.predictor.manifest
+        self.weights_digest = _digest(path / "vae.pt")
         serving = self.manifest.get("serving") or {}
         self.f8_p95 = serving.get("f8_p95_causal")
         if self.f8_p95 is None:
@@ -115,8 +141,10 @@ class BehavioralPredictor:
                 f"no bundles under {models} for {protocol}__{feature_set}__*")
         self.missing_strata = missing
         self.startup_seconds = time.time() - t0
+        self.started_at = t0
         self.scored = 0
         self.latency_ms_total = 0.0
+        self._parameters: int | None = None
 
     # ---------------------------------------------------------------- route
     @staticmethod
@@ -155,9 +183,23 @@ class BehavioralPredictor:
             level = "HIGH" if flagged else "LOW"
 
         sig = compute_signals(b.predictor, X, with_signal_3=True)
-        s1 = rank_signal(sig["signal_1"], sig["feature_names"], 0, top=3)
-        s2 = rank_signal(sig["signal_2"], sig["latent_names"], 0, top=3)
-        s3 = rank_signal(sig["signal_3"], sig["latent_names"], 0, top=3)
+        # The whole fingerprint, not its top three. Three names the dominant
+        # contributor, which is all a one-line summary needs, but the
+        # fingerprint is a vector and its shape is the object this component
+        # claims as a contribution: a reader cannot see that one feature
+        # carries 43% while the rest carry nothing unless the rest are there to
+        # compare against. Seven features and eight or sixteen dimensions is a
+        # handful of floats, so nothing is paid for sending them.
+        #
+        # Additive: `dominant_*_signal` is unchanged and the fusion adapter
+        # passes `shares` through by name without assuming a length.
+        n_feat = len(sig["feature_names"])
+        n_dim = len(sig["latent_names"])
+        s1 = rank_signal(sig["signal_1"], sig["feature_names"], 0, top=n_feat,
+                         observed=sig.get("observed"),
+                         reconstructed=sig.get("reconstructed"))
+        s2 = rank_signal(sig["signal_2"], sig["latent_names"], 0, top=n_dim)
+        s3 = rank_signal(sig["signal_3"], sig["latent_names"], 0, top=n_dim)
 
         typ = {"typology_label": "UNASSIGNED", "cluster_id": -1,
                "confidence": 0.0,
@@ -212,6 +254,22 @@ class BehavioralPredictor:
         }
 
     # -------------------------------------------------------------- health
+    def parameter_count(self) -> int:
+        """Trained weights held in memory, summed across every loaded stratum.
+
+        One number for what is actually serving. This component is four small
+        autoencoders rather than one network, so a per-stratum figure would
+        answer a question nobody asked — and reporting only one of them would
+        understate what is loaded. `models` alongside it says how many were
+        added up. Counted once; the weights do not change after load.
+        """
+        if self._parameters is None:
+            self._parameters = sum(
+                int(sum(p.numel() for p in b.predictor.model.parameters()))
+                for b in self.bundles.values()
+            )
+        return self._parameters
+
     def health(self) -> dict:
         return {
             "status": "ok",
@@ -225,6 +283,27 @@ class BehavioralPredictor:
             "transactions_scored": self.scored,
             "mean_latency_ms": (round(self.latency_ms_total / self.scored, 2)
                                 if self.scored else None),
+
+            # The runtime block the console's Model runtime panel reads. It
+            # looks for a nested `model` on every detector and falls back to a
+            # bare "serving" when there is none, so a component that publishes
+            # its state under its own key names appears less alive than one
+            # that does not. Additive: everything above keeps its name and
+            # meaning, and a consumer reading only those is unaffected.
+            "model": {
+                "loaded": bool(self.bundles),
+                "parameters": self.parameter_count(),
+                "models": len(self.bundles),
+                "inferences": self.scored,
+                "uptime_seconds": round(time.time() - self.started_at, 1),
+                # Which weights, not just which release. model_version above is
+                # a constant and stays the same when a bundle is swapped; these
+                # change with the file, so "what is actually serving" is
+                # answerable from the API rather than by hashing checkpoints by
+                # hand.
+                "weights": {s: b.weights_digest for s, b in self.bundles.items()},
+            },
+
             "strata": {
                 s: {
                     "features": b.features,

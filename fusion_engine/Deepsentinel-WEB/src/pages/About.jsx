@@ -25,10 +25,12 @@ const MODALITY_TEXT = {
 const PIPELINE = [
   ['01', 'Transaction arrives',
    'Amount, counterparties and timing enter the pipeline. Nothing about the outcome is known.'],
-  ['02', 'The relational model screens everything',
-   'Every transaction is scored against the payment graph first, because it is the cheapest of the three. Only what looks structurally wrong costs the others.'],
+  ['02', 'All three detectors read it at once',
+   'The payment graph around the transaction, the account\u2019s own behaviour, and the run '
+   + 'of transactions it arrived in \u2014 scored in parallel, so the verdict costs whichever '
+   + 'detector is slowest rather than all three added together.'],
   ['03', 'Three detectors, scored independently',
-   'Network, behaviour and timing each return a probability and the reasoning behind it. A detector that cannot be reached abstains — it does not vote zero.'],
+   'Network, behaviour and timing each return a probability and the reasoning behind it, and none of them sees another\u2019s answer first. An earlier design ran the relational model as a gate on the other two; measured against a 400-transaction replay it cost half the frauds, because a gate in front of an independent detector cannot do better than the detector. A detector that cannot be reached abstains \u2014 it does not vote zero.'],
   ['04', 'Fusion, with an uncertainty penalty',
    'A meta-classifier combines what answered. When fewer than three contributed, the fused confidence is deliberately pulled toward the middle rather than reported as though nothing were missing.'],
   ['05', 'Retrieval anchors the narrative',
@@ -70,7 +72,6 @@ export default function About() {
 
       {/* ── the statement ──────────────────────────────────────────────── */}
       <section className="hair-b relative overflow-hidden">
-        <div aria-hidden className="pointer-events-none absolute inset-0 grid-bg" />
         <div className="relative mx-auto max-w-[88rem] px-5 py-24 sm:px-8">
           <Reveal className="max-w-3xl">
             <Eyebrow>Architecture</Eyebrow>
@@ -110,7 +111,8 @@ export default function About() {
             <Reveal key={c.slug} delay={i * 80}>
               <Link
                 to={`/components/${c.slug}`}
-                className="group grid items-baseline gap-x-8 gap-y-2 py-7 transition-colors hover:bg-surface md:grid-cols-[3rem_8rem_minmax(0,20rem)_minmax(0,1fr)_5rem]"
+                className="group arrow-slide grid items-baseline gap-x-8 gap-y-2 rounded-xl border border-transparent px-4 py-7 -mx-4 transition-[background-color,transform,border-color,box-shadow] duration-300 hover:translate-x-1 hover:border-white/10 hover:bg-white/[0.04] hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.09)] md:grid-cols-[3rem_8rem_minmax(0,20rem)_minmax(0,1fr)_5rem]"
+                style={{ transitionTimingFunction: 'var(--ease-hover)' }}
               >
                 <span className="display text-[2rem] leading-none text-slate-700 transition-colors group-hover:text-slate-500">
                   0{i + 1}
@@ -125,7 +127,7 @@ export default function About() {
                   {c.question}
                 </span>
                 <span className="text-xs text-slate-600 transition-colors group-hover:text-accent-400 md:text-right">
-                  Explore &rarr;
+                  Explore <span className="arrow inline-block">&rarr;</span>
                 </span>
               </Link>
             </Reveal>

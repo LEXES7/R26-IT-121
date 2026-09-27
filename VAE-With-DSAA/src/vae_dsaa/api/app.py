@@ -91,7 +91,10 @@ def build_response(req: ClassifyRequest, r: dict, protocol: str,
                 dominant_feature_signal=_fmt(s1[0]["name"], s1[0]["share"],
                                              "reconstruction error")
                 if s1 else "none",
-                shares=[FeatureShare(feature=x["name"], share=x["share"]) for x in s1],
+                shares=[FeatureShare(feature=x["name"], share=x["share"],
+                                     observed=x.get("observed"),
+                                     reconstructed=x.get("reconstructed"))
+                        for x in s1],
             ),
             signal_2_kl_divergence=Signal2(
                 dominant_dimension_signal=_fmt(s2[0]["name"], s2[0]["share"],

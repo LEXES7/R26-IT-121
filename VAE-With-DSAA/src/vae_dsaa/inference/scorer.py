@@ -27,6 +27,18 @@ class MinMax:
     def transform(self, X: np.ndarray) -> np.ndarray:
         return ((X - self.min_) / self.range_).astype(np.float32)
 
+    def inverse_transform(self, X: np.ndarray) -> np.ndarray:
+        """Back to feature units.
+
+        Scoring never needs this — the model works in scaled space throughout.
+        Attribution does: a reconstruction is only readable next to the value it
+        was trying to rebuild, and both have to be in the units the feature is
+        named for. Exact wherever ``transform`` was, since the mapping is
+        affine; features whose training range was zero were divided by 1.0 and
+        come back unchanged.
+        """
+        return (np.asarray(X) * self.range_ + self.min_).astype(np.float32)
+
 
 # --------------------------------------------------------------------------
 @torch.no_grad()

@@ -10,11 +10,12 @@ Usage:
 
 from __future__ import annotations
 
+import os
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -28,9 +29,231 @@ from graphsage.api.schemas import (
 )
 from graphsage.inference.predictor import MODEL_VERSION, GraphPredictor
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+# Where data/ lives. Defaults to the checkout this file sits in, which is
+# right for a single working copy. It is overridable because the serving
+# bundle is 162 MB and gitignored: a second checkout of this code has the
+# source but no model, and pointing it at the one copy on disk beats
+# either duplicating the file or committing a machine-specific symlink.
+REPO_ROOT = Path(os.getenv("GRAPHSAGE_DATA_ROOT")
+                 or Path(__file__).resolve().parents[3])
 START_TS = time.time()
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+# ── Demo CSV validation ──────────────────────────────────────────────────────
+# The demo panel takes a file from whoever is standing in front of it, so the
+# answer to a file that is not transactions has to be "this is not a
+# transactions file", not a table of blank rows. Without these checks an
+# unrelated CSV parsed fine, every lookup missed, and every row came back
+# unscored — which reads as the model failing rather than the input being wrong.
+#
+# The column names mirror backend/batch.py so the two uploads accept and reject
+# the same files. Balances are not required: the feature builder defaults them
+# to zero, and a file that lacks them still scores.
+DEMO_REQUIRED = ("nameorig", "namedest", "amount", "type", "step")
+DEMO_VALID_TYPES = {"TRANSFER", "CASH_OUT", "CASH_IN", "PAYMENT", "DEBIT"}
+DEMO_MAX_BYTES = 2 * 1024 * 1024
+# 1000 so a thousand-row validation file scores whole rather than half.
+# Every row is a graph lookup or one k-hop aggregation, so this stays fast.
+DEMO_MAX_ROWS = 1000
+_DEMO_CANONICAL = {
+    "nameorig": "nameOrig", "namedest": "nameDest", "amount": "amount",
+    "type": "type", "step": "step", "oldbalanceorg": "oldbalanceOrg",
+    "newbalanceorig": "newbalanceOrig", "oldbalancedest": "oldbalanceDest",
+    "newbalancedest": "newbalanceDest", "isfraud": "isFraud",
+}
+
+
+def check_demo_transactions(account: str, txns: list[dict],
+                            horizon: int) -> list[str]:
+    """Reasons these transactions do not describe a coherent account.
+
+    The demo lets someone type a transaction by hand, so the values can be
+    edited into a state that no real ledger would produce — an amount changed
+    without changing the balances it moved between, a payment larger than the
+    balance it came from, an account paying itself. Aggregating those would
+    hand the network a neighbourhood that cannot exist, and the score that
+    came back would be meaningless rather than wrong in an interesting way.
+
+    Returns every problem found, so the caller can fix them in one pass rather
+    than one refusal at a time. An empty list means the set is coherent.
+    """
+    problems: list[str] = []
+    tol = 0.02                      # currency rounding, not a real discrepancy
+
+    for i, t in enumerate(txns, start=1):
+        where = f"Transaction {i}"
+        orig = str(t.get("nameOrig") or "").strip()
+        dest = str(t.get("nameDest") or "").strip()
+
+        if not orig or not dest:
+            problems.append(f"{where}: needs both a sender and a recipient.")
+            continue
+        if orig == dest:
+            problems.append(f"{where}: {orig} cannot pay itself.")
+
+        try:
+            amount = float(t.get("amount"))
+        except (TypeError, ValueError):
+            problems.append(f"{where}: amount is not a number.")
+            continue
+        if amount <= 0:
+            problems.append(f"{where}: amount must be greater than zero.")
+
+        tx_type = str(t.get("type") or "").strip().upper()
+        if tx_type and tx_type not in DEMO_VALID_TYPES:
+            problems.append(
+                f"{where}: '{tx_type}' is not a transaction type "
+                f"({', '.join(sorted(DEMO_VALID_TYPES))}).")
+
+        if t.get("step") is not None:
+            try:
+                step = int(float(t.get("step")))
+            except (TypeError, ValueError):
+                problems.append(f"{where}: step is not a number.")
+            else:
+                if not 1 <= step <= horizon:
+                    problems.append(
+                        f"{where}: step {step} is outside the served graph, "
+                        f"which covers steps 1 to {horizon}.")
+
+        # The edit that makes a hand-typed transaction incoherent: changing the
+        # amount and leaving the balances describing the old one.
+        old_org, new_org = t.get("oldbalanceOrg"), t.get("newbalanceOrig")
+        if old_org is not None and new_org is not None:
+            try:
+                old_org, new_org = float(old_org), float(new_org)
+            except (TypeError, ValueError):
+                problems.append(f"{where}: sender balances are not numbers.")
+            else:
+                if old_org < 0 or new_org < 0:
+                    problems.append(f"{where}: a balance cannot be negative.")
+                elif amount > old_org + tol:
+                    problems.append(
+                        f"{where}: {orig} sends {amount:,.2f} but holds only "
+                        f"{old_org:,.2f}.")
+                elif abs((old_org - amount) - new_org) > max(tol, old_org * 1e-6):
+                    problems.append(
+                        f"{where}: the sender's balance does not match the "
+                        f"amount — {old_org:,.2f} minus {amount:,.2f} is "
+                        f"{old_org - amount:,.2f}, not {new_org:,.2f}.")
+
+        old_dst, new_dst = t.get("oldbalanceDest"), t.get("newbalanceDest")
+        if old_dst is not None and new_dst is not None:
+            try:
+                old_dst, new_dst = float(old_dst), float(new_dst)
+            except (TypeError, ValueError):
+                problems.append(f"{where}: recipient balances are not numbers.")
+            else:
+                if old_dst < 0 or new_dst < 0:
+                    problems.append(f"{where}: a balance cannot be negative.")
+                elif abs((old_dst + amount) - new_dst) > max(tol, old_dst * 1e-6):
+                    problems.append(
+                        f"{where}: the recipient's balance does not match the "
+                        f"amount — {old_dst:,.2f} plus {amount:,.2f} is "
+                        f"{old_dst + amount:,.2f}, not {new_dst:,.2f}.")
+
+    return problems
+
+
+class DemoCsvError(Exception):
+    """A file the user needs to fix, with a message that says how."""
+
+    def __init__(self, message: str, **detail):
+        super().__init__(message)
+        self.message = message
+        self.detail = detail
+
+
+def read_demo_csv(filename: str, data: bytes) -> tuple[list[dict], list[str]]:
+    """Parse and check an uploaded demo file.
+
+    Returns the rows, keyed by canonical column name, and any advisory notes.
+    Raises DemoCsvError for anything the caller has to fix.
+    """
+    import csv as _csv
+    import io
+
+    name = (filename or "").lower()
+    if name.endswith((".xlsx", ".xlsm", ".xls")):
+        raise DemoCsvError(
+            "This panel reads .csv only. Save the sheet as CSV and upload that "
+            "— or use Batch upload on the Fusion page, which reads .xlsx.")
+    if name and not name.endswith((".csv", ".txt", ".tsv")):
+        raise DemoCsvError("Upload a .csv file. Other formats cannot be read.")
+
+    if len(data) > DEMO_MAX_BYTES:
+        raise DemoCsvError(
+            f"The file is {len(data) / 1024 / 1024:.1f} MB. The limit is "
+            f"{DEMO_MAX_BYTES // 1024 // 1024} MB.")
+
+    try:
+        text = data.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        raise DemoCsvError(
+            "That file is not text. It looks like a spreadsheet or another "
+            "binary format saved with a .csv name.") from None
+
+    reader = _csv.DictReader(io.StringIO(text))
+    header = [h for h in (reader.fieldnames or []) if str(h).strip()]
+    if not header:
+        raise DemoCsvError("That file has no header row.")
+
+    index = {str(h).strip().lower(): str(h) for h in header}
+    missing = [c for c in DEMO_REQUIRED if c not in index]
+    if missing:
+        raise DemoCsvError(
+            "The file is missing required column(s): "
+            + ", ".join(_DEMO_CANONICAL[m] for m in missing)
+            + ". A transactions file needs step, type, amount, nameOrig and "
+              "nameDest.",
+            missing=[_DEMO_CANONICAL[m] for m in missing],
+            found=header)
+
+    rows, notes = [], []
+    for offset, raw_row in enumerate(reader, start=2):   # row 1 is the header
+        if not any(str(v).strip() for v in raw_row.values() if v is not None):
+            continue                                     # blank line
+        if len(rows) >= DEMO_MAX_ROWS:
+            notes.append(f"Only the first {DEMO_MAX_ROWS} rows were scored.")
+            break
+
+        row = {}
+        for lower, original in index.items():
+            row[_DEMO_CANONICAL.get(lower, original)] = raw_row.get(original)
+
+        tx_type = str(row.get("type") or "").strip().upper()
+        if tx_type not in DEMO_VALID_TYPES:
+            raise DemoCsvError(
+                f"Row {offset}: '{tx_type or '(blank)'}' is not a transaction "
+                f"type. Expected one of {', '.join(sorted(DEMO_VALID_TYPES))}.",
+                row=offset)
+        row["type"] = tx_type
+
+        for field in ("amount", "step"):
+            value = str(row.get(field) or "").strip()
+            try:
+                float(value)
+            except ValueError:
+                raise DemoCsvError(
+                    f"Row {offset}: {field} is '{value or '(blank)'}', which is "
+                    f"not a number.", row=offset) from None
+
+        if not str(row.get("nameOrig") or "").strip() or \
+                not str(row.get("nameDest") or "").strip():
+            raise DemoCsvError(
+                f"Row {offset}: a transaction with no sender or no recipient "
+                f"cannot be scored.", row=offset)
+
+        rows.append(row)
+
+    if not rows:
+        raise DemoCsvError("No rows in that file.")
+
+    if "isFraud" not in index and "isfraud" not in index:
+        notes.append("No isFraud column, so accuracy cannot be measured — "
+                     "only what the model flags.")
+    return rows, notes
+
 
 def score_to_risk_level(score: float, bands: dict[str, float]) -> RiskLevel:
     """Map a calibrated score to a contract §5 risk level.
@@ -176,6 +399,315 @@ def create_app(predictor: GraphPredictor | None = None) -> FastAPI:
                 "loaded": False, "reason": getattr(p, "live_error", None),
             },
         }
+
+    @app.get("/api/graph/neighbourhood")
+    def neighbourhood(account: str, hops: int = 1, max_edges: int = 150,
+                      scope: str = "component"):
+        """The graph immediately around one account.
+
+        For exploring rather than deciding: /analyze answers a question about a
+        transaction, this answers "show me this account". Bounded on purpose —
+        the served graph is 3.27M accounts, and no request here may try to hand
+        a browser more than a screenful of it. The caller walks outward a node
+        at a time instead, and the response reports whether it was truncated so
+        the UI can say so rather than implying it drew everything.
+        """
+        from graphsage.extraction.subgraph import neighbourhood as build
+
+        p: GraphPredictor = app.state.predictor
+        out = build(
+            p.extractor, account, p.probs, p.edge_attention,
+            hops=hops, max_edges=max(10, min(int(max_edges), 400)),
+            scope="component" if scope == "component" else "hops",
+        )
+        if out is None:
+            return JSONResponse(
+                status_code=404,
+                content={"error": "NotFound",
+                         "message": f"No account {account!r} in the graph."},
+            )
+        return out
+
+    # ── Demo mode ────────────────────────────────────────────────────────────
+    #
+    # A separate surface from /analyze on purpose. /analyze answers about a
+    # transaction between accounts the snapshot already contains; these two
+    # answer about accounts it has never seen, which is the one thing this
+    # architecture can do that a transductive model cannot.
+    #
+    # Nothing here writes to the graph. Every node exists for one request.
+
+    @app.post("/api/graph/demo/score-account")
+    def demo_score_account(body: dict):
+        """Score an account that is not in the graph, from its transactions alone.
+
+        The caller supplies transactions, never a feature vector — so there is
+        no way to hand the network a number that did not come from a stated
+        transaction. The twelve features are derived here by the same
+        arithmetic the training set was built with (pinned by
+        tests/test_inductive.py), and the embedding is aggregated from whoever
+        the account is attached to.
+
+        The score returned is the raw network probability. It is deliberately
+        not dressed up as a calibrated one: the isotonic calibrator that
+        produced the precomputed scores was never saved as a reusable artefact,
+        so a calibrated number cannot honestly be produced on this path. What
+        is comparable — and is what the demo turns on — is this account against
+        its own neighbours scored the same way, which is returned alongside.
+        """
+        from graphsage.inference.inductive import (
+            NODE_COLS, derive_node_features, edge_features)
+
+        p: GraphPredictor = app.state.predictor
+        live = getattr(p, "live", None)
+        if live is None:
+            return JSONResponse(status_code=503, content={
+                "error": "ModelNotLoaded",
+                "message": getattr(p, "live_error", "live inference unavailable"),
+            })
+
+        account = str(body.get("account") or "").strip()
+        txns = body.get("transactions") or []
+        if not account or not txns:
+            return JSONResponse(status_code=422, content={
+                "error": "Invalid",
+                "message": "Supply 'account' and at least one transaction.",
+            })
+
+        out_txns = [t for t in txns if t.get("nameOrig") == account]
+        in_txns = [t for t in txns if t.get("nameDest") == account]
+        if not out_txns and not in_txns:
+            return JSONResponse(status_code=422, content={
+                "error": "Invalid",
+                "message": f"No transaction names {account!r} as sender or receiver.",
+            })
+
+        horizon = int(p.meta["step_range"][1])
+
+        # Refuse a set that cannot describe a real ledger before it reaches the
+        # network. Scoring an impossible neighbourhood produces a number, and a
+        # number that means nothing is worse on a demo than a refusal that says
+        # exactly which value is wrong.
+        problems = check_demo_transactions(account, txns, horizon)
+        if problems:
+            return JSONResponse(status_code=422, content={
+                "error": "Incoherent",
+                # The console reaches this through a proxy that forwards only
+                # the message, so the first problem has to travel inside it.
+                "message": problems[0] + (
+                    f" (and {len(problems) - 1} more)" if len(problems) > 1 else ""),
+                "problems": problems,
+            })
+
+        feats = derive_node_features(out_txns, in_txns, horizon)
+
+        # Resolve the counterparties. An account the graph has never heard of
+        # cannot anchor an embedding, so say which ones were dropped rather
+        # than quietly scoring against fewer neighbours than the caller named.
+        name_to_id = p.extractor.name_to_id
+        out_edges, in_edges, unknown = [], [], []
+        for t in out_txns:
+            nid = name_to_id.get(t.get("nameDest"))
+            (out_edges.append((nid, edge_features(t))) if nid is not None
+             else unknown.append(t.get("nameDest")))
+        for t in in_txns:
+            nid = name_to_id.get(t.get("nameOrig"))
+            (in_edges.append((nid, edge_features(t))) if nid is not None
+             else unknown.append(t.get("nameOrig")))
+        if not out_edges and not in_edges:
+            return JSONResponse(status_code=422, content={
+                "error": "NoKnownNeighbours",
+                "message": ("None of the counterparties are in the graph, so "
+                            "there is no neighbourhood to aggregate from."),
+                "unknown_accounts": unknown,
+            })
+
+        try:
+            score, ms, prov = live.score_new_node(feats, out_edges, in_edges)
+        except ValueError as exc:
+            return JSONResponse(status_code=422,
+                                content={"error": "Invalid", "message": str(exc)})
+
+        # The comparison that carries the meaning: the same network, the same
+        # raw output space, run over each neighbour this account attached to.
+        neighbours = []
+        for nid, _ in out_edges + in_edges:
+            try:
+                raw, _ = live.score_node(int(nid))
+            except Exception:                            # noqa: BLE001
+                continue
+            neighbours.append({
+                "account": str(p.node_names[int(nid)]),
+                "raw_score": round(raw, 4),
+                "precomputed_score": round(float(p.probs[int(nid)]), 4),
+            })
+
+        return {
+            "account": account,
+            "in_graph": account in name_to_id,
+            "raw_score": round(score, 4),
+            "score_space": "raw_network_output",
+            "calibrated": False,
+            "features": {
+                name: round(float(v), 4)
+                for name, v in zip(NODE_COLS, feats)
+            },
+            "neighbours": neighbours,
+            "unknown_accounts": unknown,
+            "provenance": {**prov, "inference_ms": round(ms, 1)},
+            "model": {"stage": p.stage, "version": MODEL_VERSION},
+        }
+
+    @app.post("/api/graph/demo/score-csv")
+    async def demo_score_csv(file: UploadFile = File(...)):
+        """Score a CSV through the relational model and nothing else.
+
+        Deliberately not the platform's batch endpoint: no fusion, no other
+        detectors, no alerting. One model, one column of answers, so what is
+        on screen is attributable to this component alone.
+        """
+        from graphsage.inference.inductive import derive_node_features, edge_features
+
+        p: GraphPredictor = app.state.predictor
+        live = getattr(p, "live", None)
+        horizon = int(p.meta["step_range"][1])
+        try:
+            rows, notes = read_demo_csv(file.filename or "", await file.read())
+        except DemoCsvError as exc:
+            return JSONResponse(status_code=422, content={
+                "error": "Invalid", "message": exc.message, **exc.detail})
+
+        name_to_id = p.extractor.name_to_id
+        out, counts = [], {"precomputed": 0, "inductive": 0, "unscored": 0}
+        for i, r in enumerate(rows):
+            dest, orig = r.get("nameDest"), r.get("nameOrig")
+            rec = {"row": i + 1, "nameOrig": orig, "nameDest": dest,
+                   "amount": r.get("amount"), "type": r.get("type")}
+            dst_id = name_to_id.get(dest)
+            if dst_id is not None:
+                score = float(p.probs[int(dst_id)])
+                rec.update(score=round(score, 4), source="precomputed",
+                           risk_level=score_to_risk_level(score, p.risk_bands).value)
+                counts["precomputed"] += 1
+            else:
+                # The interesting case, not a failure. The destination is new,
+                # so there is no precomputed score to look up — but the sender
+                # is usually known, and that is a neighbourhood to aggregate
+                # from. This is the row where a transductive model would have
+                # to return nothing at all.
+                src_id = name_to_id.get(orig)
+                scored = False
+                if live is not None and src_id is not None:
+                    try:
+                        feats = derive_node_features([], [r], horizon)
+                        raw, ms, prov = live.score_new_node(
+                            feats, [], [(src_id, edge_features(r))])
+                        rec.update(score=round(raw, 4), source="inductive",
+                                   risk_level=None, score_space="raw_network_output",
+                                   note=("scored from its neighbourhood — this "
+                                         "account is not in the graph"),
+                                   neighbourhood_accounts=prov["neighbourhood_accounts"])
+                        counts["inductive"] += 1
+                        scored = True
+                    except Exception as exc:            # noqa: BLE001
+                        rec["note"] = f"could not score inductively: {exc}"
+                if not scored:
+                    rec.update(score=None, source="unscored", risk_level=None)
+                    rec.setdefault("note", "neither account is in the served graph")
+                    counts["unscored"] += 1
+            if r.get("isFraud") is not None:
+                rec["isFraud"] = r.get("isFraud")
+            out.append(rec)
+
+        return {"rows": out, "counts": counts, "notes": notes,
+                "scored_by": "graph_only",
+                "model": {"stage": p.stage, "version": MODEL_VERSION},
+                "bands": {k: round(float(v), 4) for k, v in p.risk_bands.items()}}
+
+    @app.get("/api/graph/performance")
+    def performance() -> dict:
+        """How the served model scores on the held-out window.
+
+        Computed here rather than read from a report, because the reports in
+        reports/ cover stages 1 through 3a and the model being served is 3b —
+        quoting one for the other is exactly the mislabelling this project has
+        already had to correct once.
+
+        Everything below comes from the bundle already in memory: the labels
+        from `edge_isFraud`, the window from `edge_step`, the scores from the
+        same calibrated vector the API answers with. Evaluated only on accounts
+        that received money inside the test window, which is the population the
+        model is asked about in production.
+
+        Cached after the first call — it is a handful of vectorised passes over
+        3.3M nodes, but there is no reason to repeat them.
+        """
+        import numpy as np
+        import torch
+
+        p: GraphPredictor = app.state.predictor
+        cached = getattr(app.state, "_performance", None)
+        if cached is not None:
+            return cached
+
+        lo, hi = 701, 743                       # the test label window
+        d = p.data
+        dst = d.edge_index[1]
+        step = d.edge_step.to(torch.int32)
+        fraud = d.edge_isFraud.to(torch.bool)
+
+        in_window = (step >= lo) & (step <= hi)
+
+        # A node is a mule if it received fraud; it is evaluated if it received
+        # anything at all. Both restricted to the window.
+        y = torch.zeros(int(d.num_nodes), dtype=torch.bool)
+        y[dst[in_window & fraud]] = True
+        evaluated = torch.zeros(int(d.num_nodes), dtype=torch.bool)
+        evaluated[dst[in_window]] = True
+
+        idx = evaluated.nonzero(as_tuple=True)[0]
+        scores = p.probs[idx].float().numpy()
+        labels = y[idx].numpy()
+
+        thr = float(p.threshold)
+        pred = scores >= thr
+        tp = int((pred & labels).sum())
+        fp = int((pred & ~labels).sum())
+        fn = int((~pred & labels).sum())
+        tn = int((~pred & ~labels).sum())
+
+        precision = tp / (tp + fp) if tp + fp else 0.0
+        recall = tp / (tp + fn) if tp + fn else 0.0
+        f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+        accuracy = (tp + tn) / max(1, len(labels))
+
+        # AUC by rank, which needs no sklearn and no sorting of pairs.
+        order = np.argsort(scores)
+        ranks = np.empty_like(order, dtype=np.float64)
+        ranks[order] = np.arange(1, len(scores) + 1)
+        n_pos = int(labels.sum())
+        n_neg = len(labels) - n_pos
+        auc = ((ranks[labels].sum() - n_pos * (n_pos + 1) / 2) / (n_pos * n_neg)
+               if n_pos and n_neg else None)
+
+        out = {
+            "window": {"from_step": lo, "to_step": hi, "name": "held-out test"},
+            "threshold": round(thr, 4),
+            "evaluated_accounts": int(len(labels)),
+            "actual_mules": n_pos,
+            "metrics": {
+                "precision": round(precision, 4),
+                "recall": round(recall, 4),
+                "f1": round(f1, 4),
+                "accuracy": round(accuracy, 4),
+                "auroc": round(float(auc), 4) if auc is not None else None,
+            },
+            "confusion": {"tp": tp, "fp": fp, "fn": fn, "tn": tn},
+            "note": ("Computed from the serving bundle on the held-out window, "
+                     "for the model actually being served."),
+        }
+        app.state._performance = out
+        return out
 
     @app.get("/api/graph/sample-transactions")
     def sample_transactions(n: int = 20, fraud_ratio: float = 0.08) -> dict:

@@ -43,13 +43,15 @@ def classify(req: ClassifyRequest, request: Request):
         # than a bug in this request. The fusion adapter already treats 503 as
         # "unavailable for this request" and abstains instead of logging an
         # outage — exactly the right behaviour here.
-        #
-        # The message names the files relative to the repo: the exception text
-        # carries absolute paths, and an error body is not the place to publish
-        # someone's home directory.
         logger.error(f"TS-TCN model artefacts missing: {e}")
-        return JSONResponse(status_code=500, content=ErrorResponse(
-            error="InternalError", message=str(e),
+        # getattr, so an injected test double is not obliged to implement the
+        # whole service surface just to exercise this branch.
+        missing = getattr(service, "missing_artifacts", lambda: [])()
+        return JSONResponse(status_code=503, content=ErrorResponse(
+            error="MODEL_UNAVAILABLE",
+            message=("Model artefacts are not present on this instance "
+                     f"({', '.join(missing)}). "
+                     "See outputs/README.md."),
         ).model_dump())
     except Exception as e:  # noqa: BLE001 — surface as a structured 500, never a bare trace
         logger.exception("TS-TCN inference failed")

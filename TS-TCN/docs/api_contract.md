@@ -91,7 +91,7 @@ Flat body — the fusion engine spreads the full transaction dict and adds
     },
     "predecessor_signal": "Prior partial drain from same account — escalating fraud pattern"
   },
-  "model_version": "ts-tcn-v1.0-stage4",
+  "model_version": "ts-tcn-v2.0-final",
   "inference_time_ms": 23.7
 }
 ```
@@ -113,27 +113,25 @@ Flat body — the fusion engine spreads the full transaction dict and adds
 | `triggering_predecessor.offset_from_current` | int, negative | Position relative to the current transaction, e.g. `-3` = 3 transactions back in the window |
 | `triggering_predecessor.features` | object | Feature vector of the predecessor transaction, read from the rolling buffer |
 | `triggering_predecessor.predecessor_signal` | string | Human-readable label of the escalation pattern |
-| `model_version` | string | Identifies which trained checkpoint answered. `ts-tcn-v1.0-stage4` is the Stage 4 full-training checkpoint — see caveat below |
+| `model_version` | string | Identifies which trained checkpoint answered. `ts-tcn-v2.0-final` is the Stage 4 FINAL training run — see caveat below |
 | `inference_time_ms` | float | End-to-end serving time for this request |
 
 ## Model status caveat
 
-The checkpoint currently served (`outputs/stage4_tcn/best_tstcn.keras`) is a
-genuine Stage 4 full-training run against the real 30-epoch budget
-(`BinaryFocalCrossentropy(γ=2.0)`, EarlyStopping on `val_fraud_prob_recall`),
-not a sanity checkpoint — it is real, deployed, and this is what
-`temporal_risk_score` reflects.
+The checkpoint currently served (`outputs/stage4_tcn/best_tstcn.keras`) is
+the Stage 4 **FINAL** training run (`DeepSentinel_T4_FullTraining_FINALI.ipynb`),
+27 epochs against the 30-epoch budget, EarlyStopping on `val_fraud_prob_auc`
+with patience=12 — closer to the proposal's §3.8 patience=10 than the
+superseded `ts-tcn-v1.0-stage4` checkpoint's patience=5, which stopped at
+epoch 6 before recall could recover.
 
-It underperforms Baseline 2 (MLP, no sequence) on F1 and Recall and misses
-all three proposal targets (F1>0.88, AUC-ROC>0.97, Recall>0.90) — see
-`outputs/stage6_evaluation/tstcn_test_metrics.json` for the full numbers.
-EarlyStopping fired at epoch 6 (patience=5) and restored epoch 1's weights,
-the only epoch where validation recall improved; the run used patience=5
-where the proposal (§3.8) specifies patience=10, which is the leading
-hypothesis for why training stopped before recall could recover. A rerun
-with the corrected patience is the next experiment — `model_version` will
-gain a new suffix when it lands, so a downstream consumer is never left
-guessing which checkpoint answered.
+At the served operating point (threshold=0.4545, chosen for best F1) this
+checkpoint **clears Baseline 2** (MLP, no sequence) on F1 (0.851 vs 0.737)
+and Recall (0.767 vs 0.586) — see `outputs/stage6_evaluation/tstcn_test_metrics.json`
+for the full numbers, including a documented but unused Recall-first
+operating point (threshold=0.1278: Recall 0.900, Precision 0.056). AUC-ROC
+(0.947) and Recall (0.767) still fall short of the proposal's stretch
+targets (AUC-ROC>0.97, Recall>0.90) — reported as measured, not rounded up.
 
 ## Error Responses
 

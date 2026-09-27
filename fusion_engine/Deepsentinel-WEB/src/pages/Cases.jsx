@@ -2,7 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getBriefing, getCase, listCases, reviewCase, sendBriefing } from '../services/api'
 import NetworkGraph from '../components/NetworkGraph'
-import { Alert, cx } from '../components/ui'
+import GraphEvidence from '../components/GraphEvidence'
+import BehaviouralEvidence from '../components/BehaviouralEvidence'
+import TemporalEvidence from '../components/TemporalEvidence'
+import ModalityVerdict from '../components/ModalityVerdict'
+import CaseMechanism from '../components/CaseMechanism'
+import { Alert, Severity, cx } from '../components/ui'
+import { Badge, Footer, Metric, Panel, SectionHeading } from '../components/ConsoleShell'
 
 /**
  * The case desk.
@@ -22,10 +28,10 @@ import { Alert, cx } from '../components/ui'
  */
 
 const SEV = {
-  CRITICAL: { hex: '#ef4444', label: 'Critical', rank: 4 },
-  HIGH:     { hex: '#f97316', label: 'High',     rank: 3 },
-  MEDIUM:   { hex: '#eab308', label: 'Medium',   rank: 2 },
-  LOW:      { hex: '#22c55e', label: 'Low',      rank: 1 },
+  CRITICAL: { hex: 'rgb(var(--ds-sev-critical))', label: 'Critical', rank: 4 },
+  HIGH:     { hex: 'rgb(var(--ds-sev-high))', label: 'High',     rank: 3 },
+  MEDIUM:   { hex: 'rgb(var(--ds-sev-medium))', label: 'Medium',   rank: 2 },
+  LOW:      { hex: 'rgb(var(--ds-sev-low))', label: 'Low',      rank: 1 },
 }
 const ORDER = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
 
@@ -136,108 +142,81 @@ function CaseQueue() {
   }, [cases])
 
   return (
-    <div className="mx-auto max-w-[88rem] px-5 pb-16 pt-8 sm:px-8">
+    <div className="ds-fade-up" style={{ display: 'grid', gap: 15 }}>
 
-      {/* ═══ the statement ═══════════════════════════════════════════ */}
-      <header className="hair-b pb-7">
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <div className="min-w-0">
-            <p className="eyebrow text-slate-500">Case review</p>
-            <h1 className="display mt-3 text-[2.75rem] text-slate-100 sm:text-[3.5rem]">
-              {cases.length === 0 ? (
-                <>The desk is <span className="display-italic text-slate-500">clear.</span></>
-              ) : stats.urgent > 0 ? (
-                <>
-                  {cases.length} case{cases.length === 1 ? '' : 's'}.{' '}
-                  <span className="display-italic" style={{ color: SEV.CRITICAL.hex }}>
-                    {stats.urgent} can&rsquo;t wait.
-                  </span>
-                </>
-              ) : (
-                <>
-                  {cases.length} case{cases.length === 1 ? '' : 's'}.{' '}
-                  <span className="display-italic text-slate-500">None urgent.</span>
-                </>
-              )}
-            </h1>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-400">
-              What the models caught, newest first. Decisions here are recorded
-              against your name and feed the retraining set — so confirm what you
-              are sure of, and leave the rest open.
-            </p>
-          </div>
+      {/* ── the figures, then the queue ── */}
+      <div style={{ display: 'grid', gap: 11,
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+        <Metric label={filter === 'all' ? 'All cases' : REVIEW_LABEL[filter]}
+                value={cases.length} meta="in this view" tone="accent" />
+        {ORDER.map((k) => (
+          <Metric key={k} label={SEV[k].label} value={stats.sev[k] ?? 0}
+                  meta={stats.sev[k] ? 'awaiting a decision' : 'none'}
+                  tone={k === 'CRITICAL' && stats.sev[k] ? 'alert' : ''} />
+        ))}
+        <Metric label="Ground truth" value={stats.labelled} meta="labelled by the source file" />
+      </div>
 
-          <div className="flex items-end gap-6">
-            <button
-              onClick={() => {
-                setBriefOpen((o) => !o)
-                if (!brief) getBriefing().then(setBrief).catch(() => {})
-              }}
-              className="hair border-b pb-1 text-sm text-slate-300 transition-colors hover:text-slate-100"
-            >
-              Daily briefing {briefOpen ? '↑' : '↓'}
+      <div style={{ display: 'flex', justifyContent: 'space-between',
+                    gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {FILTERS.map(([f, label]) => (
+            <button key={f} onClick={() => setFilter(f)}
+                    className={`ds-btn ${filter === f ? 'ds-btn-primary' : 'ds-btn-quiet'}`}>
+              {label}
             </button>
-          </div>
-        </div>
-
-        {/* the ledger */}
-        <dl className="mt-7 grid grid-cols-2 gap-y-5 sm:grid-cols-3 lg:grid-cols-6">
-          <Figure value={cases.length} label={filter === 'all' ? 'All cases' : REVIEW_LABEL[filter]} />
-          {ORDER.map((k) => (
-            <Figure key={k} value={stats.sev[k] ?? 0} label={SEV[k].label} hex={stats.sev[k] ? SEV[k].hex : undefined} />
           ))}
-          <Figure value={stats.labelled} label="Ground truth" />
-        </dl>
-      </header>
+        </div>
+        <button className="ds-btn" onClick={() => {
+          setBriefOpen((o) => !o)
+          if (!brief) getBriefing().then(setBrief).catch(() => {})
+        }}>
+          Daily briefing {briefOpen ? '↑' : '↓'}
+        </button>
+      </div>
 
       {/* ── briefing, folded away until asked for ── */}
       {briefOpen && (
-        <section className="hair-b py-5">
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold text-slate-100">Last 24 hours</h2>
-              <p className="mt-0.5 text-xs text-slate-500">
-                What was caught, and what is still waiting for someone.
-              </p>
-            </div>
-            <button
+        <Panel className="ds-panel-pad">
+          <SectionHeading
+            label="Last 24 hours" title="What was caught, and what is still waiting"
+            action={<button className="ds-btn ds-btn-quiet"
               onClick={() => sendBriefing()
                 .then(() => setBrief((b) => ({ ...(b || {}), sent: true })))
-                .catch((e) => setError(e?.response?.data?.detail ?? 'Send failed.'))}
-              className="text-xs text-accent-400 transition-colors hover:text-accent-300"
-            >
+                .catch((e) => setError(e?.response?.data?.detail ?? 'Send failed.'))}>
               Email it →
-            </button>
-          </div>
-          {brief?.sent && <p className="mt-3 text-xs text-risk-low">Briefing sent.</p>}
-          <pre className="numeric mt-4 max-h-64 overflow-auto whitespace-pre-wrap text-[11px] leading-relaxed text-slate-400">
+            </button>}
+          />
+          {brief?.sent && (
+            <div style={{ fontSize: 14, color: 'rgb(var(--ds-accent-strong))', marginBottom: 8 }}>
+              Briefing sent.
+            </div>
+          )}
+          <pre className="ds-mono ds-scroll" style={{ maxHeight: 240, overflow: 'auto',
+                whiteSpace: 'pre-wrap', fontSize: 14, lineHeight: 1.6, margin: 0,
+                color: 'rgb(var(--ds-muted))' }}>
             {brief?.text ?? 'Loading…'}
           </pre>
-        </section>
+        </Panel>
       )}
 
-      {error && <div className="mt-6"><Alert tone="error">{error}</Alert></div>}
+      {error && (
+        <div style={{ background: 'rgb(var(--ds-signal-soft))', color: 'rgb(var(--ds-signal))',
+                      borderRadius: 6, padding: 11, fontSize: 15 }}>{error}</div>
+      )}
 
       {/* ═══ list · preview ══════════════════════════════════════════ */}
-      <div className="mt-7 grid gap-8 lg:grid-cols-[24rem_minmax(0,1fr)]">
+      <div style={{ display: 'grid', gap: 12,
+                    gridTemplateColumns: 'minmax(0, 24rem) minmax(0, 1fr)' }}>
 
         {/* ── the queue itself ── */}
-        <div className="min-w-0 lg:hair-r lg:pr-7">
-          <div className="hair-b flex flex-wrap items-center gap-x-4 gap-y-1 pb-2.5">
-            {FILTERS.map(([f, label]) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={cx(
-                  'text-xs transition-colors',
-                  filter === f ? 'font-semibold text-slate-100' : 'text-slate-500 hover:text-slate-300',
-                )}
-              >
-                {label}
-              </button>
-            ))}
+        <Panel style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '17px 17px 0' }}>
+            <SectionHeading label="Queue" title={`${cases.length} in view`}
+              action={<span className="ds-mono" style={{ fontSize: 14,
+                      color: 'rgb(var(--ds-muted))' }}>newest first</span>} />
           </div>
-
+          <div style={{ padding: '0 10px 12px' }}>
           {cases.length === 0 ? (
             <p className="py-10 text-center text-sm text-slate-500">
               {filter === 'open' ? 'No cases are waiting for review.' : 'No cases with that status.'}
@@ -254,17 +233,22 @@ function CaseQueue() {
                     i === cursor ? 'bg-surface-raised' : 'hover:bg-surface',
                   )}
                 >
-                  <span className="h-7 w-[3px] shrink-0 rounded-full"
-                        style={{ background: SEV[c.classification]?.hex ?? '#64748b' }} />
+                  {/* Rank, not just hue. The stripe alone was invisible on a
+                      projector and gone entirely in a printed case list. */}
+                  <Severity level={c.classification} showLabel={false}
+                            className="shrink-0" />
+                  {/* The selected row used a fixed near-white ink, which is
+                      invisible on the light theme's paper ground. */}
                   <span className="numeric w-12 shrink-0 text-sm"
-                        style={{ color: i === cursor ? '#f0ede7' : undefined }}>
-                    <span className={i === cursor ? '' : 'text-slate-300'}>{score(c.fused_score)}</span>
+                        style={{ color: i === cursor
+                          ? 'rgb(var(--ds-ink))' : 'rgb(var(--ds-muted))' }}>
+                    {score(c.fused_score)}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-xs text-slate-400">
                       {tidy(c.graph_pattern) ?? tidy(c.typology_name) ?? 'no typology matched'}
                     </span>
-                    <span className="numeric block truncate text-[10px] text-slate-600">
+                    <span className="numeric block truncate text-[14px] text-slate-600">
                       {c.case_ref}
                     </span>
                   </span>
@@ -273,7 +257,7 @@ function CaseQueue() {
                       c.label_is_fraud ? 'bg-risk-critical' : 'bg-slate-700')}
                       title={c.label_is_fraud ? 'labelled fraud' : 'labelled clean'} />
                   )}
-                  <span className="w-8 shrink-0 text-right text-[10px] text-slate-600">
+                  <span className="w-8 shrink-0 text-right text-[14px] text-slate-600">
                     {since(c.detected_at)}
                   </span>
                 </button>
@@ -281,14 +265,16 @@ function CaseQueue() {
             </div>
           )}
 
-          <p className="mt-4 text-[10px] leading-relaxed text-slate-600">
+          </div>
+          <div style={{ padding: '11px 17px 15px', borderTop: '1px solid rgb(var(--ds-line))',
+                        fontSize: 13, color: 'rgb(var(--ds-faint))', lineHeight: 1.7 }}>
             <Key>j</Key><Key>k</Key> move · <Key>f</Key> confirm fraud ·{' '}
             <Key>d</Key> false positive · <Key>i</Key> investigating · <Key>↵</Key> open in full
-          </p>
-        </div>
+          </div>
+        </Panel>
 
         {/* ── the case under the cursor ── */}
-        <div className="min-w-0">
+        <Panel className="ds-panel-pad" style={{ minWidth: 0 }}>
           {selected
             ? <Preview key={selected.case_ref} c={selected} busy={busy} onDecide={decide} />
             : (
@@ -301,8 +287,10 @@ function CaseQueue() {
                 </div>
               </div>
             )}
-        </div>
+        </Panel>
       </div>
+
+      <Footer left="Decisions are attributed and audited." />
     </div>
   )
 }
@@ -311,15 +299,15 @@ function CaseQueue() {
 
 function Preview({ c, busy, onDecide }) {
   const navigate = useNavigate()
-  const sev = SEV[c.classification] ?? { hex: '#64748b', label: c.classification }
+  const sev = SEV[c.classification] ?? { hex: 'rgb(var(--ds-faint))', label: c.classification }
 
   return (
     <div>
       <div className="hair-b flex flex-wrap items-end justify-between gap-4 pb-4">
         <div className="min-w-0">
-          <p className="eyebrow text-slate-500">
-            <span style={{ color: sev.hex }}>{sev.label}</span>
-            <span className="text-slate-600"> · {when(c.detected_at)}</span>
+          <p className="eyebrow flex items-center gap-2 text-slate-500">
+            <Severity level={c.classification} />
+            <span className="text-slate-600">· {when(c.detected_at)}</span>
           </p>
           <p className="display mt-2 text-[2rem] leading-none text-slate-100">
             {score(c.fused_score)}
@@ -327,7 +315,7 @@ function Preview({ c, busy, onDecide }) {
               {tidy(c.graph_pattern) ?? tidy(c.typology_name) ?? 'no typology matched'}
             </span>
           </p>
-          <p className="numeric mt-2 text-[11px] text-slate-600">{c.case_ref}</p>
+          <p className="numeric mt-2 text-[15px] text-slate-600">{c.case_ref}</p>
         </div>
         <button
           onClick={() => navigate(`/cases/${c.case_ref}`)}
@@ -371,7 +359,7 @@ function Preview({ c, busy, onDecide }) {
           Investigating
         </Verdict>
         {c.label_is_fraud !== null && c.label_is_fraud !== undefined && (
-          <span className="ml-auto text-[11px] text-slate-500">
+          <span className="ml-auto text-[15px] text-slate-500">
             Source file says{' '}
             <b style={{ color: c.label_is_fraud ? SEV.CRITICAL.hex : undefined }}
                className={c.label_is_fraud ? '' : 'text-slate-300'}>
@@ -407,15 +395,15 @@ function ModalityStrip({ c }) {
                    style={{ width: `${Math.max(2, v * 100)}%`, background: `rgb(${hue})` }} />
             )}
           </div>
-          <p className="mt-1.5 text-[10px] text-slate-600">
+          <p className="mt-1.5 text-[14px] text-slate-600">
             {ok ? 'contributed' : 'not deployed'}
           </p>
         </div>
       ))}
       {c.uncertainty_penalty_applied && (
-        <p className="text-[10px] leading-relaxed text-slate-500 sm:col-span-3">
+        <p className="text-[14px] leading-relaxed text-slate-500 sm:col-span-3">
           Only {c.modalities_used} of 3 detectors contributed, so an uncertainty
-          penalty was applied — this confidence is deliberately conservative.
+          penalty was applied.
         </p>
       )}
     </div>
@@ -448,7 +436,7 @@ function CaseDetail({ caseRef }) {
   if (error) return <div className="mx-auto max-w-3xl px-5 py-10"><Alert tone="error">{error}</Alert></div>
   if (!c) return <div className="mx-auto max-w-3xl px-5 py-10 text-sm text-slate-500">Loading…</div>
 
-  const sev = SEV[c.classification] ?? { hex: '#64748b', label: c.classification }
+  const sev = SEV[c.classification] ?? { hex: 'rgb(var(--ds-faint))', label: c.classification }
   const nodes = c.graph_evidence?.nodes?.length ?? 0
 
   return (
@@ -506,15 +494,19 @@ function CaseDetail({ caseRef }) {
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="min-w-0 space-y-8">
 
+          <ModalityVerdict c={c} />
+
+          <CaseMechanism c={c} />
+
           {nodes >= 2 ? (
             <section>
               <div className="hair-b flex flex-wrap items-baseline gap-3 pb-2.5">
                 <h2 className="text-sm font-semibold text-slate-100">The network</h2>
-                <span className="text-[11px] text-slate-500">
+                <span className="text-[15px] text-slate-500">
                   edge thickness is the attention the model paid
                 </span>
                 {c.sink_account && (
-                  <span className="numeric ml-auto text-[11px] text-slate-600">
+                  <span className="numeric ml-auto text-[15px] text-slate-600">
                     sink {c.sink_account}
                   </span>
                 )}
@@ -533,11 +525,57 @@ function CaseDetail({ caseRef }) {
             </section>
           )}
 
+          {/* Each detector's own evidence, in the modality order used
+              everywhere else. The drawing above is the relational model's
+              subgraph; this is what it read off it — pattern, sink, the
+              transfers ranked by attention, the accounts implicated and their
+              roles. Without it the case gives the behavioural model a full
+              account of itself and the other two a picture. */}
+          {c.graph_evidence && <GraphEvidence evidence={c.graph_evidence} />}
+
+          {c.behavioral_evidence ? (
+            <BehaviouralEvidence evidence={c.behavioral_evidence} />
+          ) : c.behavioral_available ? (
+            <section className="hair rounded-xl border border-dashed px-6 py-8 text-center">
+              <p className="text-sm text-slate-400">
+                The behavioural detector scored this case, but no attribution was
+                recorded with it.
+              </p>
+              <p className="mx-auto mt-1.5 max-w-md text-xs leading-relaxed text-slate-600">
+                Cases written before the attribution was stored show the score
+                alone.
+              </p>
+            </section>
+          ) : null}
+
+          {c.temporal_evidence ? (
+            <TemporalEvidence evidence={c.temporal_evidence} />
+          ) : (
+            // Rendered rather than omitted: a case that simply stops after two
+            // detectors reads as though there were only ever two. Saying the
+            // third has not shipped is a different statement from saying it
+            // found nothing, and only one of them is true.
+            <section className="hair rounded-xl border border-dashed px-8 py-12 text-center">
+              <p className="display text-2xl text-slate-300">
+                {c.temporal_available
+                  ? 'The temporal detector left no working.'
+                  : 'The temporal detector has not shipped.'}
+              </p>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+                {c.temporal_available
+                  ? 'It scored this case but recorded no evidence with the score.'
+                  : 'When it does, this is where the 32-transaction window ending '
+                    + 'here will appear, with the one earlier transaction it '
+                    + 'weighted most heavily.'}
+              </p>
+            </section>
+          )}
+
           {c.forensic_report && (
             <section>
               <div className="hair-b flex items-baseline justify-between pb-2.5">
                 <h2 className="text-sm font-semibold text-slate-100">Forensic report</h2>
-                <span className="text-[11px] text-slate-500">generated at detection time</span>
+                <span className="text-[15px] text-slate-500">generated at detection time</span>
               </div>
               <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-400">
                 {c.forensic_report}
@@ -548,7 +586,7 @@ function CaseDetail({ caseRef }) {
           <section>
             <div className="hair-b flex items-baseline justify-between pb-2.5">
               <h2 className="text-sm font-semibold text-slate-100">What happened</h2>
-              <span className="text-[11px] text-slate-500">from the recorded timestamps</span>
+              <span className="text-[15px] text-slate-500">from the recorded timestamps</span>
             </div>
             <ol className="mt-5 space-y-0">
               {(c.timeline ?? []).map((t, i, arr) => (
@@ -560,7 +598,7 @@ function CaseDetail({ caseRef }) {
                   <div className="min-w-0 pb-1">
                     <p className="text-sm font-medium text-slate-200">{t.stage}</p>
                     <p className="mt-0.5 text-xs text-slate-400">{t.detail}</p>
-                    <p className="numeric mt-0.5 text-[10px] text-slate-600">{when(t.at)}</p>
+                    <p className="numeric mt-0.5 text-[14px] text-slate-600">{when(t.at)}</p>
                   </div>
                 </li>
               ))}
@@ -573,12 +611,12 @@ function CaseDetail({ caseRef }) {
           <section className="print:hidden">
             <div className="flex items-baseline justify-between">
               <h3 className="text-xs font-semibold text-slate-200">Review</h3>
-              <span className="text-[10px] text-slate-600">
+              <span className="text-[14px] text-slate-600">
                 {REVIEW_LABEL[c.review_status] ?? c.review_status}
               </span>
             </div>
             {c.reviewed_by && (
-              <p className="mt-2 text-[11px] text-slate-500">
+              <p className="mt-2 text-[15px] text-slate-500">
                 {c.reviewed_by} · {when(c.reviewed_at)}
               </p>
             )}
@@ -590,7 +628,7 @@ function CaseDetail({ caseRef }) {
               <Verdict onClick={() => decide('investigating')} k="" block>Investigating</Verdict>
               <Verdict onClick={() => decide('closed')} k="" block>Close</Verdict>
             </div>
-            <p className="mt-3 text-[10px] leading-relaxed text-slate-600">
+            <p className="mt-3 text-[14px] leading-relaxed text-slate-600">
               Recorded against your name and used to build the retraining set.
             </p>
           </section>
@@ -601,7 +639,7 @@ function CaseDetail({ caseRef }) {
               {c.typology_name ?? 'None matched'}
             </p>
             {c.typology_id && (
-              <p className="numeric mt-1 text-[10px] text-slate-600">{c.typology_id}</p>
+              <p className="numeric mt-1 text-[14px] text-slate-600">{c.typology_id}</p>
             )}
           </section>
 
@@ -610,7 +648,7 @@ function CaseDetail({ caseRef }) {
             {c.alert_sent ? (
               <>
                 <p className="mt-2 text-xs text-slate-400">Sent {when(c.alerted_at)}</p>
-                <p className="mt-1 text-[10px] text-slate-600">
+                <p className="mt-1 text-[14px] text-slate-600">
                   {(c.recipients ?? []).length} recipient
                   {(c.recipients ?? []).length === 1 ? '' : 's'}
                 </p>
@@ -630,7 +668,7 @@ function CaseDetail({ caseRef }) {
                   {c.label_is_fraud ? 'Fraud' : 'Not fraud'}
                 </span>
               </p>
-              <p className="mt-1.5 text-[10px] leading-relaxed text-slate-600">
+              <p className="mt-1.5 text-[14px] leading-relaxed text-slate-600">
                 From the source file. Shown for measuring the system after the
                 fact — it was not available to any model at scoring time.
               </p>
@@ -668,16 +706,16 @@ function Verdict({ onClick, disabled, k, primary, block, children }) {
       onClick={onClick}
       disabled={disabled}
       className={cx(
-        'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50',
+        'inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
         block && 'w-full justify-between',
         primary
-          ? 'bg-accent-500 text-[#04231f] hover:bg-accent-400'
-          : 'bg-surface-raised text-slate-300 hover:bg-surface-hover hover:text-slate-100',
+          ? 'bg-accent-500 text-[#04231f] hover:bg-accent-400 disabled:bg-surface-raised disabled:text-slate-500'
+          : 'bg-surface-raised text-slate-300 hover:bg-surface-hover hover:text-slate-100 disabled:opacity-50',
       )}
     >
       {children}
       {k && (
-        <kbd className={cx('numeric rounded px-1 text-[10px]',
+        <kbd className={cx('numeric rounded px-1 text-[14px]',
           primary ? 'bg-black/20' : 'bg-surface-overlay text-slate-500')}>
           {k}
         </kbd>
@@ -688,7 +726,8 @@ function Verdict({ onClick, disabled, k, primary, block, children }) {
 
 function Key({ children }) {
   return (
-    <kbd className="numeric mx-0.5 rounded bg-surface-overlay px-1 py-0.5 text-[10px] text-slate-400">
+    <kbd className="ds-mono" style={{ margin: '0 2px', borderRadius: 3, padding: '1px 4px',
+          background: 'rgb(var(--ds-surface-3))', color: 'rgb(var(--ds-muted))', fontSize: 13 }}>
       {children}
     </kbd>
   )

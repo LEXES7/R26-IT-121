@@ -60,7 +60,7 @@ const FAQS = [
       },
       {
         q: 'What is the Ablation Study toggle?',
-        a: 'The ablation study runs the same fraud scenario through two versions simultaneously: the Baseline LLM (no RAG — receives only the raw scores and generates freely) and DeepSentinel (full RAG-grounded system). Side by side, you can see the baseline hallucinating fraud patterns it was not told about, while DeepSentinel anchors every claim to the retrieved FATF definition. This is the core proof of the research novelty.',
+        a: 'The ablation study runs the same fraud scenario through two versions simultaneously: the Baseline LLM (no RAG — receives only the raw scores and generates freely) and DeepSentinel (full RAG-grounded system). Side by side, you can see the baseline hallucinating fraud patterns it was not told about, while DeepSentinel anchors every claim to the retrieved FATF definition. It is how you check that a report is grounded rather than invented.',
       },
       {
         q: 'What does the cosine similarity score on the FATF match mean?',
@@ -74,16 +74,26 @@ const FAQS = [
   },
 ]
 
+// The open state used bg-blue-500/5 and border-blue-500/50 — a blue that
+// appears nowhere else in this product. Accent teal now, like everything else
+// that means "selected".
 function AccordionItem({ q, a }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className={`border rounded-xl overflow-hidden transition-colors ${open ? 'border-accent-500/30 bg-blue-500/5' : 'border-white/7 bg-white/[0.02]'}`}>
+    <div className={cx('glass card-hover overflow-hidden rounded-xl',
+                       open && 'border-accent-500/35')}>
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left gap-4"
+        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
       >
-        <span className={`font-medium text-sm ${open ? 'text-slate-200' : 'text-slate-300'}`}>{q}</span>
-        <span className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center text-xs transition-all ${open ? 'border-blue-500/50 text-accent-500 rotate-45' : 'border-white/15 text-slate-500'}`}>
+        <span className={cx('text-sm font-medium transition-colors',
+                            open ? 'text-slate-100' : 'text-slate-300')}>{q}</span>
+        <span className={cx(
+          'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border text-xs',
+          'transition-transform duration-300',
+          open ? 'rotate-45 border-accent-400/60 text-accent-400' : 'border-white/15 text-slate-500',
+        )}
+              style={{ transitionTimingFunction: 'var(--ease-hover)' }}>
           +
         </span>
       </button>
@@ -122,7 +132,6 @@ export default function FAQ() {
     <div className="pb-24">
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden border-b border-subtle">
-        <div aria-hidden className="pointer-events-none absolute inset-0 grid-bg" />
         <div
           aria-hidden
           className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-accent-500/10 blur-[120px]"
@@ -153,7 +162,7 @@ export default function FAQ() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search the answers…"
                 aria-label="Search questions"
-                className="w-full rounded-xl border border-subtle bg-surface py-3 pl-10 pr-4 text-sm text-slate-200 placeholder:text-slate-600 focus:border-strong focus:outline-none"
+                className="glass w-full rounded-xl py-3 pl-10 pr-4 text-sm text-slate-200 placeholder:text-slate-600 focus:border-strong focus:outline-none"
               />
             </div>
           </Reveal>
@@ -207,7 +216,7 @@ export default function FAQ() {
 
         {/* ── CTA ──────────────────────────────────────────────────────── */}
         <Reveal className="mt-20">
-          <div className="relative overflow-hidden rounded-2xl border border-subtle bg-surface p-8 text-center sm:p-10">
+          <div className="glass card-hover relative overflow-hidden rounded-2xl p-8 text-center sm:p-10">
             <div
               aria-hidden
               className="pointer-events-none absolute inset-x-0 -top-24 h-48 bg-accent-500/10 blur-3xl"
@@ -222,7 +231,7 @@ export default function FAQ() {
               <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <Link
                   to="/analyzer"
-                  className="rounded-xl bg-white px-6 py-3 text-sm font-semibold text-sentinel-950 transition hover:bg-slate-200"
+                  className="shine lift rounded-xl bg-white px-6 py-3 text-sm font-semibold text-sentinel-950"
                 >
                   Open the analyzer
                 </Link>

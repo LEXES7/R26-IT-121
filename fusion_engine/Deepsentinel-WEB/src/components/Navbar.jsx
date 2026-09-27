@@ -1,6 +1,6 @@
 import Logo from './Logo'
 import ThemeToggle from './ThemeToggle'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ROLE_LABELS, useAuth } from '../context/AuthContext'
 import { Badge, cx } from './ui'
@@ -26,6 +26,42 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [openMenu, setOpenMenu] = useState(null) // 'admin' | 'user' | null
   const navRef = useRef(null)
+  // The pill that slides between links, and whether the page has moved.
+  // Both are paint concerns; the pill is measured from the DOM rather than
+  // computed from a layout guess, so it stays right when the font or the
+  // link set changes.
+  const linksRef = useRef(null)
+  const [pill, setPill] = useState({ left: 0, width: 0, on: false })
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const movePill = (el) => {
+    const box = linksRef.current
+    if (!box || !el) return
+    const b = box.getBoundingClientRect()
+    const r = el.getBoundingClientRect()
+    setPill({ left: r.left - b.left, width: r.width, on: true })
+  }
+
+  /* At rest the pill sits on the current page, so it marks where you are as
+     well as where the pointer is — the underline it replaced did that, and
+     losing it would leave the bar with no sense of place. It re-measures on
+     navigation and on resize, because the link widths move with both. */
+  const restPill = useCallback(() => {
+    const box = linksRef.current
+    const active = box?.querySelector('[aria-current="page"]')
+    if (!active) return setPill((p) => ({ ...p, on: false }))
+    const b = box.getBoundingClientRect()
+    const r = active.getBoundingClientRect()
+    setPill({ left: r.left - b.left, width: r.width, on: true })
+  }, [])
+
 
   const primary = auth.isAuthenticated
     ? [
@@ -42,7 +78,9 @@ export default function Navbar() {
         { to: '/', label: 'Overview' },
         { to: '/components/network', label: 'Components' },
         { to: '/about', label: 'Architecture' },
+        { to: '/pricing', label: 'Pricing' },
         { to: '/faq', label: 'FAQ' },
+        { to: '/live', label: 'Live map' },
       ]
 
   const adminLinks = [
@@ -96,30 +134,49 @@ export default function Navbar() {
     .join('')
     .toUpperCase()
 
+  useEffect(() => {
+    // After paint: the links have to be laid out before they can be measured.
+    const id = requestAnimationFrame(restPill)
+    window.addEventListener('resize', restPill)
+    return () => {
+      cancelAnimationFrame(id)
+      window.removeEventListener('resize', restPill)
+    }
+  }, [restPill, pathname, primary.length])
+
   const isAdminSectionActive = adminLinks.some((l) => l.to === pathname)
 
   return (
     <nav
       ref={navRef}
-      className="hair-b sticky top-0 z-50 bg-sentinel-950/80 backdrop-blur-xl"
+      data-scrolled={scrolled}
+      className="liquid nav-liquid"
     >
-      <div className="mx-auto flex h-[3.75rem] max-w-[88rem] items-center justify-between gap-6 px-5 sm:px-8">
+      <div className="flex h-[3.75rem] items-center justify-between gap-6 px-5 sm:px-7">
         <Link to="/" className="shrink-0" aria-label="DeepSentinel home">
           <Logo />
         </Link>
 
         {/* Desktop navigation */}
-        <div className="hidden items-center gap-6 lg:flex">
+        <div
+          ref={linksRef}
+          onMouseLeave={restPill}
+          className="relative hidden items-center gap-1 lg:flex"
+        >
+          <span className="nav-pill" data-on={pill.on}
+                style={{ left: pill.left, width: pill.width }} />
           {primary.map((l) => (
             <Link
               key={l.to}
               to={l.to}
               aria-current={pathname === l.to ? 'page' : undefined}
+              onMouseEnter={(e) => movePill(e.currentTarget)}
+              onFocus={(e) => movePill(e.currentTarget)}
               className={cx(
-                'relative py-2 text-[0.8125rem] transition-colors',
+                'relative z-10 rounded-full px-3 py-1.5 text-[0.8125rem] transition-colors',
                 pathname === l.to
-                  ? 'font-medium text-slate-100 after:absolute after:-bottom-[1.3rem] after:left-0 after:h-px after:w-full after:bg-accent-400'
-                  : 'text-slate-500 hover:text-slate-200',
+                  ? 'font-medium text-slate-100'
+                  : 'text-slate-400 hover:text-slate-100',
               )}
             >
               {l.label}
@@ -142,7 +199,7 @@ export default function Navbar() {
                 Administration
                 <span
                   className={cx(
-                    'text-[9px] transition-transform',
+                    'text-[13px] transition-transform',
                     openMenu === 'admin' && 'rotate-180',
                   )}
                 >
@@ -170,7 +227,7 @@ export default function Navbar() {
                         )}
                       >
                         <span className="block text-sm text-slate-200">{l.label}</span>
-                        <span className="mt-0.5 block text-[11px] text-slate-600">
+                        <span className="mt-0.5 block text-[15px] text-slate-600">
                           {l.detail}
                         </span>
                       </Link>
@@ -192,7 +249,7 @@ export default function Navbar() {
                 aria-haspopup="menu"
                 className="flex items-center gap-2 rounded-lg py-1.5 pl-1.5 pr-2.5 transition-colors hover:bg-surface-raised"
               >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-slate-600 to-slate-700 text-[11px] font-semibold text-white">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-slate-600 to-slate-700 text-[15px] font-semibold text-white">
                   {initials}
                 </span>
                 <span className="max-w-[9rem] truncate text-sm text-slate-300">
@@ -200,7 +257,7 @@ export default function Navbar() {
                 </span>
                 <span
                   className={cx(
-                    'text-[9px] text-slate-600 transition-transform',
+                    'text-[13px] text-slate-600 transition-transform',
                     openMenu === 'user' && 'rotate-180',
                   )}
                 >
@@ -294,7 +351,7 @@ export default function Navbar() {
 
           {adminLinks.length > 0 && (
             <div className="pt-3">
-              <p className="px-4 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+              <p className="px-4 pb-1.5 text-[14px] font-semibold uppercase tracking-wider text-slate-600">
                 Administration
               </p>
               {adminLinks.map((l) => (
@@ -316,7 +373,7 @@ export default function Navbar() {
                   >
                     {l.label}
                   </span>
-                  <span className="mt-0.5 block text-[11px] text-slate-600">{l.detail}</span>
+                  <span className="mt-0.5 block text-[15px] text-slate-600">{l.detail}</span>
                 </Link>
               ))}
             </div>

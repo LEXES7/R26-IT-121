@@ -40,21 +40,23 @@ import { cx } from './ui'
 // hold bare RGB channels for Tailwind's `rgb(var(x) / a)` syntax — so neither
 // can be passed to SVG as `var(--x)`. These mirror the config exactly; if the
 // palette changes there, change it here too.
+// Roles sit on the same measured scale as severity, so a red node here and a
+// Critical badge elsewhere mean the same thing and are the same colour.
 const ROLE = {
-  SINK:          { fill: '#ef4444', label: 'Sink',          r: 21 },
-  MULE_CENTRAL:  { fill: '#ef4444', label: 'Central mule',  r: 21 },
-  MULE:          { fill: '#f97316', label: 'Mule',          r: 15 },
-  FRESH_SENDER:  { fill: '#eab308', label: 'Fresh sender',  r: 12 },
-  SENDER:        { fill: '#0f9b8e', label: 'Sender',        r: 12 },
-  INTERMEDIARY:  { fill: '#c2740a', label: 'Intermediary',  r: 14 },
-  LEGITIMATE:    { fill: '#6c655d', label: 'Not implicated', r: 11 },
+  SINK:          { fill: 'rgb(var(--ds-sev-critical))', label: 'Sink',          r: 21 },
+  MULE_CENTRAL:  { fill: 'rgb(var(--ds-sev-critical))', label: 'Central mule',  r: 21 },
+  MULE:          { fill: 'rgb(var(--ds-sev-high))',     label: 'Mule',          r: 15 },
+  INTERMEDIARY:  { fill: 'rgb(var(--ds-sev-medium))',   label: 'Intermediary',  r: 14 },
+  FRESH_SENDER:  { fill: 'rgb(var(--ds-warn))',         label: 'Fresh sender',  r: 12 },
+  SENDER:        { fill: 'rgb(var(--ds-sev-low))',      label: 'Sender',        r: 12 },
+  LEGITIMATE:    { fill: 'rgb(var(--ds-faint))',        label: 'Not implicated', r: 11 },
 }
-const FALLBACK = { fill: '#0f9b8e', label: 'Account', r: 12 }
+const FALLBACK = { fill: 'rgb(var(--ds-sev-low))', label: 'Account', r: 12 }
 const role = (n) => ROLE[n?.role] ?? FALLBACK
 
-const HAIR = 'rgb(148 163 184 / 0.22)'
-const LABEL = 'rgb(148 163 184)'
-const TRIGGER = '#2dd4bf'
+const HAIR = 'rgb(var(--ds-line))'
+const LABEL = 'rgb(var(--ds-muted))'
+const TRIGGER = 'rgb(var(--ds-accent-strong))'
 
 const money = (n) =>
   typeof n === 'number'
@@ -248,6 +250,9 @@ export default function NetworkGraph({ evidence, height = 420 }) {
   const [clock, setClock] = useState(null)     // current step during playback
   const frame = useRef(null)
   const still = useMemo(reduceMotion, [])
+  // Read once at mount; the theme toggle re-renders the tree anyway.
+  const light = typeof document !== 'undefined'
+    && document.documentElement.dataset.theme === 'light'
 
   const nodes = evidence?.nodes ?? []
   const edges = evidence?.edges ?? []
@@ -317,14 +322,14 @@ export default function NetworkGraph({ evidence, height = 420 }) {
           step further away, and thicker lines counted for more.
         </p>
         <div className="ml-auto flex items-center gap-3">
-          <span className="numeric text-[11px] text-slate-500">
+          <span className="numeric text-[15px] text-slate-500">
             {nodes.length} accounts · {edges.length} transfers
           </span>
           {steps.length > 1 ? (
             <button
               onClick={() => setPlaying((p) => !p)}
               className={cx(
-                'rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors',
+                'rounded-md px-2.5 py-1 text-[15px] font-medium transition-colors',
                 playing
                   ? 'text-slate-400 hover:text-slate-200'
                   : 'bg-accent-500/15 text-accent-300 hover:bg-accent-500/25',
@@ -335,7 +340,7 @@ export default function NetworkGraph({ evidence, height = 420 }) {
           ) : (
             // Say why there is nothing to play rather than omitting the control
             // and leaving the reader to wonder whether it failed.
-            <span className="text-[10px] text-slate-600">single transfer</span>
+            <span className="text-[14px] text-slate-600">single transfer</span>
           )}
         </div>
       </div>
@@ -356,9 +361,13 @@ export default function NetworkGraph({ evidence, height = 420 }) {
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
+            {/* Barely there on a dark ground, absent on a light one: at the
+                opacity that reads as depth against near-black, the same wash
+                is a pink stain on paper. */}
             <radialGradient id="ng-vignette">
-              <stop offset="55%" stopColor="#ef4444" stopOpacity="0.07" />
-              <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+              <stop offset="55%" stopColor="rgb(var(--ds-sev-critical))"
+                    stopOpacity={light ? 0.015 : 0.07} />
+              <stop offset="100%" stopColor="rgb(var(--ds-sev-critical))" stopOpacity="0" />
             </radialGradient>
             {edges.map((e, i) => {
               const a = pos[e.src]
@@ -508,7 +517,7 @@ export default function NetworkGraph({ evidence, height = 420 }) {
                 <circle
                   r={r} fill={rl.fill}
                   fillOpacity={isCentre ? 0.92 : 0.8}
-                  stroke={focused ? TRIGGER : 'rgb(13 12 11 / 0.55)'}
+                  stroke={focused ? TRIGGER : 'rgb(var(--ds-surface))'}
                   strokeWidth={focused ? 2.5 : 1.5}
                 />
 
@@ -525,7 +534,7 @@ export default function NetworkGraph({ evidence, height = 420 }) {
                 {named && (
                   <text
                     y={arcR + 12} textAnchor="middle" fontSize="8.5"
-                    fill={focused ? '#f0ede7' : LABEL}
+                    fill={focused ? 'rgb(var(--ds-ink))' : LABEL}
                     fontFamily="ui-monospace, monospace"
                   >
                     {n.account_id.slice(0, 9)}
@@ -542,14 +551,14 @@ export default function NetworkGraph({ evidence, height = 420 }) {
         {[...new Set(nodes.map((n) => n.role))].map((r) => {
           const rl = ROLE[r] ?? FALLBACK
           return (
-            <span key={r} className="flex items-center gap-1.5 text-[11px] text-slate-400">
+            <span key={r} className="flex items-center gap-1.5 text-[15px] text-slate-400">
               <span className="inline-block h-2.5 w-2.5 rounded-full"
                     style={{ background: rl.fill }} />
               {rl.label}
             </span>
           )
         })}
-        <span className="flex items-center gap-1.5 text-[11px] text-slate-600">
+        <span className="flex items-center gap-1.5 text-[15px] text-slate-600">
           <svg width="18" height="8" aria-hidden>
             <circle cx="3" cy="4" r="2" fill={LABEL} opacity="0.7" />
             <circle cx="10" cy="4" r="2" fill={LABEL} opacity="0.45" />
@@ -558,7 +567,7 @@ export default function NetworkGraph({ evidence, height = 420 }) {
           direction of funds
         </span>
         {clock !== null && (
-          <span className="numeric ml-auto text-[11px] text-accent-400">
+          <span className="numeric ml-auto text-[15px] text-accent-400">
             step {clock}
           </span>
         )}
@@ -573,7 +582,7 @@ export default function NetworkGraph({ evidence, height = 420 }) {
                 {detail.account_id}
               </p>
               <span
-                className="rounded-md px-2 py-0.5 text-[11px] font-medium"
+                className="rounded-md px-2 py-0.5 text-[15px] font-medium"
                 style={{
                   color: role(detail).fill,
                   background: `${role(detail).fill}1f`,
@@ -597,7 +606,7 @@ export default function NetworkGraph({ evidence, height = 420 }) {
                       : `${detail.first_seen_step}–${detail.last_seen_step}`} />
             </dl>
             {detail.first_seen_step === detail.last_seen_step && detail.out_degree > 0 && (
-              <p className="mt-2.5 text-[11px] leading-relaxed text-slate-500">
+              <p className="mt-2.5 text-[15px] leading-relaxed text-slate-500">
                 Active in a single step only — the pattern of an account created to
                 make one transfer.
               </p>

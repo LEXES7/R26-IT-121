@@ -164,6 +164,10 @@ export const getSampleTransaction = () =>
 // Which commercial package this deployment holds, and which features it
 // unlocks. Detection, fusion, alerting and monitoring are never gated.
 
+/** The public price list. No auth — it is what an unsigned-in visitor reads. */
+export const getCatalogue = () =>
+  client.get('/packages/catalogue').then((r) => r.data)
+
 export const getPackage = () => client.get('/packages').then((r) => r.data)
 
 export const setPackage = (pkg) =>
@@ -209,6 +213,50 @@ export const searchTransactions = (q, limit = 40) =>
 export const getStoredTransaction = (transactionId) =>
   client.get(`/transactions/${encodeURIComponent(transactionId)}`)
     .then((r) => r.data)
+
+/** Run one detector alone and return exactly what it said. */
+/* Demo mode — the relational model on its own.
+ *
+ * Separate from every other scoring call in this file because it deliberately
+ * does not fuse: one detector answers, and what is on screen is attributable
+ * to that detector alone. Used for showing the model's inductive behaviour,
+ * not for deciding anything. */
+export const demoScoreAccount = (account, transactions) =>
+  client.post('/graph/demo/score-account', { account, transactions })
+    .then((r) => r.data)
+
+export const demoScoreCsv = (file) => {
+  const body = new FormData()
+  body.append('file', file)
+  return client.post('/graph/demo/score-csv', body).then((r) => r.data)
+}
+
+/** Fill the sequence detector's 32-transaction window so it can answer.
+ *  Real rows from the served graph, not invented ones. */
+export const warmTemporalWindow = () =>
+  client.post('/detectors/temporal/warm').then((r) => r.data)
+
+/** What the network detector is serving, and under what protocol. */
+export const getGraphModel = () => client.get('/graph/model').then((r) => r.data)
+
+/** Each step between three scores and a filed document, checked. */
+export const getFusionStages = () => client.get('/fusion/stages').then((r) => r.data)
+
+/** The meta-classifier's weights, operating point and decisions so far. */
+export const getFusionModel = () => client.get('/fusion/model').then((r) => r.data)
+
+export const scoreOneDetector = (name, transaction) =>
+  client.post(`/detectors/${name}`, { transaction }).then((r) => r.data)
+
+/** The fused operating point the monitor actually alerts on. */
+export const getThresholds = () =>
+  client.get('/settings/thresholds').then((r) => r.data)
+
+export const applyThresholds = (bands) =>
+  client.put('/settings/thresholds', { bands }).then((r) => r.data)
+
+export const resetThresholds = () =>
+  client.delete('/settings/thresholds').then((r) => r.data)
 
 export const listCases = (params = {}) =>
   client.get('/cases', { params }).then((r) => r.data)
@@ -262,11 +310,20 @@ export const getEmailStatus = () => client.get('/email/status').then((r) => r.da
  * takes a while, and the caller should be able to show progress instead of a
  * spinner. Returns an abort function.
  */
-export function analyzeBatch(file, { onEvent, onDone, onError, alertThreshold = 0.6 } = {}) {
+/** `alertThreshold` is omitted unless it is set, so the server falls back to
+ *  the line the live monitor is alerting on. It used to default to 0.6 here —
+ *  a third copy of that number, and the one that actually won, so the same
+ *  file scored in batch and screened live disagreed. */
+export function analyzeBatch(
+  file,
+  { onEvent, onDone, onError, onBytes, alertThreshold } = {},
+) {
   const controller = new AbortController()
   const form = new FormData()
   form.append('file', file)
-  form.append('alert_threshold', String(alertThreshold))
+  if (alertThreshold !== undefined && alertThreshold !== null) {
+    form.append('alert_threshold', String(alertThreshold))
+  }
 
   const token = getToken()
 
@@ -294,9 +351,16 @@ export function analyzeBatch(file, { onEvent, onDone, onError, alertThreshold = 
       const decoder = new TextDecoder()
       let buffer = ''
 
+      // Measured, not estimated. Each chunk off the reader is a Uint8Array of
+      // exactly the bytes that arrived, so the stream monitor reports what the
+      // socket actually delivered rather than a guess from the row count.
+      let bytes = 0
+      let frames = 0
+
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
+        bytes += value.byteLength
         buffer += decoder.decode(value, { stream: true })
 
         const chunks = buffer.split('\n\n')
@@ -312,11 +376,14 @@ export function analyzeBatch(file, { onEvent, onDone, onError, alertThreshold = 
           if (!data.length) continue
           try {
             onEvent?.(name, JSON.parse(data.join('\n')))
+            frames += 1
           } catch {
             /* skip an unparseable frame rather than aborting the run */
           }
         }
+        onBytes?.({ bytes, frames, at: performance.now() })
       }
+      onBytes?.({ bytes, frames, at: performance.now(), done: true })
       onDone?.()
     } catch (err) {
       if (err.name !== 'AbortError') {
@@ -387,6 +454,60 @@ export const resumeMonitor = () => client.post('/api/monitor/resume').then((r) =
 
 export const restartMonitor = (interval) =>
   client.post('/api/monitor/restart', null, { params: { interval } }).then((r) => r.data)
+
+/** Empty the live alert list, activity feed and counters. Administrators only.
+ *  Clears the view, not the record — the cases stay in the database. */
+export const clearMonitor = () => client.post('/api/monitor/clear').then((r) => r.data)
+
+/** The payment graph around one account. Bounded server-side — never the
+ *  whole 3.27M-node graph. */
+export const getNeighbourhood = (account, { scope = 'component', hops = 1,
+                                            maxEdges = 400 } = {}) =>
+  client.get('/graph/neighbourhood', {
+    params: { account, scope, hops, max_edges: maxEdges },
+  }).then((r) => r.data)
+
+export const getGraphSettings = () =>
+  client.get('/graph/settings').then((r) => r.data)
+
+export const setGraphSettings = (patch) =>
+  client.put('/graph/settings', patch).then((r) => r.data)
+
+/** The forensic report's look. Preview is open to anyone signed in; choosing
+ *  is for admins and risk managers, and enforced server-side. */
+export const getReportStyles = () =>
+  client.get('/report-styles').then((r) => r.data)
+
+export const chooseReportStyle = (style) =>
+  client.put('/report-styles/selected', { style }).then((r) => r.data)
+
+/** The preview as a blob URL. Fetched through the client rather than pointed
+ *  at with an <iframe src>, because an iframe cannot carry the bearer token
+ *  and the endpoint requires one. Caller must revokeObjectURL when done. */
+export const reportStylePreviewUrl = (style) =>
+  client.get(`/report-styles/${style}/preview`, { responseType: 'blob' })
+    .then((r) => URL.createObjectURL(
+      new Blob([r.data], { type: 'application/pdf' })))
+
+/** The forensic narrative for one analysis, as a PDF the user keeps.
+ *
+ * Fetched through the client rather than linked to directly: the endpoint
+ * requires a bearer token and an <a href> cannot carry one. Triggers the save
+ * and cleans up the object URL itself, so callers do not have to. */
+export const downloadAnalysisReport = async (analysisId, style) => {
+  const r = await client.get(`/analyses/${analysisId}/report.pdf`, {
+    responseType: 'blob',
+    params: style ? { style } : undefined,
+  })
+  const url = URL.createObjectURL(new Blob([r.data], { type: 'application/pdf' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `deepsentinel-report-${analysisId}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
 
 /** Loop state plus each detector's own runtime — "is the platform working". */
 export const getMonitorRuntime = () =>

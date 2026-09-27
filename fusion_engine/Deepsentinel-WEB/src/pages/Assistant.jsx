@@ -6,6 +6,7 @@ import {
 import {
   Alert, Badge, Card, CardHeader, EmptyState, PageHeader, Spinner, cx,
 } from '../components/ui'
+import { Panel } from '../components/ConsoleShell'
 
 /**
  * Operator assistant — Professional package.
@@ -88,7 +89,7 @@ export default function Assistant() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-16 text-center">
+          <div className="ds-fade-up" style={{ display: 'grid', gap: 15 }}>
         <Spinner className="mx-auto h-6 w-6" />
       </div>
     )
@@ -97,34 +98,24 @@ export default function Assistant() {
   if (!caps?.available) {
     return (
       <div className="mx-auto max-w-4xl px-6 py-10">
-        <PageHeader
-          title="AI assistant"
-          description="Ask questions about live transactions, fraud rings and case history."
-        />
-        <Card className="mt-6">
+        <Panel className="ds-panel-pad">
           <EmptyState
             icon="◆"
             title="Not included in your package"
             description={caps?.reason || 'The AI assistant is not enabled for this account.'}
           />
-        </Card>
+        </Panel>
       </div>
     )
   }
 
+  const composer = {
+    input, setInput, send, busy,
+    tools: (caps?.tools ?? []).map((t) => t.description || t.name),
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
-      <PageHeader
-        title="AI assistant"
-        description="Acts on live platform data — scores transactions, inspects fraud rings, searches case history."
-        action={
-          caps.llm_configured ? (
-            <Badge tone="low">Model connected</Badge>
-          ) : (
-            <Badge tone="medium">No model configured</Badge>
-          )
-        }
-      />
 
       {!caps.llm_configured && (
         <Alert tone="warning" title="Running without a language model" className="mt-4">
@@ -134,68 +125,114 @@ export default function Assistant() {
         </Alert>
       )}
 
-      <Card className="mt-6 flex h-[min(32rem,65vh)] flex-col overflow-hidden p-0">
-        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-5">
-          {messages.length === 0 && (
-            <div className="space-y-2">
-              <p className="text-sm text-slate-400">
-                Ask about a transaction, an account, or the state of the system.
-              </p>
-              {EXAMPLES.map((e) => (
-                <button
-                  key={e}
-                  type="button"
-                  onClick={() => send(e)}
-                  className="block w-full rounded-lg border border-subtle bg-surface px-3 py-2 text-left text-sm text-slate-300 transition hover:border-strong hover:bg-surface-hover hover:text-slate-200"
-                >
-                  {e}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {messages.map((m, i) => (
-            <Turn key={i} message={m} />
-          ))}
-
-          {busy && (
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <Spinner className="h-3.5 w-3.5" />
-              Running tools…
-            </div>
-          )}
-          {error && <Alert tone="error">{error}</Alert>}
+      {/* Empty until asked. The composer is the page when there is nothing to
+          read yet, and drops to the foot of the thread once there is — the
+          shape every assistant now uses, because a chat box pinned to the
+          bottom of an empty panel looks like it is waiting for something that
+          has already happened. */}
+      {messages.length === 0 ? (
+        <div className="flex min-h-[52vh] flex-col items-center justify-center">
+          <h1 className="text-center text-[34px] tracking-tight"
+              style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+            How can I help you?
+          </h1>
+          <Composer {...composer} className="mt-8 w-full max-w-2xl" />
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            {EXAMPLES.map((e) => (
+              <button key={e} type="button" onClick={() => send(e)}
+                      className="rounded-full border px-3.5 py-2 text-[14px] transition-colors"
+                      style={{ borderColor: 'rgb(var(--ds-line))',
+                               color: 'rgb(var(--ds-muted))' }}>
+                {e}
+              </button>
+            ))}
+          </div>
         </div>
+      ) : (
+        <>
+          <div ref={scrollRef}
+               className="max-h-[58vh] space-y-4 overflow-y-auto pb-4">
+            {messages.map((m, i) => (
+              <Turn key={i} message={m} />
+            ))}
+            {busy && (
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <Spinner className="h-3.5 w-3.5" />
+                Running tools…
+              </div>
+            )}
+            {error && <Alert tone="error">{error}</Alert>}
+          </div>
+          <Composer {...composer} className="mt-2" />
+        </>
+      )}
+    </div>
+  )
+}
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            send()
+/* One composer, used centred on the empty page and at the foot of a thread.
+ *
+ * The row under the field is not decoration: "Tools" opens what the assistant
+ * can actually do, read from the server rather than listed here, so it cannot
+ * promise a capability the deployment does not have. There is no microphone
+ * button — dictation is not wired up, and a control that does nothing is worse
+ * than an absent one. */
+function Composer({ input, setInput, send, busy, tools, className = '' }) {
+  const [showTools, setShowTools] = useState(false)
+  return (
+    <div className={className}>
+      {showTools && tools?.length > 0 && (
+        <div className="mb-2 rounded-xl border p-3"
+             style={{ borderColor: 'rgb(var(--ds-line))',
+                      background: 'rgb(var(--ds-surface))' }}>
+          <p className="ds-mono text-[11px] uppercase tracking-[.14em]"
+             style={{ color: 'rgb(var(--ds-faint))' }}>What it can do</p>
+          <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">
+            {tools.map((t) => (
+              <li key={t} className="text-[14px]" style={{ color: 'rgb(var(--ds-muted))' }}>
+                {t}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <form onSubmit={(e) => { e.preventDefault(); send() }}
+            className="rounded-2xl border p-3 transition-colors focus-within:border-accent-400/50"
+            style={{ borderColor: 'rgb(var(--ds-line))',
+                     background: 'rgb(var(--ds-surface-2))' }}>
+        <textarea
+          rows={2}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
           }}
-          className="flex items-end gap-2 border-t border-subtle p-3"
-        >
-          <textarea
-            rows={1}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                send()
-              }
-            }}
-            placeholder="Ask about a transaction, account or system state…"
-            className="max-h-32 flex-1 resize-none rounded-lg border border-subtle bg-sentinel-800 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-strong focus:outline-none"
-          />
-          <button
-            type="submit"
-            disabled={busy || !input.trim()}
-            className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-semibold text-slate-200 transition enabled:hover:bg-accent-400 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+          placeholder="Message…"
+          className="w-full resize-none bg-transparent px-2 py-1 text-[16px] outline-none"
+          style={{ color: 'rgb(var(--ds-ink))' }}
+        />
+        <div className="mt-1 flex items-center gap-2">
+          <button type="button" onClick={() => setShowTools((v) => !v)}
+                  aria-expanded={showTools}
+                  className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] transition-colors"
+                  style={{ borderColor: 'rgb(var(--ds-line))',
+                           color: 'rgb(var(--ds-muted))' }}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+                 stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M4 8h10M18 8h2M4 16h4M12 16h8M14 5v6M8 13v6" />
+            </svg>
+            Tools
+          </button>
+          <span className="ml-auto text-[12px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+            Enter to send
+          </span>
+          <button type="submit" disabled={busy || !input.trim()}
+                  className="btn-shader rounded-lg px-4 py-2 text-[14px] disabled:opacity-40">
             Ask
           </button>
-        </form>
-      </Card>
+        </div>
+      </form>
     </div>
   )
 }
@@ -213,24 +250,24 @@ function Turn({ message }) {
         <p className="whitespace-pre-wrap">{message.content}</p>
 
         {message.truncated && (
-          <p className="mt-2 text-[11px] text-amber-400">
+          <p className="mt-2 text-[15px] text-amber-400">
             Stopped at the configured step limit — the answer may be partial.
           </p>
         )}
 
         {message.steps?.length > 0 && (
           <details className="mt-3 border-t border-subtle pt-2">
-            <summary className="cursor-pointer text-[11px] text-slate-400 hover:text-slate-200">
+            <summary className="cursor-pointer text-[15px] text-slate-400 hover:text-slate-200">
               {message.steps.length} tool call{message.steps.length > 1 ? 's' : ''} — show evidence
             </summary>
             <div className="mt-2 space-y-2">
               {message.steps.map((s, i) => (
                 <div key={i} className="rounded-lg border border-subtle bg-sentinel-900/60 p-2">
-                  <p className="text-[11px] font-semibold text-slate-300">
+                  <p className="text-[15px] font-semibold text-slate-300">
                     {s.tool}
                     {s.error && <span className="ml-2 text-red-400">failed</span>}
                   </p>
-                  <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-all text-[10px] leading-snug text-slate-500">
+                  <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-all text-[14px] leading-snug text-slate-500">
                     {s.error || JSON.stringify(s.result, null, 2)}
                   </pre>
                 </div>

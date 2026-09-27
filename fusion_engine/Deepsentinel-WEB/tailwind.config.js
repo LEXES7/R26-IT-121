@@ -39,6 +39,10 @@ export default {
         // Text ramp. Inverted between themes, so a given step always means
         // the same amount of emphasis.
         slate: {
+          // 100 must be mapped like the rest. Unmapped, Tailwind's own
+          // #f1f5f9 wins, and 46 uses of text-slate-100 turn invisible the
+          // moment the light theme is selected.
+          100: 'rgb(var(--slate-100) / <alpha-value>)',
           200: 'rgb(var(--slate-200) / <alpha-value>)',
           300: 'rgb(var(--slate-300) / <alpha-value>)',
           400: 'rgb(var(--slate-400) / <alpha-value>)',
@@ -57,13 +61,16 @@ export default {
         },
 
         // Risk classification. These carry meaning — one hue per severity,
-        // used consistently across gauges, badges, tables and email.
+        // used consistently across gauges, badges, tables and email. Values
+        // come from CSS variables, re-stepped per theme, for the same reason
+        // the neutral ramp is: the dark-tuned hues read fine on near-black
+        // and fail WCAG contrast on the light theme's paper ground.
         risk: {
-          critical: '#ef4444',
-          high: '#f97316',
-          medium: '#eab308',
-          low: '#22c55e',
-          unknown: '#64748b',
+          critical: 'rgb(var(--risk-critical) / <alpha-value>)',
+          high: 'rgb(var(--risk-high) / <alpha-value>)',
+          medium: 'rgb(var(--risk-medium) / <alpha-value>)',
+          low: 'rgb(var(--risk-low) / <alpha-value>)',
+          unknown: 'rgb(var(--risk-unknown) / <alpha-value>)',
         },
 
         // Per-modality identity, so a colour always means the same model

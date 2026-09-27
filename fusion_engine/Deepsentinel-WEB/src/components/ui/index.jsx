@@ -15,7 +15,10 @@ const cx = (...parts) => parts.filter(Boolean).join(' ')
 
 const BUTTON_VARIANTS = {
   primary:
-    'bg-accent-500 text-white hover:bg-accent-400 focus-visible:ring-blue-400 shadow-lg shadow-accent-500/20',
+    'btn-shader focus-visible:ring-emerald-400',
+  /* Kept as an explicit name too, for markup that is not a <Button>. */
+  shader:
+    'btn-shader font-semibold focus-visible:ring-emerald-400',
   secondary:
     'bg-surface-raised text-slate-200 border border-subtle hover:bg-surface-hover hover:border-strong focus-visible:ring-slate-400',
   danger:
@@ -42,7 +45,14 @@ export const Button = forwardRef(function Button(
         'inline-flex items-center justify-center rounded-lg font-semibold',
         'transition-colors duration-150',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-sentinel-950',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
+        // A flat disabled look, not a faded one. `opacity-50` dims a
+        // variant's own colour toward the page behind it — fine on the
+        // light theme's paper ground, but `bg-accent-500 text-white`
+        // (primary) and `bg-red-600/90 text-white` (danger) both collapse
+        // toward the dark theme's near-black page at 50%, landing under
+        // 3:1. These two tokens already invert per theme, so the result
+        // reads the same "dimmed but legible" on both.
+        'disabled:cursor-not-allowed disabled:bg-surface-raised disabled:text-slate-500 disabled:shadow-none',
         BUTTON_VARIANTS[variant],
         BUTTON_SIZES[size],
         className,
@@ -247,6 +257,54 @@ export function Badge({ tone = 'neutral', children, className }) {
       )}
     >
       {children}
+    </span>
+  )
+}
+
+// ── Severity ─────────────────────────────────────────────────────────────────
+
+/**
+ * One severity level, encoded twice: by hue and by how many segments are lit.
+ *
+ * The palette is CVD-safe and was measured against deuteranopia and
+ * protanopia, but colour alone still fails in the cases that matter most for
+ * this product — a projector in a bright room, a printed case file, a
+ * screenshot pasted into a report. The four-segment meter survives all of
+ * them, and it reads as a rank rather than as a category, which is what
+ * severity actually is.
+ *
+ * `SEVERITY` is exported so pages sort and colour from one table instead of
+ * each keeping their own.
+ */
+export const SEVERITY = {
+  CRITICAL: { rank: 4, label: 'Critical', token: '--ds-sev-critical' },
+  HIGH:     { rank: 3, label: 'High',     token: '--ds-sev-high' },
+  MEDIUM:   { rank: 2, label: 'Medium',   token: '--ds-sev-medium' },
+  LOW:      { rank: 1, label: 'Low',      token: '--ds-sev-low' },
+}
+export const SEVERITY_ORDER = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
+
+export function Severity({ level, showLabel = true, className, title }) {
+  const key = String(level || 'LOW').toUpperCase()
+  const sev = SEVERITY[key] ?? SEVERITY.LOW
+  const colour = `rgb(var(${sev.token}))`
+  return (
+    <span
+      className={cx('ds-sev', className)}
+      style={{ color: colour }}
+      title={title ?? `${sev.label} severity`}
+    >
+      <span className="ds-sev-meter" aria-hidden="true">
+        {[1, 2, 3, 4].map((i) => (
+          <i key={i} className={i <= sev.rank ? 'on' : undefined} />
+        ))}
+      </span>
+      {showLabel && (
+        <span className="text-[15px] font-semibold uppercase tracking-[0.09em]">
+          {sev.label}
+        </span>
+      )}
+      <span className="sr-only">{sev.label} severity</span>
     </span>
   )
 }
