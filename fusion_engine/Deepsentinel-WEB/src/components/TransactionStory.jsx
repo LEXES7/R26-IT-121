@@ -12,16 +12,16 @@ import { Eyebrow } from './Editorial'
 
 const TXN = [
   ['transaction_id', 'TX_2026_08_24_0117'],
-  ['type', 'CASH_OUT'],
-  ['amount', '9,999,996.00'],
-  ['nameOrig', 'C333462355'],
-  ['nameDest', 'C1697378157'],
-  ['step', '1'],
+  ['type', 'TRANSFER'],
+  ['amount', '9,060,955.18'],
+  ['nameOrig', 'C1360689528'],
+  ['nameDest', 'C1674473954'],
+  ['step', '389'],
 ]
 
 const MODELS = [
-  { key: 'graph', label: 'Network', model: 'GraphSAGE', score: 0.50, colour: `rgb(${MODEL_LENS.graph.hue})`,
-    finding: 'HUB_AND_SPOKE — 4 senders converging on one sink' },
+  { key: 'graph', label: 'Network', model: 'GraphSAGE', score: 0.52, colour: `rgb(${MODEL_LENS.graph.hue})`,
+    finding: 'ACCOUNT_TAKEOVER: 2 senders drained into one account' },
   { key: 'behavioural', label: 'Behaviour', model: 'Stratified VAE', score: 0.88, colour: `rgb(${MODEL_LENS.behavioural.hue})`,
     finding: 'Reconstruction error 4.2σ above this account’s baseline' },
   { key: 'temporal', label: 'Timing', model: 'System-Context TCN', score: 0.92, colour: `rgb(${MODEL_LENS.temporal.hue})`,
@@ -31,7 +31,7 @@ const MODELS = [
 const STEPS = [
   {
     title: 'One record arrives.',
-    body: 'Ten fields. Nothing here says fraud — the amount is large but legal, the accounts are unremarkable, and no single value crosses a rule threshold.',
+    body: 'Ten fields. Nothing here says fraud: the amount is large but legal, the accounts are unremarkable, and the existing rule flag stays at zero.',
   },
   {
     title: 'Three models read it differently.',
@@ -39,7 +39,7 @@ const STEPS = [
   },
   {
     title: 'The network sees a shape.',
-    body: 'Four senders converge on one account, all brand-new. In isolation each transfer is ordinary; together they are a collection funnel.',
+    body: 'Two senders, both new to the network, are each emptied in full into the same account. In isolation each transfer is ordinary; together they are a collection point.',
   },
   {
     title: 'Fusion weighs what it has.',
@@ -52,11 +52,11 @@ const STEPS = [
 ]
 
 const REPORT = [
-  'CRITICAL — coordinated mule activity',
-  'Sink account C1697378157 received 4 transfers',
-  'from accounts with no prior history.',
-  'Pattern matches FATF typology: hub-and-spoke',
-  'placement via newly opened accounts.',
+  'CRITICAL: mule account receiving drained funds',
+  'Sink account C1674473954 received 2 transfers',
+  'that each emptied the sending account.',
+  'Pattern matches FATF typology: account takeover,',
+  'high-value transfers to a new beneficiary.',
 ]
 
 export default function TransactionStory() {
