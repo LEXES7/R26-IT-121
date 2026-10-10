@@ -63,3 +63,10 @@ fusion_engine/**/users.json
 logs/
 models/*
 results/*
+
+# Evaluation results must be committable. The blanket *.json / *.csv rules above
+# override the negations near the top of this file — in gitignore the LAST match
+# wins — so every metrics file written under GraphSage/reports/ was silently
+# never committed. Re-negated here, after the rules that swallowed it.
+!GraphSage/reports/**/*.json
+!GraphSage/reports/**/*.csv

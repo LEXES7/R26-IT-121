@@ -20,19 +20,22 @@ import * as session from "./src/auth/session";
 import type { Session } from "./src/auth/session";
 import type { Sample } from "./src/data/samples";
 import AlertsScreen from "./src/screens/AlertsScreen";
+import OverviewScreen from "./src/screens/OverviewScreen";
 import AnalyzeScreen from "./src/screens/AnalyzeScreen";
 import CaseScreen from "./src/screens/CaseScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import { accent, bg, space, text } from "./src/theme/tokens";
 
 /**
- * The gate, two tabs, and one screen pushed over them.
+ * The gate, three tabs, and one screen pushed over them.
  *
- * Navigation is state rather than a router: three screens and one way between
- * them is less structure than a router would impose. Worth revisiting if a
- * fourth arrives.
+ * Navigation is still state rather than a router. Overview was the fourth
+ * screen this comment anticipated, and it did not change the shape: it is
+ * another leaf with one way in and one way out, not a branch. A router earns
+ * its keep when screens need to link to each other or carry deep-link state,
+ * and none of them do.
  */
-type Tab = "alerts" | "analyze";
+type Tab = "overview" | "alerts" | "analyze";
 
 /**
  * How long the app may sit in the background before the session is dropped.
@@ -193,7 +196,9 @@ export default function App() {
   return (
     <View style={styles.shell}>
       <View style={styles.body}>
-        {tab === "alerts" ? (
+        {tab === "overview" ? (
+          <OverviewScreen />
+        ) : tab === "alerts" ? (
           <AlertsScreen
             session={current}
             onOpen={(row) => setDetail({ row })}
@@ -204,6 +209,11 @@ export default function App() {
         )}
       </View>
       <View style={styles.tabs}>
+        <TabButton
+          label="Overview"
+          on={tab === "overview"}
+          onPress={() => setTab("overview")}
+        />
         <TabButton label="Alerts" on={tab === "alerts"} onPress={() => setTab("alerts")} />
         <TabButton
           label="Screen"
