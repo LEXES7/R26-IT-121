@@ -1,0 +1,44 @@
+# Build context for the serving image.
+#
+# Without this file the context is 8.6 GB, nearly all of it training data the
+# serving path never opens. Docker uploads the whole context before the first
+# instruction runs, so an untrimmed build spends minutes shipping files no
+# layer will ever copy — and on a hosted builder it is minutes of upload from
+# whoever started it.
+#
+# Stated as plain exclusions rather than an exclude-then-re-include chain:
+# .dockerignore negation across nested directories is subtle enough to get
+# wrong quietly, and getting it wrong here means an image whose /health says
+# status "error" because the checkpoint silently never arrived.
+
+# ─── Training data — 8.5 GB, read only by the notebooks ────────────────
+data/
+
+# ─── The one large artefact: the held-out window set (157 MB) ──────────
+# Stage 6 measured the reported metrics on it; serving never reads it.
+outputs/stage3_windows/
+
+# ─── Figures and intermediate arrays under outputs/ ────────────────────
+outputs/**/*.npy
+outputs/**/*.png
+
+# What survives is what api/state.py actually loads — best_tstcn.keras,
+# scaler.pkl, type_risk_weights.json — plus a few KB of metrics JSON.
+
+# ─── Local environment ─────────────────────────────────────────────────
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# ─── Research material, not serving material ───────────────────────────
+notebooks/
+reports/
+docs/
+tests/
+
+# ─── Repo furniture ────────────────────────────────────────────────────
+.git/
+.gitignore
+.dockerignore

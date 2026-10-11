@@ -5,12 +5,20 @@
 # over a system-wide sliding window. TensorFlow is CPU-only here — no GPU is
 # needed for inference at this model size (~219K parameters).
 #
-# outputs/ is NOT baked in (best_tstcn.keras, scaler.pkl, and
-# type_risk_weights.json are gitignored, generated artefacts — see
-# outputs/README.md): mount it at runtime.
+# The three serving artefacts ARE baked in: best_tstcn.keras is 2.7 MB and
+# the scaler and type-risk weights are a kilobyte each, so the container is
+# self-contained and cannot drift from the dissertation. They used to be
+# mounted, which is right for a laptop and wrong for a build server — CI
+# checks out the repository and has no local outputs/ to mount, so a mounted
+# artefact means every automated build ships a service that answers /health
+# with status "error". .dockerignore keeps the rest of outputs/ (and the
+# 8.5 GB of training windows under data/) out of the context.
+#
+# Note they are gitignored by default: `git add -f` them on the branch that
+# deploys, or the build has nothing to copy.
 #
 #   docker build -t deepsentinel/tstcn .
-#   docker run -p 8003:8003 -v "$PWD/outputs:/app/outputs:ro" deepsentinel/tstcn
+#   docker run -p 8003:8003 deepsentinel/tstcn
 FROM python:3.10-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -30,6 +38,7 @@ RUN pip install --no-cache-dir \
 COPY src/ ./src/
 COPY api/ ./api/
 COPY scripts/ ./scripts/
+COPY outputs/ ./outputs/
 
 EXPOSE 8003
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \

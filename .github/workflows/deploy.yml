@@ -1,0 +1,78 @@
+# Push to deepsentinal-Cloud → rebuild the four detector/fusion images and
+# roll each Container App onto the new tag.
+#
+# The frontend is not here: the Static Web App has its own Azure-generated
+# workflow, which builds it straight from this branch.
+#
+# Built on the runner with plain docker, not `az acr build`. ACR Tasks is
+# blocked on Azure for Students — the registry answers
+# TasksOperationsNotAllowed — so the server-side build path this originally
+# used is not available to this subscription at all. The runner has a Docker
+# daemon and datacentre bandwidth, which is the better place to pull a
+# ~600 MB TensorFlow wheel anyway.
+#
+# All four are rebuilt on every push rather than only the ones that changed.
+# That is deliberate for a two-week deployment: a path filter is one more
+# thing to get wrong, and getting it wrong means a push that silently deploys
+# stale code. If the build minutes start to matter, add a `paths:` filter per
+# component — four small workflows, one each, is the native way to do it.
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [deepsentinal-Cloud]
+  workflow_dispatch:          # lets you redeploy without an empty commit
+
+env:
+  REGISTRY: acrdeepsentinel42
+  RESOURCE_GROUP: rg-deepsentinel
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false        # one component failing must not cancel the rest
+      matrix:
+        include:
+          - app: tstcn
+            path: TS-TCN
+          - app: fusion-api
+            path: fusion_engine/DeepSentinel
+          - app: graphsage
+            path: GraphSage
+          - app: vae
+            path: VAE-With-DSAA
+
+    name: ${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sign in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Sign in to the registry
+        run: az acr login --name "$REGISTRY"
+
+      # Tagged with the commit as well as :latest — a revision pinned to a
+      # moving tag cannot be rolled back, and "which commit is live?" stops
+      # being answerable the moment two deploys share a tag.
+      - name: Build and push
+        run: |
+          IMAGE="$REGISTRY.azurecr.io/${{ matrix.app }}"
+          docker build -t "$IMAGE:${{ github.sha }}" -t "$IMAGE:latest" "${{ matrix.path }}/"
+          docker push "$IMAGE:${{ github.sha }}"
+          docker push "$IMAGE:latest"
+
+      - name: Deploy revision
+        run: |
+          az containerapp update \
+            --name "${{ matrix.app }}" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "$REGISTRY.azurecr.io/${{ matrix.app }}:${{ github.sha }}"
+
+      - name: Report
+        run: |
+          echo "### ${{ matrix.app }} deployed" >> $GITHUB_STEP_SUMMARY
+          echo "Image tag \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY

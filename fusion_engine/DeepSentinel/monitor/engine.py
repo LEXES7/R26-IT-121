@@ -88,6 +88,18 @@ STALE_CLAIM_SECONDS = 180
 STALE_SWEEP_SECONDS = 30
 
 
+# Longest the idle loop will wait between polls of an empty queue.
+#
+# Claiming is a database query, so a fixed short poll holds the database open
+# for as long as the monitor runs — on a serverless Postgres that bills by
+# compute-hour and suspends after five idle minutes, an empty queue polled
+# every two seconds spends the entire monthly budget waiting for work that is
+# not coming. Backing off past that suspend threshold lets the database sleep
+# between runs; the first arrival resets the backoff, so a live stream is
+# screened at `interval` and only an idle one slows down.
+IDLE_MAX_SLEEP = 1800
+
+
 # A detector that just failed is left alone for this long. Under the fan-out
 # every transaction pays for a dead service, so the breaker is what keeps one
 # unreachable model from setting the pace of the whole pipeline.
@@ -125,6 +137,7 @@ class MonitorEngine:
         self.upstream_timeout = _upstream_timeout()
         self._background: set[asyncio.Task] = set()  # notifications in flight
         self._last_sweep = 0.0       # when stalled claims were last recovered
+        self._idle_polls = 0         # consecutive empty claims — drives the backoff
 
     # ── lifecycle ────────────────────────────────────────────────────
     async def start(self, interval: float | None = None) -> None:
@@ -140,6 +153,10 @@ class MonitorEngine:
         from monitor.state import Counters
 
         STATE.counters = Counters()
+        # An operator pressing Start is saying work is expected now, so the
+        # idle backoff begins from scratch rather than inheriting a long sleep
+        # from the previous run.
+        self._idle_polls = 0
         self._task = asyncio.create_task(self._run())
         runlog.banner(f"monitor started · interval {self.interval}s")
         STATE.publish("monitor", {"status": "started", "interval": self.interval})
@@ -158,6 +175,8 @@ class MonitorEngine:
 
     def resume(self) -> None:
         self.paused = False
+        # Same reasoning as start(): resuming means someone is watching again.
+        self._idle_polls = 0
         STATE.publish("monitor", {"status": "resumed"})
 
     async def restart(self, interval: float | None = None) -> None:
@@ -204,8 +223,17 @@ class MonitorEngine:
                 try:
                     txn = await self._next_transaction(client, graph_base)
                     if txn is None:
-                        await asyncio.sleep(2.0)
+                        # Back off while there is nothing to screen, so an idle
+                        # monitor stops holding the database awake (see
+                        # IDLE_MAX_SLEEP). Doubling from two seconds keeps the
+                        # first minute responsive for a stream that is merely
+                        # between batches.
+                        self._idle_polls += 1
+                        await asyncio.sleep(
+                            min(2.0 * 2 ** self._idle_polls, IDLE_MAX_SLEEP))
                         continue
+                    # Work arrived: back to full speed immediately.
+                    self._idle_polls = 0
                     await self._screen(client, graph_base, txn)
                 except asyncio.CancelledError:
                     raise
