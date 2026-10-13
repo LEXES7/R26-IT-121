@@ -280,6 +280,20 @@ async def run_pipeline(
     )
 
     # ── Stage 4: retrieval ───────────────────────────────────────────────────
+    # What the detectors and the transaction itself say about the pattern, so
+    # the typology search is not left with three score levels to go on.
+    retrieval_evidence = {
+        "graph_pattern": (graph_evidence or {}).get("pattern"),
+        "behaviour_hint": (behavioral_evidence or {}).get("fraud_typology", {}).get("typology_label")
+        if isinstance(behavioral_evidence, dict) else None,
+    }
+    if tx is not None:
+        retrieval_evidence.update({
+            "type": tx.type,
+            "amount": tx.amount,
+            "sender_drained": tx.oldbalanceOrg > 0 and tx.newbalanceOrig == 0,
+            "receiver_was_empty": tx.oldbalanceDest == 0,
+        })
     yield StageEvent(Stage.RETRIEVAL, Status.RUNNING, message="Querying the FATF knowledge base")
 
     with _Timer() as t:
@@ -289,6 +303,7 @@ async def run_pipeline(
             behavioral_score=fusion.behavioral_score,
             temporal_score=fusion.temporal_score,
             confidence_score=fusion.confidence_score,
+            evidence=retrieval_evidence,
         )
 
     if not retrievals:
