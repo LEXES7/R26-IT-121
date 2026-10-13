@@ -15,6 +15,7 @@ import type {
   TemporalEvidence as TemporalShape,
 } from "../api/analyses";
 import ForensicReport from "../components/ForensicReport";
+import SarPanel from "../components/SarPanel";
 import Behavioural from "../components/evidence/Behavioural";
 import Graph from "../components/evidence/Graph";
 import Temporal from "../components/evidence/Temporal";
@@ -175,6 +176,17 @@ export default function CaseScreen({
           disabled={!forensicReport}
         >
           {forensicReport && <ForensicReport report={forensicReport} />}
+        </Section>
+
+        <Section
+          title="Report and SAR"
+          subtitle="Share the PDF · draft and approve a SAR"
+          accent={accent.deep}
+          disabled={row.id == null}
+        >
+          {row.id != null && (
+            <SarPanel analysisId={row.id} transactionId={row.transaction_id} />
+          )}
         </Section>
 
         <Card>

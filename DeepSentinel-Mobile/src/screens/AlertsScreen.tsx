@@ -24,6 +24,8 @@ type Props = {
   session: Session;
   onOpen: (row: Analysis) => void;
   onSignOut: () => void;
+  /** Fingerprint or face unlock, when the device has it enrolled. */
+  biometric?: { label: string; on: boolean; toggle: () => void } | null;
 };
 
 const FILTERS = ["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"] as const;
@@ -32,7 +34,7 @@ const FILTERS = ["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"] as const;
  *  enough not to drain a phone sitting in a pocket. */
 const POLL_MS = 15_000;
 
-export default function AlertsScreen({ session, onOpen, onSignOut }: Props) {
+export default function AlertsScreen({ session, onOpen, onSignOut, biometric }: Props) {
   const [rows, setRows] = useState<Analysis[]>([]);
   const [health, setHealth] = useState<Health | null>(null);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("ALL");
@@ -85,7 +87,7 @@ export default function AlertsScreen({ session, onOpen, onSignOut }: Props) {
             a session to a mistaken tap is the kind of thing that happens with
             a phone in one hand, so it also asks before it acts. */}
         <Pressable
-          onPress={() => confirmSignOut(session.user.username, onSignOut)}
+          onPress={() => accountMenu(session.user.username, onSignOut, biometric)}
           style={({ pressed }) => [styles.signOut, pressed && styles.signOutPressed]}
           hitSlop={8}
         >
@@ -144,13 +146,28 @@ export default function AlertsScreen({ session, onOpen, onSignOut }: Props) {
   );
 }
 
-function confirmSignOut(username: string, onSignOut: () => void) {
+function accountMenu(
+  username: string,
+  onSignOut: () => void,
+  biometric: Props["biometric"],
+) {
   Alert.alert(
-    "Sign out?",
-    `You are signed in as ${username}. Signing out clears the stored session and you will need your password again.`,
+    username,
+    "Signing out clears the stored session and you will need your password again." +
+      (biometric
+        ? `\n\nUnlock with ${biometric.label} is ${biometric.on ? "on" : "off"}.`
+        : ""),
     [
       { text: "Cancel", style: "cancel" },
-      { text: "Sign out", style: "destructive", onPress: onSignOut },
+      ...(biometric
+        ? [
+            {
+              text: biometric.on ? `Turn off ${biometric.label}` : `Turn on ${biometric.label}`,
+              onPress: biometric.toggle,
+            },
+          ]
+        : []),
+      { text: "Sign out", style: "destructive" as const, onPress: onSignOut },
     ],
   );
 }

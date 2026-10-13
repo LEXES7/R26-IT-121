@@ -26,6 +26,8 @@ export type Transaction = {
 
 export type AnalyzeResponse = {
   transaction_id: string;
+  /** The stored record, or null when the result could not be persisted. */
+  analysis_id?: number | null;
   fraud_confidence_score: number;
   classification: string;
   modalities_used: number;

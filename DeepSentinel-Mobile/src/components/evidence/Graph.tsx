@@ -1,22 +1,21 @@
 import { StyleSheet, Text, View } from "react-native";
 
 import type { GraphEvidence } from "../../api/analyses";
-import { account, money, percent } from "../../lib/format";
+import { percent } from "../../lib/format";
 import { bg, modality, mono, space, text } from "../../theme/tokens";
-import { Fact, Label, Note } from "../ui";
+import NetworkGraph from "../NetworkGraph";
+import { Fact, Label } from "../ui";
 
 /**
  * The relational model's subgraph — M2's component.
  *
  * This evidence is a structure rather than a decomposition: which accounts are
  * implicated, which one the money converges on, and the shape the pattern
- * makes. The panel is built now so that the moment the graph service is
- * running its output has somewhere to go.
+ * makes. The structure is drawn rather than listed, so the convergence the
+ * pattern names is something the reader can see.
  */
 export default function Graph({ evidence }: { evidence: GraphEvidence }) {
   const s = evidence.structural_evidence ?? {};
-  const nodes = evidence.nodes ?? [];
-  const edges = evidence.edges ?? [];
 
   return (
     <View>
@@ -50,38 +49,12 @@ export default function Graph({ evidence }: { evidence: GraphEvidence }) {
         />
       </View>
 
-      {nodes.length > 0 && (
-        <View style={styles.block}>
-          <Label>Implicated accounts · {nodes.length}</Label>
-          {nodes.slice(0, 8).map((n, i) => (
-            <View key={n.account_id ?? i} style={styles.node}>
-              <View
-                style={[
-                  styles.nodeDot,
-                  n.is_mule && { backgroundColor: modality.graph },
-                ]}
-              />
-              <Text style={styles.nodeId}>{n.account_id ?? "—"}</Text>
-              {n.role && <Text style={styles.nodeRole}>{n.role}</Text>}
-            </View>
-          ))}
-          {nodes.length > 8 && <Note>and {nodes.length - 8} more</Note>}
+      <View style={styles.block}>
+        <Label>Network</Label>
+        <View style={styles.network}>
+          <NetworkGraph evidence={evidence as Record<string, unknown>} />
         </View>
-      )}
-
-      {edges.length > 0 && (
-        <View style={styles.block}>
-          <Label>Flows · {edges.length}</Label>
-          {edges.slice(0, 6).map((e, i) => (
-            <View key={i} style={styles.edge}>
-              <Text style={styles.edgePath} numberOfLines={1}>
-                {account(e.source)} → {account(e.target)}
-              </Text>
-              <Text style={styles.edgeAmount}>{money(e.amount)}</Text>
-            </View>
-          ))}
-        </View>
-      )}
+      </View>
     </View>
   );
 }
@@ -110,28 +83,5 @@ const styles = StyleSheet.create({
     borderTopColor: bg.border,
   },
 
-  node: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.sm,
-    marginTop: space.sm,
-  },
-  nodeDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    borderWidth: 1.5,
-    borderColor: modality.graph,
-  },
-  nodeId: { ...mono, color: text.secondary, fontSize: 12, flex: 1 },
-  nodeRole: { color: text.faint, fontSize: 11 },
-
-  edge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.md,
-    marginTop: space.sm,
-  },
-  edgePath: { ...mono, color: text.secondary, fontSize: 12, flex: 1 },
-  edgeAmount: { ...mono, color: text.muted, fontSize: 11 },
+  network: { marginTop: space.md },
 });
