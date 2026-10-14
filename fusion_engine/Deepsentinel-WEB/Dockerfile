@@ -9,6 +9,17 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
+
+# Which backend the built bundle talks to.
+#
+# Vite substitutes import.meta.env.VITE_API_URL at BUILD time, not at run
+# time, so this cannot be a container environment variable — set it on the
+# deploy and the bundle still carries whatever was baked in. Unset, the app
+# falls back to http://localhost:8090 (src/services/api.js), which works on a
+# developer's machine and reaches nothing at all from a browser pointed at
+# the deployed site.
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # Production stage

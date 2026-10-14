@@ -42,6 +42,13 @@ jobs:
             path: GraphSage
           - app: vae
             path: VAE-With-DSAA
+          # Vite bakes the backend URL into the bundle at build time, so the
+          # frontend's API base is a build argument rather than something the
+          # running container can be told.
+          - app: web
+            path: fusion_engine/Deepsentinel-WEB
+            buildargs: >-
+              --build-arg VITE_API_URL=https://fusion-api.bravedune-c12a41a0.southeastasia.azurecontainerapps.io
 
     name: ${{ matrix.app }}
     steps:
@@ -61,7 +68,8 @@ jobs:
       - name: Build and push
         run: |
           IMAGE="$REGISTRY.azurecr.io/${{ matrix.app }}"
-          docker build -t "$IMAGE:${{ github.sha }}" -t "$IMAGE:latest" "${{ matrix.path }}/"
+          docker build ${{ matrix.buildargs }} \
+            -t "$IMAGE:${{ github.sha }}" -t "$IMAGE:latest" "${{ matrix.path }}/"
           docker push "$IMAGE:${{ github.sha }}"
           docker push "$IMAGE:latest"
 
