@@ -24,12 +24,12 @@
 // engine is on Azure the address becomes https:// and this should be removed:
 // it is a development affordance, not a decision about how the app should ship.
 
-const config = require("./app.json");
-
-module.exports = {
-  ...config.expo,
+// Expo reads app.json first and passes it in as `config`, so this only adds
+// to it rather than loading the file a second time.
+module.exports = ({ config }) => ({
+  ...config,
   extra: {
-    ...(config.expo.extra ?? {}),
+    ...(config.extra ?? {}),
     // A DHCP lease, so it moves. When it does the app reports the backend as
     // unreachable, which is accurate but unhelpful — the address is simply
     // stale. Overridden by the environment variable above, which is how it
@@ -37,4 +37,4 @@ module.exports = {
     // number.
     apiBase: process.env.EXPO_PUBLIC_API_BASE ?? "http://192.168.1.100:8090",
   },
-};
+});

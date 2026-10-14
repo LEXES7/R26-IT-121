@@ -8,11 +8,6 @@
     "scheme": "deepsentinel",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#06091A",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#06091A"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "lk.ac.sliit.r26it121.deepsentinel"
@@ -31,6 +26,15 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#06091A"
+        }
+      ],
       "expo-secure-store",
       [
         "expo-local-authentication",
@@ -51,7 +55,8 @@
             "usesCleartextTraffic": true
           }
         }
-      ]
+      ],
+      "expo-status-bar"
     ]
   }
 }
