@@ -20,7 +20,8 @@ WORKDIR /app
 # CPU-only torch first (large, rarely changes) so it stays cached across builds.
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \
  && pip install --no-cache-dir \
-      torch-geometric pandas pyarrow scikit-learn "pydantic>=2" fastapi uvicorn
+      torch-geometric pandas pyarrow scikit-learn "pydantic>=2" fastapi uvicorn \
+      python-multipart
 
 COPY pyproject.toml README.md ./
 COPY src/ ./src/

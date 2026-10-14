@@ -25,6 +25,11 @@ dependencies = [
     "networkx>=3.2",
     "fastapi>=0.110",
     "uvicorn[standard]>=0.27",
+    # FastAPI needs this to parse the multipart upload on
+    # /api/graph/demo/score-csv. Undeclared until now, so the app
+    # imported fine wherever it had been pip-installed by hand and
+    # raised RuntimeError at import time in every clean environment.
+    "python-multipart>=0.0.9",
     "pandas>=2.1",
     "numpy>=1.26",
     "scikit-learn>=1.4",
