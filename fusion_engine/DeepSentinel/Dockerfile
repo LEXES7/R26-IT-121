@@ -40,6 +40,18 @@ ENV PATH="/app/.venv/bin:$PATH" \
 COPY --chown=deepsentinel:deepsentinel backend/ ./backend/
 COPY --chown=deepsentinel:deepsentinel data/ ./data/
 
+# The four feature packages that sit beside backend/ rather than inside it.
+# backend.main imports each behind `try: ... except Exception: log and carry
+# on`, so leaving them out of the image did not fail the build, fail a health
+# probe, or appear in any log a deploy watches — the API simply came up with
+# /api/monitor, /api/chat, /api/assistant and /api/enquiry missing, and the
+# console answered "Request failed with status code 404" the moment anyone
+# signed in. Together they are under a megabyte.
+COPY --chown=deepsentinel:deepsentinel monitor/ ./monitor/
+COPY --chown=deepsentinel:deepsentinel assistant/ ./assistant/
+COPY --chown=deepsentinel:deepsentinel chatbot/ ./chatbot/
+COPY --chown=deepsentinel:deepsentinel enquiry/ ./enquiry/
+
 RUN mkdir -p chroma_store models && chown -R deepsentinel:deepsentinel /app
 
 # Run unprivileged — never as root in a bank environment
