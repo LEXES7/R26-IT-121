@@ -7,7 +7,14 @@ notebooks
 docs
 tests
 reports
-data
+# The Dockerfile copies data/demo/ (4 KB of sample transactions), so the
+# exclusion has to name the heavy trees rather than all of data/ — excluding
+# the parent made that COPY fail with "file not found" and took the whole
+# image build down with it. The serving tensors arrive from the Azure Files
+# mount at GRAPHSAGE_DATA_ROOT, never from the image.
+data/raw
+data/graph
+data/processed
 checkpoints
 *.pt
 *.npy
