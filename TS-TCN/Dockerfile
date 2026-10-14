@@ -19,7 +19,7 @@
 #
 #   docker build -t deepsentinel/tstcn .
 #   docker run -p 8003:8003 deepsentinel/tstcn
-FROM python:3.10-slim
+FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -31,8 +31,22 @@ WORKDIR /app
 # CPU-only TensorFlow first (large, rarely changes) so it stays cached across
 # builds, mirroring the CPU-torch-first pattern in GraphSage's/VAE-DSAA's
 # Dockerfiles.
+#
+# The version is pinned to the one that wrote best_tstcn.keras (TF 2.21 /
+# Keras 3.15), and it is not a free choice. A .keras file records the module
+# path of every class it holds, and Keras 3 writes paths like
+# keras.src.models.functional that Keras 2 has no module for. Built against
+# the earlier 2.15 pin, the image started cleanly and then answered every
+# /api/v1/classify with a 500:
+#
+#   TypeError: Could not deserialize class 'Functional' because its parent
+#   module keras.src.models.functional cannot be imported
+#
+# — a failure that only appears on the first request, so the container looks
+# healthy until something asks it to score. Retraining on a different
+# TensorFlow means moving this pin with it.
 RUN pip install --no-cache-dir \
-      tensorflow-cpu==2.15.0 numpy pandas scikit-learn joblib \
+      tensorflow-cpu==2.21.0 numpy pandas scikit-learn joblib \
       "pydantic>=2" fastapi "uvicorn[standard]"
 
 COPY src/ ./src/
