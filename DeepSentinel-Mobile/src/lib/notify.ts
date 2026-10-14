@@ -1,4 +1,4 @@
-import * as Notifications from "expo-notifications";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { Platform } from "react-native";
 
 import type { LiveAlert } from "../api/monitor";
@@ -8,18 +8,36 @@ import { account, money, score } from "./format";
  * Alert notifications, raised on the device from what the monitor reports.
  *
  * These are local notifications: the app polls the monitor and posts one for
- * each new HIGH or CRITICAL verdict. They work in Expo Go and in a release
- * build alike, but only while the app is running. Delivery to a phone that is
- * asleep needs server push, which needs an EAS build with a project ID and a
- * sender on the backend, and is not claimed here.
+ * each new HIGH or CRITICAL verdict, while the app is running. Delivery to a
+ * phone that is asleep needs server push, which needs an EAS build with a
+ * project ID and a sender on the backend, and is not claimed here.
+ *
+ * Expo Go does not ship the notifications native module, and importing the
+ * package there fails at launch ("Cannot find native module
+ * ExpoTopicSubscriptionModule"). So the package is loaded only outside Expo
+ * Go. Inside it the feed still works and simply raises nothing.
  */
+
+type NotificationsModule = typeof import("expo-notifications");
+
+export const notificationsSupported =
+  Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
+
+const Notifications: NotificationsModule | null = (() => {
+  if (!notificationsSupported) return null;
+  try {
+    return require("expo-notifications") as NotificationsModule;
+  } catch {
+    return null;
+  }
+})();
 
 const CHANNEL = "alerts";
 
 /** MEDIUM is a band the system will not commit on; it is not worth a buzz. */
 export const NOTIFY_SEVERITIES = new Set(["CRITICAL", "HIGH"]);
 
-Notifications.setNotificationHandler({
+Notifications?.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
     shouldShowList: true,
@@ -30,6 +48,7 @@ Notifications.setNotificationHandler({
 
 /** Ask once. Returns whether notifications may be shown. */
 export async function enableNotifications(): Promise<boolean> {
+  if (!Notifications) return false;
   try {
     if (Platform.OS === "android") {
       await Notifications.setNotificationChannelAsync(CHANNEL, {
@@ -50,6 +69,7 @@ export async function enableNotifications(): Promise<boolean> {
 }
 
 export async function notifyAlert(alert: LiveAlert): Promise<void> {
+  if (!Notifications) return;
   try {
     await Notifications.scheduleNotificationAsync({
       content: {
@@ -71,6 +91,7 @@ export async function notifyAlert(alert: LiveAlert): Promise<void> {
 
 /** Called with the transaction a tapped notification was about. */
 export function onNotificationTap(fn: (transactionId: string) => void): () => void {
+  if (!Notifications) return () => {};
   const sub = Notifications.addNotificationResponseReceivedListener((response) => {
     const id = response.notification.request.content.data?.transaction_id;
     if (typeof id === "string") fn(id);

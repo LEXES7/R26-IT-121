@@ -12,6 +12,7 @@ import {
 
 import type { LiveAlert, MonitorState } from "../api/monitor";
 import { RiskBadge, ScoreBar } from "../components/ui";
+import { notificationsSupported } from "../lib/notify";
 import { account, money, percent, score } from "../lib/format";
 import { statusBarInset } from "../theme/layout";
 import { accent, bg, mono, radius, risk, riskColour, space, text } from "../theme/tokens";
@@ -72,7 +73,11 @@ export default function LiveScreen({
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Live</Text>
           <Text style={styles.subtitle}>
-            {notifying ? "Notifying on HIGH and CRITICAL" : "Notifications are off"}
+            {notifying
+              ? "Notifying on HIGH and CRITICAL"
+              : notificationsSupported
+                ? "Notifications are off"
+                : "Notifications need a development build, not Expo Go"}
           </Text>
         </View>
         <View
