@@ -2,15 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { verify } from "../auth/biometric";
-import { statusBarInset } from "../theme/layout";
 import { accent, bg, radius, space, text } from "../theme/tokens";
 
 /**
@@ -48,7 +47,7 @@ export default function UnlockScreen({
   }, [ask]);
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView edges={["top"]} style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
       <View style={styles.inner}>
         <Text style={styles.brand}>DeepSentinel</Text>
@@ -79,7 +78,7 @@ export default function UnlockScreen({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: bg.canvas, paddingTop: statusBarInset },
+  screen: { flex: 1, backgroundColor: bg.canvas },
   inner: { flex: 1, justifyContent: "center", padding: space.xl, gap: space.md },
   brand: { color: text.primary, fontSize: 26, fontWeight: "700", letterSpacing: -0.5 },
   locked: { color: accent.base, fontSize: 13, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase" },

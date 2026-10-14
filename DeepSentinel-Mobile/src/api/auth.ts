@@ -48,3 +48,17 @@ export const getMe = () => request<User>("/auth/me");
 
 export const logout = () =>
   request<{ detail?: string }>("/auth/logout", { method: "POST" });
+
+/** Change your own display name or email. Username and role are not yours to change. */
+export const updateMe = (changes: { full_name?: string; email?: string }) =>
+  request<User>("/auth/me", { method: "PATCH", body: changes });
+
+/**
+ * Change your own password. The server invalidates every token issued before
+ * the change, this one included, so the caller signs in again afterwards.
+ */
+export const changePassword = (current_password: string, new_password: string) =>
+  request<{ status: string; note: string }>("/auth/change-password", {
+    method: "POST",
+    body: { current_password, new_password },
+  });

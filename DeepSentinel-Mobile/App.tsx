@@ -1,20 +1,21 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   AppState,
   BackHandler,
   Pressable,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { Analysis, BehaviouralEvidence, GraphEvidence } from "./src/api/analyses";
 import type { AnalyzeResponse, Transaction } from "./src/api/analyze";
-import type { LoginResponse } from "./src/api/auth";
+import type { LoginResponse, User } from "./src/api/auth";
 import { getMe } from "./src/api/auth";
 import { findCaseByTransaction } from "./src/api/cases";
 import { ApiError, setUnauthorisedHandler } from "./src/api/client";
@@ -22,64 +23,91 @@ import type { LiveAlert } from "./src/api/monitor";
 import * as biometric from "./src/auth/biometric";
 import * as session from "./src/auth/session";
 import type { Session } from "./src/auth/session";
+import { tap, type IconName } from "./src/components/ios";
 import type { Sample } from "./src/data/samples";
 import { enableNotifications, onNotificationTap } from "./src/lib/notify";
+import { DEFAULT_PREFS, loadPrefs, savePrefs, severitiesFor, type Prefs } from "./src/lib/prefs";
 import { useMonitor } from "./src/lib/useMonitor";
 import AlertsScreen from "./src/screens/AlertsScreen";
-import CaseDeskScreen from "./src/screens/CaseDeskScreen";
-import CasesScreen from "./src/screens/CasesScreen";
-import LiveScreen from "./src/screens/LiveScreen";
-import UnlockScreen from "./src/screens/UnlockScreen";
-import OverviewScreen from "./src/screens/OverviewScreen";
 import AnalyzeScreen from "./src/screens/AnalyzeScreen";
+import AssistantScreen from "./src/screens/AssistantScreen";
+import CaseDeskScreen from "./src/screens/CaseDeskScreen";
 import CaseScreen from "./src/screens/CaseScreen";
+import CasesScreen from "./src/screens/CasesScreen";
+import HomeScreen from "./src/screens/HomeScreen";
+import LiveScreen from "./src/screens/LiveScreen";
 import LoginScreen from "./src/screens/LoginScreen";
-import { accent, bg, space, text } from "./src/theme/tokens";
+import OverviewScreen from "./src/screens/OverviewScreen";
+import SettingsScreen from "./src/screens/SettingsScreen";
+import UnlockScreen from "./src/screens/UnlockScreen";
+import { accent, bg, text } from "./src/theme/tokens";
 
 /**
- * The gate, five tabs, and one screen pushed over them.
+ * The gate, five tabs, and a stack of pushed screens inside each tab.
  *
- * Navigation is still state rather than a router. Cases and Live did not
- * change the shape: each is a leaf with one way in and one way out, and the
- * one link between screens (a live alert opening its case) is a single state
- * change rather than a route.
+ * Laid out as an iOS app is: the tab bar stays put, each tab keeps its own
+ * history, and tapping the tab you are already on goes back to its root. Still
+ * plain state rather than a router library; nothing here needs deep links.
  */
-type Tab = "overview" | "alerts" | "cases" | "live" | "analyze";
+type Tab = "home" | "alerts" | "cases" | "assistant" | "settings";
 
-/**
- * How long the app may sit in the background before the session is dropped.
- *
- * A fraud tool on an unlocked phone left on a desk is the risk this guards.
- * Sixty seconds rather than instantly: glancing at a notification and coming
- * straight back is normal use, and signing someone out for it teaches them to
- * resent the lock rather than trust it.
- *
- * Without fingerprint or face unlock the session is cleared from the keystore,
- * not just from memory: a lock that a relaunch walks straight past is not a
- * lock. With it, the session is kept and the person is asked for instead.
- */
-const LOCK_AFTER_MS = 60_000;
+const TABS: { key: Tab; label: string; icon: IconName; iconOn: IconName }[] = [
+  { key: "home", label: "Home", icon: "home-outline", iconOn: "home" },
+  { key: "alerts", label: "Alerts", icon: "notifications-outline", iconOn: "notifications" },
+  { key: "cases", label: "Cases", icon: "folder-open-outline", iconOn: "folder-open" },
+  { key: "assistant", label: "Assistant", icon: "sparkles-outline", iconOn: "sparkles" },
+  { key: "settings", label: "Settings", icon: "settings-outline", iconOn: "settings" },
+];
 
-type Detail =
-  | ({ kind: "analysis" } & AnalysisDetail)
-  | { kind: "case"; caseRef: string };
+const TAB_LABEL: Record<Tab, string> = Object.fromEntries(TABS.map((t) => [t.key, t.label])) as Record<Tab, string>;
 
-type AnalysisDetail = {
+type AnalysisPage = {
+  kind: "analysis";
   row: Analysis;
-  evidence?: {
-    behavioural?: BehaviouralEvidence | null;
-    graph?: GraphEvidence | null;
-  };
+  evidence?: { behavioural?: BehaviouralEvidence | null; graph?: GraphEvidence | null };
   available?: { behavioral: boolean; graph: boolean; temporal: boolean };
   groundTruth?: boolean;
   forensicReport?: string | null;
 };
 
+type Page =
+  | AnalysisPage
+  | { kind: "case"; caseRef: string }
+  | { kind: "live" }
+  | { kind: "analyze" }
+  | { kind: "overview" };
+
+/** What a page is called in the back button of the page above it. */
+function pageTitle(p: Page): string {
+  switch (p.kind) {
+    case "analysis":
+      return "Transaction";
+    case "case":
+      return p.caseRef;
+    case "live":
+      return "Live";
+    case "analyze":
+      return "Screen";
+    case "overview":
+      return "Overview";
+  }
+}
+
+const EMPTY_STACKS: Record<Tab, Page[]> = { home: [], alerts: [], cases: [], assistant: [], settings: [] };
+
 export default function App() {
+  return (
+    <SafeAreaProvider>
+      <Root />
+    </SafeAreaProvider>
+  );
+}
+
+function Root() {
   const [current, setCurrent] = useState<Session | null>(null);
   const [restoring, setRestoring] = useState(true);
-  const [tab, setTab] = useState<Tab>("alerts");
-  const [detail, setDetail] = useState<Detail | null>(null);
+  const [tab, setTab] = useState<Tab>("home");
+  const [stacks, setStacks] = useState<Record<Tab, Page[]>>(EMPTY_STACKS);
   const [lockedOut, setLockedOut] = useState(false);
   const leftAt = useRef<number | null>(null);
 
@@ -90,8 +118,33 @@ export default function App() {
   const [locked, setLocked] = useState(false);
   const bioReady = bio.usable && bioOn;
 
-  const [notifying, setNotifying] = useState(false);
-  const monitor = useMonitor(!!current && !locked, notifying);
+  const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
+  const [notificationsAllowed, setNotificationsAllowed] = useState(false);
+  const severities = useMemo(
+    () => (notificationsAllowed ? severitiesFor(prefs.alertLevel) : new Set<string>()),
+    [notificationsAllowed, prefs.alertLevel],
+  );
+  const monitor = useMonitor(!!current && !locked, severities);
+
+  const stack = stacks[tab];
+  const top = stack[stack.length - 1] ?? null;
+
+  const push = useCallback(
+    (page: Page, onTab?: Tab) => {
+      const target = onTab ?? tab;
+      if (onTab) setTab(onTab);
+      setStacks((s) => ({ ...s, [target]: [...s[target], page] }));
+    },
+    [tab],
+  );
+  const pop = useCallback(() => {
+    setStacks((s) => ({ ...s, [tab]: s[tab].slice(0, -1) }));
+  }, [tab]);
+
+  const reset = useCallback(() => {
+    setStacks(EMPTY_STACKS);
+    setTab("home");
+  }, []);
 
   /**
    * A stored session is checked against the server before it is trusted. A
@@ -100,10 +153,15 @@ export default function App() {
    */
   useEffect(() => {
     (async () => {
-      const [cap, pref] = await Promise.all([biometric.capability(), biometric.preference()]);
+      const [cap, pref, stored, p] = await Promise.all([
+        biometric.capability(),
+        biometric.preference(),
+        session.load(),
+        loadPrefs(),
+      ]);
       setBio(cap);
       setBioOn(pref === true);
-      const stored = await session.load();
+      setPrefs(p);
       if (!stored) {
         setRestoring(false);
         return;
@@ -126,118 +184,130 @@ export default function App() {
   }, []);
 
   // Registered once, so a 401 from anywhere lands here rather than being
-  // handled — or forgotten — screen by screen.
+  // handled, or forgotten, screen by screen.
   useEffect(() => {
     setUnauthorisedHandler(() => {
       session.clear();
       setCurrent(null);
-      setDetail(null);
-      setTab("alerts");
+      reset();
     });
     return () => setUnauthorisedHandler(null);
-  }, []);
+  }, [reset]);
 
   /**
-   * Drop the session when the app has been away long enough.
+   * Lock when the app has been away long enough. How long is a setting.
    *
-   * Timed from when it left rather than counted while it is gone: a phone
-   * suspends background timers, so a countdown running in the app would not
-   * finish while the app is the thing that was suspended.
+   * Timed from when it went to the background rather than counted while it is
+   * gone: a phone suspends background timers. Only "background" starts the
+   * clock. The fingerprint prompt and permission dialogs make the app briefly
+   * "inactive", and counting those would lock the app in a loop.
+   *
+   * Without biometric unlock the session is cleared from the keystore, not
+   * just from memory, so a relaunch cannot walk past the lock.
    */
   useEffect(() => {
+    const lockAfter = prefs.autoLockMinutes * 60_000;
     const sub = AppState.addEventListener("change", (next) => {
       if (next === "active") {
-        const away = leftAt.current ? Date.now() - leftAt.current : 0;
+        const away = leftAt.current !== null ? Date.now() - leftAt.current : -1;
         leftAt.current = null;
-        if (away > LOCK_AFTER_MS && bioReady) {
+        if (away < 0 || away < lockAfter || !current) return;
+        if (bioReady) {
           setLocked(true);
-        } else if (away > LOCK_AFTER_MS) {
+        } else {
           session.clear();
           setCurrent(null);
-          setDetail(null);
-          setTab("alerts");
+          reset();
           setLockedOut(true);
         }
-      } else if (next === "background" || next === "inactive") {
+      } else if (next === "background") {
         leftAt.current ??= Date.now();
       }
     });
     return () => sub.remove();
-  }, [bioReady]);
+  }, [bioReady, prefs.autoLockMinutes, current, reset]);
 
   // Ask for notification permission once someone is signed in and unlocked;
   // asking on the login screen would be asking a stranger.
   useEffect(() => {
-    if (current && !locked) enableNotifications().then(setNotifying);
+    if (current && !locked) enableNotifications().then(setNotificationsAllowed);
   }, [current, locked]);
 
-  /** Open the case the monitor recorded for a live alert. */
-  const openTransaction = useCallback(async (transactionId: string) => {
-    try {
-      const found = await findCaseByTransaction(transactionId);
-      if (found) {
-        setDetail({ kind: "case", caseRef: found.case_ref });
-      } else {
-        setTab("live");
-        Alert.alert(
-          "No case recorded yet",
-          `The monitor has not written a case for ${transactionId}. It is recorded moments after the alert; try again shortly.`,
-        );
+  /** Open the case the monitor recorded for a live alert, on the Home tab. */
+  const openTransaction = useCallback(
+    async (transactionId: string) => {
+      try {
+        const found = await findCaseByTransaction(transactionId);
+        if (found) {
+          push({ kind: "case", caseRef: found.case_ref }, "home");
+        } else {
+          Alert.alert(
+            "No case recorded yet",
+            `The monitor has not written a case for ${transactionId}. It is recorded moments after the alert; try again shortly.`,
+          );
+        }
+      } catch (err) {
+        Alert.alert("Cannot open the case", (err as Error).message);
       }
-    } catch (err) {
-      Alert.alert("Cannot open the case", (err as Error).message);
-    }
-  }, []);
+    },
+    [push],
+  );
 
   useEffect(() => onNotificationTap(openTransaction), [openTransaction]);
 
-  // Android's back button should close a case, not the app.
+  // Android's back button pops the current tab's stack before it leaves the app.
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (detail) {
-        setDetail(null);
+      if (top) {
+        pop();
+        return true;
+      }
+      if (tab !== "home" && tab !== "settings") {
+        setTab("home");
         return true;
       }
       return false;
     });
     return () => sub.remove();
-  }, [detail]);
+  }, [top, tab, pop]);
 
-  const signIn = useCallback(async (login: LoginResponse) => {
-    setCurrent(await session.save(login));
-    setTab("alerts");
-    setDetail(null);
-    setLockedOut(false);
-    setLocked(false);
+  const signIn = useCallback(
+    async (login: LoginResponse) => {
+      setCurrent(await session.save(login));
+      reset();
+      setLockedOut(false);
+      setLocked(false);
 
-    // Offered once, after a password sign-in has proved who this is. A "no"
-    // is remembered as firmly as a "yes".
-    const [cap, pref] = await Promise.all([biometric.capability(), biometric.preference()]);
-    setBio(cap);
-    if (cap.usable && pref === null) {
-      Alert.alert(
-        `Unlock with ${cap.label}?`,
-        `When the app has been in the background for a minute it locks. With ${cap.label}, you unlock it instead of typing your password again. You can change this from the account button on Alerts.`,
-        [
-          {
-            text: "Not now",
-            style: "cancel",
-            onPress: () => {
-              biometric.setPreference(false);
-              setBioOn(false);
+      // Offered once, after a password sign-in has proved who this is. A "no"
+      // is remembered as firmly as a "yes".
+      const [cap, pref] = await Promise.all([biometric.capability(), biometric.preference()]);
+      setBio(cap);
+      if (cap.usable && pref === null) {
+        Alert.alert(
+          `Unlock with ${cap.label}?`,
+          `When the app has been in the background it locks. With ${cap.label}, you unlock it instead of typing your password again. You can change this in Settings.`,
+          [
+            {
+              text: "Not now",
+              style: "cancel",
+              onPress: () => {
+                biometric.setPreference(false);
+                setBioOn(false);
+              },
             },
-          },
-          {
-            text: "Turn on",
-            onPress: () => {
-              biometric.setPreference(true);
-              setBioOn(true);
+            {
+              text: "Turn on",
+              onPress: () => {
+                biometric.setPreference(true);
+                setBioOn(true);
+              },
             },
-          },
-        ],
-      );
-    }
-  }, []);
+          ],
+        );
+      }
+    },
+    [reset],
+  );
 
   const toggleBiometric = useCallback(async () => {
     if (!bioOn) {
@@ -251,28 +321,39 @@ export default function App() {
   const signOut = useCallback(async () => {
     await session.clear();
     setCurrent(null);
-    setDetail(null);
-    setTab("alerts");
+    reset();
     setLocked(false);
+  }, [reset]);
+
+  const changePrefs = useCallback((next: Prefs) => {
+    setPrefs(next);
+    savePrefs(next);
   }, []);
 
-  const showResult = useCallback((result: AnalyzeResponse, sample: Sample) => {
-    setDetail({
-      kind: "analysis",
-      row: toAnalysis(result, sample.transaction),
-      evidence: {
-        behavioural: result.behavioral_evidence,
-        graph: result.graph_evidence,
-      },
-      available: {
-        behavioral: result.behavioral_available,
-        graph: result.graph_available,
-        temporal: result.temporal_available,
-      },
-      groundTruth: sample.isFraud,
-      forensicReport: result.forensic_report,
-    });
-  }, []);
+  const updateUser = useCallback(
+    async (user: User) => {
+      if (current) setCurrent(await session.updateUser(current, user));
+    },
+    [current],
+  );
+
+  const showResult = useCallback(
+    (result: AnalyzeResponse, sample: Sample) => {
+      push({
+        kind: "analysis",
+        row: toAnalysis(result, sample.transaction),
+        evidence: { behavioural: result.behavioral_evidence, graph: result.graph_evidence },
+        available: {
+          behavioral: result.behavioral_available,
+          graph: result.graph_available,
+          temporal: result.temporal_available,
+        },
+        groundTruth: sample.isFraud,
+        forensicReport: result.forensic_report,
+      });
+    },
+    [push],
+  );
 
   if (restoring) return <Splash />;
   if (!current) return <LoginScreen onSignedIn={signIn} lockedOut={lockedOut} />;
@@ -291,77 +372,106 @@ export default function App() {
     );
   }
 
-  if (detail?.kind === "case") {
-    return <CaseDeskScreen caseRef={detail.caseRef} onBack={() => setDetail(null)} />;
+  const backLabel = stack.length > 1 ? pageTitle(stack[stack.length - 2]) : TAB_LABEL[tab];
+
+  function renderPage(page: Page) {
+    switch (page.kind) {
+      case "analysis":
+        return (
+          <CaseScreen
+            row={page.row}
+            evidence={page.evidence}
+            available={page.available}
+            groundTruth={page.groundTruth}
+            forensicReport={page.forensicReport}
+            backLabel={backLabel}
+            onBack={pop}
+          />
+        );
+      case "case":
+        return <CaseDeskScreen caseRef={page.caseRef} backLabel={backLabel} onBack={pop} />;
+      case "live":
+        return (
+          <LiveScreen
+            state={monitor.state}
+            error={monitor.error}
+            notifying={severities.size > 0}
+            onOpen={(a: LiveAlert) => openTransaction(a.transaction_id)}
+            onBack={pop}
+          />
+        );
+      case "analyze":
+        return <AnalyzeScreen onResult={showResult} backLabel={backLabel} onBack={pop} />;
+      case "overview":
+        return <OverviewScreen onBack={pop} />;
+    }
   }
 
-  if (detail) {
-    return (
-      <CaseScreen
-        row={detail.row}
-        evidence={detail.evidence}
-        available={detail.available}
-        groundTruth={detail.groundTruth}
-        forensicReport={detail.forensicReport}
-        onBack={() => setDetail(null)}
-      />
-    );
+  function renderRoot() {
+    switch (tab) {
+      case "home":
+        return (
+          <HomeScreen
+            user={current!.user}
+            monitor={monitor.state}
+            onOpenAlert={(a) => openTransaction(a.transaction_id)}
+            onOpenLive={() => push({ kind: "live" })}
+            onScreen={() => push({ kind: "analyze" })}
+            onOverview={() => push({ kind: "overview" })}
+            onCases={() => setTab("cases")}
+            onAlerts={() => setTab("alerts")}
+          />
+        );
+      case "alerts":
+        return (
+          <AlertsScreen
+            onOpen={(row) => push({ kind: "analysis", row })}
+            onScreen={() => push({ kind: "analyze" })}
+          />
+        );
+      case "cases":
+        return <CasesScreen onOpen={(c) => push({ kind: "case", caseRef: c.case_ref })} />;
+      case "assistant":
+        return <AssistantScreen />;
+      case "settings":
+        return (
+          <SettingsScreen
+            user={current!.user}
+            onUserUpdated={updateUser}
+            onSignOut={signOut}
+            onPasswordChanged={signOut}
+            biometric={{ usable: bio.usable, label: bio.label, on: bioOn, toggle: toggleBiometric }}
+            prefs={prefs}
+            onPrefs={changePrefs}
+            notificationsAllowed={notificationsAllowed}
+          />
+        );
+    }
   }
 
   return (
     <View style={styles.shell}>
-      <View style={styles.body}>
-        {tab === "overview" ? (
-          <OverviewScreen />
-        ) : tab === "alerts" ? (
-          <AlertsScreen
-            session={current}
-            onOpen={(row) => setDetail({ kind: "analysis", row })}
-            onSignOut={signOut}
-            biometric={bio.usable ? { label: bio.label, on: bioOn, toggle: toggleBiometric } : null}
-          />
-        ) : tab === "cases" ? (
-          <CasesScreen onOpen={(c) => setDetail({ kind: "case", caseRef: c.case_ref })} />
-        ) : tab === "live" ? (
-          <LiveScreen
-            state={monitor.state}
-            error={monitor.error}
-            notifying={notifying}
-            onOpen={(a: LiveAlert) => openTransaction(a.transaction_id)}
-          />
-        ) : (
-          <AnalyzeScreen onResult={showResult} />
-        )}
-      </View>
-      <View style={styles.tabs}>
-        <TabButton
-          label="Overview"
-          on={tab === "overview"}
-          onPress={() => setTab("overview")}
-        />
-        <TabButton label="Alerts" on={tab === "alerts"} onPress={() => setTab("alerts")} />
-        <TabButton label="Cases" on={tab === "cases"} onPress={() => setTab("cases")} />
-        <TabButton
-          label="Live"
-          on={tab === "live"}
-          badge={monitor.state?.running ?? false}
-          onPress={() => setTab("live")}
-        />
-        <TabButton
-          label="Screen"
-          on={tab === "analyze"}
-          onPress={() => setTab("analyze")}
-        />
-      </View>
+      <View style={styles.body}>{top ? renderPage(top) : renderRoot()}</View>
+      <TabBar
+        tab={tab}
+        onSelect={(t) => {
+          if (t === tab) {
+            // iOS: tapping the current tab returns to its root.
+            setStacks((s) => ({ ...s, [t]: [] }));
+          } else {
+            setTab(t);
+          }
+        }}
+      />
     </View>
   );
 }
 
 /**
- * A screening result, in the shape the case screen already reads.
+ * A screening result, in the shape the transaction screen already reads.
  *
- * The two paths return different objects for the same thing — the analysis
- * list a stored summary, `/analyze` a live result — and one screen renders
+ * The two paths return different objects for the same thing (the analysis
+ * list a stored summary, `/analyze` a live result) and one screen renders
  * both rather than existing twice.
  */
 function toAnalysis(result: AnalyzeResponse, t: Transaction): Analysis {
@@ -387,26 +497,30 @@ function toAnalysis(result: AnalyzeResponse, t: Transaction): Analysis {
   };
 }
 
-function TabButton({
-  label,
-  on,
-  badge = false,
-  onPress,
-}: {
-  label: string;
-  on: boolean;
-  /** A small lamp beside the label, for a tab whose subject is running. */
-  badge?: boolean;
-  onPress: () => void;
-}) {
+function TabBar({ tab, onSelect }: { tab: Tab; onSelect: (t: Tab) => void }) {
+  const insets = useSafeAreaInsets();
   return (
-    <Pressable onPress={onPress} style={styles.tab}>
-      <View style={[styles.tabMark, on && styles.tabMarkOn]} />
-      <View style={styles.tabLabel}>
-        <Text style={[styles.tabText, on && styles.tabTextOn]}>{label}</Text>
-        {badge && <View style={styles.tabBadge} />}
-      </View>
-    </Pressable>
+    <View style={[styles.tabs, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+      {TABS.map((t) => {
+        const on = t.key === tab;
+        return (
+          <Pressable
+            key={t.key}
+            onPress={() => {
+              tap();
+              onSelect(t.key);
+            }}
+            style={styles.tab}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: on }}
+            accessibilityLabel={t.label}
+          >
+            <Ionicons name={on ? t.iconOn : t.icon} size={25} color={on ? accent.base : text.muted} />
+            <Text style={[styles.tabText, on && { color: accent.base }]}>{t.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
@@ -428,35 +542,15 @@ const styles = StyleSheet.create({
 
   tabs: {
     flexDirection: "row",
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: bg.border,
-    backgroundColor: bg.raised,
-    paddingBottom: space.lg,
+    backgroundColor: "#121214",
+    paddingTop: 6,
   },
-  tab: { flex: 1, alignItems: "center", paddingTop: space.md, paddingBottom: space.xs, gap: space.sm },
-  tabMark: {
-    width: 24,
-    height: 3,
-    borderRadius: 1,
-    backgroundColor: "transparent",
-  },
-  tabMarkOn: { backgroundColor: accent.base },
-  tabLabel: { flexDirection: "row", alignItems: "center", gap: 4 },
-  tabBadge: { width: 6, height: 6, borderRadius: 3, backgroundColor: accent.base },
-  tabText: { color: text.muted, fontSize: 13, fontWeight: "600" },
-  tabTextOn: { color: text.primary },
+  tab: { flex: 1, alignItems: "center", gap: 2 },
+  tabText: { color: text.muted, fontSize: 10, fontWeight: "500" },
 
-  splash: {
-    flex: 1,
-    backgroundColor: bg.canvas,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  splashInner: { alignItems: "center", gap: space.xl },
-  brand: {
-    color: text.primary,
-    fontSize: 26,
-    fontWeight: "700",
-    letterSpacing: -0.5,
-  },
+  splash: { flex: 1, backgroundColor: bg.canvas, alignItems: "center", justifyContent: "center" },
+  splashInner: { alignItems: "center", gap: 24 },
+  brand: { color: text.primary, fontSize: 28, fontWeight: "700", letterSpacing: -0.5 },
 });

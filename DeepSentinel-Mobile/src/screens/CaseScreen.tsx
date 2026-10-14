@@ -1,12 +1,12 @@
 import {
   Pressable,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import type {
   Analysis,
@@ -15,6 +15,7 @@ import type {
   TemporalEvidence as TemporalShape,
 } from "../api/analyses";
 import ForensicReport from "../components/ForensicReport";
+import { NavBar } from "../components/ios";
 import SarPanel from "../components/SarPanel";
 import Behavioural from "../components/evidence/Behavioural";
 import Graph from "../components/evidence/Graph";
@@ -22,11 +23,12 @@ import Temporal from "../components/evidence/Temporal";
 import { Card, Fact, Label, MODALITIES, Note, RiskBadge, ScoreBar, Section } from "../components/ui";
 import { ago, money, score } from "../lib/format";
 import { accent, bg, mono, radius, riskColour, space, text } from "../theme/tokens";
-import { statusBarInset } from "../theme/layout";
 
 type Props = {
   row: Analysis;
   onBack: () => void;
+  /** What the back button says: the screen this was opened from. */
+  backLabel?: string;
   /** Evidence, when the caller has it. The analysis list does not serve it. */
   evidence?: {
     behavioural?: BehaviouralShape | null;
@@ -75,6 +77,7 @@ export default function CaseScreen({
   available,
   groundTruth,
   forensicReport,
+  backLabel = "Alerts",
 }: Props) {
   const colour = riskColour(row.classification);
   const used = row.modalities_used ?? 0;
@@ -87,12 +90,10 @@ export default function CaseScreen({
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView edges={["top"]} style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
+      <NavBar title="Transaction" back={{ label: backLabel, onPress: onBack }} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable onPress={onBack} hitSlop={12} style={styles.back}>
-          <Text style={styles.backText}>← Alerts</Text>
-        </Pressable>
 
         <Card>
           <View style={styles.verdictTop}>
@@ -280,7 +281,7 @@ export default function CaseScreen({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: bg.canvas, paddingTop: statusBarInset },
+  screen: { flex: 1, backgroundColor: bg.canvas },
   content: { padding: space.lg, gap: space.md, paddingBottom: space.xxl },
 
   back: { paddingVertical: space.sm },

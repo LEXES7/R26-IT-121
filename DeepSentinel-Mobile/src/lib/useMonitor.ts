@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AppState } from "react-native";
 
 import { alertKey, getMonitorState, type MonitorState } from "../api/monitor";
-import { NOTIFY_SEVERITIES, notifyAlert } from "./notify";
+import { notifyAlert } from "./notify";
 
 /**
  * The live monitor, polled once for the whole app.
@@ -18,12 +18,13 @@ import { NOTIFY_SEVERITIES, notifyAlert } from "./notify";
 
 const POLL_MS = 5_000;
 
-export function useMonitor(active: boolean, notify: boolean) {
+/** `severities` is which alerts notify; empty when notifications are off or denied. */
+export function useMonitor(active: boolean, severities: Set<string>) {
   const [state, setState] = useState<MonitorState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const seen = useRef<Set<string> | null>(null);
-  const notifyRef = useRef(notify);
-  notifyRef.current = notify;
+  const notifyRef = useRef(severities);
+  notifyRef.current = severities;
 
   useEffect(() => {
     if (!active) {
@@ -47,7 +48,7 @@ export function useMonitor(active: boolean, notify: boolean) {
             const fresh = next.alerts.filter((a) => !seen.current!.has(alertKey(a))).reverse();
             for (const a of fresh) {
               seen.current.add(alertKey(a));
-              if (notifyRef.current && NOTIFY_SEVERITIES.has(a.severity)) await notifyAlert(a);
+              if (notifyRef.current.has(a.severity)) await notifyAlert(a);
             }
           }
           setState(next);

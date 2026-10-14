@@ -4,7 +4,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -12,12 +11,12 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { login, type LoginResponse } from "../api/auth";
 import { ApiError, NetworkError } from "../api/client";
 import { API_BASE } from "../config";
 import { accent, bg, mono, radius, risk, space, text } from "../theme/tokens";
-import { statusBarInset } from "../theme/layout";
 
 type Props = {
   onSignedIn: (session: LoginResponse) => void;
@@ -106,7 +105,7 @@ export default function LoginScreen({ onSignedIn, lockedOut = false }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView edges={["top"]} style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
       <KeyboardAvoidingView
         style={styles.flex}
@@ -225,7 +224,7 @@ export default function LoginScreen({ onSignedIn, lockedOut = false }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: bg.canvas, paddingTop: statusBarInset },
+  screen: { flex: 1, backgroundColor: bg.canvas },
   flex: { flex: 1 },
   content: { padding: space.xl, gap: space.xl, flexGrow: 1, justifyContent: "center" },
 

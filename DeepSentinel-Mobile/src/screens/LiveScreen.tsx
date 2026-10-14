@@ -3,18 +3,18 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import type { LiveAlert, MonitorState } from "../api/monitor";
+import { NavBar } from "../components/ios";
 import { RiskBadge, ScoreBar } from "../components/ui";
 import { notificationsSupported } from "../lib/notify";
 import { account, money, percent, score } from "../lib/format";
-import { statusBarInset } from "../theme/layout";
 import { accent, bg, mono, radius, risk, riskColour, space, text } from "../theme/tokens";
 
 /**
@@ -46,7 +46,9 @@ export default function LiveScreen({
   error,
   notifying,
   onOpen,
+  onBack,
 }: {
+  onBack: () => void;
   state: MonitorState | null;
   error: string | null;
   /** Whether new HIGH and CRITICAL alerts raise a notification on this device. */
@@ -67,8 +69,9 @@ export default function LiveScreen({
   const c = state?.counters;
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView edges={["top"]} style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
+      <NavBar back={{ label: "Home", onPress: onBack }} />
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Live</Text>
@@ -211,7 +214,7 @@ function AlertRow({ a, opening, onPress }: { a: LiveAlert; opening: boolean; onP
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: bg.canvas, paddingTop: statusBarInset },
+  screen: { flex: 1, backgroundColor: bg.canvas },
   header: {
     flexDirection: "row",
     alignItems: "center",

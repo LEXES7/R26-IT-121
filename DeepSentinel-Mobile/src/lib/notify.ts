@@ -34,9 +34,6 @@ const Notifications: NotificationsModule | null = (() => {
 
 const CHANNEL = "alerts";
 
-/** MEDIUM is a band the system will not commit on; it is not worth a buzz. */
-export const NOTIFY_SEVERITIES = new Set(["CRITICAL", "HIGH"]);
-
 Notifications?.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,

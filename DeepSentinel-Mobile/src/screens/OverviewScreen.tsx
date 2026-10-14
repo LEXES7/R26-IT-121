@@ -2,18 +2,18 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { bucketByHour, loadOverview, type Overview } from "../api/overview";
 import { SeverityBar, VolumeChart } from "../components/Chart";
+import { NavBar } from "../components/ios";
 import { bg, mono, radius, risk, space, text } from "../theme/tokens";
-import { statusBarInset } from "../theme/layout";
 
 /**
  * The state of the whole system on one screen.
@@ -28,7 +28,7 @@ import { statusBarInset } from "../theme/layout";
  *  they are. */
 const POLL_MS = 15_000;
 
-export default function OverviewScreen() {
+export default function OverviewScreen({ onBack }: { onBack: () => void }) {
   const [data, setData] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -61,7 +61,7 @@ export default function OverviewScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.centre}>
+      <SafeAreaView edges={["top"]} style={styles.centre}>
         <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
         <ActivityIndicator size="small" color={text.muted} />
       </SafeAreaView>
@@ -81,8 +81,9 @@ export default function OverviewScreen() {
   const known = detectors.filter((d) => d.live !== undefined).length;
 
   return (
-    <SafeAreaView style={styles.shell}>
+    <SafeAreaView edges={["top"]} style={styles.shell}>
       <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
+      <NavBar back={{ label: "Home", onPress: onBack }} />
       <ScrollView
         contentContainerStyle={styles.body}
         refreshControl={
@@ -205,13 +206,12 @@ function Panel({
 }
 
 const styles = StyleSheet.create({
-  shell: { flex: 1, backgroundColor: bg.canvas, paddingTop: statusBarInset },
+  shell: { flex: 1, backgroundColor: bg.canvas },
   centre: {
     flex: 1,
     backgroundColor: bg.canvas,
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: statusBarInset,
   },
   body: { padding: space.lg, gap: space.lg, paddingBottom: space.xxl },
 

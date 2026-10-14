@@ -5,7 +5,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -13,6 +12,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import type { GraphEvidence } from "../api/analyses";
 import {
@@ -23,12 +23,12 @@ import {
   type ReviewStatus,
 } from "../api/cases";
 import ForensicReport from "../components/ForensicReport";
+import { NavBar, confirmTap } from "../components/ios";
 import Behavioural from "../components/evidence/Behavioural";
 import Graph from "../components/evidence/Graph";
 import Temporal from "../components/evidence/Temporal";
 import { Card, Fact, Label, MODALITIES, Note, RiskBadge, ScoreBar, Section } from "../components/ui";
 import { ago, score } from "../lib/format";
-import { statusBarInset } from "../theme/layout";
 import { accent, bg, mono, radius, riskColour, space, text } from "../theme/tokens";
 import { reviewColour } from "./CasesScreen";
 
@@ -51,9 +51,11 @@ const ACTIONS: { status: ReviewStatus; label: string; confirm: boolean }[] = [
 export default function CaseDeskScreen({
   caseRef,
   onBack,
+  backLabel = "Cases",
 }: {
   caseRef: string;
   onBack: () => void;
+  backLabel?: string;
 }) {
   const [c, setCase] = useState<CaseDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +80,7 @@ export default function CaseDeskScreen({
       setSaving(status);
       try {
         await reviewCase(caseRef, status, note);
+        confirmTap();
         setNote("");
         await load();
       } catch (err) {
@@ -104,12 +107,10 @@ export default function CaseDeskScreen({
 
   if (!c) {
     return (
-      <SafeAreaView style={styles.screen}>
+      <SafeAreaView edges={["top"]} style={styles.screen}>
         <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
+        <NavBar title={caseRef} back={{ label: backLabel, onPress: onBack }} />
         <View style={styles.content}>
-          <Pressable onPress={onBack} hitSlop={12} style={styles.back}>
-            <Text style={styles.backText}>← Cases</Text>
-          </Pressable>
           {error ? (
             <Card>
               <Label>Cannot open {caseRef}</Label>
@@ -137,17 +138,14 @@ export default function CaseDeskScreen({
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView edges={["top"]} style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
+      <NavBar title={c.case_ref} back={{ label: backLabel, onPress: onBack }} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Pressable onPress={onBack} hitSlop={12} style={styles.back}>
-            <Text style={styles.backText}>← Cases</Text>
-          </Pressable>
-
           <Card>
             <View style={styles.top}>
               <RiskBadge level={c.classification} />
@@ -330,7 +328,7 @@ export default function CaseDeskScreen({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: bg.canvas, paddingTop: statusBarInset },
+  screen: { flex: 1, backgroundColor: bg.canvas },
   content: { padding: space.lg, gap: space.md, paddingBottom: space.xxl },
   back: { paddingVertical: space.sm },
   backText: { color: text.secondary, fontSize: 14 },

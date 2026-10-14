@@ -1,35 +1,24 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import { REVIEW_LABEL, listCases, type Case, type ReviewStatus } from "../api/cases";
-import { RiskBadge, ScoreBar } from "../components/ui";
+import { Empty, Screen, Segmented, tap } from "../components/ios";
 import { account, ago, score } from "../lib/format";
-import { statusBarInset } from "../theme/layout";
 import { bg, mono, radius, riskColour, space, text } from "../theme/tokens";
 
 /**
- * The review queue: what the live monitor recorded, filtered by where each
- * case is in review. Open is the default because it is the work still to do.
+ * The review queue: what the live monitor recorded, by where each case is in
+ * review. Open is the default because it is the work still to do.
  */
 
-const FILTERS: (ReviewStatus | "all")[] = [
-  "open",
-  "investigating",
-  "confirmed_fraud",
-  "false_positive",
-  "closed",
-  "all",
+const FILTERS: { value: ReviewStatus | "all"; label: string }[] = [
+  { value: "open", label: "Open" },
+  { value: "investigating", label: "Investigating" },
+  { value: "confirmed_fraud", label: "Fraud" },
+  { value: "false_positive", label: "False positive" },
+  { value: "closed", label: "Closed" },
+  { value: "all", label: "All" },
 ];
 
 const POLL_MS = 20_000;
@@ -51,7 +40,7 @@ export function reviewColour(status: string | null | undefined): string {
 }
 
 export default function CasesScreen({ onOpen }: { onOpen: (c: Case) => void }) {
-  const [filter, setFilter] = useState<(typeof FILTERS)[number]>("open");
+  const [filter, setFilter] = useState<ReviewStatus | "all">("open");
   const [rows, setRows] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -59,9 +48,7 @@ export default function CasesScreen({ onOpen }: { onOpen: (c: Case) => void }) {
 
   const load = useCallback(async () => {
     try {
-      setRows(
-        await listCases({ limit: 100, reviewStatus: filter === "all" ? undefined : filter }),
-      );
+      setRows(await listCases({ limit: 100, reviewStatus: filter === "all" ? undefined : filter }));
       setError(null);
     } catch (err) {
       setError((err as Error).message);
@@ -75,150 +62,128 @@ export default function CasesScreen({ onOpen }: { onOpen: (c: Case) => void }) {
     return () => clearInterval(id);
   }, [load]);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
-  }, [load]);
-
   return (
-    <SafeAreaView style={styles.screen}>
-      <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
-      <View style={styles.header}>
-        <Text style={styles.title}>Cases</Text>
-        <Text style={styles.subtitle}>
-          {rows.length} {filter === "all" ? "recorded" : REVIEW_LABEL[filter].toLowerCase()}
-        </Text>
+    <Screen title="Cases" scroll={false}>
+      <View style={styles.filters}>
+        <Segmented options={FILTERS} value={filter} onChange={setFilter} />
       </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filters}
-        style={styles.filterBar}
-      >
-        {FILTERS.map((f) => (
-          <Pressable
-            key={f}
-            onPress={() => setFilter(f)}
-            style={[styles.chip, filter === f && styles.chipOn]}
-          >
-            <Text style={[styles.chipText, filter === f && styles.chipTextOn]}>
-              {f === "all" ? "All" : REVIEW_LABEL[f]}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-
       {loading ? (
-        <View style={styles.centre}>
-          <ActivityIndicator color={text.muted} />
-        </View>
+        <ActivityIndicator color={text.muted} style={{ marginTop: 48 }} />
       ) : (
         <FlatList
           data={rows}
           keyExtractor={(c) => c.case_ref}
           contentContainerStyle={styles.list}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={text.muted} />
+            <RefreshControl
+              refreshing={refreshing}
+              tintColor={text.muted}
+              onRefresh={async () => {
+                setRefreshing(true);
+                await load();
+                setRefreshing(false);
+              }}
+            />
           }
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={
-            <View style={styles.centre}>
-              <Text style={styles.emptyTitle}>
-                {error ? "Cannot load cases" : "Nothing in this queue"}
-              </Text>
-              <Text style={styles.emptyBody}>
-                {error ??
-                  "Cases are recorded by the live monitor as it screens transactions. Start the monitor from the web console to fill this queue."}
-              </Text>
-            </View>
+            error ? (
+              <Empty icon="cloud-offline-outline" title="Cannot load cases" body={error} />
+            ) : (
+              <Empty
+                icon="folder-open-outline"
+                title="Nothing in this queue"
+                body="The live monitor records a case for every transaction it screens."
+              />
+            )
           }
-          renderItem={({ item }) => <Row c={item} onPress={() => onOpen(item)} />}
+          renderItem={({ item, index }) => (
+            <CaseRow
+              c={item}
+              first={index === 0}
+              last={index === rows.length - 1}
+              onPress={() => onOpen(item)}
+            />
+          )}
         />
       )}
-    </SafeAreaView>
+    </Screen>
   );
 }
 
-function Row({ c, onPress }: { c: Case; onPress: () => void }) {
+function CaseRow({
+  c,
+  first,
+  last,
+  onPress,
+}: {
+  c: Case;
+  first: boolean;
+  last: boolean;
+  onPress: () => void;
+}) {
   const colour = riskColour(c.classification);
   const status = (c.review_status ?? "open") as ReviewStatus;
   const pattern =
-    c.graph_pattern && c.graph_pattern !== "UNKNOWN" ? c.graph_pattern.replace(/_/g, " ") : null;
+    c.graph_pattern && c.graph_pattern !== "UNKNOWN"
+      ? c.graph_pattern.replace(/_/g, " ").toLowerCase()
+      : null;
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.row, pressed && { opacity: 0.75 }]}>
-      <View style={[styles.rowAccent, { backgroundColor: colour }]} />
-      <View style={styles.rowBody}>
-        <View style={styles.rowTop}>
-          <RiskBadge level={c.classification} />
+    <Pressable
+      onPress={() => {
+        tap();
+        onPress();
+      }}
+      style={({ pressed }) => [
+        styles.row,
+        first && styles.firstRow,
+        last && styles.lastRow,
+        pressed && { backgroundColor: bg.elevated },
+      ]}
+    >
+      <View style={[styles.dot, { backgroundColor: colour }]} />
+      <View style={styles.body}>
+        <View style={styles.line}>
           <Text style={styles.ref}>{c.case_ref}</Text>
           <Text style={styles.time}>{ago(c.detected_at)}</Text>
         </View>
-        <Text style={styles.line} numberOfLines={1}>
-          {c.transaction_id}
-          {c.sink_account ? `  →  ${account(c.sink_account)}` : ""}
-        </Text>
-        {(pattern || c.typology_name) && (
+        <View style={styles.line}>
           <Text style={styles.sub} numberOfLines={1}>
-            {[pattern, c.typology_name].filter(Boolean).join(" · ")}
+            {pattern ?? (c.sink_account ? `to ${account(c.sink_account)}` : c.transaction_id)}
           </Text>
-        )}
-        <View style={styles.bar}>
-          <ScoreBar value={c.fused_score} colour={colour} height={5} />
+          <Text style={[styles.score, { color: colour }]}>{score(c.fused_score, 2)}</Text>
         </View>
-        <View style={styles.foot}>
-          <Text style={styles.score}>{score(c.fused_score)}</Text>
-          <Text style={[styles.status, { color: reviewColour(status) }]}>
-            {REVIEW_LABEL[status] ?? status}
-            {c.reviewed_by ? ` · ${c.reviewed_by}` : ""}
-          </Text>
-        </View>
+        <Text style={[styles.status, { color: reviewColour(status) }]}>
+          {REVIEW_LABEL[status] ?? status}
+          {c.reviewed_by ? ` · ${c.reviewed_by}` : ""}
+        </Text>
       </View>
+      <Ionicons name="chevron-forward" size={18} color={text.faint} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: bg.canvas, paddingTop: statusBarInset },
-  header: { paddingHorizontal: space.lg, paddingTop: space.md },
-  title: { color: text.primary, fontSize: 28, fontWeight: "700", letterSpacing: -0.5 },
-  subtitle: { color: text.muted, fontSize: 14, marginTop: 2 },
-
-  filterBar: { flexGrow: 0 },
-  filters: { gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.md },
-  chip: {
-    borderWidth: 1,
-    borderColor: bg.border,
-    borderRadius: radius.pill,
-    paddingHorizontal: space.md,
-    paddingVertical: 5,
-  },
-  chipOn: { borderColor: text.secondary, backgroundColor: bg.raised },
-  chipText: { color: text.muted, fontSize: 11, fontWeight: "600" },
-  chipTextOn: { color: text.primary },
-
-  list: { paddingHorizontal: space.lg, paddingBottom: space.xxl, gap: space.md },
-  centre: { padding: space.xxl, alignItems: "center", gap: space.sm },
-  emptyTitle: { color: text.secondary, fontSize: 15, fontWeight: "600" },
-  emptyBody: { color: text.faint, fontSize: 12, lineHeight: 18, textAlign: "center" },
+  filters: { paddingBottom: space.md },
+  list: { paddingHorizontal: space.lg, paddingBottom: 40 },
+  separator: { height: StyleSheet.hairlineWidth, backgroundColor: bg.border, marginLeft: 38 },
 
   row: {
     flexDirection: "row",
+    alignItems: "center",
+    gap: space.md,
     backgroundColor: bg.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: bg.border,
-    overflow: "hidden",
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
   },
-  rowAccent: { width: 3 },
-  rowBody: { flex: 1, padding: space.lg },
-  rowTop: { flexDirection: "row", alignItems: "center", gap: space.md },
-  ref: { ...mono, color: text.primary, fontSize: 13, fontWeight: "600", flex: 1 },
-  time: { color: text.faint, fontSize: 11 },
-  line: { ...mono, color: text.secondary, fontSize: 12, marginTop: space.md },
-  sub: { color: text.muted, fontSize: 12, marginTop: 3 },
-  bar: { marginTop: space.md },
-  foot: { flexDirection: "row", alignItems: "center", marginTop: space.sm },
-  score: { ...mono, color: text.secondary, fontSize: 12, fontWeight: "600", flex: 1 },
-  status: { fontSize: 12, fontWeight: "600" },
+  firstRow: { borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg },
+  lastRow: { borderBottomLeftRadius: radius.lg, borderBottomRightRadius: radius.lg },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  body: { flex: 1, gap: 3 },
+  line: { flexDirection: "row", alignItems: "baseline", gap: space.sm },
+  ref: { ...mono, color: text.primary, fontSize: 15, fontWeight: "600", flex: 1 },
+  time: { color: text.muted, fontSize: 13 },
+  sub: { color: text.muted, fontSize: 14, flex: 1 },
+  score: { ...mono, fontSize: 14, fontWeight: "700" },
+  status: { fontSize: 13, fontWeight: "600" },
 });
