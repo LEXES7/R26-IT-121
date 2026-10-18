@@ -7,26 +7,8 @@
 import { useRef } from 'react'
 import { useGSAP } from '@gsap/react'
 import { gsap, prefersReducedMotion } from '../lib/motion'
-import { MODEL_LENS } from '../data/modelLens'
+import { MODELS, REPORT, TXN } from '../data/workedExample'
 import { Eyebrow } from './Editorial'
-
-const TXN = [
-  ['transaction_id', 'TX_2026_08_24_0117'],
-  ['type', 'TRANSFER'],
-  ['amount', '9,060,955.18'],
-  ['nameOrig', 'C1360689528'],
-  ['nameDest', 'C1674473954'],
-  ['step', '389'],
-]
-
-const MODELS = [
-  { key: 'graph', label: 'Network', model: 'GraphSAGE', score: 0.52, colour: `rgb(${MODEL_LENS.graph.hue})`,
-    finding: 'ACCOUNT_TAKEOVER: 2 senders drained into one account' },
-  { key: 'behavioural', label: 'Behaviour', model: 'Stratified VAE', score: 0.88, colour: `rgb(${MODEL_LENS.behavioural.hue})`,
-    finding: 'Reconstruction error 4.2σ above this account’s baseline' },
-  { key: 'temporal', label: 'Timing', model: 'System-Context TCN', score: 0.92, colour: `rgb(${MODEL_LENS.temporal.hue})`,
-    finding: 'Burstiness 0.92 — machine-paced, not human' },
-]
 
 const STEPS = [
   {
@@ -49,14 +31,6 @@ const STEPS = [
     title: 'And it writes the case.',
     body: 'Retrieval pulls the matching FATF typology, and every sentence cites a model output or a retrieved document. What lands on the analyst’s desk is evidence, not a number.',
   },
-]
-
-const REPORT = [
-  'CRITICAL: mule account receiving drained funds',
-  'Sink account C1674473954 received 2 transfers',
-  'that each emptied the sending account.',
-  'Pattern matches FATF typology: account takeover,',
-  'high-value transfers to a new beneficiary.',
 ]
 
 export default function TransactionStory() {
