@@ -16,7 +16,7 @@ export const PHOTOS = {
   networkLines: {
     src: '/images/network-lines.webp',
     alt: 'A web of lines joining points, like accounts joined by transfers',
-    source: unsplash('1504868584819-f8e8b4b6d7e3'),
+    source: unsplash('1545987796-200677ee1011'),
   },
   atmKeypad: {
     src: '/images/atm-keypad.webp',

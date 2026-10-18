@@ -2007,8 +2007,10 @@ html.theme-transition * {
    theme it becomes light lines on black, and a teal wash multiplied over it
    puts it in the page's colour without touching the picture. */
 
+/* No position here: a frame is placed by the page (relative in the flow,
+   absolute over a hero), and a position set in this sheet would beat the
+   utility class and drop every absolutely placed frame back into the flow. */
 .photo-frame {
-  position: relative;
   overflow: hidden;
   border: 1px solid rgb(var(--border-subtle));
   background: rgb(var(--sentinel-800));
