@@ -385,24 +385,26 @@ html.theme-transition * {
    rather than a local `.dark` class, so the toggle in the header keeps working
    and a signed-in user does not get a second, disagreeing theme control.
 
-   Page titles keep Instrument Serif. Everything else — labels, tables,
-   controls — is Space Grotesk, and every figure is DM Mono. The serif is the
-   one thing carried over from the public site, so the product still sounds
-   like itself the moment someone signs in.
+   It now speaks the public site's type and palette as well as its voice.
+   Page titles are Instrument Serif with an italic clause, labels and tables
+   are Inter, figures are JetBrains Mono, and the neutrals are the site's warm
+   ones, so signing in feels like walking further into the same building
+   rather than through a door into another one. The severity colours below
+   were measured and are unchanged.
    ────────────────────────────────────────────────────────────────────────── */
 
 .ds {
-  --ds-ink: 226 232 236;
-  --ds-muted: 148 162 171;
-  --ds-faint: 104 118 127;
-  --ds-line: 42 50 56;
-  --ds-workspace: 14 17 19;
-  --ds-surface: 22 26 29;
-  --ds-surface-2: 29 34 38;
-  --ds-surface-3: 40 47 52;
+  --ds-ink: 240 237 231;
+  --ds-muted: 163 156 146;
+  --ds-faint: 133 126 117;
+  --ds-line: 46 42 39;
+  --ds-workspace: 13 12 11;
+  --ds-surface: 22 20 18;
+  --ds-surface-2: 30 27 25;
+  --ds-surface-3: 44 40 37;
   --ds-accent: 45 212 191;
   --ds-accent-strong: 94 231 213;
-  --ds-accent-soft: 22 66 61;
+  --ds-accent-soft: 18 58 54;
   --ds-signal: 255 107 92;
   --ds-signal-soft: 74 34 30;
   --ds-warn: 255 180 84;
@@ -418,26 +420,26 @@ html.theme-transition * {
 
   color: rgb(var(--ds-ink));
   background: rgb(var(--ds-workspace));
-  font-family: 'Space Grotesk', 'Trebuchet MS', sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 [data-theme='light'] .ds {
-  --ds-ink: 22 28 33;
-  --ds-muted: 88 100 110;
+  --ds-ink: 26 24 21;
+  --ds-muted: 90 83 75;
   /* --ds-faint carries every eyebrow, dt label and table header in the
      console. The old value sat at 3.4:1 on --ds-workspace — under the
      4.5:1 floor these are all set well below 14px — which read as
      washed-out captions across every screen built on this system
      (System, Monitor, Cases, Thresholds…). Darkened to 5.2:1. */
-  --ds-faint: 96 106 114;
-  --ds-line: 219 224 229;
-  --ds-workspace: 247 248 249;
+  --ds-faint: 110 101 93;
+  --ds-line: 226 220 211;
+  --ds-workspace: 246 243 238;
   --ds-surface: 255 255 255;
-  --ds-surface-2: 239 241 243;
-  --ds-surface-3: 226 230 234;
-  --ds-accent: 14 140 125;
-  --ds-accent-strong: 9 110 98;
-  --ds-accent-soft: 214 240 235;
+  --ds-surface-2: 240 236 229;
+  --ds-surface-3: 228 222 213;
+  --ds-accent: 0 133 122;
+  --ds-accent-strong: 0 110 101;
+  --ds-accent-soft: 214 238 233;
   --ds-signal: 190 40 30;
   --ds-signal-soft: 252 228 225;
   /* 4.0:1 at the old value — under 4.5:1, and this is what "Warming up" /
@@ -445,7 +447,7 @@ html.theme-transition * {
   --ds-warn: 150 88 8;
   --ds-warn-soft: 251 238 214;
   --ds-lavender: 108 93 177;
-  --ds-shadow: 18 28 38;
+  --ds-shadow: 20 17 15;
 
   /* Re-derived for paper, not dimmed: the same hues fail contrast on a light
      ground — the old amber sat at 1.72:1, effectively invisible. */
@@ -459,7 +461,7 @@ html.theme-transition * {
 .ds button { cursor: pointer; }
 .ds ::selection { background: rgb(var(--ds-accent-soft)); color: rgb(var(--ds-ink)); }
 
-.ds-mono { font-family: 'DM Mono', ui-monospace, 'SFMono-Regular', monospace; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.ds-mono { font-family: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
 .ds-fade-up { animation: ds-fade-up .5s ease both; }
 @keyframes ds-fade-up { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .ds-fade-up { animation: none; } }
@@ -497,11 +499,11 @@ html.theme-transition * {
 
 .ds-main { min-width: 0; flex: 1; display: flex; flex-direction: column; }
 .ds-topbar { min-height: 78px; padding: 17px 30px; border-bottom: 1px solid rgb(var(--ds-line)); display: flex; align-items: center; justify-content: space-between; gap: 16px; background: rgb(var(--ds-workspace)); }
-.ds-eyebrow { color: rgb(var(--ds-accent-strong)); font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: .17em; font-weight: 600; }
+.ds-eyebrow { color: rgb(var(--ds-faint)); font-family: 'Inter', system-ui, sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: .14em; font-weight: 500; }
 /* The one thing kept from the public site's voice. */
 .ds-page-title { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: clamp(28px, 2.7vw, 38px); letter-spacing: -.015em; line-height: 1.02; margin-top: 6px; }
 .ds-page-title em { font-style: italic; color: rgb(var(--ds-accent-strong)); }
-.ds-page-sub { font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; font-size: 16px; color: rgb(var(--ds-muted)); margin-top: 6px; }
+.ds-page-sub { font-family: 'Inter', system-ui, sans-serif; font-size: 16px; color: rgb(var(--ds-muted)); margin-top: 6px; }
 .ds-top-actions { display: flex; align-items: center; gap: 8px; }
 .ds-icon-btn { width: 31px; height: 31px; border: 1px solid rgb(var(--ds-line)); color: rgb(var(--ds-muted)); background: rgb(var(--ds-surface)); border-radius: 6px; display: grid; place-items: center; transition: border .18s ease, color .18s ease, transform .18s ease; }
 .ds-icon-btn:hover { color: rgb(var(--ds-accent-strong)); border-color: rgb(var(--ds-accent)); transform: translateY(-1px); }
@@ -510,14 +512,14 @@ html.theme-transition * {
 /* Console content sets its own face and base size.
  *
  * Scoped here rather than on body so the sidebar, top bar and footer keep the
- * type they were designed with — the chrome is not what anyone is reading from
- * across a room. Plus Jakarta Sans has more character than Inter at these
- * sizes and holds up in dense tables, which is most of this application.
+ * type they were designed with: the chrome is not what anyone is reading from
+ * across a room. Inter, the site's own face, holds up in dense tables, which
+ * is most of this application.
  *
  * The 15px base matters as much as the family: a great deal of console text is
  * unstyled and inherited the browser default before this. */
 .ds-content { padding: 26px 30px 44px; max-width: 1560px; width: 100%; margin: 0 auto;
-  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: 15px; line-height: 1.55; }
 .ds-content h1, .ds-content h2, .ds-content h3 { letter-spacing: -.015em; }
 
@@ -658,7 +660,7 @@ html.theme-transition * {
 .ds-prose h2,
 .ds-prose h3,
 .ds-prose h4 {
-  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   color: rgb(var(--ds-ink));
   text-wrap: balance;
   line-height: 1.28;
@@ -695,7 +697,7 @@ html.theme-transition * {
 .ds-prose li::marker { color: rgb(var(--ds-faint)); }
 
 .ds-prose code {
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 0.87em;
   background: rgb(var(--ds-surface-2));
   border-radius: 4px;
@@ -1479,6 +1481,110 @@ html.theme-transition * {
   .ds-main .ds-panel { animation: none; }
   .ds-kpi:hover, .ds-btn:active:not(:disabled) { transform: none; }
 }
+
+/* ── the console, in the site's language ─────────────────────────────
+   The same pieces, reshaped: rounded glass panels (solid white on the light
+   theme, where frosted white over paper has nothing to frost), serif section
+   titles and headline figures, a quieter top bar with the page title set
+   large, and a sidebar whose active item is ink rather than a teal slab.
+   Severity colours are untouched; they were measured, not chosen. */
+
+.ds-main { position: relative; isolation: isolate; overflow-x: clip; }
+.ds-main::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -18rem;
+  right: -8rem;
+  width: 48rem;
+  height: 30rem;
+  border-radius: 50%;
+  background: rgb(var(--ds-accent) / 0.09);
+  filter: blur(110px);
+  pointer-events: none;
+}
+
+.ds-topbar {
+  min-height: 104px;
+  padding: 24px 30px 14px;
+  border-bottom: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.ds-page-title { font-size: clamp(30px, 3vw, 44px); line-height: 1; margin-top: 8px; }
+.ds-page-title em { color: rgb(var(--ds-accent)); }
+.ds-page-sub { font-size: 15px; margin-top: 8px; }
+
+.ds-sidebar { background: rgb(var(--ds-surface) / 0.55); }
+.ds-brand { height: 76px; border-bottom: 0; padding: 18px 20px; }
+.ds-brand-word { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: rgb(var(--ds-ink)); }
+.ds-brand-word span { color: rgb(var(--ds-accent)); }
+.ds-brand-sub { margin-top: 3px; font-size: 10px; letter-spacing: 0.14em; }
+.ds-nav-label { font-size: 10.5px; letter-spacing: 0.14em; padding: 0 12px 8px; }
+.ds-nav-btn { min-height: 40px; padding: 0 12px; border-radius: 11px; }
+.ds-nav-btn.active { background: rgb(var(--ds-ink) / 0.07); color: rgb(var(--ds-ink)); }
+.ds-nav-btn.active svg { color: rgb(var(--ds-accent)); }
+.ds-avatar { width: 32px; height: 32px; color: rgb(var(--ds-accent)); background: rgb(var(--ds-accent) / 0.14); }
+
+.ds-panel { border-radius: 20px; }
+.ds-panel-pad { padding: 20px 22px; }
+.ds-section-label { font-size: 10.5px; letter-spacing: 0.14em; }
+.ds-section-title {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-weight: 400;
+  font-size: 25px;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+[data-theme='light'] .ds-panel {
+  background: rgb(255 255 255);
+  border-color: rgb(20 17 15 / 0.07);
+  box-shadow: 0 1px 2px rgb(20 17 15 / 0.05), 0 18px 36px -24px rgb(20 17 15 / 0.28);
+}
+[data-theme='light'] .ds-panel::before { display: none; }
+
+/* Headline figures in the serif, as on the site; colour, not a top rule,
+   says which ones need attention. */
+.ds-kpi { padding: 18px 20px 17px; }
+.ds-kpi-value {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-weight: 400;
+  font-size: 48px;
+  letter-spacing: -0.01em;
+}
+.ds-kpi-accent, .ds-kpi-alert, .ds-kpi-warn { border-top: 1px solid rgb(var(--ds-line)); }
+[data-theme='light'] .ds-kpi-accent, [data-theme='light'] .ds-kpi-alert,
+[data-theme='light'] .ds-kpi-warn { border-top-color: rgb(20 17 15 / 0.07); }
+.ds-kpi-alert .ds-kpi-value { color: rgb(var(--ds-signal)); }
+.ds-kpi-warn .ds-kpi-value { color: rgb(var(--ds-warn)); }
+
+.ds-btn { min-height: 38px; padding: 8px 15px; border-radius: 12px; font-size: 13.5px; }
+.ds-icon-btn { width: 38px; height: 38px; border-radius: 12px; }
+[data-theme='light'] .ds-btn-primary { color: #fff; }
+.ds-field { border-radius: 11px; padding: 10px 12px; }
+.ds-empty { border-radius: 14px; }
+.ds-table th { padding: 12px 14px; font-size: 10.5px; letter-spacing: 0.12em; }
+.ds-table td { padding: 13px 14px; }
+
+/* The status sign: a dot-matrix strip of what the monitor is doing, dark on
+   both themes like the one on the site. Uses the site's ticker classes. */
+.ds-ticker {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #0b0a09;
+  border: 1px solid rgb(255 255 255 / 0.08);
+}
+.ds-ticker::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgb(45 212 191 / 0.1) 1.1px, transparent 1.4px);
+  background-size: 6px 6px;
+}
+.ds-ticker .ticker-window { padding-block: 0.6rem; }
+.ds-ticker .ticker-run { font-size: 1.125rem; gap: 2.75rem; padding-right: 2.75rem; }
 
 /* ── scroll-revealed text ────────────────────────────────────────────
    Words resolve as the block travels through the viewport, left to right at
