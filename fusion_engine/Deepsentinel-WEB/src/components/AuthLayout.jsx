@@ -1,66 +1,68 @@
 import { Link } from 'react-router-dom'
 import Logo from './Logo'
-import DotField from './DotField'
-import Globe from './Globe'
+import markOnDark from '../assets/deepsentinel-logo-light.png'
+import { PHOTOS } from '../data/photos'
+import { MODELS, VERDICT, txnField } from '../data/workedExample'
 
 /**
- * Split layout shared by sign in and sign up.
+ * Split layout shared by sign in and request access.
  *
  * The left panel carries the product argument so the page still says what
- * DeepSentinel is to someone who arrived on a deep link; the right holds the
- * form. Below `lg` the panel drops away entirely rather than stacking — on a
- * phone, marketing copy above a login form is just something to scroll past.
+ * DeepSentinel is to someone who arrived on a deep link: a photograph of a
+ * city in evening light, the claim, and the worked example's scores in a card
+ * over it, read from the same record the home page follows. Below `lg` the
+ * panel drops away entirely rather than stacking; on a phone, marketing above
+ * a login form is just something to scroll past.
+ *
+ * The panel is a photograph on both themes, so its text uses fixed colours.
  */
 export default function AuthLayout({ title, subtitle, children, footer }) {
   return (
-    <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-2">
-      {/* Argument */}
-      <aside className="relative hidden overflow-hidden border-r border-subtle bg-sentinel-900 lg:block">
-        {/* Behind the globe, not instead of it: the field reads as the network
-            the globe is a picture of. */}
-        <DotField />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-40 [mask-image:radial-gradient(circle,black_35%,transparent_70%)]"
-        >
-          <div className="h-[34rem] w-[34rem]">
-            <Globe />
-          </div>
-        </div>
+    <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <aside className="relative m-4 hidden overflow-hidden rounded-[30px] bg-[#1a1410] lg:block">
+        <img src={PHOTOS.cityGolden.src} alt={PHOTOS.cityGolden.alt}
+             className="absolute inset-0 h-full w-full object-cover" />
+        <div aria-hidden className="absolute inset-0"
+             style={{ background: 'linear-gradient(180deg, rgb(14 11 9 / 0.55) 0%, rgb(14 11 9 / 0) 30%, rgb(14 11 9 / 0) 48%, rgb(14 11 9 / 0.85) 100%)' }} />
 
-        <div className="relative flex h-full flex-col justify-between p-12">
-          <Link to="/" aria-label="DeepSentinel home">
-            <Logo />
+        <div className="relative flex h-full flex-col justify-between gap-8 p-10">
+          <Link to="/" aria-label="DeepSentinel home" className="flex items-center gap-2.5 self-start">
+            <img src={markOnDark} alt="" width={36} height={36} className="object-contain" draggable={false} />
+            <span className="text-base font-semibold text-[#FBFAF7]">Deep<span className="text-[#2DD4BF]">Sentinel</span></span>
           </Link>
 
+          <div className="orbit-bob w-[19rem] self-end rounded-[20px] border border-black/5 bg-white p-4 text-[#1A1815] shadow-[0_1px_2px_rgb(20_17_15/0.08),0_30px_60px_-28px_rgb(20_17_15/0.5)]">
+            <div className="flex items-center justify-between">
+              <span className="numeric text-[11px] text-[#6E655C]">{txnField('transaction_id')}</span>
+              <span className="rounded-md border border-[#B91C1C]/30 bg-[#B91C1C]/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.08em] text-[#B91C1C]">
+                {VERDICT}
+              </span>
+            </div>
+            <div className="mt-3 space-y-2.5">
+              {MODELS.map((m, i) => (
+                <div key={m.key} className="grid grid-cols-[4.5rem_minmax(0,1fr)_2.25rem] items-center gap-2 text-xs">
+                  <span>{m.label}</span>
+                  <span className="h-[5px] overflow-hidden rounded-full bg-[#EFE9DF]">
+                    <span className="block h-full rounded-full"
+                          style={{ width: `${m.score * 100}%`, background: ['#00998C', '#BE123C', '#A45A06'][i] }} />
+                  </span>
+                  <span className="numeric text-right">{m.score.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="max-w-md">
-            <p className="eyebrow text-slate-500">Multi-modal fraud detection</p>
-            <p className="display mt-5 text-[3rem] text-slate-100">
+            <p className="display text-[4rem] leading-[0.95] text-[#FBFAF7]">
               Detect the fraud.
               <br />
-              <span className="display-italic text-accent-400">Then prove it.</span>
+              <span className="display-italic text-[#2DD4BF]">Then prove it.</span>
             </p>
-            <p className="mt-6 text-sm leading-relaxed text-slate-400">
-              Three detectors, one fused verdict, and a forensic narrative where
+            <p className="mt-4 text-[15px] leading-relaxed text-[#D6D1C9]">
+              Three detectors, one fused verdict, and a forensic report where
               every claim traces back to a model output or a retrieved typology.
             </p>
           </div>
-
-          {/* Measured figures only. This panel previously advertised a
-              "<150ms" response time that nothing had ever recorded. */}
-          <dl className="hair-t flex gap-12 pt-6">
-            {[
-              ['0.406', 'Relational F1', 'leakage-free, 5 seeds'],
-              ['0.024', 'Calibration error', 'isotonic'],
-              ['3', 'Detectors', 'network, behaviour, timing'],
-            ].map(([v, l, note]) => (
-              <div key={l}>
-                <dd className="numeric text-2xl text-slate-100">{v}</dd>
-                <dt className="eyebrow mt-2 text-slate-500">{l}</dt>
-                <p className="mt-1 text-[14px] text-slate-600">{note}</p>
-              </div>
-            ))}
-          </dl>
         </div>
       </aside>
 
@@ -71,14 +73,15 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
             <Logo />
           </Link>
 
-          <h1 className="display text-[2.5rem] text-slate-100">{title}</h1>
+          <p className="eyebrow text-slate-500">Analyst console</p>
+          <h1 className="display mt-3 text-[3.25rem] leading-[0.98] text-slate-100">{title}</h1>
           {subtitle && (
-            <p className="mt-3 text-sm leading-relaxed text-slate-400">{subtitle}</p>
+            <p className="mt-4 text-[15px] leading-relaxed text-slate-400">{subtitle}</p>
           )}
 
           <div className="mt-8">{children}</div>
 
-          {footer && <div className="mt-8 text-sm text-slate-500">{footer}</div>}
+          {footer && <div className="mt-8 border-t border-subtle pt-6 text-sm text-slate-500">{footer}</div>}
         </div>
       </main>
     </div>
