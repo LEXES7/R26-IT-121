@@ -1822,17 +1822,19 @@ html.theme-transition * {
 }
 @keyframes planet-breathe { from { opacity: 0.55; } to { opacity: 1; } }
 
-/* Cards in orbit. Glass on the dark theme. On the light one they are solid
-   white: frosted white over pale paper has nothing to frost, and only looks
-   washed out. */
-[data-theme='light'] .glass.orbit-card {
+/* Cards in orbit, and any card that sits on the open page (`solid-card`).
+   Glass on the dark theme. On the light one they are solid white: frosted
+   white over pale paper has nothing to frost, and only looks washed out. */
+[data-theme='light'] .glass.orbit-card,
+[data-theme='light'] .glass.solid-card {
   background: #fff;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   border-color: rgb(20 17 15 / 0.07);
   box-shadow: 0 1px 2px rgb(20 17 15 / 0.06), 0 30px 60px -28px rgb(20 17 15 / 0.38);
 }
-[data-theme='light'] .glass.orbit-card::before { display: none; }
+[data-theme='light'] .glass.orbit-card::before,
+[data-theme='light'] .glass.solid-card::before { display: none; }
 
 .orbit-bob { animation: orbit-bob var(--bob, 6s) ease-in-out infinite alternate; }
 @keyframes orbit-bob { to { transform: translateY(-12px); } }
@@ -1993,4 +1995,45 @@ html.theme-transition * {
   .hero-pulse, .planet-glow, .orbit-bob, .orbit-bar, .ticker-track,
   .art-flow, .art-ping { animation: none !important; }
   .chapter:hover { transform: none; }
+}
+
+
+/* ── photographs ──────────────────────────────────────────────────────
+   Pictures sit in shaped frames rather than plain rectangles: rounded, or an
+   arch for the one image a page leads with. On the dark theme they are pulled
+   down a little so a bright photo does not punch a hole in the page.
+
+   The network drawing is black ink on white paper. Inverted on the dark
+   theme it becomes light lines on black, and a teal wash multiplied over it
+   puts it in the page's colour without touching the picture. */
+
+.photo-frame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgb(var(--border-subtle));
+  background: rgb(var(--sentinel-800));
+}
+.photo-frame > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.photo-arch { border-radius: 18rem 18rem 1.75rem 1.75rem; }
+
+:root:not([data-theme='light']) .photo-dim { filter: saturate(0.85) brightness(0.8); }
+
+.photo-ink { filter: invert(1) brightness(0.92) contrast(1.15); }
+[data-theme='light'] .photo-ink { filter: none; }
+
+.photo-tint::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(150deg, rgb(45 212 191 / 0.55), rgb(13 12 11 / 0.1) 70%);
+  mix-blend-mode: multiply;
+}
+[data-theme='light'] .photo-tint::after {
+  background: linear-gradient(150deg, rgb(0 153 140 / 0.3), rgb(255 255 255 / 0) 70%);
 }
