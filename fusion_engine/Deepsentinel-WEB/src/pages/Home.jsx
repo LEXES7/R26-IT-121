@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { Display, Eyebrow } from '../components/Editorial'
 import HomeHero from '../components/HomeHero'
 import ModelChapters from '../components/ModelChapters'
@@ -37,6 +38,15 @@ const PROBLEM = [
 
 export default function Home() {
   const { isAuthenticated } = useAuth()
+  const { hash } = useLocation()
+
+  // Other pages link to a section here ("/#pipeline"). A client-side route
+  // change does not scroll to a fragment the way a page load does, so it is
+  // done once the page has rendered.
+  useEffect(() => {
+    const el = hash && document.getElementById(hash.slice(1))
+    if (el) requestAnimationFrame(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }, [hash])
 
   return (
     // `clip`, not `hidden`. Hidden on one axis turns the other into a scroll

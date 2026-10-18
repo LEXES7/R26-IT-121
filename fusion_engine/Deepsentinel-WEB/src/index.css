@@ -1977,6 +1977,22 @@ html.theme-transition * {
 }
 [data-theme='light'] .chapter--anchor .chapter-glow { opacity: 1; }
 
+/* A block that stays dark on both themes: the fusion step in a diagram, a
+   closing call to action. Like the fusion chapter, its contents take the dark
+   palette, so the tokens are re-pointed here rather than overridden inside. */
+.fusion-anchor {
+  color-scheme: dark;
+  background: #14110f;
+  border: 1px solid rgb(45 212 191 / 0.3);
+  box-shadow: 0 1px 2px rgb(20 17 15 / 0.1), 0 30px 60px -28px rgb(20 17 15 / 0.55);
+  --slate-100: 251 250 247;
+  --slate-200: 240 237 231;
+  --slate-300: 214 209 201;
+  --slate-400: 163 156 146;
+  --slate-500: 133 126 117;
+  --accent-400: 45 212 191;
+}
+
 /* Motion inside the chapter pictures: transfers running along their edges,
    and a flagged account pulsing. */
 .art-flow { stroke-dasharray: 5 10; animation: art-flow 1.8s linear infinite; }
