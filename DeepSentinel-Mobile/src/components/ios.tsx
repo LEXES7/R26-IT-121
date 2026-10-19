@@ -42,7 +42,7 @@ export function confirmTap(): void {
 
 type ScreenProps = {
   title: string;
-  /** A second line under a large title, set in the italic teal the site uses. */
+  /** A second line under a large title, set in the accent colour. */
   accentLine?: string;
   subtitle?: string;
   /** A pushed screen shows a back button in the navigation bar. */
@@ -209,11 +209,11 @@ export function Group({
   );
 }
 
-/** A coloured rounded square holding a white glyph, as in iOS Settings. */
+/** A glyph in a soft circle of its own colour. */
 export function IconTile({ name, color = tile.grey }: { name: IconName; color?: string }) {
   return (
-    <View style={[styles.tile, { backgroundColor: color }]}>
-      <Ionicons name={name} size={17} color="#fff" />
+    <View style={[styles.tile, { backgroundColor: `${color}24` }]}>
+      <Ionicons name={name} size={18} color={color} />
     </View>
   );
 }
@@ -337,7 +337,7 @@ export function SwitchRow({
             onChange(next);
           }}
           trackColor={{ false: bg.borderStrong, true: accent.deep }}
-          thumbColor="#fff"
+          thumbColor={text.onAccent}
           ios_backgroundColor={bg.borderStrong}
         />
       }
@@ -416,7 +416,7 @@ export function Button({
         styles.button,
         filled && { backgroundColor: accent.deep },
         kind === "tinted" && { backgroundColor: accent.soft },
-        kind === "destructive" && { backgroundColor: "rgba(255, 69, 58, 0.15)" },
+        kind === "destructive" && { backgroundColor: `${tile.red}24` },
         (pressed || disabled) && { opacity: 0.55 },
       ]}
     >
@@ -527,15 +527,15 @@ const styles = themed(() => ({
   },
   navSide: { flex: 1, flexDirection: "row", alignItems: "center" },
   navRight: { justifyContent: "flex-end", gap: space.lg, paddingRight: space.sm },
-  navTitle: { color: text.primary, fontSize: 17, fontWeight: "600", maxWidth: "50%" },
-  navButton: { color: accent.base, fontSize: 17 },
+  navTitle: { color: text.primary, fontSize: 17, fontWeight: "700", maxWidth: "50%" },
+  navButton: { color: accent.base, fontSize: 16, fontWeight: "600" },
   backButton: { flexDirection: "row", alignItems: "center", maxWidth: 160 },
-  backText: { color: accent.base, fontSize: 17, marginLeft: -2 },
+  backText: { color: accent.base, fontSize: 16, fontWeight: "500", marginLeft: -2 },
 
   largeHeader: { paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.sm },
-  largeTitle: { color: text.primary, fontFamily: serif.regular, fontSize: 42, lineHeight: 44, letterSpacing: -0.4 },
+  largeTitle: { color: text.primary, fontFamily: serif.regular, fontSize: 34, lineHeight: 40, letterSpacing: -0.9 },
   largeAccent: { color: accent.base, fontFamily: serif.italic },
-  subtitle: { color: text.muted, fontSize: 15, marginTop: 2 },
+  subtitle: { color: text.muted, fontSize: 15, marginTop: 4 },
   inlineSubtitle: {
     color: text.muted,
     fontSize: 13,
@@ -545,59 +545,58 @@ const styles = themed(() => ({
   },
 
   groupHeader: {
-    color: text.muted,
-    fontSize: 11,
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 1.4,
-    marginLeft: space.lg,
-    marginBottom: 6,
+    color: text.primary,
+    fontSize: 17,
+    fontWeight: "700",
+    letterSpacing: -0.3,
+    marginLeft: 4,
+    marginBottom: 10,
   },
   group: {
     backgroundColor: bg.card,
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: bg.borderStrong,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: bg.border,
     overflow: "hidden",
   },
   groupFooter: {
     color: text.muted,
     fontSize: 13,
     lineHeight: 18,
-    marginHorizontal: space.lg,
-    marginTop: 6,
+    marginHorizontal: 4,
+    marginTop: 8,
   },
   separator: { height: StyleSheet.hairlineWidth, backgroundColor: bg.border, marginLeft: space.lg },
 
   row: {
-    minHeight: 44,
+    minHeight: 54,
     flexDirection: "row",
     alignItems: "center",
     gap: space.md,
     paddingHorizontal: space.lg,
-    paddingVertical: 11,
+    paddingVertical: 13,
   },
   rowPressed: { backgroundColor: bg.elevated },
   rowText: { flex: 1 },
-  rowTitle: { color: text.primary, fontSize: 17 },
-  rowSubtitle: { color: text.muted, fontSize: 13, marginTop: 2, lineHeight: 17 },
-  rowValue: { color: text.muted, fontSize: 17, maxWidth: "55%" },
+  rowTitle: { color: text.primary, fontSize: 16, fontWeight: "600" },
+  rowSubtitle: { color: text.muted, fontSize: 13, marginTop: 3, lineHeight: 18 },
+  rowValue: { color: text.muted, fontSize: 15, fontWeight: "500", maxWidth: "55%" },
   mono: { ...mono, fontSize: 14 },
 
-  tile: { width: 29, height: 29, borderRadius: 7, alignItems: "center", justifyContent: "center" },
+  tile: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
 
-  fieldLabel: { color: text.primary, fontSize: 17, width: 110 },
-  fieldInput: { flex: 1, color: text.primary, fontSize: 17, paddingVertical: 0 },
+  fieldLabel: { color: text.primary, fontSize: 16, fontWeight: "600", width: 110 },
+  fieldInput: { flex: 1, color: text.primary, fontSize: 16, paddingVertical: 0 },
 
   button: {
-    minHeight: 50,
-    borderRadius: 16,
+    minHeight: 52,
+    borderRadius: radius.pill,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: space.lg,
+    paddingHorizontal: space.xl,
   },
   buttonInner: { flexDirection: "row", alignItems: "center", gap: space.sm },
-  buttonText: { fontSize: 17, fontWeight: "600" },
+  buttonText: { fontSize: 16, fontWeight: "700" },
 
   pill: {
     flexDirection: "row",
@@ -605,23 +604,31 @@ const styles = themed(() => ({
     gap: 6,
     borderRadius: radius.pill,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     alignSelf: "flex-start",
   },
   pillDot: { width: 7, height: 7, borderRadius: 4 },
-  pillText: { fontSize: 13, fontWeight: "600" },
+  pillText: { fontSize: 12, fontWeight: "700", letterSpacing: 0.2 },
 
   segmentWrap: { paddingHorizontal: space.lg },
-  segments: { flexDirection: "row", backgroundColor: bg.raised, borderRadius: 9, padding: 2 },
-  segment: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 7 },
-  segmentOn: { backgroundColor: bg.borderStrong },
-  segmentText: { color: text.primary, fontSize: 13, fontWeight: "500" },
-  segmentTextOn: { fontWeight: "600" },
+  segments: {
+    flexDirection: "row",
+    backgroundColor: bg.card,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: bg.border,
+    padding: 4,
+    gap: 2,
+  },
+  segment: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: radius.pill },
+  segmentOn: { backgroundColor: accent.deep },
+  segmentText: { color: text.secondary, fontSize: 13, fontWeight: "600" },
+  segmentTextOn: { color: text.onAccent, fontWeight: "700" },
 
   empty: { alignItems: "center", paddingVertical: 48, paddingHorizontal: space.xl, gap: space.sm },
-  emptyTitle: { color: text.primary, fontFamily: serif.regular, fontSize: 26, textAlign: "center" },
+  emptyTitle: { color: text.primary, fontFamily: serif.regular, fontSize: 22, letterSpacing: -0.4, textAlign: "center" },
   emptyBody: { color: text.muted, fontSize: 15, lineHeight: 21, textAlign: "center" },
 
-  avatar: { backgroundColor: accent.dark, alignItems: "center", justifyContent: "center" },
-  avatarText: { color: "#fff", fontWeight: "600" },
+  avatar: { backgroundColor: accent.deep, alignItems: "center", justifyContent: "center" },
+  avatarText: { color: text.onAccent, fontWeight: "700" },
 }));

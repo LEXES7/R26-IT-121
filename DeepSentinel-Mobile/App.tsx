@@ -6,9 +6,9 @@ import {
   Alert,
   AppState,
   BackHandler,
+  LayoutAnimation,
   Pressable,
   StatusBar,
-  StyleSheet,
   Text,
   useColorScheme,
   View,
@@ -42,7 +42,7 @@ import LoginScreen from "./src/screens/LoginScreen";
 import OverviewScreen from "./src/screens/OverviewScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import UnlockScreen from "./src/screens/UnlockScreen";
-import { accent, bg, setMode, statusBar, text, themed, type Mode } from "./src/theme/tokens";
+import { accent, bg, radius, setMode, statusBar, text, themed, type Mode } from "./src/theme/tokens";
 
 /**
  * The gate, five tabs, and a stack of pushed screens inside each tab.
@@ -521,29 +521,41 @@ function toAnalysis(result: AnalyzeResponse, t: Transaction): Analysis {
   };
 }
 
+/**
+ * The tab dock: a floating pill, the current tab a filled capsule with its
+ * name, the others their icon alone. Five names in a row would not fit one
+ * thumb's width at a readable size; the icons are labelled for screen readers.
+ */
 function TabBar({ tab, onSelect }: { tab: Tab; onSelect: (t: Tab) => void }) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.tabs, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-      {TABS.map((t) => {
-        const on = t.key === tab;
-        return (
-          <Pressable
-            key={t.key}
-            onPress={() => {
-              tap();
-              onSelect(t.key);
-            }}
-            style={styles.tab}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: on }}
-            accessibilityLabel={t.label}
-          >
-            <Ionicons name={on ? t.iconOn : t.icon} size={25} color={on ? accent.base : text.muted} />
-            <Text style={[styles.tabText, on && { color: accent.base }]}>{t.label}</Text>
-          </Pressable>
-        );
-      })}
+    <View style={[styles.dockWrap, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <View style={styles.dock} accessibilityRole="tablist">
+        {TABS.map((t) => {
+          const on = t.key === tab;
+          return (
+            <Pressable
+              key={t.key}
+              onPress={() => {
+                tap();
+                if (!on) LayoutAnimation.configureNext(LayoutAnimation.create(180, "easeInEaseOut", "opacity"));
+                onSelect(t.key);
+              }}
+              style={({ pressed }) => [styles.tab, on && styles.tabOn, pressed && !on && { opacity: 0.6 }]}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: on }}
+              accessibilityLabel={t.label}
+            >
+              <Ionicons name={on ? t.iconOn : t.icon} size={22} color={on ? text.onAccent : text.muted} />
+              {on && (
+                <Text style={styles.tabText} numberOfLines={1}>
+                  {t.label}
+                </Text>
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -564,15 +576,38 @@ const styles = themed(() => ({
   shell: { flex: 1, backgroundColor: bg.canvas },
   body: { flex: 1 },
 
-  tabs: {
+  dockWrap: { paddingHorizontal: 16, paddingTop: 8, backgroundColor: bg.canvas },
+  dock: {
     flexDirection: "row",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: bg.border,
-    backgroundColor: bg.raised,
-    paddingTop: 6,
+    alignItems: "center",
+    height: 64,
+    padding: 8,
+    gap: 4,
+    borderRadius: radius.pill,
+    backgroundColor: bg.card,
+    borderWidth: 1,
+    borderColor: bg.border,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
   },
-  tab: { flex: 1, alignItems: "center", gap: 2 },
-  tabText: { color: text.muted, fontSize: 10, fontWeight: "500" },
+  tab: {
+    flex: 1,
+    height: 48,
+    borderRadius: radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabOn: {
+    flex: 0,
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 18,
+    backgroundColor: accent.deep,
+  },
+  tabText: { color: text.onAccent, fontSize: 14, fontWeight: "700" },
 
   splash: { flex: 1, backgroundColor: bg.canvas, alignItems: "center", justifyContent: "center" },
   splashInner: { alignItems: "center", gap: 24 },

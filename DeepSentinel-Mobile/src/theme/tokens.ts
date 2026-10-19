@@ -23,10 +23,10 @@ const PALETTES = {
     bg: {
       canvas: "#0C0F14",
       raised: "#141820",
-      card: "#161A22", // cards and grouped lists
-      elevated: "#1F232C", // inputs, pressed cells, nested modules
-      border: "#252A33",
-      borderStrong: "#363B46",
+      card: "#1B1F28", // cards and grouped lists
+      elevated: "#252A33", // inputs, pressed cells, nested modules
+      border: "#2A2F39",
+      borderStrong: "#3A3F4A",
     },
     text: {
       primary: "#F1F2F7",
@@ -202,7 +202,7 @@ export function face<T extends TextStyle>(style: T): T {
   const s = { ...style };
   if (s.fontFamily === font.mono || (s.fontFamily && String(s.fontFamily).startsWith("PlusJakarta"))) {
     delete s.fontWeight;
-  } else if (s.fontSize !== undefined && !s.fontFamily) {
+  } else if ((s.fontSize !== undefined || s.fontWeight !== undefined) && !s.fontFamily) {
     s.fontFamily = WEIGHT_FACE[String(s.fontWeight ?? "400")] ?? font.regular;
     delete s.fontWeight;
   }
