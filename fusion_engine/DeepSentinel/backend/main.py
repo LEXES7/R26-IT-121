@@ -28,6 +28,7 @@ from backend.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     LoginRequest,
     PasswordChange,
+    ProfileUpdate,
     UserCreate,
     UserOut,
     get_current_user,
@@ -1663,6 +1664,14 @@ async def login(req: LoginRequest, request: Request):
 async def get_me(user: User = Depends(get_current_user)):
     """Current user."""
     return UserOut.from_model(user)
+
+
+@app.patch("/auth/me", tags=["auth"])
+async def update_me(req: ProfileUpdate, user: User = Depends(get_current_user)):
+    """Change your own display name or email. Audited."""
+    from backend.auth import update_profile
+
+    return UserOut.from_model(await update_profile(user.username, req))
 
 
 @app.post("/auth/logout", tags=["auth"])

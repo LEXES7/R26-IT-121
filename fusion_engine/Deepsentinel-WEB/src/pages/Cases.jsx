@@ -8,7 +8,7 @@ import TemporalEvidence from '../components/TemporalEvidence'
 import ModalityVerdict from '../components/ModalityVerdict'
 import CaseMechanism from '../components/CaseMechanism'
 import { Alert, Severity, cx } from '../components/ui'
-import { Badge, Footer, Metric, Panel, SectionHeading } from '../components/ConsoleShell'
+import ConsoleShell, { Badge, Footer, Metric, Panel, SectionHeading } from '../components/ConsoleShell'
 
 /**
  * The case desk.
@@ -433,63 +433,73 @@ function CaseDetail({ caseRef }) {
     }
   }
 
-  if (error) return <div className="mx-auto max-w-3xl px-5 py-10"><Alert tone="error">{error}</Alert></div>
-  if (!c) return <div className="mx-auto max-w-3xl px-5 py-10 text-sm text-slate-500">Loading…</div>
+  // Inside the console shell like every other signed-in page, so a case sent
+  // as a link opens with the navigation around it rather than on its own.
+  if (error || !c) {
+    return (
+      <ConsoleShell eyebrow="Workspace / Investigate" title={error ? 'Case not found' : 'Opening the case'}>
+        {error ? <Alert tone="error">{error}</Alert>
+          : <p className="text-sm text-slate-500">Loading…</p>}
+      </ConsoleShell>
+    )
+  }
 
   const sev = SEV[c.classification] ?? { hex: 'rgb(var(--ds-faint))', label: c.classification }
   const nodes = c.graph_evidence?.nodes?.length ?? 0
 
+  const headline = nodes >= 2
+    ? `${nodes} accounts, one destination.`
+    : tidy(c.graph_pattern) ?? tidy(c.typology_name) ?? 'No typology matched.'
+  const fused = typeof c.fused_score === 'number' ? Math.max(0, Math.min(1, c.fused_score)) : null
+
   return (
-    <div className="mx-auto max-w-[88rem] px-5 pb-16 pt-8 sm:px-8">
-
-      <div className="flex items-center justify-between gap-3 print:hidden">
-        <button onClick={() => navigate('/cases')}
-                className="text-xs text-slate-500 transition-colors hover:text-slate-300">
-          ← All cases
-        </button>
-        <button
-          onClick={() => {
-            navigator.clipboard?.writeText(window.location.href)
-            setCopied(true); setTimeout(() => setCopied(false), 2000)
-          }}
-          className="text-xs text-slate-500 transition-colors hover:text-slate-300"
-        >
-          {copied ? 'Link copied' : 'Copy link'}
-        </button>
-      </div>
-
-      {/* ═══ the statement ═══ */}
-      <header className="hair-b mt-5 pb-7">
-        <p className="eyebrow text-slate-500">
-          <span className="numeric normal-case tracking-normal">{c.case_ref}</span>
-          <span className="text-slate-600"> · detected {when(c.detected_at)}</span>
-        </p>
-        <div className="mt-3 flex flex-wrap items-end justify-between gap-6">
-          <h1 className="display max-w-2xl text-[2.75rem] text-slate-100 sm:text-[3.5rem]">
-            <span style={{ color: sev.hex }}>{sev.label}.</span>{' '}
-            <span className="display-italic text-slate-400">
-              {nodes >= 2
-                ? `${nodes} accounts, one destination.`
-                : tidy(c.graph_pattern) ?? tidy(c.typology_name) ?? 'No typology matched.'}
-            </span>
-          </h1>
-          <div>
-            <p className="eyebrow text-slate-500">Fused confidence</p>
-            <p className="numeric mt-2 text-[2.5rem] leading-none text-slate-100">
-              {score(c.fused_score)}
-            </p>
+    <ConsoleShell
+      eyebrow={`Workspace / Investigate · ${c.case_ref}`}
+      title={<>{sev.label}. <em>{headline}</em></>}
+      subtitle={`Detected ${when(c.detected_at)} · transaction ${c.transaction_id}`}
+      actions={
+        <span className="flex gap-2 print:hidden">
+          <button className="ds-btn ds-btn-quiet" onClick={() => navigate('/cases')}>← All cases</button>
+          <button className="ds-btn"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(window.location.href)
+                    setCopied(true); setTimeout(() => setCopied(false), 2000)
+                  }}>
+            {copied ? 'Link copied' : 'Copy link'}
+          </button>
+        </span>
+      }
+    >
+      {/* ═══ the verdict, and what each detector said ═══ */}
+      <Panel className="ds-panel-pad">
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div className="min-w-[16rem] flex-1">
+            <p className="ds-section-label">Fused confidence</p>
+            <div className="mt-2 flex items-baseline gap-3">
+              <span className="numeric text-[2.75rem] leading-none" style={{ color: sev.hex }}>
+                {score(c.fused_score)}
+              </span>
+              <Badge tone={sev.tone}>{sev.label}</Badge>
+            </div>
+            {fused !== null && (
+              <div className="mt-4 h-2 overflow-hidden rounded-full" style={{ background: 'rgb(var(--ds-surface-3))' }}>
+                <div className="h-full rounded-full" style={{ width: `${fused * 100}%`, background: sev.hex }} />
+              </div>
+            )}
           </div>
+          <dl className="grid flex-[2] grid-cols-2 gap-y-5 sm:grid-cols-3 lg:grid-cols-6">
+            <Figure value={c.graph_available ? c.graph_score : null} label="Relational" decimals
+                    hex={c.graph_available ? 'rgb(var(--modality-graph))' : undefined} />
+            <Figure value={c.behavioral_available ? c.behavioral_score : null} label="Behavioural" decimals
+                    hex={c.behavioral_available ? 'rgb(var(--modality-behavioral))' : undefined} />
+            <Figure value={c.temporal_available ? c.temporal_score : null} label="Temporal" decimals
+                    hex={c.temporal_available ? 'rgb(var(--modality-temporal))' : undefined} />
+            <Figure value={c.modalities_used} suffix="/3" label="Detectors" />
+            <Figure value={c.screening_ms} suffix="ms" label="Screening" />
+            <Figure value={c.total_ms} suffix="ms" label="End to end" />
+          </dl>
         </div>
-
-        <dl className="mt-7 grid grid-cols-2 gap-y-5 sm:grid-cols-3 lg:grid-cols-6">
-          <Figure value={c.graph_available ? c.graph_score : null} label="Relational" decimals />
-          <Figure value={c.behavioral_available ? c.behavioral_score : null} label="Behavioural" decimals />
-          <Figure value={c.temporal_available ? c.temporal_score : null} label="Temporal" decimals />
-          <Figure value={c.modalities_used} suffix="/3" label="Detectors" />
-          <Figure value={c.screening_ms} suffix="ms" label="Screening" />
-          <Figure value={c.total_ms} suffix="ms" label="End to end" />
-        </dl>
-      </header>
+      </Panel>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="min-w-0 space-y-8">
@@ -607,7 +617,7 @@ function CaseDetail({ caseRef }) {
         </div>
 
         {/* ═══ the rail ═══ */}
-        <aside className="space-y-7 lg:hair-l lg:pl-7">
+        <aside className="ds-panel ds-panel-pad h-fit space-y-7 self-start">
           <section className="print:hidden">
             <div className="flex items-baseline justify-between">
               <h3 className="text-xs font-semibold text-slate-200">Review</h3>
@@ -676,7 +686,7 @@ function CaseDetail({ caseRef }) {
           )}
         </aside>
       </div>
-    </div>
+    </ConsoleShell>
   )
 }
 

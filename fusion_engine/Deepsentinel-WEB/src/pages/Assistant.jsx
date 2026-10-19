@@ -21,10 +21,10 @@ import { Panel } from '../components/ConsoleShell'
  */
 
 const EXAMPLES = [
-  'Is there a fraud ring around C1697378157?',
+  'Show me the suspicious network around C1674473954.',
   'Are all three detection models reachable right now?',
   'Show me the most recent CRITICAL cases.',
-  'Have we analysed account C1697378157 before?',
+  'Have we analysed account C1674473954 before?',
 ]
 
 export default function Assistant() {

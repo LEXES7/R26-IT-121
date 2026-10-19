@@ -190,6 +190,7 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
                  className="shrink-0 select-none object-contain"
                  draggable={false} />
             <div className="ds-brand-copy">
+              <div className="ds-brand-word">Deep<span>Sentinel</span></div>
               <div className="ds-brand-sub">
                 {isAdmin ? 'System administration' : 'Fraud operations'}
               </div>
@@ -347,6 +348,28 @@ export function Footer({ left = 'Evidence stays attached to the decision.' }) {
     <div className="ds-footer">
       <span>{left}</span>
       <span className="ds-mono">DEEPSENTINEL / INTERNAL</span>
+    </div>
+  )
+}
+
+/** The dot-matrix status sign. `items` are short phrases; `alert` ones glow red.
+ *  Hidden from assistive technology: everything on it is said elsewhere on the
+ *  page in plain text. */
+export function Ticker({ items }) {
+  if (!items?.length) return null
+  return (
+    <div aria-hidden className="ds-ticker">
+      <div className="ticker-window">
+        <div className="ticker-track">
+          {[0, 1].map((copy) => (
+            <span key={copy} className="ticker-run">
+              {items.map((t, i) => (
+                <span key={i} className={t.alert ? 'ticker-alert' : undefined}>{t.text}</span>
+              ))}
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

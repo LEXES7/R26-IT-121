@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import type { BehaviouralEvidence, Share } from "../../api/analyses";
 import { readable, score } from "../../lib/format";
-import { bg, modality, mono, risk, space, text } from "../../theme/tokens";
+import { bg, modality, mono, risk, space, text, themed } from "../../theme/tokens";
 import { Fact, Label, Note, ScoreBar, ShareRow } from "../ui";
 
 /**
@@ -175,7 +175,7 @@ function Signal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   caveat: {
     borderWidth: 1,
     borderColor: risk.MEDIUM,
@@ -229,4 +229,4 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: space.sm,
   },
-});
+}));

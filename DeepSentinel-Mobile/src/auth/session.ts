@@ -67,3 +67,14 @@ export async function clear(): Promise<void> {
     // matters for the current run.
   }
 }
+
+/** Keep the stored identity in step after the user edits their own profile. */
+export async function updateUser(current: Session, user: User): Promise<Session> {
+  const next = { ...current, user };
+  try {
+    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
+  } catch {
+    // The edit is saved on the server; only the cached copy is stale.
+  }
+  return next;
+}

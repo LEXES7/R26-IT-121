@@ -7,31 +7,13 @@
 import { useRef } from 'react'
 import { useGSAP } from '@gsap/react'
 import { gsap, prefersReducedMotion } from '../lib/motion'
-import { MODEL_LENS } from '../data/modelLens'
+import { MODELS, REPORT, TXN } from '../data/workedExample'
 import { Eyebrow } from './Editorial'
-
-const TXN = [
-  ['transaction_id', 'TX_2026_08_24_0117'],
-  ['type', 'CASH_OUT'],
-  ['amount', '9,999,996.00'],
-  ['nameOrig', 'C333462355'],
-  ['nameDest', 'C1697378157'],
-  ['step', '1'],
-]
-
-const MODELS = [
-  { key: 'graph', label: 'Network', model: 'GraphSAGE', score: 0.50, colour: `rgb(${MODEL_LENS.graph.hue})`,
-    finding: 'HUB_AND_SPOKE — 4 senders converging on one sink' },
-  { key: 'behavioural', label: 'Behaviour', model: 'Stratified VAE', score: 0.88, colour: `rgb(${MODEL_LENS.behavioural.hue})`,
-    finding: 'Reconstruction error 4.2σ above this account’s baseline' },
-  { key: 'temporal', label: 'Timing', model: 'System-Context TCN', score: 0.92, colour: `rgb(${MODEL_LENS.temporal.hue})`,
-    finding: 'Burstiness 0.92 — machine-paced, not human' },
-]
 
 const STEPS = [
   {
     title: 'One record arrives.',
-    body: 'Ten fields. Nothing here says fraud — the amount is large but legal, the accounts are unremarkable, and no single value crosses a rule threshold.',
+    body: 'Ten fields. Nothing here says fraud: the amount is large but legal, the accounts are unremarkable, and the existing rule flag stays at zero.',
   },
   {
     title: 'Three models read it differently.',
@@ -39,7 +21,7 @@ const STEPS = [
   },
   {
     title: 'The network sees a shape.',
-    body: 'Four senders converge on one account, all brand-new. In isolation each transfer is ordinary; together they are a collection funnel.',
+    body: 'Two senders, both new to the network, are each emptied in full into the same account. In isolation each transfer is ordinary; together they are a collection point.',
   },
   {
     title: 'Fusion weighs what it has.',
@@ -49,14 +31,6 @@ const STEPS = [
     title: 'And it writes the case.',
     body: 'Retrieval pulls the matching FATF typology, and every sentence cites a model output or a retrieved document. What lands on the analyst’s desk is evidence, not a number.',
   },
-]
-
-const REPORT = [
-  'CRITICAL — coordinated mule activity',
-  'Sink account C1697378157 received 4 transfers',
-  'from accounts with no prior history.',
-  'Pattern matches FATF typology: hub-and-spoke',
-  'placement via newly opened accounts.',
 ]
 
 export default function TransactionStory() {

@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { percent } from "../lib/format";
-import { bg, modality, mono, radius, riskColour, space, text } from "../theme/tokens";
+import { bg, modality, mono, radius, riskColour, space, text, themed } from "../theme/tokens";
 
 /** The small pieces every screen builds from. */
 
@@ -34,9 +34,9 @@ export function RiskBadge({ level }: { level?: string | null }) {
  * not a detector that found nothing.
  */
 export const MODALITIES = [
-  ["behavioral", "Behavioural", modality.behavioral],
-  ["graph", "Graph", modality.graph],
-  ["temporal", "Temporal", modality.temporal],
+  ["behavioral", "Behavioural"],
+  ["graph", "Graph"],
+  ["temporal", "Temporal"],
 ] as const;
 
 export function ModalityDots({
@@ -47,13 +47,13 @@ export function ModalityDots({
   const used = MODALITIES.filter(([k]) => answered[k]).length;
   return (
     <View style={styles.dotsRow}>
-      {MODALITIES.map(([key, , colour]) => (
+      {MODALITIES.map(([key]) => (
         <View
           key={key}
           style={[
             styles.modalityDot,
             answered[key]
-              ? { backgroundColor: colour, borderColor: colour }
+              ? { backgroundColor: modality[key], borderColor: modality[key] }
               : { borderColor: text.faint },
           ]}
         />
@@ -181,7 +181,7 @@ export function Note({ children }: { children: ReactNode }) {
   return <Text style={styles.note}>{children}</Text>;
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   card: {
     backgroundColor: bg.card,
     borderRadius: radius.lg,
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
 
   badge: {
     borderWidth: 1,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     paddingHorizontal: space.sm,
     paddingVertical: 3,
     alignSelf: "flex-start",
@@ -230,10 +230,10 @@ const styles = StyleSheet.create({
     gap: space.md,
     padding: space.lg,
   },
-  sectionAccent: { width: 3, height: 26, borderRadius: 2 },
+  sectionAccent: { width: 12, height: 12, borderRadius: 6 },
   sectionTitles: { flex: 1 },
-  sectionTitle: { color: text.primary, fontSize: 15, fontWeight: "600" },
-  sectionSubtitle: { color: text.muted, fontSize: 12, marginTop: 2 },
+  sectionTitle: { color: text.primary, fontSize: 17, fontWeight: "700", letterSpacing: -0.3 },
+  sectionSubtitle: { color: text.muted, fontSize: 13, marginTop: 2 },
   chevron: { color: text.secondary, fontSize: 14 },
   sectionBody: {
     paddingHorizontal: space.lg,
@@ -262,9 +262,9 @@ const styles = StyleSheet.create({
   },
 
   note: {
-    color: text.faint,
-    fontSize: 11,
-    lineHeight: 17,
+    color: text.muted,
+    fontSize: 12,
+    lineHeight: 18,
     marginTop: space.md,
   },
-});
+}));

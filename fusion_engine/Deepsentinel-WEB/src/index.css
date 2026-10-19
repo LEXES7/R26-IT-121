@@ -1,6 +1,6 @@
 /* @import must come first — CSS drops any @import that follows another rule,
    which is why the font previously failed to load. */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Doto:wght@800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -385,24 +385,26 @@ html.theme-transition * {
    rather than a local `.dark` class, so the toggle in the header keeps working
    and a signed-in user does not get a second, disagreeing theme control.
 
-   Page titles keep Instrument Serif. Everything else — labels, tables,
-   controls — is Space Grotesk, and every figure is DM Mono. The serif is the
-   one thing carried over from the public site, so the product still sounds
-   like itself the moment someone signs in.
+   It now speaks the public site's type and palette as well as its voice.
+   Page titles are Instrument Serif with an italic clause, labels and tables
+   are Inter, figures are JetBrains Mono, and the neutrals are the site's warm
+   ones, so signing in feels like walking further into the same building
+   rather than through a door into another one. The severity colours below
+   were measured and are unchanged.
    ────────────────────────────────────────────────────────────────────────── */
 
 .ds {
-  --ds-ink: 226 232 236;
-  --ds-muted: 148 162 171;
-  --ds-faint: 104 118 127;
-  --ds-line: 42 50 56;
-  --ds-workspace: 14 17 19;
-  --ds-surface: 22 26 29;
-  --ds-surface-2: 29 34 38;
-  --ds-surface-3: 40 47 52;
+  --ds-ink: 240 237 231;
+  --ds-muted: 163 156 146;
+  --ds-faint: 133 126 117;
+  --ds-line: 46 42 39;
+  --ds-workspace: 13 12 11;
+  --ds-surface: 22 20 18;
+  --ds-surface-2: 30 27 25;
+  --ds-surface-3: 44 40 37;
   --ds-accent: 45 212 191;
   --ds-accent-strong: 94 231 213;
-  --ds-accent-soft: 22 66 61;
+  --ds-accent-soft: 18 58 54;
   --ds-signal: 255 107 92;
   --ds-signal-soft: 74 34 30;
   --ds-warn: 255 180 84;
@@ -418,26 +420,26 @@ html.theme-transition * {
 
   color: rgb(var(--ds-ink));
   background: rgb(var(--ds-workspace));
-  font-family: 'Space Grotesk', 'Trebuchet MS', sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 [data-theme='light'] .ds {
-  --ds-ink: 22 28 33;
-  --ds-muted: 88 100 110;
+  --ds-ink: 26 24 21;
+  --ds-muted: 90 83 75;
   /* --ds-faint carries every eyebrow, dt label and table header in the
      console. The old value sat at 3.4:1 on --ds-workspace — under the
      4.5:1 floor these are all set well below 14px — which read as
      washed-out captions across every screen built on this system
      (System, Monitor, Cases, Thresholds…). Darkened to 5.2:1. */
-  --ds-faint: 96 106 114;
-  --ds-line: 219 224 229;
-  --ds-workspace: 247 248 249;
+  --ds-faint: 110 101 93;
+  --ds-line: 226 220 211;
+  --ds-workspace: 246 243 238;
   --ds-surface: 255 255 255;
-  --ds-surface-2: 239 241 243;
-  --ds-surface-3: 226 230 234;
-  --ds-accent: 14 140 125;
-  --ds-accent-strong: 9 110 98;
-  --ds-accent-soft: 214 240 235;
+  --ds-surface-2: 240 236 229;
+  --ds-surface-3: 228 222 213;
+  --ds-accent: 0 133 122;
+  --ds-accent-strong: 0 110 101;
+  --ds-accent-soft: 214 238 233;
   --ds-signal: 190 40 30;
   --ds-signal-soft: 252 228 225;
   /* 4.0:1 at the old value — under 4.5:1, and this is what "Warming up" /
@@ -445,7 +447,7 @@ html.theme-transition * {
   --ds-warn: 150 88 8;
   --ds-warn-soft: 251 238 214;
   --ds-lavender: 108 93 177;
-  --ds-shadow: 18 28 38;
+  --ds-shadow: 20 17 15;
 
   /* Re-derived for paper, not dimmed: the same hues fail contrast on a light
      ground — the old amber sat at 1.72:1, effectively invisible. */
@@ -459,7 +461,7 @@ html.theme-transition * {
 .ds button { cursor: pointer; }
 .ds ::selection { background: rgb(var(--ds-accent-soft)); color: rgb(var(--ds-ink)); }
 
-.ds-mono { font-family: 'DM Mono', ui-monospace, 'SFMono-Regular', monospace; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.ds-mono { font-family: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
 .ds-fade-up { animation: ds-fade-up .5s ease both; }
 @keyframes ds-fade-up { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .ds-fade-up { animation: none; } }
@@ -497,11 +499,11 @@ html.theme-transition * {
 
 .ds-main { min-width: 0; flex: 1; display: flex; flex-direction: column; }
 .ds-topbar { min-height: 78px; padding: 17px 30px; border-bottom: 1px solid rgb(var(--ds-line)); display: flex; align-items: center; justify-content: space-between; gap: 16px; background: rgb(var(--ds-workspace)); }
-.ds-eyebrow { color: rgb(var(--ds-accent-strong)); font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: .17em; font-weight: 600; }
+.ds-eyebrow { color: rgb(var(--ds-faint)); font-family: 'Inter', system-ui, sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: .14em; font-weight: 500; }
 /* The one thing kept from the public site's voice. */
 .ds-page-title { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: clamp(28px, 2.7vw, 38px); letter-spacing: -.015em; line-height: 1.02; margin-top: 6px; }
 .ds-page-title em { font-style: italic; color: rgb(var(--ds-accent-strong)); }
-.ds-page-sub { font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; font-size: 16px; color: rgb(var(--ds-muted)); margin-top: 6px; }
+.ds-page-sub { font-family: 'Inter', system-ui, sans-serif; font-size: 16px; color: rgb(var(--ds-muted)); margin-top: 6px; }
 .ds-top-actions { display: flex; align-items: center; gap: 8px; }
 .ds-icon-btn { width: 31px; height: 31px; border: 1px solid rgb(var(--ds-line)); color: rgb(var(--ds-muted)); background: rgb(var(--ds-surface)); border-radius: 6px; display: grid; place-items: center; transition: border .18s ease, color .18s ease, transform .18s ease; }
 .ds-icon-btn:hover { color: rgb(var(--ds-accent-strong)); border-color: rgb(var(--ds-accent)); transform: translateY(-1px); }
@@ -510,14 +512,14 @@ html.theme-transition * {
 /* Console content sets its own face and base size.
  *
  * Scoped here rather than on body so the sidebar, top bar and footer keep the
- * type they were designed with — the chrome is not what anyone is reading from
- * across a room. Plus Jakarta Sans has more character than Inter at these
- * sizes and holds up in dense tables, which is most of this application.
+ * type they were designed with: the chrome is not what anyone is reading from
+ * across a room. Inter, the site's own face, holds up in dense tables, which
+ * is most of this application.
  *
  * The 15px base matters as much as the family: a great deal of console text is
  * unstyled and inherited the browser default before this. */
 .ds-content { padding: 26px 30px 44px; max-width: 1560px; width: 100%; margin: 0 auto;
-  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: 15px; line-height: 1.55; }
 .ds-content h1, .ds-content h2, .ds-content h3 { letter-spacing: -.015em; }
 
@@ -658,7 +660,7 @@ html.theme-transition * {
 .ds-prose h2,
 .ds-prose h3,
 .ds-prose h4 {
-  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   color: rgb(var(--ds-ink));
   text-wrap: balance;
   line-height: 1.28;
@@ -695,7 +697,7 @@ html.theme-transition * {
 .ds-prose li::marker { color: rgb(var(--ds-faint)); }
 
 .ds-prose code {
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 0.87em;
   background: rgb(var(--ds-surface-2));
   border-radius: 4px;
@@ -1480,6 +1482,110 @@ html.theme-transition * {
   .ds-kpi:hover, .ds-btn:active:not(:disabled) { transform: none; }
 }
 
+/* ── the console, in the site's language ─────────────────────────────
+   The same pieces, reshaped: rounded glass panels (solid white on the light
+   theme, where frosted white over paper has nothing to frost), serif section
+   titles and headline figures, a quieter top bar with the page title set
+   large, and a sidebar whose active item is ink rather than a teal slab.
+   Severity colours are untouched; they were measured, not chosen. */
+
+.ds-main { position: relative; isolation: isolate; overflow-x: clip; }
+.ds-main::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -18rem;
+  right: -8rem;
+  width: 48rem;
+  height: 30rem;
+  border-radius: 50%;
+  background: rgb(var(--ds-accent) / 0.09);
+  filter: blur(110px);
+  pointer-events: none;
+}
+
+.ds-topbar {
+  min-height: 104px;
+  padding: 24px 30px 14px;
+  border-bottom: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.ds-page-title { font-size: clamp(30px, 3vw, 44px); line-height: 1; margin-top: 8px; }
+.ds-page-title em { color: rgb(var(--ds-accent)); }
+.ds-page-sub { font-size: 15px; margin-top: 8px; }
+
+.ds-sidebar { background: rgb(var(--ds-surface) / 0.55); }
+.ds-brand { height: 76px; border-bottom: 0; padding: 18px 20px; }
+.ds-brand-word { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: rgb(var(--ds-ink)); }
+.ds-brand-word span { color: rgb(var(--ds-accent)); }
+.ds-brand-sub { margin-top: 3px; font-size: 10px; letter-spacing: 0.14em; }
+.ds-nav-label { font-size: 10.5px; letter-spacing: 0.14em; padding: 0 12px 8px; }
+.ds-nav-btn { min-height: 40px; padding: 0 12px; border-radius: 11px; }
+.ds-nav-btn.active { background: rgb(var(--ds-ink) / 0.07); color: rgb(var(--ds-ink)); }
+.ds-nav-btn.active svg { color: rgb(var(--ds-accent)); }
+.ds-avatar { width: 32px; height: 32px; color: rgb(var(--ds-accent)); background: rgb(var(--ds-accent) / 0.14); }
+
+.ds-panel { border-radius: 20px; }
+.ds-panel-pad { padding: 20px 22px; }
+.ds-section-label { font-size: 10.5px; letter-spacing: 0.14em; }
+.ds-section-title {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-weight: 400;
+  font-size: 25px;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+[data-theme='light'] .ds-panel {
+  background: rgb(255 255 255);
+  border-color: rgb(20 17 15 / 0.07);
+  box-shadow: 0 1px 2px rgb(20 17 15 / 0.05), 0 18px 36px -24px rgb(20 17 15 / 0.28);
+}
+[data-theme='light'] .ds-panel::before { display: none; }
+
+/* Headline figures in the serif, as on the site; colour, not a top rule,
+   says which ones need attention. */
+.ds-kpi { padding: 18px 20px 17px; }
+.ds-kpi-value {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-weight: 400;
+  font-size: 48px;
+  letter-spacing: -0.01em;
+}
+.ds-kpi-accent, .ds-kpi-alert, .ds-kpi-warn { border-top: 1px solid rgb(var(--ds-line)); }
+[data-theme='light'] .ds-kpi-accent, [data-theme='light'] .ds-kpi-alert,
+[data-theme='light'] .ds-kpi-warn { border-top-color: rgb(20 17 15 / 0.07); }
+.ds-kpi-alert .ds-kpi-value { color: rgb(var(--ds-signal)); }
+.ds-kpi-warn .ds-kpi-value { color: rgb(var(--ds-warn)); }
+
+.ds-btn { min-height: 38px; padding: 8px 15px; border-radius: 12px; font-size: 13.5px; }
+.ds-icon-btn { width: 38px; height: 38px; border-radius: 12px; }
+[data-theme='light'] .ds-btn-primary { color: #fff; }
+.ds-field { border-radius: 11px; padding: 10px 12px; }
+.ds-empty { border-radius: 14px; }
+.ds-table th { padding: 12px 14px; font-size: 10.5px; letter-spacing: 0.12em; }
+.ds-table td { padding: 13px 14px; }
+
+/* The status sign: a dot-matrix strip of what the monitor is doing, dark on
+   both themes like the one on the site. Uses the site's ticker classes. */
+.ds-ticker {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #0b0a09;
+  border: 1px solid rgb(255 255 255 / 0.08);
+}
+.ds-ticker::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgb(45 212 191 / 0.1) 1.1px, transparent 1.4px);
+  background-size: 6px 6px;
+}
+.ds-ticker .ticker-window { padding-block: 0.6rem; }
+.ds-ticker .ticker-run { font-size: 1.125rem; gap: 2.75rem; padding-right: 2.75rem; }
+
 /* ── scroll-revealed text ────────────────────────────────────────────
    Words resolve as the block travels through the viewport, left to right at
    reading pace.
@@ -1701,4 +1807,376 @@ html.theme-transition * {
 }
 .ds-range::-moz-range-track {
   height: 4px; border-radius: 3px; background: rgb(var(--ds-surface-3));
+}
+
+
+/* ── the home hero ───────────────────────────────────────────────────
+   The claim, centred, with the platform at work under it: a globe of
+   accounts rising over the bottom edge like a planet over a horizon, the
+   worked example orbiting it, and a dot-matrix sign along the horizon line.
+
+   The light theme is not the dark one inverted. Its ground is a warmer paper
+   with a fine grain, its cards are solid white with real shadows, and the
+   planet and the sign stay dark: they are the two heavy objects that give a
+   pale page somewhere to look. */
+
+.hero-cine {
+  --hero-ground: var(--sentinel-950);
+  --hero-dot: 255 255 255 / 0.05;
+  background: rgb(var(--hero-ground));
+}
+[data-theme='light'] .hero-cine {
+  --hero-ground: var(--sentinel-900);
+  --hero-dot: 20 17 15 / 0.07;
+}
+
+/* Colour behind the headline: a teal field on both themes, and on the light
+   one a faint rose and amber at the edges, so the paper is not flat. */
+.hero-fields { position: absolute; inset: 0; pointer-events: none; }
+.hero-fields::before {
+  content: '';
+  position: absolute;
+  width: 60rem; height: 40rem;
+  top: -18rem; left: 50%; margin-left: -30rem;
+  border-radius: 50%;
+  background: rgb(var(--accent-500) / 0.14);
+  filter: blur(120px);
+}
+[data-theme='light'] .hero-fields {
+  background:
+    radial-gradient(circle 22rem at 0 36rem, rgb(var(--modality-behavioral) / 0.07), transparent),
+    radial-gradient(circle 22rem at 100% 32rem, rgb(var(--modality-temporal) / 0.08), transparent);
+}
+[data-theme='light'] .hero-fields::before { background: rgb(var(--accent-500) / 0.16); }
+
+.hero-dots {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image: radial-gradient(rgb(var(--hero-dot)) 1px, transparent 1.3px);
+  background-size: 28px 28px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 30%, #000 20%, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 55% at 50% 30%, #000 20%, transparent 75%);
+}
+
+/* Paper grain, light theme only. On a dark ground, noise reads as dirt. */
+.hero-grain {
+  position: absolute; inset: 0; pointer-events: none;
+  display: none;
+  opacity: 0.08;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+[data-theme='light'] .hero-grain { display: block; }
+
+.hero-pulse {
+  flex: none;
+  width: 7px; height: 7px;
+  border-radius: 999px;
+  background: rgb(var(--accent-400));
+  animation: hero-pulse 1.9s ease-out infinite;
+}
+@keyframes hero-pulse {
+  from { box-shadow: 0 0 0 0 rgb(var(--accent-400) / 0.5); }
+  to   { box-shadow: 0 0 0 10px rgb(var(--accent-400) / 0); }
+}
+
+/* The primary button turns to ink on the light theme. A white button on
+   paper reads as a hole in the page, not as a control. */
+[data-theme='light'] .liquid-solid.cta-ink {
+  background: linear-gradient(180deg, #2b2623 0%, #14110f 100%);
+  color: #f6f2eb;
+  border-color: rgb(20 17 15 / 0.9);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.16),
+    0 12px 28px -14px rgb(20 17 15 / 0.55);
+}
+[data-theme='light'] .liquid-solid.cta-ink::before {
+  background: conic-gradient(from 210deg,
+    rgb(255 255 255 / 0.28) 0deg,
+    rgb(45 212 191 / 0.35) 80deg,
+    rgb(255 255 255 / 0.18) 160deg,
+    rgb(255 160 190 / 0.22) 250deg,
+    rgb(255 255 255 / 0.28) 360deg);
+}
+[data-theme='light'] .liquid-solid.cta-ink::after {
+  background: radial-gradient(12rem circle at var(--mx, 50%) var(--my, 0%),
+              rgb(45 212 191 / 0.3), transparent 60%);
+}
+[data-theme='light'] .liquid-solid.cta-ink:hover {
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.2),
+    0 18px 36px -16px rgb(20 17 15 / 0.6),
+    0 0 32px -10px rgb(var(--accent-400) / 0.45);
+}
+
+/* The planet rises further and slower than anything else enters, so it
+   lands last and heaviest. */
+.enter--planet { animation-name: enter-planet; animation-duration: 1.9s; }
+@keyframes enter-planet { from { opacity: 0; transform: translateY(120px) scale(0.95); } }
+
+/* Atmosphere: a glow behind the body, seen only past its rim. */
+.planet-glow {
+  position: absolute; inset: 8%;
+  border-radius: 50%;
+  background: rgb(15 155 142 / 0.24);
+  filter: blur(80px);
+  animation: planet-breathe 3.4s ease-in-out infinite alternate;
+}
+[data-theme='light'] .planet-glow {
+  inset: 5%;
+  background: rgb(0 133 122 / 0.38);
+  filter: blur(46px);
+}
+@keyframes planet-breathe { from { opacity: 0.55; } to { opacity: 1; } }
+
+/* Cards in orbit, and any card that sits on the open page (`solid-card`).
+   Glass on the dark theme. On the light one they are solid white: frosted
+   white over pale paper has nothing to frost, and only looks washed out. */
+[data-theme='light'] .glass.orbit-card,
+[data-theme='light'] .glass.solid-card {
+  background: #fff;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: rgb(20 17 15 / 0.07);
+  box-shadow: 0 1px 2px rgb(20 17 15 / 0.06), 0 30px 60px -28px rgb(20 17 15 / 0.38);
+}
+[data-theme='light'] .glass.orbit-card::before,
+[data-theme='light'] .glass.solid-card::before { display: none; }
+
+.orbit-bob { animation: orbit-bob var(--bob, 6s) ease-in-out infinite alternate; }
+@keyframes orbit-bob { to { transform: translateY(-12px); } }
+
+/* Each score fills to its value as its card arrives. */
+.orbit-bar {
+  transform-origin: left center;
+  animation: orbit-bar 1.2s var(--ease-settle) var(--d, 1.5s) both;
+}
+@keyframes orbit-bar { from { transform: scaleX(0); } }
+
+/* The sign along the horizon, dark on both themes like the planet behind it.
+   The one thing on the page that moves at a constant speed: it is a sign
+   being read, not an object settling. */
+.ticker {
+  position: absolute; z-index: 5; left: 0; right: 0; bottom: 0;
+  padding-top: 3.5rem;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgb(var(--hero-ground) / 0) 0%, rgb(var(--hero-ground)) 38%);
+}
+.ticker-band {
+  position: relative;
+  overflow: hidden;
+  background: rgb(10 9 8 / 0.85);
+  border-block: 1px solid rgb(214 209 201 / 0.13);
+}
+[data-theme='light'] .ticker-band {
+  background: #14110f;
+  border-color: rgb(20 17 15 / 0.4);
+  box-shadow: 0 -20px 50px -30px rgb(20 17 15 / 0.5);
+}
+/* The unlit lamps. */
+.ticker-band::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgb(45 212 191 / 0.09) 1.1px, transparent 1.4px);
+  background-size: 7px 7px;
+}
+.ticker-window {
+  position: relative;
+  padding-block: 0.875rem;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker-run 46s linear infinite;
+}
+.ticker-run {
+  display: flex;
+  gap: 4rem;
+  padding-right: 4rem;
+  white-space: nowrap;
+  font-family: 'Doto', 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 800;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #2dd4bf;
+  text-shadow: 0 0 14px rgb(45 212 191 / 0.65);
+}
+.ticker-alert {
+  color: rgb(255 107 92);
+  text-shadow: 0 0 14px rgb(255 107 92 / 0.6);
+}
+@keyframes ticker-run { to { transform: translateX(-50%); } }
+@media (min-width: 640px) {
+  .ticker { padding-top: 5.5rem; }
+  .ticker-window { padding-block: 1.375rem; }
+  .ticker-run { font-size: 2.375rem; }
+}
+
+/* ── the four chapters ──────────────────────────────────────────────── */
+
+[data-theme='light'] .chapters-band { background: rgb(var(--sentinel-800)); }
+
+.chapter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  height: 100%;
+  min-height: 22rem;
+  padding: 1.625rem;
+  border-radius: 26px;
+  overflow: hidden;
+  transition: transform 0.4s var(--ease-hover), border-color 0.3s var(--ease-hover),
+              box-shadow 0.4s var(--ease-hover);
+}
+@media (min-width: 640px) { .chapter { min-height: 25rem; } }
+@media (min-width: 1280px) { .chapter { min-height: 27.5rem; } }
+.chapter:hover { transform: translateY(-8px); border-color: rgb(var(--accent-400) / 0.4); }
+.chapter-glow {
+  position: absolute;
+  inset: -40% -20% auto -20%;
+  height: 60%;
+  border-radius: 50%;
+  background: rgb(var(--tint) / 0.26);
+  filter: blur(60px);
+  pointer-events: none;
+}
+.chapter--anchor { border-color: rgb(45 212 191 / 0.35); }
+
+[data-theme='light'] .glass.chapter {
+  background: #fff;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: rgb(20 17 15 / 0.07);
+  box-shadow: 0 1px 2px rgb(20 17 15 / 0.06), 0 30px 60px -28px rgb(20 17 15 / 0.38);
+}
+[data-theme='light'] .glass.chapter::before { display: none; }
+[data-theme='light'] .chapter:hover {
+  border-color: rgb(20 17 15 / 0.07);
+  box-shadow: 0 2px 4px rgb(20 17 15 / 0.06), 0 44px 80px -36px rgb(20 17 15 / 0.45);
+}
+[data-theme='light'] .chapter-glow { opacity: 0.75; }
+
+/* Fusion is solid ink on paper. Its contents keep the dark palette, so the
+   tokens are re-pointed for this one card rather than every class inside it
+   being overridden. */
+[data-theme='light'] .glass.chapter--anchor {
+  color-scheme: dark;
+  background: #14110f;
+  border-color: #14110f;
+  box-shadow: 0 1px 2px rgb(20 17 15 / 0.1), 0 30px 60px -28px rgb(20 17 15 / 0.55);
+  --slate-100: 251 250 247;
+  --slate-200: 240 237 231;
+  --slate-300: 214 209 201;
+  --slate-400: 163 156 146;
+  --slate-500: 133 126 117;
+  --accent-400: 45 212 191;
+  --modality-graph: 15 155 142;
+  --modality-behavioral: 220 38 73;
+  --modality-temporal: 194 116 10;
+}
+[data-theme='light'] .chapter--anchor:hover {
+  border-color: #14110f;
+  box-shadow: 0 2px 4px rgb(20 17 15 / 0.1), 0 44px 80px -36px rgb(20 17 15 / 0.6);
+}
+[data-theme='light'] .chapter--anchor .chapter-glow { opacity: 1; }
+
+/* A block that stays dark on both themes: the fusion step in a diagram, a
+   closing call to action. Like the fusion chapter, its contents take the dark
+   palette, so the tokens are re-pointed here rather than overridden inside. */
+.fusion-anchor {
+  color-scheme: dark;
+  background: #14110f;
+  border: 1px solid rgb(45 212 191 / 0.3);
+  box-shadow: 0 1px 2px rgb(20 17 15 / 0.1), 0 30px 60px -28px rgb(20 17 15 / 0.55);
+  --slate-100: 251 250 247;
+  --slate-200: 240 237 231;
+  --slate-300: 214 209 201;
+  --slate-400: 163 156 146;
+  --slate-500: 133 126 117;
+  --accent-400: 45 212 191;
+}
+
+/* Motion inside the chapter pictures: transfers running along their edges,
+   and a flagged account pulsing. */
+.art-flow { stroke-dasharray: 5 10; animation: art-flow 1.8s linear infinite; }
+@keyframes art-flow { to { stroke-dashoffset: -30; } }
+.art-ping {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: art-ping 2.4s ease-out infinite;
+}
+@keyframes art-ping {
+  from { transform: scale(1); opacity: 0.6; }
+  to   { transform: scale(2.6); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-pulse, .planet-glow, .orbit-bob, .orbit-bar, .ticker-track,
+  .art-flow, .art-ping { animation: none !important; }
+  .chapter:hover { transform: none; }
+}
+
+
+/* ── photographs ──────────────────────────────────────────────────────
+   Pictures sit in shaped frames rather than plain rectangles: rounded, or an
+   arch for the one image a page leads with. On the dark theme they are pulled
+   down a little so a bright photo does not punch a hole in the page.
+
+   The network drawing is black ink on white paper. Inverted on the dark
+   theme it becomes light lines on black, and a teal wash multiplied over it
+   puts it in the page's colour without touching the picture. */
+
+/* No position here: a frame is placed by the page (relative in the flow,
+   absolute over a hero), and a position set in this sheet would beat the
+   utility class and drop every absolutely placed frame back into the flow. */
+.photo-frame {
+  overflow: hidden;
+  border: 1px solid rgb(var(--border-subtle));
+  background: rgb(var(--sentinel-800));
+}
+.photo-frame > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.photo-arch { border-radius: 18rem 18rem 1.75rem 1.75rem; }
+
+:root:not([data-theme='light']) .photo-dim { filter: saturate(0.85) brightness(0.8); }
+
+.photo-ink { filter: invert(1) brightness(0.92) contrast(1.15); }
+[data-theme='light'] .photo-ink { filter: none; }
+
+.photo-tint::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(150deg, rgb(45 212 191 / 0.55), rgb(13 12 11 / 0.1) 70%);
+  mix-blend-mode: multiply;
+}
+[data-theme='light'] .photo-tint::after {
+  background: linear-gradient(150deg, rgb(0 153 140 / 0.3), rgb(255 255 255 / 0) 70%);
+}
+
+/* Meridians on the console's small planet: each ellipse narrows to a line
+   and opens again on the far side, so the wireframe appears to turn. */
+@keyframes planet-meridian {
+  0%   { transform: scaleX(1);  animation-timing-function: ease-in; }
+  25%  { transform: scaleX(0);  animation-timing-function: ease-out; }
+  50%  { transform: scaleX(-1); animation-timing-function: ease-in; }
+  75%  { transform: scaleX(0);  animation-timing-function: ease-out; }
+  100% { transform: scaleX(1); }
+}
+.mer { transform-box: fill-box; transform-origin: center; animation: planet-meridian 28s infinite; }
+@media (prefers-reduced-motion: reduce) { .mer { animation: none; } }
+
+/* Two-column console rows (queue beside feed, case beside health) stack once
+   the side column would be squeezed. The columns are set inline, so this has
+   to say it louder. */
+@media (max-width: 1100px) {
+  .ds-split { grid-template-columns: minmax(0, 1fr) !important; }
 }
