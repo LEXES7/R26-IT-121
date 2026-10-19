@@ -121,4 +121,5 @@ wandb/
 # .gitignore excludes markdown, so a write-up in a subdirectory would
 # otherwise be added by a plain `git add .` without anyone noticing.
 docs/proposal/
+docs/Thesis/
 reports/**/*.md
