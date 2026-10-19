@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import AblationComparison from '../components/AblationComparison'
 import TransactionForm from '../components/TransactionForm'
 import GraphEvidence from '../components/GraphEvidence'
@@ -50,7 +51,9 @@ export default function Analyzer() {
   const [txn, setTxn] = useState(null)
   const [pulling, setPulling] = useState(false)
   const [error, setError] = useState(null)
-  const [query, setQuery] = useState('')
+  // A search started elsewhere (the dashboard) arrives as ?q=.
+  const [params] = useSearchParams()
+  const [query, setQuery] = useState(() => params.get('q') ?? '')
   const [hits, setHits] = useState([])
   const [open, setOpen] = useState('')
 

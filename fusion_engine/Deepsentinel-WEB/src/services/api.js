@@ -261,6 +261,10 @@ export const resetThresholds = () =>
 export const listCases = (params = {}) =>
   client.get('/cases', { params }).then((r) => r.data)
 
+/** Screenings, newest first. The server returns at most 500. */
+export const listAnalyses = (limit = 500) =>
+  client.get('/analyses', { params: { limit } }).then((r) => r.data)
+
 export const getCase = (caseRef) =>
   client.get(`/cases/${caseRef}`).then((r) => r.data)
 
