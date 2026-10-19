@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import ConsoleShell, { Panel, SectionHeading, Metric } from '../components/ConsoleShell'
+import ConsoleShell, { Panel, SectionHeading, Metric, Ticker } from '../components/ConsoleShell'
 import { getMonitorRuntime } from '../services/api'
 import { Alert, Button, cx } from '../components/ui'
 
@@ -119,7 +119,11 @@ export default function SystemHealth() {
   return (
     <ConsoleShell
       eyebrow="Workspace / Operate"
-      title="System"
+      title={rt
+        ? <>System health. <em>{broken.length
+            ? `${broken.map(([, n]) => n).join(' and ')} down.`
+            : `${live} of 3 detectors serving.`}</em></>
+        : 'System health'}
       subtitle="What is running, what is loaded, and what broke."
       actions={
         <Button variant="ghost" onClick={load}>Refresh</Button>
@@ -127,22 +131,19 @@ export default function SystemHealth() {
     >
       {error && <Alert tone="error" className="mb-6">{error}</Alert>}
 
-      {/* The headline is the answer to "is it working", not a count. */}
-      <div className="mb-8">
-        <p className="font-mono text-[14px] uppercase tracking-[0.15em] text-[rgb(var(--ds-faint))]">
-          Detector readiness
-        </p>
-        <h2 className="ds-page-title mt-2 text-[2.4rem] leading-none">
-          {live} of 3 serving.{' '}
-          <span style={{ color: broken.length ? 'rgb(var(--ds-signal))' : 'rgb(var(--ds-muted))' }}>
-            {broken.length
-              ? `${broken.map(([, n]) => n).join(' and ')} down.`
-              : 'All answering.'}
-          </span>
-        </h2>
-        <p className="mt-3 max-w-xl text-[17px] leading-relaxed text-[rgb(var(--ds-muted))]">
+      {/* The headline is the answer to "is it working", and it sits in the
+          title; the sign says the same in passing, and this line says what
+          it costs. */}
+      <div className="mb-6 grid gap-4">
+        <Ticker items={rt ? [
+          { text: state, alert: !screening },
+          { text: `${live} of 3 detectors serving`, alert: live < 3 },
+          ...broken.map(([, n]) => ({ text: `${n} down`, alert: true })),
+          { text: `${Number(mon.screened ?? 0).toLocaleString()} screened` },
+        ] : []} />
+        <p className="max-w-2xl text-[16px] leading-relaxed text-[rgb(var(--ds-muted))]">
           {broken.length > 0
-            ? 'A detector that cannot answer abstains — the others still produce a verdict, and the '
+            ? 'A detector that cannot answer abstains: the others still produce a verdict, and the '
               + 'fused confidence is reduced to say the system knows less than usual. Screening does '
               + 'not stop.'
             : 'All three detectors are scoring every transaction in parallel. The fused verdict is '
@@ -178,38 +179,30 @@ export default function SystemHealth() {
           </span>
         )}
       />
-      {/* One line per detector, not a card each. The per-model detail — build,
-          uptime, throughput, latency — now lives on that detector's own page,
-          which is where you are when the question is "is this one working".
-          What belongs here is the sweep: is anything down. */}
-      <div className="grid gap-2">
+      {/* A tile per detector: the sweep (is anything down) reads across the
+          row, and each tile says why when one cannot score. The per-model
+          detail lives on that detector's own page. */}
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
         {DETECTORS.map(([id, name, model, what]) => {
           const d = det[id]
           const v = verdict(d)
           const tone = TONE[v.tone]
           return (
             <Panel key={id} className="ds-panel-pad">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                <span className="h-2 w-2 shrink-0 rounded-full"
-                      style={{ background: tone.dot }} />
-                <span className="text-[17px] font-semibold text-[rgb(var(--ds-ink))]">
-                  {name}
-                </span>
-                <span className="text-[15px] text-[rgb(var(--ds-muted))]">{what}</span>
-                <span className="ml-auto font-mono text-[14px] uppercase tracking-[0.09em]"
-                      style={{ color: tone.text }}>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[18px] font-semibold text-[rgb(var(--ds-ink))]">{name}</span>
+                <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold"
+                      style={{ color: tone.text, background: `color-mix(in srgb, ${tone.dot} 13%, transparent)` }}>
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: tone.dot }} />
                   {v.label}
                 </span>
-                <Link to={DETECTOR_PAGE[id]}
-                      className="font-mono text-[14px] text-[rgb(var(--ds-accent-strong))]">
-                  open →
-                </Link>
               </div>
-              {v.why && (
-                <p className="mt-2 text-[15px] leading-relaxed text-[rgb(var(--ds-muted))]">
-                  {v.why}
-                </p>
-              )}
+              <p className="mt-1 font-mono text-[12px] text-[rgb(var(--ds-faint))]">{model}</p>
+              <p className="mt-3 text-[15px] leading-relaxed text-[rgb(var(--ds-muted))]">{v.why ?? what}</p>
+              <Link to={DETECTOR_PAGE[id]}
+                    className="mt-4 inline-block text-[14px] font-medium text-[rgb(var(--ds-accent))]">
+                Open {name.toLowerCase()} →
+              </Link>
             </Panel>
           )
         })}
