@@ -67,9 +67,8 @@ export default function Footer() {
               <Logo />
             </div>
             <p className="max-w-xs text-xs leading-relaxed text-slate-500">
-              A multi-modal AI platform for explainable financial fraud detection.
-              Combines graph, behavioural and temporal models with retrieval-grounded
-              forensic reporting.
+              Explainable fraud detection. Three AI models and a report that cites
+              its evidence.
             </p>
             <a
               href="mailto:hello@deepsentinel.io"
@@ -164,8 +163,7 @@ export default function Footer() {
         >
           <p>© 2026 DeepSentinel</p>
           <p className="text-center sm:text-right">
-            Demonstration environment on synthetic data. Not certified for
-            production financial decisioning.
+            Demo on synthetic data. Not for real financial decisions.
           </p>
         </div>
       </div>

@@ -10,65 +10,61 @@ const FAQS = [
     items: [
       {
         q: 'What is DeepSentinel?',
-        a: 'DeepSentinel is a cloud-native AI research platform built for financial fraud detection. It combines three deep learning models (Graph Neural Network, Behavioral VAE, and Temporal CNN) with a Retrieval-Augmented Generation (RAG) layer to produce forensic investigation reports that are legally traceable and audit-ready.',
+        a: 'A fraud detection platform. Three AI models check every payment, and a report explains each alert with cited evidence.',
       },
       {
         q: 'What problem does it solve?',
-        a: 'Existing fraud detection systems produce a risk score but no explanation. Compliance investigators cannot file a Suspicious Activity Report (SAR) based on a number alone. DeepSentinel bridges this gap by generating a structured 5-section forensic report where every claim is anchored to a real model output and a documented FATF financial crime typology.',
+        a: 'Most fraud tools give a score with no reason. Investigators need reasons to file a report, so DeepSentinel writes one, and every claim in it points to a model output or a known laundering method.',
       },
       {
         q: 'How is this different from SHAP or LIME?',
-        a: 'SHAP and LIME produce feature attribution numbers (e.g. "Feature 7 contributed 0.34"). While useful for data scientists, these cannot serve as legal forensic evidence. DeepSentinel generates narrative reports that explicitly reference regulatory definitions — the kind of evidence an AML investigator can submit to a Central Bank.',
+        a: 'Those give feature numbers for data scientists. DeepSentinel gives a plain-language report an investigator can file.',
       },
       {
         q: 'Is this a production system?',
-        a: 'DeepSentinel is a research platform for multi-modal, explainable fraud detection. The Fusion Engine, RAG retrieval, and LLM reporting are fully functional and deployed. The upstream deep learning models (GNN, VAE, TCN) are currently simulated via scenario-based mock scores while the other team members finalize their components.',
+        a: 'It is a research platform. The three detectors, fusion, retrieval and reports all run live. Only the sample scenarios in the analyzer use simulated scores.',
       },
     ],
   },
   {
-    category: 'How the Technology Works',
+    category: 'How it works',
     items: [
       {
         q: 'What are the three detection models?',
-        a: 'Graph Neural Network (GraphSAGE): analyses the network topology of transactions to detect mule rings and hub-and-spoke laundering. Behavioral VAE: flags transactions that deviate from an account\'s established behavioral baseline. Temporal CNN: detects mechanically regular, high-frequency transfer patterns that indicate automated fraud scripts.',
+        a: 'Network (GraphSAGE) finds rings by who pays whom. Behaviour (VAE) spots payments that do not fit their type. Timing (TCN) reads each payment with the 32 before it.',
       },
       {
-        q: 'What is the Fraud Confidence Score?',
-        a: 'It is the output of the logistic-regression meta-classifier that combines the three sub-model scores into a single calibrated probability between 0 and 1. The bands that turn that number into CRITICAL, HIGH, MEDIUM or LOW are not fixed in the interface — the monitor reads them from the relational model’s own health endpoint at startup, so they move with the calibration rather than drifting away from it. When that endpoint cannot be reached it falls back to 0.39, 0.18 and 0.09. If an upstream model is unavailable, a 10% confidence penalty is applied per missing modality, so a verdict reached without all three is deliberately conservative.',
+        q: 'What is the fraud confidence score?',
+        a: 'One number from 0 to 1 that combines the three models. An administrator sets where it becomes Critical, High or Medium. If a model is down, the score is pulled toward uncertain and the verdict says so.',
       },
       {
-        q: 'What is RAG and why does it matter here?',
-        a: 'Retrieval-Augmented Generation (RAG) means the LLM retrieves relevant information before generating text. In DeepSentinel, the fused risk profile is converted into a natural language query, which searches a local ChromaDB vector database of FATF typologies. The retrieved typology document then becomes the LLM\'s only permitted source of fraud pattern information — preventing hallucination.',
+        q: 'What is RAG and why does it matter?',
+        a: 'The system looks up the matching laundering method before writing the report, and the report may only use what it found. That keeps it from inventing patterns.',
       },
       {
         q: 'What are FATF typologies?',
-        a: 'FATF (Financial Action Task Force) is the global anti-money laundering standards body. Their typologies are documented patterns of financial crime — Smurfing, Layering, Mule Networks, Account Takeover, Trade-Based Money Laundering, and others. DeepSentinel\'s knowledge base contains 10 of these typologies, each with specific behavioral indicators that the LLM is constrained to reference.',
+        a: 'Known money-laundering methods published by the global standards body, such as smurfing, layering and mule networks. DeepSentinel uses 10 of them.',
       },
       {
         q: 'What is Chain-of-Evidence prompting?',
-        a: 'It is a prompt engineering technique that forces the LLM to follow strict rules: it may only cite the numerical scores it was given, may only reference fraud patterns from the retrieved FATF typology, must cite the FATF typology ID in every claim, and must produce output in an exact 5-section format. These 8 rules eliminate the hallucination risk present in free-form LLM forensic generation.',
+        a: 'Strict rules for the report writer: use only the given scores and the matched method, cite the method in each claim, and follow a fixed 5-section format.',
       },
     ],
   },
   {
-    category: 'Using the Analyzer',
+    category: 'Using the analyzer',
     items: [
       {
         q: 'What do the fraud scenarios mean?',
-        a: 'Each scenario simulates a different type of financial crime: Mule Network (hub-and-spoke fund routing), Layering (multi-hop transaction chains), Smurfing (many small transactions below reporting thresholds), Account Takeover (sudden drain from a legitimate account), Velocity Fraud (machine-speed automated transfers), and Legitimate (normal customer transaction). Each scenario generates realistic mock scores for the three models.',
+        a: 'Sample cases to try: mule network, layering, smurfing, account takeover, fast automated transfers, and a normal payment. They use simulated scores.',
       },
       {
-        q: 'What is the Ablation Study toggle?',
-        a: 'The ablation study runs the same fraud scenario through two versions simultaneously: the Baseline LLM (no RAG — receives only the raw scores and generates freely) and DeepSentinel (full RAG-grounded system). Side by side, you can see the baseline hallucinating fraud patterns it was not told about, while DeepSentinel anchors every claim to the retrieved FATF definition. It is how you check that a report is grounded rather than invented.',
+        q: 'What is the ablation toggle?',
+        a: 'It shows the same case reported twice: once by a plain language model and once by DeepSentinel. You can see the plain one invent details the grounded one does not.',
       },
       {
-        q: 'What does the cosine similarity score on the FATF match mean?',
-        a: 'It measures how closely the natural language description of the risk profile matches the stored FATF typology, on a scale from 0% (no match) to 100% (perfect match). Scores above 65% indicate a reliable typology match. The system always retrieves the single best match from the 10 typologies.',
-      },
-      {
-        q: 'Why does it say "Demo Mode — Simulated Upstream Scores"?',
-        a: 'The three upstream deep learning models (GNN, VAE, TCN) are built by other team members whose APIs are not yet deployed. Until they are live, DeepSentinel generates realistic mock scores using scenario-based probability ranges. The Fusion Engine, RAG retrieval, and LLM forensic report are fully real and operational regardless of the mock scores.',
+        q: 'What does the match percentage mean?',
+        a: 'How closely the case matches the stored laundering method, from 0% to 100%. The closest of the 10 methods is always used.',
       },
     ],
   },
@@ -141,8 +137,7 @@ export default function FAQ() {
             <Eyebrow>Frequently asked</Eyebrow>
             <Display lead="Everything you need" accent="to know" className="mt-4" />
             <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-400">
-              How the platform works, what the research actually shows, and how to
-              read what the analyzer gives you back.
+              Quick answers about the platform and the analyzer.
             </p>
           </Reveal>
 
@@ -192,8 +187,7 @@ export default function FAQ() {
       <div className="mx-auto max-w-4xl px-4 sm:px-6">
         {total === 0 ? (
           <p className="py-20 text-center text-sm text-slate-500">
-            Nothing matches “{query}”. Try a broader word, or ask the assistant —
-            it reads the project documentation directly.
+            Nothing matches “{query}”. Try another word, or ask the assistant.
           </p>
         ) : (
           sections.map((section, si) => (
@@ -224,9 +218,7 @@ export default function FAQ() {
             <div className="relative">
               <p className="text-xl font-semibold text-slate-200">Still have a question?</p>
               <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
-                The project assistant answers from the documentation itself and
-                cites where each answer came from — or run a real transaction
-                through the analyzer.
+                Ask the assistant, or try a real transaction in the analyzer.
               </p>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <Link

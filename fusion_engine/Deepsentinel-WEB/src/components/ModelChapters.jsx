@@ -46,9 +46,8 @@ export default function ModelChapters() {
           </Reveal>
           <Reveal delay={100}>
             <p className="max-w-md text-base leading-relaxed text-slate-400">
-              Three detectors each read a signal the others cannot see: the
-              network, the behaviour, the timing. Fusion weighs them into one
-              verdict. Each ships as its own evaluated, deployable API.
+              Three detectors read the network, the behaviour and the timing. Fusion
+              combines them into one verdict.
             </p>
           </Reveal>
         </div>

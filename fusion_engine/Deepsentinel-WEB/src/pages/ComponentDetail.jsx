@@ -81,7 +81,7 @@ const LIVE = {
   },
   fusion: {
     'Signals combined': (d) => (d.signals ? String(d.signals) : null),
-    'Typologies indexed': (d) => (d.typologies ? String(d.typologies) : null),
+    'Methods indexed': (d) => (d.typologies ? String(d.typologies) : null),
   },
 }
 
@@ -299,8 +299,7 @@ export default function ComponentDetail() {
               Its field <span className="display-italic text-accent-400">of view.</span>
             </h2>
             <p className="mt-5 text-base leading-relaxed text-slate-400">
-              Each detector reads one slice of the same event. The lit part is
-              what this one sees; the rest is why the others exist.
+              Each detector sees one part of the payment. The lit part is this one’s.
             </p>
           </Reveal>
           <Reveal delay={100}>

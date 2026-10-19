@@ -21,19 +21,17 @@ import { txnField } from '../data/workedExample'
 
 const PIPELINE = [
   ['01', 'Transaction arrives',
-   'Amount, counterparties and timing enter the pipeline. Nothing about the outcome is known.'],
+   'Amount, accounts and time come in.'],
   ['02', 'All three detectors read it at once',
-   'The payment graph around the transaction, the account’s own behaviour, and the run '
-   + 'of transactions it arrived in — scored in parallel, so the verdict costs whichever '
-   + 'detector is slowest rather than all three added together.'],
+   'Network, behaviour and timing are scored in parallel.'],
   ['03', 'Three detectors, scored independently',
-   'Network, behaviour and timing each return a probability and the reasoning behind it, and none of them sees another’s answer first. An earlier design ran the relational model as a gate on the other two; measured against a 400-transaction replay it cost half the frauds, because a gate in front of an independent detector cannot do better than the detector. A detector that cannot be reached abstains — it does not vote zero.'],
+   'Each returns a score and its reasons, without seeing the others. A detector that is down is left out, not counted as safe.'],
   ['04', 'Fusion, with an uncertainty penalty',
-   'A meta-classifier combines what answered. When fewer than three contributed, the fused confidence is deliberately pulled toward the middle rather than reported as though nothing were missing.'],
+   'A trained model combines the scores. If one is missing, the result is pulled toward uncertain.'],
   ['05', 'Retrieval anchors the narrative',
-   'The fused profile queries a vector store of FATF typologies. The best match, not the model’s imagination, is what the report is allowed to cite.'],
+   'The closest known laundering method is looked up. The report may only cite that.'],
   ['06', 'A forensic report an investigator can act on',
-   'Chain-of-Evidence prompting constrains the language model to the retrieved typology and the actual scores, so every claim traces back to something recorded.'],
+   'Every claim points to a recorded score or the matched method.'],
 ]
 
 /* What each detector can and cannot see. A comparison grid makes the case for
@@ -72,10 +70,10 @@ const SERVICES = [
 ]
 
 const PRINCIPLES = [
-  'Absence is not innocence. A detector that cannot be reached abstains; it never votes zero.',
-  'Every sentence of the report cites a model output or a retrieved typology.',
-  'Every analysis is kept in the history and the audit log, with who ran it and when.',
-  'Thresholds are set on calibrated probabilities, so a cut-off means what it says.',
+  'A detector that is down is left out, never counted as safe.',
+  'Every sentence in a report cites its source.',
+  'Every analysis is logged with who ran it and when.',
+  'Thresholds are real probabilities, so a cut-off means what it says.',
 ]
 
 const LENS_TONE = {
@@ -122,12 +120,8 @@ export default function About() {
               <span className="display-italic text-accent-400">four readings.</span>
             </h1>
             <p className="max-w-[34rem] text-lg leading-relaxed text-slate-400">
-              No single model sees fraud whole. The network layer reads
-              structure, the behavioural layer reads deviation, the temporal
-              layer reads what came immediately before, and a meta-classifier
-              decides what to believe when they disagree. Retrieval then
-              grounds the explanation in FATF typology, so every sentence of the
-              report can point at its evidence.
+              Three models each read a different side of a payment. One verdict
+              combines them, and the report cites its evidence.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link to="/#pipeline"
@@ -178,9 +172,7 @@ export default function About() {
               The path of <span className="display-italic text-accent-400">one transfer.</span>
             </h2>
             <p className="max-w-md text-base leading-relaxed text-slate-400">
-              From the record arriving to the report an investigator files. The
-              three detectors run in parallel; nothing waits on the slowest
-              unless it has to.
+              From arrival to a report an investigator can file.
             </p>
           </div>
           <div className="mt-12 overflow-x-auto pb-2">
@@ -294,10 +286,7 @@ export default function About() {
               <span className="display-italic text-accent-400">and what it cannot.</span>
             </h2>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-400">
-              They do not disagree because one is better. They disagree because
-              each reads a different slice of the same event, which is the whole
-              argument for fusion, and why a missing detector abstains rather
-              than voting zero.
+              Each reads a different side of the same payment. That is why they are combined.
             </p>
           </Reveal>
 
@@ -392,9 +381,8 @@ export default function About() {
               Five services, <span className="display-italic text-accent-400">one front door.</span>
             </h2>
             <p className="max-w-md text-base leading-relaxed text-slate-400">
-              Each detector ships as its own evaluated API on an internal network,
-              so one can be replaced without touching the others. Only the
-              fusion API and the console face the outside.
+              Each detector runs as its own service, so one can be swapped without touching
+              the others. Only the fusion API and the console are public.
             </p>
           </div>
           <div className="mt-10 grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 13rem), 1fr))' }}>

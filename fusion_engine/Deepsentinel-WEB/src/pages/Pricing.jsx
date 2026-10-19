@@ -75,9 +75,8 @@ export default function Pricing() {
             <span className="display-italic text-accent-400">the thing you pay for.</span>
           </h1>
           <p className="max-w-[40rem] text-lg leading-relaxed text-slate-400">
-            Every plan screens every transaction through all three detectors,
-            fuses them, and alerts your team. What the plans differ on is how much
-            the product helps you understand a result and answer for it.
+            Every plan checks every payment with all three models and alerts your
+            team. Plans differ in how much help you get explaining a result.
           </p>
         </Reveal>
       </section>
@@ -172,10 +171,8 @@ export default function Pricing() {
                   <span className="display-italic text-accent-400">Governed by your regulator.</span>
                 </h2>
                 <p className="max-w-[30rem] text-base leading-relaxed text-slate-400">
-                  The detectors learn your own transactions, the governance pack
-                  carries the model cards and validation evidence a review asks
-                  for, and drift monitoring tells you when the world has moved
-                  under the model.
+                  The models learn your own payments, you get the documents a review asks
+                  for, and you are told when the models drift.
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <Link to="/signup" className="inline-flex items-center rounded-[14px] bg-[#F0EDE7] px-6 py-3.5 text-[15px] font-semibold text-[#0D0C0B]">
@@ -234,8 +231,7 @@ export default function Pricing() {
               </table>
             </div>
             <p className="mt-6 text-[13px] leading-relaxed text-slate-500">
-              {data.note} Plans are activated by an administrator; there is no
-              card payment in this deployment.
+              {data.note} An administrator turns plans on; there is no card payment.
             </p>
           </section>
         </>

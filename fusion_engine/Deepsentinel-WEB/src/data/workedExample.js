@@ -30,7 +30,7 @@ export const MODELS = [
     finding: 'Reconstruction error 4.2σ above this account’s baseline',
     brief: '4.2σ above its own baseline' },
   { key: 'temporal', label: 'Timing', model: 'Transaction-Sequence TCN', score: 0.92, colour: `rgb(${MODEL_LENS.temporal.hue})`,
-    finding: 'Burstiness 0.92 — machine-paced, not human',
+    finding: 'Burstiness 0.92: machine-paced, not human',
     brief: 'burstiness 0.92, machine-paced' },
 ]
 

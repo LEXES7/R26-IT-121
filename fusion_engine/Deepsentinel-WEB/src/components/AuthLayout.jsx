@@ -59,8 +59,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
               <span className="display-italic text-[#2DD4BF]">Then prove it.</span>
             </p>
             <p className="mt-4 text-[15px] leading-relaxed text-[#D6D1C9]">
-              Three detectors, one fused verdict, and a forensic report where
-              every claim traces back to a model output or a retrieved typology.
+              Three detectors, one verdict, and a report that cites its evidence.
             </p>
           </div>
         </div>

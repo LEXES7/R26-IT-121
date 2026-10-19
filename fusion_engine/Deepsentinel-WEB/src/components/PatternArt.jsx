@@ -76,7 +76,7 @@ function draw(name, t) {
         </>
       )
 
-    case 'Balance-shape anomalies':
+    case 'Odd balance changes':
       return (
         <>
           <line className="stroke-slate-500" x1="16" y1="105" x2="224" y2="105" strokeWidth="1" strokeOpacity="0.5" />
@@ -89,7 +89,7 @@ function draw(name, t) {
           <path className="stroke-risk-critical" d="M172 24 H200" strokeWidth="1.5" strokeDasharray="3 4" />
         </>
       )
-    case 'Off-pattern value':
+    case 'Unusual amounts':
       return (
         <>
           <path className={t.stroke} d="M8 104 C 40 104, 52 22, 84 22 S 128 104, 160 104"
@@ -99,7 +99,7 @@ function draw(name, t) {
           <Flag cx={208} cy={98} r={7} />
         </>
       )
-    case 'Behavioural typologies':
+    case 'Repeat patterns':
       return (
         <>
           {[[62, 52], [132, 82], [192, 40]].map(([x, y]) => (
@@ -141,7 +141,7 @@ function draw(name, t) {
           <Flag cx={202} cy={60} r={11} />
         </>
       )
-    case 'Fraud clustering':
+    case 'Fraud bursts':
       return (
         <>
           <line className="stroke-slate-500" x1="10" y1="76" x2="230" y2="76" strokeWidth="1" strokeOpacity="0.6" />
@@ -167,7 +167,7 @@ function draw(name, t) {
           <circle className={t.fill} cx="222" cy="60" r="9" />
         </>
       )
-    case 'Graceful degradation':
+    case 'Handles outages':
       return (
         <>
           <g fill="none" strokeLinecap="round" strokeWidth="3">
@@ -180,7 +180,7 @@ function draw(name, t) {
           <circle className={t.fill} cx="222" cy="60" r="9" />
         </>
       )
-    case 'Grounded reporting':
+    case 'Cited reports':
       return (
         <>
           <rect className={t.stroke} x="18" y="10" width="120" height="100" rx="10" fill="none" strokeWidth="1.6" />

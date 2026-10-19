@@ -97,15 +97,13 @@ export default function RequestAccess() {
       >
         <Alert tone="success" title="We will be in touch">
           Someone will reply to <strong>{form.work_email}</strong> to arrange a
-          call. Once we understand how your team works, we will set up your
-          accounts and assign roles before you sign in for the first time.
+          call. Then we set up your team’s accounts.
         </Alert>
 
         <div className="mt-6 rounded-xl border border-subtle bg-surface p-5">
           <p className="text-sm font-medium text-slate-300">While you wait</p>
           <p className="mt-1.5 text-sm leading-relaxed text-slate-500">
-            The architecture, the evaluation methodology and the honest results —
-            including where the models fall short — are all public.
+            How it works and how well it performs, including its limits, is all public.
           </p>
           <Link
             to="/about"
@@ -121,7 +119,7 @@ export default function RequestAccess() {
   return (
     <AuthLayout
       title="Talk to us"
-      subtitle="Tell us about your institution and what you need. We will arrange a call, then set up accounts for your team."
+      subtitle="Tell us what you need. We will call, then set up your team."
       footer={
         <>
           Already have an account?{' '}
@@ -165,7 +163,7 @@ export default function RequestAccess() {
           <Field
             label="Transaction volume"
             htmlFor="monthly_volume"
-            hint="Rough scale is enough — it tells us what deployment shape to discuss."
+            hint="A rough figure is fine."
           >
             <Select id="monthly_volume" value={form.monthly_volume} onChange={set('monthly_volume')}>
               {VOLUMES.map((v) => (
@@ -260,8 +258,8 @@ export default function RequestAccess() {
           <ol className="mt-3 space-y-2.5">
             {[
               ['1', 'We read your enquiry', 'Usually the same working day.'],
-              ['2', 'We arrange a call', 'To understand your data, volume and constraints.'],
-              ['3', 'We set up your accounts', 'Configured for your team, with roles assigned.'],
+              ['2', 'We arrange a call', 'About your data and needs.'],
+              ['3', 'We set up your accounts', 'With roles for your team.'],
             ].map(([n, title, detail]) => (
               <li key={n} className="flex gap-3">
                 <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent-500/15 text-[14px] font-bold text-accent-500">

@@ -38,7 +38,7 @@ export default function Login() {
   return (
     <AuthLayout
       title="Sign in"
-      subtitle="Access the analyzer, batch runs and the operator assistant."
+      subtitle="Open the analyzer, batch upload and assistant."
       footer={
         <>
           No account?{' '}

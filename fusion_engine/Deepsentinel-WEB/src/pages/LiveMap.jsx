@@ -132,8 +132,8 @@ export default function LiveMap() {
                 Fraud does not wait <span className="display-italic text-[#2DD4BF]">for office hours.</span>
               </h1>
               <p className="mt-4 text-[15px] leading-relaxed text-[#A39C92]">
-                Card fraud is attempted somewhere every few seconds. Watch it
-                land, then ask the sentinel to do something about it.
+                Card fraud is tried every few seconds. Watch it land, then switch on
+                the sentinel.
               </p>
               <dl className="mt-6 grid grid-cols-3 gap-3 border-t border-white/10 pt-5">
                 {[['Attempts seen', seen, '#FBFAF7'],
@@ -232,9 +232,9 @@ export default function LiveMap() {
         </div>
         <div className="mt-10 grid gap-4 md:grid-cols-3">
           {[
-            ['A light is an attempt', 'A simulated card-fraud attempt landing in a city, at a rate drawn from published figures.'],
-            ['Red is the worst of it', 'Each attempt carries a severity. Critical ones glow red, on the globe and on the sign.'],
-            ['The sentinel changes the pace', 'Switch him on and most attempts are stopped before they land, the way screening does.'],
+            ['A light is an attempt', 'A simulated fraud attempt in a city.'],
+            ['Red is critical', 'The worst attempts glow red.'],
+            ['The sentinel stops them', 'Switch it on and most attempts are blocked.'],
           ].map(([title, body]) => (
             <article key={title} className="glass solid-card rounded-[24px] p-6">
               <h3 className="text-lg font-semibold text-slate-100">{title}</h3>
@@ -243,9 +243,8 @@ export default function LiveMap() {
           ))}
         </div>
         <p className="mt-8 text-[13px] leading-relaxed text-slate-500">
-          Events on this map are simulated for demonstration. The rate and the
-          places are drawn from published card-fraud figures; the transactions
-          themselves are not real, and nothing here is screened by the platform.
+          This map is a simulation. The rates follow published figures, but the
+          payments are not real.
         </p>
       </section>
     </div>

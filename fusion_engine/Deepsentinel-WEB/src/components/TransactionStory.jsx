@@ -13,23 +13,23 @@ import { Eyebrow } from './Editorial'
 const STEPS = [
   {
     title: 'One record arrives.',
-    body: 'Ten fields. Nothing here says fraud: the amount is large but legal, the accounts are unremarkable, and the existing rule flag stays at zero.',
+    body: 'Ten fields. Nothing looks like fraud, and the old rule flag stays at zero.',
   },
   {
     title: 'Three models read it differently.',
-    body: 'They run in parallel, each looking at a signal the others cannot see: who pays whom, whether the account is acting like itself, and whether the rhythm is human.',
+    body: 'Who pays whom, whether the payment fits, and whether the rhythm is human.',
   },
   {
     title: 'The network sees a shape.',
-    body: 'Two senders, both new to the network, are each emptied in full into the same account. In isolation each transfer is ordinary; together they are a collection point.',
+    body: 'Two new senders are each emptied into the same account. Together, that is a collection point.',
   },
   {
     title: 'Fusion weighs what it has.',
-    body: 'A meta-classifier combines the available verdicts. A detector that is unreachable abstains rather than voting zero — absence is not innocence.',
+    body: 'The scores are combined. A missing detector is left out, not counted as safe.',
   },
   {
     title: 'And it writes the case.',
-    body: 'Retrieval pulls the matching FATF typology, and every sentence cites a model output or a retrieved document. What lands on the analyst’s desk is evidence, not a number.',
+    body: 'The report matches a known laundering method and cites its evidence in every sentence.',
   },
 ]
 

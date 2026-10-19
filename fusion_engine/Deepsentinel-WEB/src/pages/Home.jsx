@@ -22,17 +22,17 @@ const PROBLEM = [
   {
     Icon: IconBlackBox,
     title: 'The model says fraud. It cannot say why.',
-    body: 'A neural network returns a probability. An investigator building a case needs reasoning, and a regulator needs an audit trail. A score alone satisfies neither.',
+    body: 'Investigators need reasons and regulators need a trail. A score gives neither.',
   },
   {
     Icon: IconHallucination,
     title: 'A language model will happily invent the why.',
-    body: 'Ask an unconstrained LLM to explain a fraud score and it produces fluent, confident narrative — including details that were never in the data. In a compliance filing that is worse than no explanation.',
+    body: 'Ask a chatbot why, and it writes confident text with details that were never in the data.',
   },
   {
     Icon: IconLink,
-    title: 'Neither problem is solved by the other alone.',
-    body: 'DeepSentinel grounds every sentence of the narrative in a retrieved FATF typology and the actual model outputs, so each claim traces back to evidence.',
+    title: 'DeepSentinel does both.',
+    body: 'Every sentence of the report is tied to a real model output or a known laundering method.',
   },
 ]
 
@@ -119,8 +119,7 @@ export default function Home() {
           <Eyebrow>Explore it yourself</Eyebrow>
           <Display lead="Every stage," accent="on demand" className="mt-4" />
           <p className="mt-5 text-sm leading-relaxed text-slate-500">
-            Select any stage to see what happens there. The same worked example
-            carries through all five.
+            Pick a stage to see what happens. One example runs through all five.
           </p>
         </Reveal>
 
@@ -149,10 +148,8 @@ export default function Home() {
 
           <Reveal delay={120} className="lg:hair-l lg:pl-16">
             <p className="text-sm leading-relaxed text-slate-400">
-              No prior system pairs a multi-modal fraud ensemble with a retrieval
-              layer that anchors the generated narrative in a structured typology
-              knowledge base. That pairing is what makes the output traceable,
-              and it is what this project contributes.
+              No earlier system pairs several fraud models with a report grounded in
+              known laundering methods. That pairing is what this project adds.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-6">
               <Link
@@ -183,9 +180,8 @@ export default function Home() {
               Detection is never the thing you pay for
             </h2>
             <p className="mt-4 max-w-[58ch] text-[16px] text-slate-400">
-              Every plan screens every transaction through all three detectors,
-              fuses them, and alerts your team. What the plans differ on is how
-              much the product helps you understand a result and answer for it.
+              Every plan checks every payment with all three models and alerts your
+              team. Plans differ in how much help you get explaining a result.
             </p>
 
             <div className="mt-10 grid gap-4 sm:grid-cols-3">
