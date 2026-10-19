@@ -18,11 +18,9 @@ export function Eyebrow({ children, className }) {
 /**
  * Display heading.
  *
- * Set in the display serif, with the second line italic and accented, so the
- * eye lands on the specific claim rather than the generic opener. This was a
- * bold sans heading — which is what every generated dashboard uses, and which
- * made each page that composes it read as one. Changing it here converts every
- * page that still uses the primitive.
+ * Set in the display face, with the second line in the accent colour, so the
+ * eye lands on the specific claim rather than the generic opener. Changing it
+ * here converts every page that still uses the primitive.
  */
 export function Display({ lead, accent, className, as: Tag = 'h2', stack = false }) {
   return (

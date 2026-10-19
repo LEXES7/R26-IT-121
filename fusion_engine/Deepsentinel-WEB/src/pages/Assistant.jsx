@@ -133,7 +133,7 @@ export default function Assistant() {
       {messages.length === 0 ? (
         <div className="flex min-h-[52vh] flex-col items-center justify-center">
           <h1 className="text-center text-[34px] tracking-tight"
-              style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+              style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif" }}>
             How can I help you?
           </h1>
           <Composer {...composer} className="mt-8 w-full max-w-2xl" />

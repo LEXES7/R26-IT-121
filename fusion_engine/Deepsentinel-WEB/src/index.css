@@ -1,6 +1,6 @@
 /* @import must come first — CSS drops any @import that follows another rule,
    which is why the font previously failed to load. */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Doto:wght@800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Doto:wght@800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -271,8 +271,9 @@ html.theme-transition * {
    ---------------------------------------------------------------------------
    Three typefaces, each with one job:
 
-     Instrument Serif   headlines and hero figures. The editorial voice, and the
-                        single strongest signal that a person designed this.
+     Plus Jakarta Sans  headlines and hero figures, set heavy and tight. The
+                        same face as the dashboards and the mobile app, so the
+                        product reads as one thing from the site to the phone.
      Inter              everything functional — labels, body, controls.
      JetBrains Mono     data. Tabular figures so columns of numbers align and
                         a changing value does not shift its neighbours.
@@ -307,16 +308,17 @@ html.theme-transition * {
 }
 
 @layer components {
-  /* Editorial display type. Optical sizing matters at these sizes: the serif
-     is set tight and slightly negative-tracked so a large figure reads as one
-     shape rather than as spaced glyphs. */
+  /* Display type. Set heavy and negative-tracked so a large headline reads as
+     one shape rather than as spaced glyphs. The accent clause keeps its colour
+     and stays upright: a slanted geometric sans reads as a mistake, not a
+     voice. */
   .display {
-    font-family: 'Instrument Serif', Georgia, serif;
-    font-weight: 400;
-    letter-spacing: -0.015em;
-    line-height: 0.95;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    line-height: 1.02;
   }
-  .display-italic { font-style: italic; }
+  .display-italic { font-style: normal; }
 
   /* Tabular figures. Without this a counter animating from 9 to 10 shifts
      everything beside it. */
@@ -386,7 +388,7 @@ html.theme-transition * {
    and a signed-in user does not get a second, disagreeing theme control.
 
    It now speaks the public site's type and palette as well as its voice.
-   Page titles are Instrument Serif with an italic clause, labels and tables
+   Page titles are Plus Jakarta Sans with an accent clause, labels and tables
    are Inter, figures are JetBrains Mono, and the neutrals are the site's warm
    ones, so signing in feels like walking further into the same building
    rather than through a door into another one. The severity colours below
@@ -501,8 +503,8 @@ html.theme-transition * {
 .ds-topbar { min-height: 78px; padding: 17px 30px; border-bottom: 1px solid rgb(var(--ds-line)); display: flex; align-items: center; justify-content: space-between; gap: 16px; background: rgb(var(--ds-workspace)); }
 .ds-eyebrow { color: rgb(var(--ds-faint)); font-family: 'Inter', system-ui, sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: .14em; font-weight: 500; }
 /* The one thing kept from the public site's voice. */
-.ds-page-title { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: clamp(28px, 2.7vw, 38px); letter-spacing: -.015em; line-height: 1.02; margin-top: 6px; }
-.ds-page-title em { font-style: italic; color: rgb(var(--ds-accent-strong)); }
+.ds-page-title { font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: clamp(28px, 2.7vw, 38px); letter-spacing: -.035em; line-height: 1.05; margin-top: 6px; }
+.ds-page-title em { font-style: normal; color: rgb(var(--ds-accent-strong)); }
 .ds-page-sub { font-family: 'Inter', system-ui, sans-serif; font-size: 16px; color: rgb(var(--ds-muted)); margin-top: 6px; }
 .ds-top-actions { display: flex; align-items: center; gap: 8px; }
 .ds-icon-btn { width: 31px; height: 31px; border: 1px solid rgb(var(--ds-line)); color: rgb(var(--ds-muted)); background: rgb(var(--ds-surface)); border-radius: 6px; display: grid; place-items: center; transition: border .18s ease, color .18s ease, transform .18s ease; }
@@ -1226,16 +1228,18 @@ html.theme-transition * {
    Latin display face, and without them the first two greetings would be
    boxes. */
 .greeting-word {
-  font-family: 'Instrument Serif',
-               'Noto Serif Sinhala', 'Iskoola Pota',          /* Sinhala  */
-               'Noto Serif Tamil', 'Latha',                    /* Tamil    */
-               'Noto Serif Devanagari', 'Nirmala UI',          /* Hindi    */
-               'Noto Serif Hebrew', 'David',                   /* Hebrew   */
-               'Noto Serif Thai', 'Leelawadee UI',             /* Thai     */
+  font-family: 'Plus Jakarta Sans',
+               'Noto Sans Sinhala', 'Iskoola Pota',           /* Sinhala  */
+               'Noto Sans Tamil', 'Latha',                     /* Tamil    */
+               'Noto Sans Devanagari', 'Nirmala UI',           /* Hindi    */
+               'Noto Sans Hebrew', 'Arial Hebrew',             /* Hebrew   */
+               'Noto Sans Thai', 'Leelawadee UI',              /* Thai     */
                'Apple SD Gothic Neo', 'Malgun Gothic',         /* Korean   */
-               'Hiragino Mincho ProN', 'Yu Mincho',            /* Japanese */
-               'Songti SC', 'SimSun',                          /* Chinese  */
-               Georgia, serif;
+               'Hiragino Sans', 'Yu Gothic',                   /* Japanese */
+               'PingFang SC', 'Microsoft YaHei',               /* Chinese  */
+               system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.03em;
   font-size: clamp(2.6rem, 7vw, 4.6rem);
   line-height: 1;
   color: rgb(var(--slate-200));
@@ -1531,7 +1535,7 @@ html.theme-transition * {
 .ds-panel-pad { padding: 20px 22px; }
 .ds-section-label { font-size: 10.5px; letter-spacing: 0.14em; }
 .ds-section-title {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
   font-weight: 400;
   font-size: 25px;
   letter-spacing: -0.01em;
@@ -1548,7 +1552,7 @@ html.theme-transition * {
    says which ones need attention. */
 .ds-kpi { padding: 18px 20px 17px; }
 .ds-kpi-value {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
   font-weight: 400;
   font-size: 48px;
   letter-spacing: -0.01em;
@@ -2529,3 +2533,9 @@ html.theme-transition * {
   --accent-500: 168 204 40;
   --accent-600: 66 88 0;
 }
+
+/* Display headlines were given line-heights under 1 for the old serif, whose
+   descenders were short. The sans needs a little more room between lines, so
+   tight display leading is lifted to a floor rather than edited page by page. */
+.display.leading-none,
+.display[class*='leading-[0.9'] { line-height: 1.04; }

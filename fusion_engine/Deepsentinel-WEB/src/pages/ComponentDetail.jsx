@@ -120,7 +120,7 @@ function Json({ text }) {
   return out
 }
 
-/** "Fraud is a shape, not a number" → the roman half and the italic half. */
+/** "Fraud is a shape, not a number" → the plain half and the accented half. */
 function splitTagline(t) {
   const i = t.indexOf(', ')
   if (i > 0) return [t.slice(0, i + 1), `${t.slice(i + 2)}.`]
@@ -227,7 +227,12 @@ export default function ComponentDetail() {
           <div className="mx-auto grid max-w-[88rem] gap-10 px-5 py-16 sm:grid-cols-2 sm:px-8 lg:grid-cols-4">
             {c.metrics.map((m, i) => (
               <Reveal key={m.label} delay={i * 80}>
-                <p className="display text-[3.5rem] leading-none text-slate-100 sm:text-[4.5rem]">{figure(m)}</p>
+                {/* A word is wider than a number at the same size, so a figure
+                    that is a word steps down to stay inside its column. */}
+                <p className={cx('display flex h-[3.75rem] items-end leading-none text-slate-100 sm:h-[4.75rem]',
+                                 String(figure(m) ?? '').length > 7
+                                   ? 'text-[2.5rem] sm:text-[3.25rem]'
+                                   : 'text-[3.5rem] sm:text-[4.5rem]')}>{figure(m)}</p>
                 <p className="mt-3 text-sm font-semibold text-accent-400">{m.label}</p>
                 <p className="mt-1 text-[15px] leading-snug text-slate-500">{m.note}</p>
               </Reveal>
