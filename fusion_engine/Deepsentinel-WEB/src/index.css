@@ -1631,26 +1631,45 @@ html.theme-transition * {
 
    .liquid does the pane, the refracting rim and the pointer highlight. What
    is added here is only the shape and the behaviour on scroll. */
-.nav-liquid {
+/* The centred island: the logo and the actions sit on the page, and only the
+   links float, in a small glass pill in the middle. */
+.nav-island {
   position: sticky;
-  top: 12px;
+  top: 0;
   z-index: 50;
-  margin: 12px auto 0;
-  width: calc(100% - 24px);
-  max-width: 88rem;
-  border-radius: 18px;
-  transition: top .35s var(--ease-hover), width .35s var(--ease-hover),
-              border-radius .35s var(--ease-hover), box-shadow .35s var(--ease-hover);
+  width: 100%;
+  transition: background .35s var(--ease-hover);
 }
-/* Once the page has moved, the bar tightens and lifts — a small acknowledgement
-   that it is now floating over content rather than sitting at the top of it. */
-.nav-liquid[data-scrolled='true'] {
-  top: 8px;
-  width: calc(100% - 40px);
-  box-shadow:
-    inset 0 1px 1px rgb(255 255 255 / 0.16),
-    0 18px 46px -18px rgb(0 0 0 / 0.7);
+/* Once the page has moved, the logo and the buttons would sit on top of
+   content, so the band behind them fades in from the canvas. */
+.nav-island[data-scrolled='true'] {
+  background: linear-gradient(180deg, rgb(var(--sentinel-950)) 0%, rgb(var(--sentinel-950) / 0.86) 60%, rgb(var(--sentinel-950) / 0) 100%);
 }
+.nav-island-links { border-radius: 999px; padding: 5px; }
+.nav-island-links:hover, .nav-island-links:active { transform: none; }
+.nav-island-links::after { display: none; }
+
+.nav-on { color: #0D0C0B; }
+[data-theme='light'] .nav-on { color: #FBFAF7; }
+
+.island-btn {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background .2s ease, border-color .2s ease, color .2s ease;
+}
+.island-btn-line { border: 1px solid rgb(255 255 255 / 0.2); color: #F0EDE7; }
+.island-btn-line:hover { border-color: rgb(255 255 255 / 0.4); }
+.island-btn-fill { background: #F0EDE7; color: #0D0C0B; }
+.island-btn-fill:hover { background: #FFFFFF; }
+[data-theme='light'] .island-btn-line { border-color: rgb(20 17 15 / 0.18); color: #14110F; }
+[data-theme='light'] .island-btn-line:hover { border-color: rgb(20 17 15 / 0.4); }
+[data-theme='light'] .island-btn-fill { background: #14110F; color: #FBFAF7; }
+[data-theme='light'] .island-btn-fill:hover { background: #000000; }
 
 /* The pill that slides between links. One element that moves, rather than a
    background on each link: the movement is what ties the items together. */
@@ -1660,22 +1679,18 @@ html.theme-transition * {
   height: 32px;
   translate: 0 -50%;
   border-radius: 999px;
-  background: rgb(255 255 255 / 0.09);
-  border: 1px solid rgb(255 255 255 / 0.10);
+  background: #F0EDE7;
   pointer-events: none;
   opacity: 0;
   transition: left .38s var(--ease-hover), width .38s var(--ease-hover),
               opacity .25s ease;
 }
 .nav-pill[data-on='true'] { opacity: 1; }
-[data-theme='light'] .nav-pill {
-  background: rgb(16 30 40 / 0.06);
-  border-color: rgb(16 30 40 / 0.08);
-}
+[data-theme='light'] .nav-pill { background: #14110F; }
 
 
 @media (prefers-reduced-motion: reduce) {
-  .nav-liquid, .nav-pill { transition: none; }
+  .nav-island, .nav-pill { transition: none; }
 }
 
 /* ── shader buttons ───────────────────────────────────────────────────
