@@ -14,7 +14,7 @@ import { analyse, type AnalyzeResponse } from "../api/analyze";
 import { NetworkError } from "../api/client";
 import { SAMPLES, type Sample } from "../data/samples";
 import { account, money } from "../lib/format";
-import { accent, bg, mono, radius, risk, space, text } from "../theme/tokens";
+import { accent, bg, mono, radius, risk, space, statusBar, text, themed } from "../theme/tokens";
 import { NavBar } from "../components/ios";
 import { Card, Fact, Label, Note } from "../components/ui";
 
@@ -62,7 +62,7 @@ export default function AnalyzeScreen({ onResult, onBack, backLabel = "Back" }: 
 
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
-      <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
+      <StatusBar barStyle={statusBar()} backgroundColor={bg.canvas} />
       <NavBar back={{ label: backLabel, onPress: onBack }} />
       <ScrollView contentContainerStyle={styles.content}>
         <View>
@@ -156,7 +156,7 @@ export default function AnalyzeScreen({ onResult, onBack, backLabel = "Back" }: 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   screen: { flex: 1, backgroundColor: bg.canvas },
   content: { padding: space.lg, gap: space.lg, paddingBottom: space.xxl },
 
@@ -200,4 +200,4 @@ const styles = StyleSheet.create({
   buttonPressed: { opacity: 0.75 },
   buttonText: { color: text.primary, fontSize: 15, fontWeight: "600" },
   busyRow: { flexDirection: "row", alignItems: "center", gap: space.sm },
-});
+}));

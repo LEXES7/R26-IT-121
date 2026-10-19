@@ -1,5 +1,6 @@
 import { StyleSheet, View } from "react-native";
 import Svg, { Circle, Defs, Ellipse, G, Path, RadialGradient, Stop } from "react-native-svg";
+import { themed } from "../theme/tokens";
 
 /**
  * The top of the planet from the site's home page: a dark sphere lit from
@@ -52,6 +53,6 @@ export default function Planet({ height = 150, live = true }: { height?: number;
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   wrap: { backgroundColor: "#0B0A09", overflow: "hidden" },
-});
+}));

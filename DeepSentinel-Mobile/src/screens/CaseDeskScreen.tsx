@@ -29,7 +29,7 @@ import Graph from "../components/evidence/Graph";
 import Temporal from "../components/evidence/Temporal";
 import { Card, Fact, Label, MODALITIES, Note, RiskBadge, ScoreBar, Section } from "../components/ui";
 import { ago, score } from "../lib/format";
-import { accent, bg, mono, radius, riskColour, space, text } from "../theme/tokens";
+import { accent, bg, modality, mono, radius, riskColour, space, statusBar, text, themed } from "../theme/tokens";
 import { reviewColour } from "./CasesScreen";
 
 /**
@@ -108,7 +108,7 @@ export default function CaseDeskScreen({
   if (!c) {
     return (
       <SafeAreaView edges={["top"]} style={styles.screen}>
-        <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
+        <StatusBar barStyle={statusBar()} backgroundColor={bg.canvas} />
         <NavBar title={caseRef} back={{ label: backLabel, onPress: onBack }} />
         <View style={styles.content}>
           {error ? (
@@ -139,7 +139,7 @@ export default function CaseDeskScreen({
 
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
-      <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
+      <StatusBar barStyle={statusBar()} backgroundColor={bg.canvas} />
       <NavBar title={c.case_ref} back={{ label: backLabel, onPress: onBack }} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -244,7 +244,8 @@ export default function CaseDeskScreen({
 
           <Card>
             <Label>Detectors</Label>
-            {MODALITIES.map(([key, label, tone]) => {
+            {MODALITIES.map(([key, label]) => {
+            const tone = modality[key];
               const absent = answered[key] === false;
               return (
                 <View key={key} style={styles.modalityRow}>
@@ -267,7 +268,7 @@ export default function CaseDeskScreen({
                 ? c.graph_pattern.replace(/_/g, " ").toLowerCase()
                 : "Edge-enhanced GraphSAGE · subgraph"
             }
-            accent={MODALITIES[1][2]}
+            accent={modality.graph}
             initiallyOpen
             disabled={!c.graph_evidence}
           >
@@ -286,7 +287,7 @@ export default function CaseDeskScreen({
           <Section
             title="Behavioural attribution"
             subtitle="Stratified VAE · dual-signal"
-            accent={MODALITIES[0][2]}
+            accent={modality.behavioral}
             disabled={!c.behavioral_evidence}
           >
             {c.behavioral_evidence && <Behavioural evidence={c.behavioral_evidence} />}
@@ -295,7 +296,7 @@ export default function CaseDeskScreen({
           <Section
             title="Temporal evidence"
             subtitle="TS-TCN · peak attention"
-            accent={MODALITIES[2][2]}
+            accent={modality.temporal}
             disabled={!c.temporal_evidence}
           >
             {c.temporal_evidence && (
@@ -327,7 +328,7 @@ export default function CaseDeskScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   screen: { flex: 1, backgroundColor: bg.canvas },
   content: { padding: space.lg, gap: space.md, paddingBottom: space.xxl },
   back: { paddingVertical: space.sm },
@@ -381,4 +382,4 @@ const styles = StyleSheet.create({
   tlStage: { color: text.primary, fontSize: 13, fontWeight: "600" },
   tlDetail: { color: text.muted, fontSize: 12, marginTop: 2 },
   tlAt: { color: text.faint, fontSize: 11 },
-});
+}));

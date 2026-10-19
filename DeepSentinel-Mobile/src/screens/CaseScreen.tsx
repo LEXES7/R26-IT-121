@@ -22,7 +22,7 @@ import Graph from "../components/evidence/Graph";
 import Temporal from "../components/evidence/Temporal";
 import { Card, Fact, Label, MODALITIES, Note, RiskBadge, ScoreBar, Section } from "../components/ui";
 import { ago, money, score } from "../lib/format";
-import { accent, bg, mono, radius, riskColour, space, text } from "../theme/tokens";
+import { accent, bg, modality, mono, radius, riskColour, space, statusBar, text, themed } from "../theme/tokens";
 
 type Props = {
   row: Analysis;
@@ -91,7 +91,7 @@ export default function CaseScreen({
 
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
-      <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
+      <StatusBar barStyle={statusBar()} backgroundColor={bg.canvas} />
       <NavBar title="Transaction" back={{ label: backLabel, onPress: onBack }} />
       <ScrollView contentContainerStyle={styles.content}>
 
@@ -197,7 +197,8 @@ export default function CaseScreen({
             answer is imputed at 0.5 and excluded from the fused score rather
             than counted as a vote for innocence.
           </Note>
-          {MODALITIES.map(([key, label, tone]) => {
+          {MODALITIES.map(([key, label]) => {
+            const tone = modality[key];
             const answered = available?.[key];
             const absent = answered === false;
             return (
@@ -236,7 +237,7 @@ export default function CaseScreen({
         <Section
           title="Behavioural attribution"
           subtitle="Stratified VAE · dual-signal"
-          accent={MODALITIES[0][2]}
+          accent={modality.behavioral}
           initiallyOpen
           disabled={!evidence?.behavioural}
         >
@@ -246,7 +247,7 @@ export default function CaseScreen({
         <Section
           title="Graph evidence"
           subtitle="Edge-enhanced GraphSAGE · subgraph"
-          accent={MODALITIES[1][2]}
+          accent={modality.graph}
           disabled={!evidence?.graph}
         >
           {evidence?.graph && <Graph evidence={evidence.graph} />}
@@ -255,7 +256,7 @@ export default function CaseScreen({
         <Section
           title="Temporal evidence"
           subtitle="TS-TCN · peak attention"
-          accent={MODALITIES[2][2]}
+          accent={modality.temporal}
           disabled={!evidence?.temporal}
         >
           {evidence?.temporal && (
@@ -280,7 +281,7 @@ export default function CaseScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   screen: { flex: 1, backgroundColor: bg.canvas },
   content: { padding: space.lg, gap: space.md, paddingBottom: space.xxl },
 
@@ -347,4 +348,4 @@ const styles = StyleSheet.create({
   truthCall: { color: text.muted, fontSize: 12 },
 
   gap: { borderStyle: "dashed" },
-});
+}));

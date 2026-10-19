@@ -20,8 +20,8 @@ import {
 import { API_BASE } from "../config";
 import { ago } from "../lib/format";
 import { notificationsSupported } from "../lib/notify";
-import { ALERT_LEVEL_CHOICES, AUTO_LOCK_CHOICES, type Prefs } from "../lib/prefs";
-import { risk, space, text, tile } from "../theme/tokens";
+import { ALERT_LEVEL_CHOICES, APPEARANCE_CHOICES, AUTO_LOCK_CHOICES, type Prefs } from "../lib/prefs";
+import { risk, space, text, tile, themed } from "../theme/tokens";
 
 /**
  * Settings, laid out as iOS Settings is: the account at the top, then what
@@ -93,6 +93,7 @@ function RootPage({
   onSignOut,
   biometric,
   prefs,
+  onPrefs,
   notificationsAllowed,
   push,
 }: Props & { push: (p: Page) => void }) {
@@ -151,6 +152,17 @@ function RootPage({
           value={alertLabel}
           onPress={() => push("alerts")}
         />
+      </Group>
+
+      <Group header="Appearance" footer="System follows the phone's light or dark setting.">
+        {APPEARANCE_CHOICES.map((c) => (
+          <ChoiceRow
+            key={c.value}
+            title={c.label}
+            selected={prefs.appearance === c.value}
+            onPress={() => onPrefs({ ...prefs, appearance: c.value })}
+          />
+        ))}
       </Group>
 
       <Group header="Platform">
@@ -550,8 +562,8 @@ function NewUserPage({ back, done }: { back: { label: string; onPress: () => voi
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   profileHead: { alignItems: "center", gap: 6, paddingVertical: space.md },
   profileName: { color: text.primary, fontSize: 22, fontWeight: "600", marginTop: space.sm },
   profileRole: { color: text.muted, fontSize: 15 },
-});
+}));

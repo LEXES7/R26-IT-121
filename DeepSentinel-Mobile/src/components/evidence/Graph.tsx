@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import type { GraphEvidence } from "../../api/analyses";
 import { percent } from "../../lib/format";
-import { bg, modality, mono, space, text } from "../../theme/tokens";
+import { bg, modality, mono, space, text, themed } from "../../theme/tokens";
 import NetworkGraph from "../NetworkGraph";
 import { Fact, Label } from "../ui";
 
@@ -59,7 +59,7 @@ export default function Graph({ evidence }: { evidence: GraphEvidence }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   pattern: {
     color: modality.graph,
     fontSize: 17,
@@ -84,4 +84,4 @@ const styles = StyleSheet.create({
   },
 
   network: { marginTop: space.md },
-});
+}));

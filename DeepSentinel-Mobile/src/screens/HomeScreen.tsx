@@ -8,7 +8,7 @@ import type { User } from "../api/auth";
 import { Group, Pill, Row, Screen } from "../components/ios";
 import Planet from "../components/Planet";
 import { account, money, score } from "../lib/format";
-import { bg, mono, risk, riskColour, serif, space, text, tile } from "../theme/tokens";
+import { bg, mono, risk, riskColour, serif, space, text, tile, themed } from "../theme/tokens";
 
 /**
  * The first thing someone sees: is the system working, and is there anything
@@ -186,7 +186,7 @@ function Stat({ value, label, color }: { value: string; label: string; color?: s
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   // Dark on both themes, like the planet on the site it echoes.
   hero: {
     backgroundColor: "#0B0A09",
@@ -209,4 +209,4 @@ const styles = StyleSheet.create({
   alertRight: { alignItems: "flex-end" },
   alertScore: { ...mono, fontSize: 15, fontWeight: "700" },
   alertTime: { color: text.faint, fontSize: 12, marginTop: 2 },
-});
+}));

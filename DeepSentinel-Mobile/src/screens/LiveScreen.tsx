@@ -15,7 +15,7 @@ import { NavBar } from "../components/ios";
 import { RiskBadge, ScoreBar } from "../components/ui";
 import { notificationsSupported } from "../lib/notify";
 import { account, money, percent, score } from "../lib/format";
-import { accent, bg, mono, radius, risk, riskColour, space, text } from "../theme/tokens";
+import { accent, bg, mono, radius, risk, riskColour, space, statusBar, text, themed } from "../theme/tokens";
 
 /**
  * What the monitor is screening right now.
@@ -70,7 +70,7 @@ export default function LiveScreen({
 
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
-      <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
+      <StatusBar barStyle={statusBar()} backgroundColor={bg.canvas} />
       <NavBar back={{ label: "Home", onPress: onBack }} />
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
@@ -213,7 +213,7 @@ function AlertRow({ a, opening, onPress }: { a: LiveAlert; opening: boolean; onP
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   screen: { flex: 1, backgroundColor: bg.canvas },
   header: {
     flexDirection: "row",
@@ -283,4 +283,4 @@ const styles = StyleSheet.create({
   accounts: { ...mono, color: text.secondary, fontSize: 12, marginTop: space.md },
   why: { color: text.muted, fontSize: 12, marginTop: 3 },
   score: { ...mono, color: text.muted, fontSize: 11, marginTop: 4 },
-});
+}));

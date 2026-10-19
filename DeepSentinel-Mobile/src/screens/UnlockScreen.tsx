@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { verify } from "../auth/biometric";
-import { accent, bg, serif, space, text } from "../theme/tokens";
+import { accent, bg, serif, space, text, themed } from "../theme/tokens";
 
 /**
  * The lock, when the person chose fingerprint or face unlock.
@@ -95,7 +95,7 @@ export default function UnlockScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   screen: { flex: 1, backgroundColor: bg.canvas },
   photo: { opacity: 0.75 },
   shade: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: "rgba(9,8,7,0.45)" },
@@ -114,4 +114,4 @@ const styles = StyleSheet.create({
   hint: { color: text.muted, fontSize: 12, lineHeight: 18 },
   secondary: { alignItems: "center", paddingVertical: space.md },
   secondaryText: { color: text.secondary, fontSize: 14 },
-});
+}));

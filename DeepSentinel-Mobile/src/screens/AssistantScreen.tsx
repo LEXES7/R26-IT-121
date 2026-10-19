@@ -20,7 +20,7 @@ import {
   type Turn,
 } from "../api/assistant";
 import { Empty, NavButton, Screen, tap } from "../components/ios";
-import { accent, bg, mono, radius, space, text, tile } from "../theme/tokens";
+import { accent, bg, font, mono, radius, space, text, themed, tile } from "../theme/tokens";
 
 /**
  * The operator assistant from the web console, on the phone.
@@ -264,7 +264,7 @@ function RichText({ value }: { value: string }) {
         const parts = body.split(/(\*\*[^*]+\*\*)/g);
         const rendered = parts.map((p, j) =>
           p.startsWith("**") && p.endsWith("**") ? (
-            <Text key={j} style={{ fontWeight: "700" }}>
+            <Text key={j} style={{ fontFamily: font.bold }}>
               {p.slice(2, -2)}
             </Text>
           ) : (
@@ -284,7 +284,7 @@ function RichText({ value }: { value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   thread: { padding: space.lg, gap: space.md, flexGrow: 1 },
 
   intro: { alignItems: "center", paddingTop: space.xl, gap: space.md },
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 16,
-    backgroundColor: "rgba(45, 212, 191, 0.15)",
+    backgroundColor: accent.soft,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -310,8 +310,8 @@ const styles = StyleSheet.create({
   exampleText: { color: text.primary, fontSize: 15, flex: 1, lineHeight: 20 },
 
   bubble: { maxWidth: "88%", borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
-  mine: { alignSelf: "flex-end", backgroundColor: accent.dark },
-  mineText: { color: "#fff", fontSize: 16, lineHeight: 22 },
+  mine: { alignSelf: "flex-end", backgroundColor: accent.deep },
+  mineText: { color: text.onAccent, fontSize: 16, lineHeight: 22 },
   theirs: { alignSelf: "flex-start", backgroundColor: bg.elevated },
   theirsText: { color: text.primary, fontSize: 16, lineHeight: 22 },
   bulletRow: { flexDirection: "row", gap: 8 },
@@ -351,4 +351,4 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 8,
   },
-});
+}));

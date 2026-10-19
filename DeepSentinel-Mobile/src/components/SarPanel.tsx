@@ -19,7 +19,7 @@ import {
   type SarDraft,
 } from "../api/reports";
 import { ago } from "../lib/format";
-import { accent, bg, mono, radius, riskColour, space, text } from "../theme/tokens";
+import { accent, bg, mono, radius, riskColour, space, text, themed } from "../theme/tokens";
 import { Label, Note } from "./ui";
 
 /**
@@ -270,7 +270,7 @@ function Button({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   primary: {
     backgroundColor: accent.base,
     borderRadius: radius.md,
@@ -322,4 +322,4 @@ const styles = StyleSheet.create({
   },
   buttonText: { color: text.secondary, fontSize: 13, fontWeight: "600" },
   error: { color: riskColour("CRITICAL"), fontSize: 12, marginTop: space.md, lineHeight: 18 },
-});
+}));

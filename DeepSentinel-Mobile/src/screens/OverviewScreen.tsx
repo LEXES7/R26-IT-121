@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { bucketByHour, loadOverview, type Overview } from "../api/overview";
 import { SeverityBar, VolumeChart } from "../components/Chart";
 import { NavBar } from "../components/ios";
-import { bg, mono, radius, risk, space, text } from "../theme/tokens";
+import { bg, mono, radius, risk, space, statusBar, text, themed } from "../theme/tokens";
 
 /**
  * The state of the whole system on one screen.
@@ -62,7 +62,7 @@ export default function OverviewScreen({ onBack }: { onBack: () => void }) {
   if (loading) {
     return (
       <SafeAreaView edges={["top"]} style={styles.centre}>
-        <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
+        <StatusBar barStyle={statusBar()} backgroundColor={bg.canvas} />
         <ActivityIndicator size="small" color={text.muted} />
       </SafeAreaView>
     );
@@ -82,7 +82,7 @@ export default function OverviewScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <SafeAreaView edges={["top"]} style={styles.shell}>
-      <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
+      <StatusBar barStyle={statusBar()} backgroundColor={bg.canvas} />
       <NavBar back={{ label: "Home", onPress: onBack }} />
       <ScrollView
         contentContainerStyle={styles.body}
@@ -205,7 +205,7 @@ function Panel({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   shell: { flex: 1, backgroundColor: bg.canvas },
   centre: {
     flex: 1,
@@ -259,4 +259,4 @@ const styles = StyleSheet.create({
   detectorState: { color: text.muted, fontSize: 14 },
 
   foot: { color: text.faint, fontSize: 13, lineHeight: 19 },
-});
+}));

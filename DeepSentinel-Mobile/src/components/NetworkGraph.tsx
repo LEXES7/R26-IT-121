@@ -4,7 +4,7 @@ import Svg, { Circle, G, Line, Polygon, Text as SvgText } from "react-native-svg
 
 import { getNeighbourhood } from "../api/graph";
 import { account, money, score } from "../lib/format";
-import { accent, bg, modality, mono, radius, risk, space, text } from "../theme/tokens";
+import { accent, bg, font, modality, mono, radius, risk, space, text, themed } from "../theme/tokens";
 import { Fact, Note } from "./ui";
 
 /**
@@ -303,7 +303,7 @@ export default function NetworkGraph({
                       y={p.y - r - 6}
                       fill={text.primary}
                       fontSize={10}
-                      fontFamily="monospace"
+                      fontFamily={font.mono}
                       textAnchor="middle"
                     >
                       {account(n.id, 4)}
@@ -386,7 +386,7 @@ export default function NetworkGraph({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   canvas: {
     height: HEIGHT,
     borderRadius: radius.md,
@@ -420,4 +420,4 @@ const styles = StyleSheet.create({
   },
   expandDone: { borderStyle: "dashed" },
   expandText: { color: text.secondary, fontSize: 13, fontWeight: "600" },
-});
+}));

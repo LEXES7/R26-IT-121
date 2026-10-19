@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { accent, bg, mono, radius, risk, riskColour, space, text } from "../theme/tokens";
+import { accent, bg, mono, radius, risk, riskColour, space, text, themed } from "../theme/tokens";
 
 /**
  * Charts built from Views rather than a charting library.
@@ -139,7 +139,7 @@ export function VolumeChart({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   stack: {
     flexDirection: "row",
     height: 10,
@@ -183,4 +183,4 @@ const styles = StyleSheet.create({
   keyText: { color: text.muted, fontSize: 13 },
 
   empty: { color: text.muted, fontSize: 15, paddingVertical: space.md },
-});
+}));

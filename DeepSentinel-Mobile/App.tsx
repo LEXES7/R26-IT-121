@@ -10,6 +10,7 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  useColorScheme,
   View,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -41,7 +42,7 @@ import LoginScreen from "./src/screens/LoginScreen";
 import OverviewScreen from "./src/screens/OverviewScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import UnlockScreen from "./src/screens/UnlockScreen";
-import { accent, bg, text } from "./src/theme/tokens";
+import { accent, bg, setMode, statusBar, text, themed, type Mode } from "./src/theme/tokens";
 
 /**
  * The gate, five tabs, and a stack of pushed screens inside each tab.
@@ -97,11 +98,15 @@ function pageTitle(p: Page): string {
 const EMPTY_STACKS: Record<Tab, Page[]> = { home: [], alerts: [], cases: [], assistant: [], settings: [] };
 
 export default function App() {
-  // The site's display face. Bundled, so this resolves in a frame; until it
-  // does the canvas shows rather than titles jumping from one face to another.
+  // The app's two faces. Bundled, so they resolve in a frame; until they do
+  // the canvas shows rather than text jumping from one face to another.
   const [fontsLoaded, fontError] = useFonts({
-    "InstrumentSerif-Regular": require("./assets/fonts/InstrumentSerif-Regular.ttf"),
-    "InstrumentSerif-Italic": require("./assets/fonts/InstrumentSerif-Italic.ttf"),
+    "PlusJakartaSans-Regular": require("./assets/fonts/PlusJakartaSans-Regular.ttf"),
+    "PlusJakartaSans-Medium": require("./assets/fonts/PlusJakartaSans-Medium.ttf"),
+    "PlusJakartaSans-SemiBold": require("./assets/fonts/PlusJakartaSans-SemiBold.ttf"),
+    "PlusJakartaSans-Bold": require("./assets/fonts/PlusJakartaSans-Bold.ttf"),
+    "PlusJakartaSans-ExtraBold": require("./assets/fonts/PlusJakartaSans-ExtraBold.ttf"),
+    "JetBrainsMono-Medium": require("./assets/fonts/JetBrainsMono-Medium.ttf"),
   });
   if (!fontsLoaded && !fontError) return <View style={{ flex: 1, backgroundColor: bg.canvas }} />;
 
@@ -128,6 +133,12 @@ function Root() {
   const bioReady = bio.usable && bioOn;
 
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
+
+  // Light or dark. Set before anything below renders, so every token and
+  // stylesheet read during this render is already in the chosen mode.
+  const scheme = useColorScheme();
+  const mode: Mode = prefs.appearance === "system" ? (scheme === "light" ? "light" : "dark") : prefs.appearance;
+  setMode(mode);
   const [notificationsAllowed, setNotificationsAllowed] = useState(false);
   const severities = useMemo(
     () => (notificationsAllowed ? severitiesFor(prefs.alertLevel) : new Set<string>()),
@@ -460,7 +471,11 @@ function Root() {
 
   return (
     <View style={styles.shell}>
-      <View style={styles.body}>{top ? renderPage(top) : renderRoot()}</View>
+      <StatusBar barStyle={statusBar()} backgroundColor={bg.canvas} />
+      {/* Remounted on a change of mode, so nothing keeps a colour from before it. */}
+      <View key={mode} style={styles.body}>
+        {top ? renderPage(top) : renderRoot()}
+      </View>
       <TabBar
         tab={tab}
         onSelect={(t) => {
@@ -536,7 +551,7 @@ function TabBar({ tab, onSelect }: { tab: Tab; onSelect: (t: Tab) => void }) {
 function Splash() {
   return (
     <SafeAreaView style={styles.splash}>
-      <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
+      <StatusBar barStyle={statusBar()} backgroundColor={bg.canvas} />
       <View style={styles.splashInner}>
         <Text style={styles.brand}>DeepSentinel</Text>
         <ActivityIndicator size="small" color={text.muted} />
@@ -545,7 +560,7 @@ function Splash() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   shell: { flex: 1, backgroundColor: bg.canvas },
   body: { flex: 1 },
 
@@ -553,7 +568,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: bg.border,
-    backgroundColor: "#121214",
+    backgroundColor: bg.raised,
     paddingTop: 6,
   },
   tab: { flex: 1, alignItems: "center", gap: 2 },
@@ -562,4 +577,4 @@ const styles = StyleSheet.create({
   splash: { flex: 1, backgroundColor: bg.canvas, alignItems: "center", justifyContent: "center" },
   splashInner: { alignItems: "center", gap: 24 },
   brand: { color: text.primary, fontSize: 28, fontWeight: "700", letterSpacing: -0.5 },
-});
+}));

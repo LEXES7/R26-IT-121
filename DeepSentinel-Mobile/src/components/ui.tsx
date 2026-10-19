@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { percent } from "../lib/format";
-import { bg, modality, mono, radius, riskColour, space, text } from "../theme/tokens";
+import { bg, modality, mono, radius, riskColour, space, text, themed } from "../theme/tokens";
 
 /** The small pieces every screen builds from. */
 
@@ -34,9 +34,9 @@ export function RiskBadge({ level }: { level?: string | null }) {
  * not a detector that found nothing.
  */
 export const MODALITIES = [
-  ["behavioral", "Behavioural", modality.behavioral],
-  ["graph", "Graph", modality.graph],
-  ["temporal", "Temporal", modality.temporal],
+  ["behavioral", "Behavioural"],
+  ["graph", "Graph"],
+  ["temporal", "Temporal"],
 ] as const;
 
 export function ModalityDots({
@@ -47,13 +47,13 @@ export function ModalityDots({
   const used = MODALITIES.filter(([k]) => answered[k]).length;
   return (
     <View style={styles.dotsRow}>
-      {MODALITIES.map(([key, , colour]) => (
+      {MODALITIES.map(([key]) => (
         <View
           key={key}
           style={[
             styles.modalityDot,
             answered[key]
-              ? { backgroundColor: colour, borderColor: colour }
+              ? { backgroundColor: modality[key], borderColor: modality[key] }
               : { borderColor: text.faint },
           ]}
         />
@@ -181,7 +181,7 @@ export function Note({ children }: { children: ReactNode }) {
   return <Text style={styles.note}>{children}</Text>;
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   card: {
     backgroundColor: bg.card,
     borderRadius: radius.lg,
@@ -267,4 +267,4 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     marginTop: space.md,
   },
-});
+}));

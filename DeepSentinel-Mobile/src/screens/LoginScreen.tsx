@@ -16,7 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { login, type LoginResponse } from "../api/auth";
 import { ApiError, NetworkError } from "../api/client";
 import { API_BASE } from "../config";
-import { accent, bg, mono, radius, risk, space, text } from "../theme/tokens";
+import { accent, bg, mono, radius, risk, space, statusBar, text, themed } from "../theme/tokens";
 
 type Props = {
   onSignedIn: (session: LoginResponse) => void;
@@ -106,7 +106,7 @@ export default function LoginScreen({ onSignedIn, lockedOut = false }: Props) {
 
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
-      <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
+      <StatusBar barStyle={statusBar()} backgroundColor={bg.canvas} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -223,7 +223,7 @@ export default function LoginScreen({ onSignedIn, lockedOut = false }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   screen: { flex: 1, backgroundColor: bg.canvas },
   flex: { flex: 1 },
   content: { padding: space.xl, gap: space.xl, flexGrow: 1, justifyContent: "center" },
@@ -330,4 +330,4 @@ const styles = StyleSheet.create({
   buttonText: { color: text.primary, fontSize: 15, fontWeight: "600" },
 
   footer: { ...mono, color: text.faint, fontSize: 11, textAlign: "center" },
-});
+}));

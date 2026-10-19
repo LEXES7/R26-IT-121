@@ -10,14 +10,18 @@ import * as SecureStore from "expo-secure-store";
 
 export type AlertLevel = "high" | "critical" | "off";
 
+export type Appearance = "system" | "dark" | "light";
+
 export type Prefs = {
   /** Which live alerts raise a notification. */
   alertLevel: AlertLevel;
   /** Minutes in the background before the app locks. 0 locks on every return. */
   autoLockMinutes: number;
+  /** Light or dark, or whichever the phone is set to. */
+  appearance: Appearance;
 };
 
-export const DEFAULT_PREFS: Prefs = { alertLevel: "high", autoLockMinutes: 1 };
+export const DEFAULT_PREFS: Prefs = { alertLevel: "high", autoLockMinutes: 1, appearance: "system" };
 
 export const AUTO_LOCK_CHOICES = [
   { minutes: 0, label: "Immediately" },
@@ -30,6 +34,12 @@ export const ALERT_LEVEL_CHOICES: { value: AlertLevel; label: string; detail: st
   { value: "high", label: "High and critical", detail: "Every verdict the system commits on" },
   { value: "critical", label: "Critical only", detail: "Only the strongest verdicts" },
   { value: "off", label: "Off", detail: "The feed still updates; nothing buzzes" },
+];
+
+export const APPEARANCE_CHOICES: { value: Appearance; label: string }[] = [
+  { value: "system", label: "System" },
+  { value: "dark", label: "Dark" },
+  { value: "light", label: "Light" },
 ];
 
 const KEY = "ds.prefs";

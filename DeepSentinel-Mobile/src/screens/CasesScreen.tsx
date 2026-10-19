@@ -5,7 +5,7 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Tex
 import { REVIEW_LABEL, listCases, type Case, type ReviewStatus } from "../api/cases";
 import { Empty, Screen, Segmented, tap } from "../components/ios";
 import { account, ago, score } from "../lib/format";
-import { bg, mono, radius, riskColour, space, text } from "../theme/tokens";
+import { bg, mono, radius, riskColour, space, text, themed } from "../theme/tokens";
 
 /**
  * The review queue: what the live monitor recorded, by where each case is in
@@ -163,7 +163,7 @@ function CaseRow({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   filters: { paddingBottom: space.md },
   list: { paddingHorizontal: space.lg, paddingBottom: 40 },
   separator: { height: StyleSheet.hairlineWidth, backgroundColor: bg.border, marginLeft: 38 },
@@ -186,4 +186,4 @@ const styles = StyleSheet.create({
   sub: { color: text.muted, fontSize: 14, flex: 1 },
   score: { ...mono, fontSize: 14, fontWeight: "700" },
   status: { fontSize: 13, fontWeight: "600" },
-});
+}));

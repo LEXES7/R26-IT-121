@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { accent, bg, mono, radius, serif, space, text, tile } from "../theme/tokens";
+import { accent, bg, mono, radius, serif, space, statusBar, text, themed, tile } from "../theme/tokens";
 
 /**
  * The building blocks of an iOS-style screen.
@@ -104,7 +104,7 @@ export function Screen({
 
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
-      <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
+      <StatusBar barStyle={statusBar()} backgroundColor={bg.canvas} />
       {scroll ? (
         <ScrollView
           contentContainerStyle={styles.scrollBody}
@@ -404,7 +404,7 @@ export function Button({
 }) {
   const filled = kind === "filled";
   const colour =
-    kind === "destructive" ? tile.red : filled ? "#000" : accent.base;
+    kind === "destructive" ? tile.red : filled ? text.onAccent : accent.base;
   return (
     <Pressable
       onPress={() => {
@@ -414,8 +414,8 @@ export function Button({
       disabled={disabled || busy}
       style={({ pressed }) => [
         styles.button,
-        filled && { backgroundColor: accent.base },
-        kind === "tinted" && { backgroundColor: "rgba(45, 212, 191, 0.15)" },
+        filled && { backgroundColor: accent.deep },
+        kind === "tinted" && { backgroundColor: accent.soft },
         kind === "destructive" && { backgroundColor: "rgba(255, 69, 58, 0.15)" },
         (pressed || disabled) && { opacity: 0.55 },
       ]}
@@ -509,12 +509,12 @@ export function Avatar({ name, size = 56 }: { name: string; size?: number }) {
   );
 }
 
-export const ios = StyleSheet.create({
+export const ios = themed(() => ({
   /** Padding for content laid directly on the canvas, outside a Group. */
   inset: { paddingHorizontal: space.lg },
-});
+}));
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   screen: { flex: 1, backgroundColor: bg.canvas },
   scrollBody: { paddingBottom: 40 },
   sections: { paddingHorizontal: space.lg, gap: space.xl, paddingTop: space.sm },
@@ -624,4 +624,4 @@ const styles = StyleSheet.create({
 
   avatar: { backgroundColor: accent.dark, alignItems: "center", justifyContent: "center" },
   avatarText: { color: "#fff", fontWeight: "600" },
-});
+}));

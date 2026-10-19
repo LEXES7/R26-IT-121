@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import type { TemporalEvidence } from "../../api/analyses";
 import { percent, readable, score } from "../../lib/format";
-import { bg, modality, mono, risk, space, text } from "../../theme/tokens";
+import { bg, modality, mono, risk, space, text, themed } from "../../theme/tokens";
 import { Fact, Label, Note, ScoreBar } from "../ui";
 
 /**
@@ -25,10 +25,10 @@ function level(value: number | null | undefined): string | null {
   return "NORMAL";
 }
 
-const TONE: Record<string, string> = {
-  NORMAL: risk.LOW,
-  SUSPICIOUS: risk.MEDIUM,
-  CRITICAL: risk.CRITICAL,
+const TONE: Record<string, "LOW" | "MEDIUM" | "CRITICAL"> = {
+  NORMAL: "LOW",
+  SUSPICIOUS: "MEDIUM",
+  CRITICAL: "CRITICAL",
 };
 
 export default function Temporal({
@@ -44,7 +44,7 @@ export default function Temporal({
   return (
     <View>
       {band && (
-        <Text style={[styles.band, { color: TONE[band] }]}>{band}</Text>
+        <Text style={[styles.band, { color: risk[TONE[band]] }]}>{band}</Text>
       )}
 
       {typeof evidence.step_burstiness === "number" && (
@@ -110,7 +110,7 @@ export default function Temporal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   band: { fontSize: 15, fontWeight: "700", letterSpacing: 1 },
 
   burst: { marginTop: space.md },
@@ -140,4 +140,4 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: space.md,
   },
-});
+}));
