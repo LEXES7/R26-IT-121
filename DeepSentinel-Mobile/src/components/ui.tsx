@@ -200,7 +200,7 @@ const styles = themed(() => ({
 
   badge: {
     borderWidth: 1,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     paddingHorizontal: space.sm,
     paddingVertical: 3,
     alignSelf: "flex-start",
@@ -230,10 +230,10 @@ const styles = themed(() => ({
     gap: space.md,
     padding: space.lg,
   },
-  sectionAccent: { width: 3, height: 26, borderRadius: 2 },
+  sectionAccent: { width: 12, height: 12, borderRadius: 6 },
   sectionTitles: { flex: 1 },
-  sectionTitle: { color: text.primary, fontSize: 15, fontWeight: "600" },
-  sectionSubtitle: { color: text.muted, fontSize: 12, marginTop: 2 },
+  sectionTitle: { color: text.primary, fontSize: 17, fontWeight: "700", letterSpacing: -0.3 },
+  sectionSubtitle: { color: text.muted, fontSize: 13, marginTop: 2 },
   chevron: { color: text.secondary, fontSize: 14 },
   sectionBody: {
     paddingHorizontal: space.lg,
@@ -262,9 +262,9 @@ const styles = themed(() => ({
   },
 
   note: {
-    color: text.faint,
-    fontSize: 11,
-    lineHeight: 17,
+    color: text.muted,
+    fontSize: 12,
+    lineHeight: 18,
     marginTop: space.md,
   },
 }));
