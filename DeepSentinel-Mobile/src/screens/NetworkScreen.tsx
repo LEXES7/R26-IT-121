@@ -713,7 +713,7 @@ function Overview({ c }: { c: CaseDetail }) {
         <Text style={styles.kicker}>FUSED PROBABILITY OF FRAUD</Text>
         <View style={{ flexDirection: "row", alignItems: "baseline", gap: 10 }}>
           <Text style={[styles.bigNumber, { color: colour }]}>
-            {typeof c.fused_score === "number" ? `${Math.round(c.fused_score * 100)}%` : "—"}
+            {typeof c.fused_score === "number" ? `${Math.round(c.fused_score * 100)}%` : "-"}
           </Text>
           <Text style={styles.cardText}>{String(c.classification).toLowerCase()}</Text>
         </View>
@@ -724,7 +724,7 @@ function Overview({ c }: { c: CaseDetail }) {
         ].map(([name, ok, v]) => (
           <View key={name as string} style={styles.factRow}>
             <Text style={styles.factLabel}>{name as string}</Text>
-            <Text style={styles.factValue}>{ok === false ? "did not answer" : typeof v === "number" ? v.toFixed(3) : "—"}</Text>
+            <Text style={styles.factValue}>{ok === false ? "did not answer" : typeof v === "number" ? v.toFixed(3) : "-"}</Text>
           </View>
         ))}
       </View>
@@ -737,11 +737,11 @@ function Overview({ c }: { c: CaseDetail }) {
         {[
           ["Accounts", String(nodes.length)],
           ["Transfers", String(edges.length)],
-          ["Converging on", c.sink_account ?? "—"],
-          ["Senders converging", s.convergence_count != null ? String(s.convergence_count) : "—"],
-          ["Known mules", s.mules_in_subgraph != null ? String(s.mules_in_subgraph) : "—"],
-          ["Senders with no history", s.fresh_sender_ratio != null ? percent(s.fresh_sender_ratio, 1) : "—"],
-          ["Mean drain ratio", s.mean_drain_ratio != null ? percent(s.mean_drain_ratio, 1) : "—"],
+          ["Converging on", c.sink_account ?? "-"],
+          ["Senders converging", s.convergence_count != null ? String(s.convergence_count) : "-"],
+          ["Known mules", s.mules_in_subgraph != null ? String(s.mules_in_subgraph) : "-"],
+          ["Senders with no history", s.fresh_sender_ratio != null ? percent(s.fresh_sender_ratio, 1) : "-"],
+          ["Mean drain ratio", s.mean_drain_ratio != null ? percent(s.mean_drain_ratio, 1) : "-"],
         ].map(([l, v]) => (
           <View key={l} style={styles.factRow}>
             <Text style={styles.factLabel}>{l}</Text>

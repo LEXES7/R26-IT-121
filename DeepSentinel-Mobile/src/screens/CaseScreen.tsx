@@ -125,10 +125,10 @@ export default function CaseScreen({
           <View style={styles.divider} />
 
           <Fact label="Transaction" value={row.transaction_id} monospace />
-          <Fact label="Type" value={row.type ?? "—"} />
+          <Fact label="Type" value={row.type ?? "-"} />
           <Fact label="Amount" value={money(row.amount)} monospace />
-          <Fact label="From" value={row.nameOrig ?? "—"} monospace />
-          <Fact label="To" value={row.nameDest ?? "—"} monospace />
+          <Fact label="From" value={row.nameOrig ?? "-"} monospace />
+          <Fact label="To" value={row.nameDest ?? "-"} monospace />
           {row.typology_name && (
             <Fact
               label="Retrieved typology"
@@ -138,7 +138,7 @@ export default function CaseScreen({
           {row.mock_scenario && (
             <View style={styles.mock}>
               <Text style={styles.mockText}>
-                SIMULATED · scenario "{row.mock_scenario}" — not a real detection
+                SIMULATED · scenario "{row.mock_scenario}", not a real detection
               </Text>
             </View>
           )}
@@ -161,10 +161,8 @@ export default function CaseScreen({
               </Text>
             </View>
             <Note>
-              PaySim carries a label for every row. It is held out of screening
-              entirely — the models never see it — and shown here only so a
-              score can be read against it. One transaction is an illustration,
-              not a measurement of accuracy.
+              The dataset label, shown for comparison. The models never see it. One
+              payment is an example, not a measure of accuracy.
             </Note>
           </Card>
         )}
@@ -220,16 +218,14 @@ export default function CaseScreen({
                   )}
                 </View>
                 <Text style={[styles.modalityScore, absent && styles.absent]}>
-                  {absent ? "—" : score(scores[key])}
+                  {absent ? "-" : score(scores[key])}
                 </Text>
               </View>
             );
           })}
           {!available && (
             <Note>
-              Which of the three answered is not carried in the analysis list,
-              so these cannot be marked individually — only the count above is
-              certain.
+              This list does not say which detectors answered, only how many.
             </Note>
           )}
         </Card>

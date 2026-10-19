@@ -194,7 +194,7 @@ export default function HomeScreen({
             label="Screened"
             icon="shield-checkmark-outline"
             iconColor={tile.green}
-            value={monitor ? compactCount(monitor.counters.screened) : "—"}
+            value={monitor ? compactCount(monitor.counters.screened) : "-"}
             note={monitor ? `${Math.round(monitor.counters.throughput_per_min).toLocaleString()} a minute` : "Monitor offline"}
             noteColor={monitor ? risk.LOW : undefined}
             onPress={onAlerts}
@@ -203,7 +203,7 @@ export default function HomeScreen({
             label="Open cases"
             icon="folder-open-outline"
             iconColor={tile.orange}
-            value={openCases === null ? "—" : String(openCases.length)}
+            value={openCases === null ? "-" : String(openCases.length)}
             note={openCases === null ? "Not loaded" : critical ? `${critical} critical` : "None critical"}
             noteColor={critical ? risk.CRITICAL : undefined}
             onPress={onCases}
@@ -212,7 +212,7 @@ export default function HomeScreen({
             label="Alerts"
             icon="notifications-outline"
             iconColor={tile.red}
-            value={monitor ? compactCount(monitor.counters.alerts) : "—"}
+            value={monitor ? compactCount(monitor.counters.alerts) : "-"}
             note={monitor ? `${compactCount(monitor.counters.flagged)} flagged` : "Monitor offline"}
             noteColor={monitor?.counters.alerts ? risk.HIGH : undefined}
             onPress={onOpenLive}
@@ -221,7 +221,7 @@ export default function HomeScreen({
             label="On record"
             icon="server-outline"
             iconColor={tile.blue}
-            value={overview?.stats ? compactCount(overview.stats.total) : "—"}
+            value={overview?.stats ? compactCount(overview.stats.total) : "-"}
             note={overview?.stats ? `${compactCount(overview.stats.alerts_sent)} alerted` : "Not loaded"}
             onPress={onOverview}
           />

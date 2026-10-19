@@ -56,9 +56,8 @@ export default function Temporal({
             </Text>
           </View>
           <Note>
-            The Goh–Barabási B coefficient. Above zero the transactions arrive in
-            bursts; below, at regular intervals. Machine-regular timing is the
-            signal here, not volume.
+            Goh-Barabási burstiness. Above zero, payments come in bursts; below, at
+            regular intervals. Machine-like timing is the signal.
           </Note>
         </View>
       )}
@@ -84,13 +83,13 @@ export default function Temporal({
             />
           </View>
         )}
-        <Fact label="Transaction" value={evidence.composite_id ?? "—"} monospace />
+        <Fact label="Transaction" value={evidence.composite_id ?? "-"} monospace />
         <Fact
           label="Position"
           value={
             evidence.offset_from_current != null
               ? `${evidence.offset_from_current} before this one`
-              : "—"
+              : "-"
           }
         />
         {evidence.predecessor_signal && (

@@ -105,7 +105,7 @@ export default function CasesScreen({ onOpen }: { onOpen: (c: Case) => void }) {
       <View style={styles.summary}>
         <View style={styles.summaryTile}>
           <Text style={styles.summaryLabel}>IN THIS QUEUE</Text>
-          <Text style={styles.summaryValue}>{loading ? "—" : rows.length}</Text>
+          <Text style={styles.summaryValue}>{loading ? "-" : rows.length}</Text>
           <Text style={[styles.summaryNote, counts.CRITICAL ? { color: riskColour("CRITICAL") } : null]}>
             {counts.CRITICAL ? `${counts.CRITICAL} critical` : "None critical"}
           </Text>
@@ -113,7 +113,7 @@ export default function CasesScreen({ onOpen }: { onOpen: (c: Case) => void }) {
         <View style={styles.summaryTile}>
           <Text style={styles.summaryLabel}>OLDEST</Text>
           <Text style={styles.summaryValue} numberOfLines={1} adjustsFontSizeToFit>
-            {oldest ? ago(oldest).replace(" ago", "") : "—"}
+            {oldest ? ago(oldest).replace(" ago", "") : "-"}
           </Text>
           <Text style={styles.summaryNote}>{oldest ? "since detection" : "Nothing waiting"}</Text>
         </View>

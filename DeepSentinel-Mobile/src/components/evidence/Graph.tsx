@@ -36,16 +36,16 @@ export default function Graph({ evidence }: { evidence: GraphEvidence }) {
         <Label>Structure</Label>
         <Fact
           label="Distinct senders converging"
-          value={s.convergence_count ?? "—"}
+          value={s.convergence_count ?? "-"}
         />
-        <Fact label="Accounts already known as mules" value={s.mules_in_subgraph ?? "—"} />
+        <Fact label="Accounts already known as mules" value={s.mules_in_subgraph ?? "-"} />
         <Fact
           label="Senders with no prior history"
-          value={s.fresh_sender_ratio != null ? percent(s.fresh_sender_ratio, 1) : "—"}
+          value={s.fresh_sender_ratio != null ? percent(s.fresh_sender_ratio, 1) : "-"}
         />
         <Fact
           label="Mean drain ratio"
-          value={s.mean_drain_ratio != null ? percent(s.mean_drain_ratio, 1) : "—"}
+          value={s.mean_drain_ratio != null ? percent(s.mean_drain_ratio, 1) : "-"}
         />
       </View>
 

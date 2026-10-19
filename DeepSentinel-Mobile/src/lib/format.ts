@@ -7,7 +7,7 @@
  * would assert something the data does not say.
  */
 export function money(value: number | null | undefined): string {
-  if (typeof value !== "number" || !Number.isFinite(value)) return "—";
+  if (typeof value !== "number" || !Number.isFinite(value)) return "-";
   return value.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -16,12 +16,12 @@ export function money(value: number | null | undefined): string {
 
 /** Scores to three decimals — the precision the fusion engine reports. */
 export function score(value: number | null | undefined, places = 3): string {
-  if (typeof value !== "number" || !Number.isFinite(value)) return "—";
+  if (typeof value !== "number" || !Number.isFinite(value)) return "-";
   return value.toFixed(places);
 }
 
 export function percent(value: number | null | undefined, places = 0): string {
-  if (typeof value !== "number" || !Number.isFinite(value)) return "—";
+  if (typeof value !== "number" || !Number.isFinite(value)) return "-";
   return `${(value * 100).toFixed(places)}%`;
 }
 
@@ -33,9 +33,9 @@ export function percent(value: number | null | undefined, places = 0): string {
  * them being read as local time by mistake.
  */
 export function ago(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const then = Date.parse(iso);
-  if (Number.isNaN(then)) return "—";
+  if (Number.isNaN(then)) return "-";
 
   const seconds = Math.max(0, (Date.now() - then) / 1000);
   if (seconds < 45) return "just now";
@@ -55,7 +55,7 @@ export function ago(iso: string | null | undefined): string {
  * only the tail would make two different accounts look identical.
  */
 export function account(id: string | null | undefined, keep = 5): string {
-  if (!id) return "—";
+  if (!id) return "-";
   if (id.length <= keep * 2 + 1) return id;
   return `${id.slice(0, keep)}…${id.slice(-keep)}`;
 }

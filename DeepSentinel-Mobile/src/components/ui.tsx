@@ -151,7 +151,7 @@ export function Section({
           {subtitle && <Text style={styles.sectionSubtitle}>{subtitle}</Text>}
         </View>
         <Text style={[styles.chevron, disabled && { color: text.faint }]}>
-          {disabled ? "—" : open ? "▾" : "▸"}
+          {disabled ? "-" : open ? "▾" : "▸"}
         </Text>
       </Pressable>
       {open && <View style={styles.sectionBody}>{children}</View>}

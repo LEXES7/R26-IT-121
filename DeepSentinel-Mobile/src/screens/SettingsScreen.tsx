@@ -384,7 +384,7 @@ function ServerPage({ back }: { back: { label: string; onPress: () => void } }) 
     check();
   }, [check]);
 
-  const ok = (v: boolean | undefined) => (v === undefined ? "—" : v ? "Ready" : "Not ready");
+  const ok = (v: boolean | undefined) => (v === undefined ? "-" : v ? "Ready" : "Not ready");
 
   return (
     <Screen title="Server" back={back} right={<NavButton icon="refresh" onPress={check} disabled={checking} />}>

@@ -58,10 +58,9 @@ export default function ForensicReport({ report }: { report: string }) {
   return (
     <View>
       <Note>
-        Written by a language model from the scores and the retrieved typology.
-        Every figure it quotes is the detectors' — the model was given them, not
-        asked to produce them — but the wording around them is generated, and is
-        evidence of nothing on its own.
+        Written by a language model from the scores and the matched laundering
+        method. The numbers come from the detectors; the wording is generated,
+        so check it against them.
       </Note>
 
       {headers.length > 0 && (

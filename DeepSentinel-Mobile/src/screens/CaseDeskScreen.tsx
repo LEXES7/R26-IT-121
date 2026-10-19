@@ -182,7 +182,7 @@ export default function CaseDeskScreen({
 
             <Text style={styles.kicker}>FUSED PROBABILITY OF FRAUD</Text>
             <View style={styles.bigRow}>
-              <Text style={[styles.big, { color: colour }]}>{pct === null ? "—" : `${pct}%`}</Text>
+              <Text style={[styles.big, { color: colour }]}>{pct === null ? "-" : `${pct}%`}</Text>
               <Text style={styles.bigWord}>{RISK_WORD[String(c.classification).toUpperCase()] ?? ""}</Text>
             </View>
 
@@ -218,7 +218,7 @@ export default function CaseDeskScreen({
               <View style={styles.scale}>
                 <Text style={styles.scaleText}>0</Text>
                 <Text style={styles.scaleText}>50</Text>
-                <Text style={[styles.scaleText, { color: colour }]}>{pct ?? "—"}</Text>
+                <Text style={[styles.scaleText, { color: colour }]}>{pct ?? "-"}</Text>
               </View>
             </View>
 

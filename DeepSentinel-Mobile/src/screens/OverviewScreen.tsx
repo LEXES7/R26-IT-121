@@ -112,16 +112,16 @@ export default function OverviewScreen({ onBack }: { onBack: () => void }) {
         ) : null}
 
         <View style={styles.kpis}>
-          <Kpi label="Screened" value={stats ? stats.total.toLocaleString() : "—"} />
+          <Kpi label="Screened" value={stats ? stats.total.toLocaleString() : "-"} />
           <Kpi
             label="Alerts sent"
-            value={stats ? stats.alerts_sent.toLocaleString() : "—"}
+            value={stats ? stats.alerts_sent.toLocaleString() : "-"}
             tint={stats?.alerts_sent ? risk.CRITICAL : undefined}
           />
           <Kpi
             label="Mean score"
             value={
-              stats?.mean_confidence != null ? stats.mean_confidence.toFixed(3) : "—"
+              stats?.mean_confidence != null ? stats.mean_confidence.toFixed(3) : "-"
             }
           />
         </View>
@@ -166,7 +166,7 @@ export default function OverviewScreen({ onBack }: { onBack: () => void }) {
           {caps?.network?.accounts ? (
             <Text style={styles.foot}>
               Payment graph: {caps.network.accounts.toLocaleString()} accounts,{" "}
-              {caps.network.transfers?.toLocaleString() ?? "—"} transfers,{" "}
+              {caps.network.transfers?.toLocaleString() ?? "-"} transfers,{" "}
               {caps.network.hops ?? 2} hops per transaction.
             </Text>
           ) : null}
