@@ -1,19 +1,21 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import ConsoleShell, { Panel, SectionHeading, Metric, Ticker } from '../components/ConsoleShell'
-import { getMonitorRuntime } from '../services/api'
-import { Alert, Button, cx } from '../components/ui'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import ConsoleShell, { Footer } from '../components/ConsoleShell'
+import { G, Glyph, Person, Statistics, compact } from '../components/DashKit'
+import { getMonitorRuntime, listCases } from '../services/api'
+import { Alert } from '../components/ui'
 
 /**
  * The administrator's home: is the system working, and if not, which part.
  *
- * Deliberately contains no case data. On a real deployment the people with
- * this role are the client's IT department; they keep the detectors running
- * and they have no business reading financial-crime cases. What they need is
- * the opposite of what an investigator needs — not "what did we catch" but
- * "what is answering, what is loaded, and what broke".
+ * Deliberately shows no case data. On a real deployment the people with this
+ * role are the client's IT department; they keep the detectors running and
+ * they have no business reading financial-crime cases. What they need is the
+ * opposite of what an investigator needs: not "what did we catch" but "what is
+ * answering, what is loaded, and what broke". The one chart is alert volume,
+ * raised against delivered, built from timestamps alone.
  *
- * Everything here is read from /api/monitor/runtime, which probes each
+ * Detector state is read from /api/monitor/runtime, which probes each
  * detector rather than trusting a registry.
  */
 
@@ -24,19 +26,13 @@ const DETECTOR_PAGE = {
 }
 
 const DETECTORS = [
-  ['graph', 'Network', 'Edge-Enhanced GraphSAGE', 'Relational structure around the transaction'],
-  ['behavioural', 'Behaviour', 'Stratified VAE + DSAA', 'How the transaction fits its own type'],
-  ['temporal', 'Timing', 'Transaction-Sequence TCN', 'The 32 transactions it arrived among'],
+  ['graph', 'Network', 'Edge-Enhanced GraphSAGE', 'Relational structure around the transaction', 'rgb(var(--modality-graph))', 'N'],
+  ['behavioural', 'Behaviour', 'Stratified VAE + DSAA', 'How the transaction fits its own type', 'rgb(var(--modality-behavioral))', 'B'],
+  ['temporal', 'Timing', 'Transaction-Sequence TCN', 'The 32 transactions it arrived among', 'rgb(var(--modality-temporal))', 'T'],
 ]
 
-function secs(v) {
-  if (v == null) return null
-  const s = Number(v)
-  if (s < 90) return `${Math.round(s)}s`
-  if (s < 5400) return `${Math.round(s / 60)}m`
-  if (s < 172800) return `${Math.round(s / 3600)}h`
-  return `${Math.round(s / 86400)}d`
-}
+// The most rows /cases returns in one call.
+const HISTORY = 200
 
 /** The one line that matters per detector: can it score right now, and why not. */
 function verdict(d) {
@@ -48,7 +44,7 @@ function verdict(d) {
     const size = d.window_size ?? 32
     return {
       tone: 'warm', label: 'Warming up',
-      why: `Needs a full window before it can score — ${filled} of ${size} buffered.`,
+      why: `Needs a full window before it can score: ${filled} of ${size} buffered.`,
     }
   }
   if (!d.ready) return { tone: 'warm', label: 'Not ready', why: 'Reachable, but reports it cannot score yet.' }
@@ -56,53 +52,109 @@ function verdict(d) {
 }
 
 const TONE = {
-  ok:   { dot: 'rgb(var(--ds-sev-low))', text: 'rgb(var(--ds-sev-low))' },
-  warm: { dot: 'rgb(var(--ds-warn))', text: 'rgb(var(--ds-warn))' },
-  down: { dot: 'rgb(var(--ds-signal))', text: 'rgb(var(--ds-signal))' },
+  ok: 'rgb(var(--ds-sev-low))',
+  warm: 'rgb(var(--ds-warn))',
+  down: 'rgb(var(--ds-signal))',
 }
 
+/** Seconds as a running clock under a day, and in days beyond it. */
+function clock(s) {
+  if (s == null || Number.isNaN(s)) return null
+  const n = Math.max(0, Math.floor(s))
+  if (n >= 86400) return `${Math.floor(n / 86400)}d ${Math.floor((n % 86400) / 3600)}h`
+  const p = (v) => String(v).padStart(2, '0')
+  return `${p(Math.floor(n / 3600))}:${p(Math.floor((n % 3600) / 60))}:${p(n % 60)}`
+}
 
-/** A dependency that is not a detector: on, off, and what that costs. */
-function ServiceRow({ label, svc }) {
-  const ok = Boolean(svc?.ok)
+/** What each detector carries that can be drawn as dots: a window filling, or strata loaded. */
+function slots(id, d) {
+  if (!d) return null
+  if (id === 'temporal' && (d.window_size || d.buffer_filled != null)) {
+    const size = Number(d.window_size ?? 32)
+    const filled = d.ready && !d.warming_up ? size : Number(d.buffer_filled ?? 0)
+    return { caption: `${Math.min(filled, size)} of ${size} in the window`,
+             dots: Array.from({ length: size }, (_, i) => i < filled), newest: Math.min(filled, size) - 1 }
+  }
+  if (id === 'behavioural') {
+    const list = (v) => (Array.isArray(v) ? v : typeof v === 'object' && v ? Object.keys(v) : [])
+    const loaded = list(d.strata_loaded)
+    const missing = list(d.strata_missing)
+    if (loaded.length + missing.length) {
+      return { caption: `${loaded.length} of ${loaded.length + missing.length} strata loaded`,
+               dots: [...loaded.map(() => true), ...missing.map(() => false)],
+               titles: [...loaded, ...missing.map((m) => `${m} (missing)`)] }
+    }
+  }
+  return null
+}
+
+function DetectorCard({ id, name, model, what, colour, glyph, d, age, go }) {
+  const v = verdict(d)
+  const up = (d?.service_uptime_seconds ?? d?.startup_seconds ?? d?.model?.uptime_seconds)
+  const scored = d?.transactions_scored ?? d?.model?.inferences
+  const lat = d?.mean_latency_ms ?? d?.model?.mean_latency_ms
+  const graph = d?.precomputed
+  const s = slots(id, d)
   return (
-    <div className="flex items-start justify-between gap-4 border-b py-2.5 last:border-b-0"
-         style={{ borderColor: 'rgb(var(--ds-line))' }}>
-      <div className="min-w-0">
-        <p className="text-[17px] text-[rgb(var(--ds-ink))]">{label}</p>
-        <p className="mt-0.5 text-[15px] leading-snug text-[rgb(var(--ds-muted))]">
-          {svc?.detail ?? '—'}
-        </p>
+    <div className="dash-card dash-case" role="link" tabIndex={0}
+         onClick={() => go(DETECTOR_PAGE[id])}
+         onKeyDown={(e) => e.key === 'Enter' && go(DETECTOR_PAGE[id])}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+        <div className="dash-avatar" style={{ color: colour, background: `color-mix(in srgb, ${colour} 16%, transparent)`,
+                                              boxShadow: `inset 0 0 0 2px ${colour}`, fontSize: 18 }}>
+          {glyph}
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 17, fontWeight: 600, color: 'rgb(var(--ds-ink))' }}>{name}</div>
+          {up != null && (
+            <span className="dash-timer" title="Serving for"><Glyph d={G.clock} size={11} />{clock(Number(up) + age)}</span>
+          )}
+        </div>
+        <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12,
+                       fontWeight: 600, color: TONE[v.tone], whiteSpace: 'nowrap' }}>
+          <span style={{ width: 8, height: 8, borderRadius: 99, background: TONE[v.tone] }} />{v.label}
+        </span>
       </div>
-      <span className="mt-1 h-2 w-2 shrink-0 rounded-full"
-            style={{ background: ok ? 'rgb(var(--ds-sev-low))' : 'rgb(var(--ds-signal))' }}
-            title={ok ? 'available' : 'unavailable'} />
+
+      <div style={{ display: 'flex', gap: 18, marginTop: 18, flexWrap: 'wrap' }}>
+        <span className="dash-stat"><Glyph d={G.bolt} />{lat != null ? `${Number(lat).toFixed(1)} ms` : 'no latency yet'}</span>
+        <span className="dash-stat"><Glyph d={G.layers} />{scored != null ? `${compact(Number(scored))} scored` : '—'}</span>
+      </div>
+      <div className="dash-sep" />
+      <div className="ds-mono" style={{ fontSize: 12, color: 'rgb(var(--ds-muted))', marginBottom: 12 }}>{model}</div>
+      {s ? (
+        <>
+          <div className="dash-dots" role="img" aria-label={s.caption}>
+            {s.dots.map((on, i) => (
+              <span key={i} className="dash-dot" title={s.titles?.[i]}
+                    style={on ? { background: i === s.newest ? 'rgb(var(--dash-line))' : 'rgb(var(--dash-dot))' }
+                      : { border: '2px solid rgb(var(--ds-faint))' }} />
+            ))}
+          </div>
+          <div style={{ fontSize: 12, color: 'rgb(var(--ds-faint))', marginTop: 8 }}>{s.caption}</div>
+        </>
+      ) : graph ? (
+        <div style={{ fontSize: 14, color: 'rgb(var(--ds-ink))', lineHeight: 1.5 }}>
+          {compact(graph.accounts)} accounts, {compact(graph.transactions)} transfers in the served graph
+        </div>
+      ) : (
+        <div style={{ fontSize: 14, color: 'rgb(var(--ds-muted))', lineHeight: 1.5 }}>{what}</div>
+      )}
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginTop: 16, fontSize: 12 }}>
+        <span style={{ color: v.why ? TONE[v.tone] : 'rgb(var(--ds-muted))', minWidth: 0 }}>
+          {v.why ?? 'Scoring every transaction'}
+        </span>
+        <span style={{ color: 'rgb(var(--dash-line-ink))', fontWeight: 600, whiteSpace: 'nowrap' }}>Open →</span>
+      </div>
     </div>
   )
 }
 
-export default function SystemHealth() {
-  const navigate = useNavigate()
-  const [rt, setRt] = useState(null)
-  const [error, setError] = useState(null)
-  const [at, setAt] = useState(null)
-
-  const load = useCallback(async () => {
-    try {
-      setRt(await getMonitorRuntime())
-      setError(null)
-      setAt(new Date())
-    } catch (e) {
-      setError(e?.message ?? 'Could not reach the platform API.')
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-    const t = setInterval(load, 15000)
-    return () => clearInterval(t)
-  }, [load])
-
+/**
+ * The page body, from data alone, so it can be looked at with recorded data
+ * and a slow endpoint never blanks the page.
+ */
+export function SystemBoard({ rt, history, at, now, go, onRefresh }) {
   const det = rt?.detectors ?? {}
   const mon = rt?.monitor ?? {}
   const svc = rt?.services ?? {}
@@ -112,9 +164,226 @@ export default function SystemHealth() {
     ? delivery.raised - delivery.delivered : 0
   const live = DETECTORS.filter(([k]) => verdict(det[k]).tone === 'ok').length
   const broken = DETECTORS.filter(([k]) => verdict(det[k]).tone === 'down')
-
   const screening = mon.running && !mon.paused
   const state = !mon.running ? 'Stopped' : mon.paused ? 'Paused' : 'Screening'
+  const age = at ? (now - at) / 1000 : 0
+
+  // Timestamps only: when an alert was raised, and whether it was delivered.
+  // Raised is the same rule the delivery figures use, a verdict above Low.
+  const events = useMemo(() => (history ?? [])
+    .filter((x) => x.classification !== 'LOW')
+    .map((x) => ({ t: Date.parse(x.detected_at), b: x.alert_sent === true }))
+    .filter((e) => !Number.isNaN(e.t)), [history])
+
+  const services = [
+    ['Fusion model', svc.fusion, G.layers],
+    ['Typology retrieval', svc.retrieval, G.search],
+    ['Report generator', svc.reporter, G.score],
+    ['Database', svc.database, G.server],
+  ]
+
+  return (
+    <div className="dash ds-fade-up">
+      <div className="dash-chips">
+        <span className="dash-chip">
+          <span className={screening ? 'hero-pulse' : ''}
+                style={screening ? undefined : { width: 8, height: 8, borderRadius: 99,
+                  background: mon.running ? 'rgb(var(--ds-warn))' : 'rgb(var(--ds-signal))' }} />
+          <b style={{ fontSize: 14 }}>{rt ? state : 'Checking'}</b>
+          {screening && <span>{mon.throughput_per_min ?? 0}/min</span>}
+        </span>
+        <span className="dash-chip" title={`${live} of 3 detectors can score`}>
+          <span className="dash-faces">
+            {DETECTORS.map(([id, name, , , colour, glyph]) => {
+              const ok = verdict(det[id]).tone === 'ok'
+              return (
+                <span key={id} className="dash-face" title={`${name}: ${verdict(det[id]).label}`}
+                      style={{ background: ok ? colour : 'rgb(var(--ds-surface-3))',
+                               color: ok ? '#0D0C0B' : 'rgb(var(--ds-faint))', fontSize: 11, fontWeight: 700 }}>
+                  {glyph}
+                </span>
+              )
+            })}
+          </span>
+          <b>{rt ? `${live} of 3` : '—'}</b> serving
+        </span>
+        <span className="dash-chip">
+          <Glyph d={G.mail} size={16} />
+          <b>{delivery.delivered ?? '—'}</b>
+          {delivery.raised != null ? `of ${delivery.raised.toLocaleString()} alerts delivered` : 'alerts delivered'}
+        </span>
+        <button className="dash-chip" style={{ cursor: 'pointer' }} onClick={onRefresh}
+                title="Probe every service again">
+          <Glyph d={G.refresh} size={16} />
+          {at ? `checked ${new Date(at).toLocaleTimeString()}` : 'Refresh'}
+        </button>
+      </div>
+
+      <div className="dash-row">
+        <div style={{ minWidth: 0 }}>
+          <Statistics events={events} now={now} cap={HISTORY} failed={history === null}
+                      labels={{ a: 'Alerts raised', b: 'Delivered' }} />
+
+          <div className="dash-head" style={{ marginTop: 36 }}>
+            <h2 className="dash-h">Detectors</h2>
+            <span style={{ fontSize: 13, color: 'rgb(var(--ds-faint))' }}>
+              {broken.length ? 'A detector that cannot answer abstains; screening does not stop.'
+                : 'Each scores every transaction in parallel'}
+            </span>
+          </div>
+          <div className="dash-cases">
+            {DETECTORS.map(([id, name, model, what, colour, glyph]) => (
+              <DetectorCard key={id} id={id} name={name} model={model} what={what} colour={colour}
+                            glyph={glyph} d={det[id]} age={age} go={go} />
+            ))}
+          </div>
+        </div>
+
+        <aside style={{ minWidth: 0 }}>
+          <div className="dash-head"><h2 className="dash-h">Services</h2></div>
+          {services.map(([label, s, glyph]) => (
+            <Person key={label}
+                    colour={s?.ok ? 'rgb(var(--ds-sev-low))' : 'rgb(var(--ds-signal))'}
+                    mark={<Glyph d={glyph} size={18} />}
+                    name={label}
+                    sub={s?.detail ?? '—'}
+                    badge={s ? (s.ok ? 'up' : 'down') : null} badgeAlert={s ? !s.ok : false} />
+          ))}
+
+          <div className="dash-head" style={{ marginTop: 30 }}><h2 className="dash-h">Delivery</h2></div>
+          {missed > 0 && (
+            <p style={{ margin: '0 0 10px', borderRadius: 16, padding: '10px 14px', fontSize: 13, lineHeight: 1.5,
+                        background: delivery.delivered === 0 ? 'rgb(var(--ds-signal-soft))' : 'rgb(var(--ds-warn-soft))',
+                        color: delivery.delivered === 0 ? 'rgb(var(--ds-signal))' : 'rgb(var(--ds-warn))' }}>
+              {delivery.delivered === 0
+                ? `None of ${delivery.raised} alerts reached anyone. Screening is working; the mail is not.`
+                : `${missed} of ${delivery.raised} alerts did not reach anyone. The rest were delivered.`}
+            </p>
+          )}
+          <Person colour={delivery.configured ? 'rgb(var(--ds-sev-low))' : 'rgb(var(--ds-signal))'}
+                  mark={<Glyph d={G.mail} size={18} />} name="SMTP"
+                  sub={delivery.configured ? `sending as ${delivery.sending_as ?? 'unknown'}` : 'not configured; nothing can be sent'}
+                  badge={rt ? (delivery.configured ? 'up' : 'down') : null} badgeAlert={rt ? !delivery.configured : false}
+                  onClick={() => go('/settings')} />
+          <Person colour={(delivery.recipients ?? 0) > 0 ? 'rgb(var(--ds-sev-low))' : 'rgb(var(--ds-signal))'}
+                  mark={<Glyph d={G.accounts} size={18} />} name="Recipients"
+                  sub={delivery.recipients
+                    ? `${delivery.recipients} risk manager${delivery.recipients > 1 ? 's' : ''} on the list`
+                    : 'nobody is listed; alerts have no destination'}
+                  badge={rt ? String(delivery.recipients ?? 0) : null} badgeAlert={rt ? !delivery.recipients : false}
+                  onClick={() => go('/settings')} />
+
+          <div className="dash-hero" style={{ marginTop: 26 }}>
+            <div className="dash-faces" style={{ justifyContent: 'center' }}>
+              {DETECTORS.map(([id, , , , colour, glyph]) => (
+                <span key={id} className="dash-face" style={{ background: colour, color: '#0D0C0B',
+                      borderColor: '#C2F2EC', fontSize: 11, fontWeight: 700, width: 32, height: 32 }}>{glyph}</span>
+              ))}
+            </div>
+            <div className="dash-hero-num">{rt ? `+${compact(Number(mon.screened ?? 0))}` : '—'}</div>
+            <div className="dash-hero-sub">
+              transactions screened since the monitor last started
+              {mon.uptime_seconds != null ? `, ${clock(Number(mon.uptime_seconds) + (mon.running ? age : 0))} ago` : ''}
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div className="dash-row">
+        <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', minWidth: 0 }}>
+          {[
+            ['/monitor', 'Live monitor', 'Watch the pipeline and start, pause or stop screening.', G.score],
+            ['/thresholds', 'Thresholds', 'Where a fused verdict becomes medium, high or critical.', G.layers],
+            ['/settings', 'Administration', 'Alerting, people, audit trail and account.', G.server],
+          ].map(([to, label, desc, glyph]) => (
+            <button key={to} className="dash-card dash-case"
+                    style={{ textAlign: 'left', font: 'inherit', color: 'inherit', display: 'flex',
+                             flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start' }}
+                    onClick={() => go(to)}>
+              <span className="dash-avatar" style={{ width: 44, height: 44, color: 'rgb(var(--dash-line-ink))',
+                    background: 'rgb(var(--dash-line) / .16)' }}>
+                <Glyph d={glyph} size={19} />
+              </span>
+              <div style={{ fontSize: 18, fontWeight: 600, marginTop: 14 }}>{label}</div>
+              <div style={{ fontSize: 14, lineHeight: 1.5, color: 'rgb(var(--ds-muted))', marginTop: 4 }}>{desc}</div>
+            </button>
+          ))}
+        </div>
+
+        <div className="dash-card" style={{ padding: 22 }}>
+          <div className="dash-head" style={{ marginBottom: 12 }}>
+            <h2 className="dash-h dash-h-sm">Ingestion</h2>
+            <span style={{ fontSize: 12, color: 'rgb(var(--ds-faint))' }}>
+              {!mon.running ? 'fusion idle' : mon.fusion === 'meta_classifier' ? 'trained fusion' : 'averaging fallback'}
+            </span>
+          </div>
+          {queue.available ? (
+            <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap' }}>
+              {[['Waiting', queue.pending ?? 0, (queue.pending ?? 0) > 0],
+                ['In flight', queue.claimed ?? 0, false],
+                ['Screened', compact(queue.screened ?? 0), false],
+                ['Failed', queue.failed ?? 0, (queue.failed ?? 0) > 0]].map(([l, v, warn]) => (
+                <div key={l}>
+                  <div style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-.03em',
+                                color: warn ? 'rgb(var(--ds-warn))' : 'rgb(var(--ds-ink))' }}>{v}</div>
+                  <div className="ds-section-label" style={{ marginTop: 4 }}>{l}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 13, lineHeight: 1.6, color: 'rgb(var(--ds-muted))' }}>
+              No ingestion queue. The monitor is replaying sample transactions rather than reading
+              submitted traffic, so there is no backlog to report.
+            </div>
+          )}
+        </div>
+      </div>
+
+      <Footer left="Detector state is probed live; nothing here is read from a registry." />
+    </div>
+  )
+}
+
+export default function SystemHealth() {
+  const navigate = useNavigate()
+  const [rt, setRt] = useState(null)
+  const [error, setError] = useState(null)
+  const [at, setAt] = useState(null)
+  const [history, setHistory] = useState(undefined)
+  const [now, setNow] = useState(() => Date.now())
+
+  const load = useCallback(async () => {
+    try {
+      setRt(await getMonitorRuntime())
+      setError(null)
+      setAt(Date.now())
+    } catch (e) {
+      setError(e?.message ?? 'Could not reach the platform API.')
+    }
+  }, [])
+
+  // Alert history moves slowly and is the heaviest call, so it is read less often.
+  const loadHistory = useCallback(() => {
+    listCases({ limit: HISTORY }).then((r) => setHistory(r.cases ?? [])).catch(() => setHistory(null))
+  }, [])
+
+  useEffect(() => {
+    load()
+    loadHistory()
+    const t = setInterval(load, 15000)
+    const h = setInterval(loadHistory, 60000)
+    return () => { clearInterval(t); clearInterval(h) }
+  }, [load, loadHistory])
+
+  // The uptime clocks run between probes.
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  const det = rt?.detectors ?? {}
+  const live = DETECTORS.filter(([k]) => verdict(det[k]).tone === 'ok').length
+  const broken = DETECTORS.filter(([k]) => verdict(det[k]).tone === 'down')
 
   return (
     <ConsoleShell
@@ -124,204 +393,10 @@ export default function SystemHealth() {
             ? `${broken.map(([, n]) => n).join(' and ')} down.`
             : `${live} of 3 detectors serving.`}</em></>
         : 'System health'}
-      subtitle="What is running, what is loaded, and what broke."
-      actions={
-        <Button variant="ghost" onClick={load}>Refresh</Button>
-      }
     >
       {error && <Alert tone="error" className="mb-6">{error}</Alert>}
-
-      {/* The headline is the answer to "is it working", and it sits in the
-          title; the sign says the same in passing, and this line says what
-          it costs. */}
-      <div className="mb-6 grid gap-4">
-        <Ticker items={rt ? [
-          { text: state, alert: !screening },
-          { text: `${live} of 3 detectors serving`, alert: live < 3 },
-          ...broken.map(([, n]) => ({ text: `${n} down`, alert: true })),
-          { text: `${Number(mon.screened ?? 0).toLocaleString()} screened` },
-        ] : []} />
-        <p className="max-w-2xl text-[16px] leading-relaxed text-[rgb(var(--ds-muted))]">
-          {broken.length > 0
-            ? 'A detector that cannot answer abstains: the others still produce a verdict, and the '
-              + 'fused confidence is reduced to say the system knows less than usual. Screening does '
-              + 'not stop.'
-            : 'All three detectors are scoring every transaction in parallel. The fused verdict is '
-              + 'computed from three signals.'}
-        </p>
-      </div>
-
-      <div className="mb-9 grid gap-3"
-           style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
-        <Metric label="Pipeline" value={state}
-                tone={screening ? 'accent' : mon.running ? 'warn' : 'alert'}
-                meta={screening ? `${mon.throughput_per_min ?? 0}/min` : 'not screening'} />
-        <Metric label="Screened" value={Number(mon.screened ?? 0).toLocaleString()}
-                meta="since last start" />
-        <Metric label="Uptime" value={secs(mon.uptime_seconds) ?? '—'} meta="monitor process" />
-        {/* Only meaningful once the monitor has started. Reported unconditionally
-            it said "Averaging" on a stopped pipeline, which reads as "the
-            meta-classifier failed to load" rather than "nothing has run yet". */}
-        <Metric label="Fusion"
-                value={!mon.running ? 'Idle' : mon.fusion === 'meta_classifier' ? 'Trained' : 'Averaging'}
-                tone={!mon.running ? '' : mon.fusion === 'meta_classifier' ? '' : 'warn'}
-                meta={!mon.running ? 'known once screening starts'
-                  : mon.fusion === 'meta_classifier' ? 'meta-classifier loaded'
-                  : 'falling back to the mean'} />
-      </div>
-
-      <SectionHeading
-        label="Reachability"
-        title="Detectors"
-        action={at && (
-          <span className="font-mono text-[14px] text-[rgb(var(--ds-faint))]">
-            checked {at.toLocaleTimeString()}
-          </span>
-        )}
-      />
-      {/* A tile per detector: the sweep (is anything down) reads across the
-          row, and each tile says why when one cannot score. The per-model
-          detail lives on that detector's own page. */}
-      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
-        {DETECTORS.map(([id, name, model, what]) => {
-          const d = det[id]
-          const v = verdict(d)
-          const tone = TONE[v.tone]
-          return (
-            <Panel key={id} className="ds-panel-pad">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-[18px] font-semibold text-[rgb(var(--ds-ink))]">{name}</span>
-                <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold"
-                      style={{ color: tone.text, background: `color-mix(in srgb, ${tone.dot} 13%, transparent)` }}>
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: tone.dot }} />
-                  {v.label}
-                </span>
-              </div>
-              <p className="mt-1 font-mono text-[12px] text-[rgb(var(--ds-faint))]">{model}</p>
-              <p className="mt-3 text-[15px] leading-relaxed text-[rgb(var(--ds-muted))]">{v.why ?? what}</p>
-              <Link to={DETECTOR_PAGE[id]}
-                    className="mt-4 inline-block text-[14px] font-medium text-[rgb(var(--ds-accent))]">
-                Open {name.toLowerCase()} →
-              </Link>
-            </Panel>
-          )
-        })}
-      </div>
-
-      {/* The quiet failures. A detector going down is loud — a verdict stops
-          appearing. These three stop nothing and change no number on the
-          operations dashboard, which is why they need somewhere to be seen. */}
-      <div className="mt-10 grid gap-4 lg:grid-cols-3">
-        <Panel className="ds-panel-pad">
-          <SectionHeading label="Are alerts arriving" title="Delivery" />
-          {/* A handful of failures in a long run is an SMTP hiccup; a total
-              of zero is a broken configuration. They read very differently to
-              someone on call, so they are not phrased the same way. */}
-          {missed > 0 && (
-            <p className="mb-3 rounded-lg px-3 py-2 text-[16px] leading-relaxed"
-               style={{
-                 background: delivery.delivered === 0
-                   ? 'rgb(var(--ds-signal-soft))' : 'rgb(var(--ds-warn-soft))',
-                 color: delivery.delivered === 0
-                   ? 'rgb(var(--ds-signal))' : 'rgb(var(--ds-warn))',
-               }}>
-              {delivery.delivered === 0
-                ? `None of ${delivery.raised} alerts reached anyone. Screening is working; the mail is not.`
-                : `${missed} of ${delivery.raised} alerts did not reach anyone. The rest were delivered.`}
-            </p>
-          )}
-          <div className="flex items-baseline gap-2">
-            <span className="numeric text-[2rem] leading-none"
-                  style={{ color: delivery.raised && delivery.delivered === 0
-                    ? 'rgb(var(--ds-signal))' : 'rgb(var(--ds-ink))' }}>
-              {delivery.delivered ?? '—'}
-            </span>
-            <span className="text-[17px] text-[rgb(var(--ds-muted))]">
-              {delivery.raised == null
-                ? 'no alert record on this database'
-                : `of ${delivery.raised.toLocaleString()} alerts delivered`}
-            </span>
-          </div>
-          <dl className="mt-4">
-            <ServiceRow label="SMTP"
-                        svc={{ ok: delivery.configured,
-                               detail: delivery.configured
-                                 ? `sending as ${delivery.sending_as ?? 'unknown'}`
-                                 : 'not configured — nothing can be sent' }} />
-            <ServiceRow label="Recipients"
-                        svc={{ ok: (delivery.recipients ?? 0) > 0,
-                               detail: delivery.recipients
-                                 ? `${delivery.recipients} risk manager${delivery.recipients > 1 ? 's' : ''} on the list`
-                                 : 'nobody is listed — alerts have no destination' }} />
-          </dl>
-        </Panel>
-
-        <Panel className="ds-panel-pad">
-          <SectionHeading label="Not detectors" title="Supporting services" />
-          <div>
-            <ServiceRow label="Fusion model" svc={svc.fusion} />
-            <ServiceRow label="Typology retrieval" svc={svc.retrieval} />
-            <ServiceRow label="Report generator" svc={svc.reporter} />
-            <ServiceRow label="Database" svc={svc.database} />
-          </div>
-        </Panel>
-
-        <Panel className="ds-panel-pad">
-          <SectionHeading label="Work waiting" title="Ingestion queue" />
-          {queue.available ? (
-            <>
-              <div className="flex items-baseline gap-2">
-                <span className="numeric text-[2rem] leading-none"
-                      style={{ color: (queue.pending ?? 0) > 0
-                        ? 'rgb(var(--ds-warn))' : 'rgb(var(--ds-ink))' }}>
-                  {queue.pending ?? 0}
-                </span>
-                <span className="text-[17px] text-[rgb(var(--ds-muted))]">waiting</span>
-              </div>
-              <dl className="mt-4">
-                <ServiceRow label="In flight"
-                            svc={{ ok: true, detail: `${queue.claimed ?? 0} claimed by the monitor` }} />
-                <ServiceRow label="Completed"
-                            svc={{ ok: true, detail: `${(queue.screened ?? 0).toLocaleString()} screened` }} />
-                <ServiceRow label="Failed"
-                            svc={{ ok: (queue.failed ?? 0) === 0,
-                                   detail: (queue.failed ?? 0) === 0
-                                     ? 'none' : `${queue.failed} could not be screened` }} />
-              </dl>
-            </>
-          ) : (
-            <p className="text-[16px] leading-relaxed text-[rgb(var(--ds-muted))]">
-              No ingestion queue. The monitor is replaying sample transactions rather
-              than reading submitted traffic, so there is no backlog to report.
-            </p>
-          )}
-        </Panel>
-      </div>
-
-      <div className="mt-10">
-        <SectionHeading label="Controls" title="Operate" />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        {[
-          ['/monitor', 'Live monitor', 'Watch the pipeline and start, pause or stop screening.'],
-          ['/thresholds', 'Thresholds', 'Where a fused verdict becomes medium, high or critical.'],
-          ['/settings', 'Administration', 'Alerting, people, audit trail and account.'],
-        ].map(([to, label, desc]) => (
-          <button
-            key={to}
-            onClick={() => navigate(to)}
-            className={cx(
-              'rounded-xl border p-4 text-left transition-colors',
-              'border-[rgb(var(--ds-line))] hover:border-[rgb(var(--ds-accent))]',
-            )}
-            style={{ background: 'rgb(var(--ds-surface))' }}
-          >
-            <p className="text-[18px] font-semibold text-[rgb(var(--ds-ink))]">{label}</p>
-            <p className="mt-1 text-[16px] leading-relaxed text-[rgb(var(--ds-muted))]">{desc}</p>
-          </button>
-        ))}
-      </div>
-
+      <SystemBoard rt={rt} history={history} at={at} now={now} go={navigate}
+                   onRefresh={() => { load(); loadHistory() }} />
     </ConsoleShell>
   )
 }
