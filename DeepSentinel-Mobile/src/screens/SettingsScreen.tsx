@@ -105,7 +105,7 @@ function RootPage({
   const version = Constants.expoConfig?.version ?? "1.0.0";
 
   return (
-    <Screen title="Settings">
+    <Screen title="Settings" accentLine="Yours to set.">
       <Group>
         <Row
           leading={<Avatar name={user.full_name || user.username} />}

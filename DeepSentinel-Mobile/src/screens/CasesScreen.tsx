@@ -63,7 +63,7 @@ export default function CasesScreen({ onOpen }: { onOpen: (c: Case) => void }) {
   }, [load]);
 
   return (
-    <Screen title="Cases" scroll={false}>
+    <Screen title="Cases" accentLine="What you decide." scroll={false}>
       <View style={styles.filters}>
         <Segmented options={FILTERS} value={filter} onChange={setFilter} />
       </View>

@@ -60,6 +60,7 @@ export default function AlertsScreen({
   return (
     <Screen
       title="Alerts"
+      accentLine="As they are screened."
       scroll={false}
       right={<NavButton icon="add-circle-outline" onPress={onScreen} />}
     >

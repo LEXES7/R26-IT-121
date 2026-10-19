@@ -98,6 +98,7 @@ export default function AssistantScreen() {
   return (
     <Screen
       title="Assistant"
+      accentLine="Ask about any case."
       scroll={false}
       right={
         messages.length > 0 ? (
