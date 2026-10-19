@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  ImageBackground,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -10,7 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { verify } from "../auth/biometric";
-import { accent, bg, radius, space, text } from "../theme/tokens";
+import { accent, bg, serif, space, text } from "../theme/tokens";
 
 /**
  * The lock, when the person chose fingerprint or face unlock.
@@ -19,6 +20,9 @@ import { accent, bg, radius, space, text } from "../theme/tokens";
  * the app expects. Cancelling leaves them here rather than signing them out:
  * a dismissed prompt is usually a thumb in the wrong place, not a decision.
  * The way out is the password, which drops the stored session entirely.
+ *
+ * Set over the Earth at night, with the site's line, so the first thing on
+ * the phone is the same product as the first thing on the web.
  */
 export default function UnlockScreen({
   username,
@@ -47,12 +51,25 @@ export default function UnlockScreen({
   }, [ask]);
 
   return (
-    <SafeAreaView edges={["top"]} style={styles.screen}>
+    <ImageBackground
+      source={require("../../assets/images/earth-night.jpg")}
+      resizeMode="cover"
+      style={styles.screen}
+      imageStyle={styles.photo}
+    >
+    <View style={styles.shade} />
+    <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1 }}>
       <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
       <View style={styles.inner}>
-        <Text style={styles.brand}>DeepSentinel</Text>
-        <Text style={styles.locked}>Locked</Text>
-        <Text style={styles.who}>Signed in as {username}</Text>
+        <Text style={styles.brand}>
+          Deep<Text style={{ color: accent.base }}>Sentinel</Text>
+        </Text>
+        <View style={{ flex: 1 }} />
+        <Text style={styles.claim}>
+          Detect the fraud.{"\n"}
+          <Text style={styles.claimAccent}>Then prove it.</Text>
+        </Text>
+        <Text style={styles.who}>Locked · signed in as {username}</Text>
 
         <Pressable
           onPress={ask}
@@ -74,18 +91,22 @@ export default function UnlockScreen({
         </Pressable>
       </View>
     </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: bg.canvas },
-  inner: { flex: 1, justifyContent: "center", padding: space.xl, gap: space.md },
-  brand: { color: text.primary, fontSize: 26, fontWeight: "700", letterSpacing: -0.5 },
-  locked: { color: accent.base, fontSize: 13, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase" },
-  who: { color: text.muted, fontSize: 14, marginBottom: space.xl },
+  photo: { opacity: 0.75 },
+  shade: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: "rgba(9,8,7,0.45)" },
+  inner: { flex: 1, padding: space.xl, paddingTop: space.lg, gap: space.md },
+  brand: { color: text.primary, fontSize: 17, fontWeight: "600" },
+  claim: { color: text.primary, fontFamily: serif.regular, fontSize: 50, lineHeight: 50 },
+  claimAccent: { color: accent.base, fontFamily: serif.italic },
+  who: { color: text.muted, fontSize: 14, marginBottom: space.lg },
   primary: {
-    backgroundColor: accent.base,
-    borderRadius: radius.md,
+    backgroundColor: text.secondary,
+    borderRadius: 16,
     paddingVertical: space.md + 2,
     alignItems: "center",
   },

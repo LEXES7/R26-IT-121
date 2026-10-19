@@ -6,8 +6,9 @@ import type { LiveAlert, MonitorState } from "../api/monitor";
 import { loadOverview, type Overview } from "../api/overview";
 import type { User } from "../api/auth";
 import { Group, Pill, Row, Screen } from "../components/ios";
+import Planet from "../components/Planet";
 import { account, money, score } from "../lib/format";
-import { bg, mono, radius, risk, riskColour, space, text, tile } from "../theme/tokens";
+import { bg, mono, risk, riskColour, serif, space, text, tile } from "../theme/tokens";
 
 /**
  * The first thing someone sees: is the system working, and is there anything
@@ -78,8 +79,13 @@ export default function HomeScreen({
 
   return (
     <Screen
-      title="Home"
-      subtitle={greeting(user.full_name || user.username)}
+      title={`${greeting(user.full_name || user.username)}.`}
+      accentLine={
+        openCases === null ? undefined
+          : openCases === 0 ? "Nothing is waiting."
+          : `${openCases} case${openCases === 1 ? "" : "s"} need${openCases === 1 ? "s" : ""} you.`
+      }
+      subtitle={new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -93,6 +99,7 @@ export default function HomeScreen({
       }
     >
       <View style={styles.hero}>
+        <Planet height={140} live={running} />
         <View style={styles.heroTop}>
           <Pill
             label={monitor ? (running ? "Monitoring" : "Monitor stopped") : "Connecting"}
@@ -106,7 +113,7 @@ export default function HomeScreen({
                 : `${up} of ${known} detectors answering`}
           </Text>
         </View>
-        <View style={styles.stats}>
+        <View style={[styles.stats, styles.heroBody]}>
           <Stat value={monitor ? monitor.counters.screened.toLocaleString() : "—"} label="Screened" />
           <Stat
             value={monitor ? monitor.counters.alerts.toLocaleString() : "—"}
@@ -180,12 +187,22 @@ function Stat({ value, label, color }: { value: string; label: string; color?: s
 }
 
 const styles = StyleSheet.create({
-  hero: { backgroundColor: bg.card, borderRadius: radius.lg, padding: space.lg, gap: space.lg },
-  heroTop: { gap: space.sm },
+  // Dark on both themes, like the planet on the site it echoes.
+  hero: {
+    backgroundColor: "#0B0A09",
+    borderRadius: 24,
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: bg.borderStrong,
+    paddingBottom: space.lg,
+    gap: space.md,
+  },
+  heroTop: { gap: space.sm, paddingHorizontal: space.lg },
+  heroBody: { paddingHorizontal: space.lg },
   heroNote: { color: text.muted, fontSize: 13 },
   stats: { flexDirection: "row" },
   stat: { flex: 1 },
-  statValue: { ...mono, color: text.primary, fontSize: 26, fontWeight: "700" },
+  statValue: { color: text.primary, fontFamily: serif.regular, fontSize: 32 },
   statLabel: { color: text.muted, fontSize: 13, marginTop: 2 },
 
   dot: { width: 10, height: 10, borderRadius: 5 },
