@@ -63,8 +63,7 @@ function reading(live) {
       tone: 'none',
       headline: 'No detector answered.',
       detail:
-        'Every score below is the neutral value the fusion imputes when a model '
-        + 'is unreachable. This case carries no evidence.',
+        'The scores below are placeholders. There is no evidence here.',
     }
   }
   if (live.length === 1) {
@@ -72,9 +71,7 @@ function reading(live) {
       tone: 'none',
       headline: `Only the ${live[0].label.toLowerCase()} detector answered.`,
       detail:
-        'With one opinion there is nothing to cross-check it against, so the '
-        + 'fused confidence is pulled toward the middle — held as unsettled '
-        + 'rather than read as either a finding or an all-clear.',
+        'With nothing to check it against, the result is held as uncertain.',
     }
   }
 
@@ -88,8 +85,7 @@ function reading(live) {
       headline: 'The detectors agree.',
       detail:
         `All ${live.length} scores fall within ${spread.toFixed(3)} of each other. `
-        + 'Independent models reading the transaction different ways reached the '
-        + 'same reading, which is the strongest form this evidence takes.',
+        + 'The detectors agree, which is the strongest evidence.',
     }
   }
 
@@ -99,9 +95,8 @@ function reading(live) {
       spread,
       headline: 'Partial agreement.',
       detail:
-        `The scores span ${spread.toFixed(3)}. The detectors point the same way `
-        + 'but not with the same force — worth reading the attribution below '
-        + 'before treating the fused figure as settled.',
+        `The scores span ${spread.toFixed(3)}. Same direction, different strength; `
+        + 'check the details below.',
     }
   }
 
@@ -115,9 +110,7 @@ function reading(live) {
       : 'The detectors disagree.',
     detail: dissenter
       ? `It scored ${fmt(dissenter.value, 3)}, ${dissenter.distance.toFixed(3)} away `
-        + 'from what the others read. A lone detector calling a transaction is not '
-        + 'a weaker case than a unanimous one — it is a different case, and usually '
-        + 'the one worth opening first.'
+        + 'from the others. Cases like this are often worth opening first.'
       : `The scores span ${spread.toFixed(3)}.`,
   }
 }
@@ -218,7 +211,7 @@ export default function ModalityVerdict({ c }) {
             note={
               m.available
                 ? null
-                : 'did not answer — imputed so that it votes neither way'
+                : 'did not answer, so it counts neither way'
             }
           />
         ))}
@@ -236,14 +229,13 @@ export default function ModalityVerdict({ c }) {
         {shrunk ? (
           <>
             Built from <span className="text-slate-300">{used} of 3</span> detectors.
-            With a detector absent the fusion shrinks the verdict toward
-            uncertainty — <span className="text-slate-400">not toward safety</span>,
-            since a model that did not answer has not cleared anything.
+            A missing detector makes the verdict <span className="text-slate-400">less
+            certain</span>, not safer.
           </>
         ) : (
           <>
             Built from <span className="text-slate-300">all three</span> detectors,
-            so the verdict carries no uncertainty adjustment.
+            so no adjustment was needed.
           </>
         )}
       </p>

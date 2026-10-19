@@ -68,7 +68,7 @@ export default function Account() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-10 sm:px-6">
-      <PageHeader title="Account" description="Your profile and sign-in credentials." />
+      <PageHeader title="Account" description="Your profile and password." />
 
       <Card className="p-6">
         <CardHeader title="Profile" />
@@ -101,7 +101,7 @@ export default function Account() {
       <Card className="p-6">
         <CardHeader
           title="Change password"
-          description="Signs out every device currently using this account."
+          description="Signs you out on every device."
         />
 
         {feedback && (

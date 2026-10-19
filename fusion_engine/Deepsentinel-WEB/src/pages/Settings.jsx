@@ -29,25 +29,25 @@ const RISK_LEVELS = [
     key: 'include_critical_risk',
     label: 'Critical risk',
     tone: 'critical',
-    description: 'Highest confidence detections. Almost always worth interrupting someone.',
+    description: 'The strongest cases. Almost always worth an interruption.',
   },
   {
     key: 'include_high_risk',
     label: 'High risk',
     tone: 'high',
-    description: 'Strong multi-modal signal. Recommended for immediate review.',
+    description: 'Strong signal. Review soon.',
   },
   {
     key: 'include_medium_risk',
     label: 'Medium risk',
     tone: 'medium',
-    description: 'Worth reviewing, but expect a higher false-positive rate.',
+    description: 'Worth a look, with more false alarms.',
   },
   {
     key: 'include_low_risk',
     label: 'Low risk',
     tone: 'low',
-    description: 'Very noisy. Enable only while tuning thresholds.',
+    description: 'Very noisy. Only while tuning.',
   },
 ]
 
@@ -126,7 +126,7 @@ export default function Settings() {
       await sendTestEmail(manager.name, manager.email)
       setFeedback({
         tone: 'success',
-        message: `Test alert sent to ${manager.email}. Check the spam folder if it does not arrive.`,
+        message: `Test sent to ${manager.email}. Check spam if it does not arrive.`,
       })
     })
 
@@ -163,7 +163,7 @@ export default function Settings() {
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-10 sm:px-6">
       <PageHeader
         title="Settings"
-        description="Who is notified when fraud is detected, and at what threshold."
+        description="Who gets alerted, and when."
       />
 
       {feedback && (
@@ -174,14 +174,14 @@ export default function Settings() {
 
       {managers.length > 0 && activeCount === 0 && (
         <Alert tone="warning" title="No active recipients">
-          Fraud alerts are being generated but nobody will receive them.
+          Alerts are being raised, but nobody will receive them.
         </Alert>
       )}
 
       <Card className="p-6">
         <CardHeader
           title="Alert recipients"
-          description="These addresses receive an email whenever a transaction meets the threshold below."
+          description="These people get an email for each alert."
           action={<Badge>{activeCount} active</Badge>}
         />
 
@@ -232,7 +232,7 @@ export default function Settings() {
             <EmptyState
               icon="—"
               title="No recipients yet"
-              description="Add someone above so detected fraud reaches a person."
+              description="Add someone so alerts reach a person."
             />
           ) : (
             <div className="space-y-2">
@@ -276,7 +276,7 @@ export default function Settings() {
       <Card className="p-6">
         <CardHeader
           title="Alert threshold"
-          description="Which risk classifications trigger an email."
+          description="Which levels send an email."
           action={savingAlerts ? <Badge>Saving…</Badge> : null}
         />
         <div className="mt-5 space-y-3">
@@ -295,7 +295,7 @@ export default function Settings() {
       <Card className="p-6">
         <CardHeader
           title="Email template"
-          description="What a recipient sees when an alert fires."
+          description="What the email looks like."
         />
         <div className="mt-4 flex flex-wrap gap-2">
           {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((c) => (
@@ -315,7 +315,7 @@ export default function Settings() {
 
       {!auth.canConfigureSystem && (
         <Alert tone="info">
-          Some system configuration is restricted to administrators and is not shown here.
+          Some settings are for administrators only.
         </Alert>
       )}
     </div>

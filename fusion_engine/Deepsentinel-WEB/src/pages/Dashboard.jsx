@@ -345,9 +345,9 @@ export function Board({
             </>
           ) : (
             <div className="ds-empty">
-              When a transaction escalates, the accounts around it are drawn here.
+              Accounts around a serious case appear here.
               {canControlPipeline
-                ? ' Ingest a file with the Query Runner, or start the monitor.'
+                ? ' Start the monitor or upload a file.'
                 : ' Screening is controlled by an administrator.'}
             </div>
           )}
@@ -382,8 +382,8 @@ export function Board({
               })}
             </div>
             <div style={{ fontSize: 13, lineHeight: 1.55, color: 'rgb(var(--ds-muted))', marginTop: 14 }}>
-              {liveCount === 3 ? 'Every verdict is fused from the full set of detectors.'
-                : 'Confidence is reduced while a model is missing.'}
+              {liveCount === 3 ? 'All three detectors are scoring.'
+                : 'Results are less certain while one is missing.'}
             </div>
           </div>
 
@@ -445,15 +445,15 @@ export function Board({
             ) : (
               <div style={{ fontSize: 13, lineHeight: 1.6, color: 'rgb(var(--ds-muted))' }}>
                 {state?.source === 'queue' ? 'Screening ingested traffic.'
-                  : running ? 'Replaying sample transactions. Point this service and the Query Runner at the same database to screen real arrivals.'
-                    : 'Not screening. Point this service and the Query Runner at the same database to screen real arrivals.'}
+                  : running ? 'Replaying sample payments.'
+                    : 'Not screening.'}
               </div>
             )}
           </div>
         </div>
       </div>
 
-      <Footer left="Scores are calibrated probabilities, not verdicts." />
+      <Footer left="Scores are probabilities, not verdicts." />
     </div>
   )
 }

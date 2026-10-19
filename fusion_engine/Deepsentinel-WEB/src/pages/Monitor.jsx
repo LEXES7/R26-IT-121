@@ -212,9 +212,8 @@ export default function Monitor() {
               )}
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-400">
-              All three detectors read every transaction as it arrives, at the
-              same time, and their scores are fused into one verdict. None of
-              them waits on another&rsquo;s opinion.
+              Three detectors check every payment as it arrives and their scores are
+              combined into one verdict.
             </p>
           </div>
 
@@ -333,7 +332,7 @@ export default function Monitor() {
             {!alerts.length ? (
               <p className="py-10 text-center text-sm text-slate-500">
                 {running
-                  ? 'Nothing flagged yet. Most traffic is legitimate — that is the point.'
+                  ? 'Nothing flagged yet. Most payments are normal.'
                   : 'Start monitoring to screen the live stream.'}
               </p>
             ) : (
@@ -440,8 +439,7 @@ export default function Monitor() {
               {runtime?.monitor?.fusion
                 ? <>Strategy <span className="numeric text-slate-300">{runtime.monitor.fusion}</span>.</>
                 : 'Strategy unavailable.'}{' '}
-              A detector that cannot be reached abstains — fusion applies an
-              uncertainty penalty rather than reading silence as innocence.
+              A missing detector is left out and the verdict is marked less certain.
             </p>
           </section>
 
@@ -465,7 +463,7 @@ export default function Monitor() {
               ))}
             </div>
             <p className="mt-3 text-[14px] leading-relaxed text-slate-600">
-              The assistant reads this same live state.
+              The assistant sees this live view too.
             </p>
           </section>
         </aside>

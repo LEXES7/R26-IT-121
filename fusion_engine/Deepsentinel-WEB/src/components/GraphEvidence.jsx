@@ -13,7 +13,7 @@ import { Badge, Card, CardHeader, SectionLabel, cx } from './ui'
 const PATTERN_COPY = {
   HUB_AND_SPOKE: {
     label: 'Hub and spoke',
-    blurb: 'Many senders converging on a single receiving account.',
+    blurb: 'Many senders paying one account.',
   },
   SMURFING: {
     label: 'Smurfing',
@@ -21,11 +21,11 @@ const PATTERN_COPY = {
   },
   LAYERING: {
     label: 'Layering',
-    blurb: 'Funds moved through a chain of intermediaries to break the trail.',
+    blurb: 'Money passed through middle accounts to hide the trail.',
   },
   ACCOUNT_TAKEOVER: {
     label: 'Account takeover',
-    blurb: 'An established account drained shortly after a behaviour change.',
+    blurb: 'An old account suddenly drained.',
   },
   UNKNOWN: { label: 'No typology matched', blurb: 'No known structure was identified.' },
 }
@@ -83,7 +83,7 @@ export default function GraphEvidence({ evidence }) {
     <Card className="p-5 sm:p-6">
       <CardHeader
         title="Structural evidence"
-        description="Extracted from the graph around the flagged account — not generated text."
+        description="From the network around the flagged account."
         action={<Badge tone="low">{kHop ? `k=${kHop} hops` : 'subgraph'}</Badge>}
       />
 
@@ -112,8 +112,7 @@ export default function GraphEvidence({ evidence }) {
             {sink}
           </p>
           <p className="mt-1 text-xs text-slate-400">
-            The persistent account in this structure. Senders are typically
-            single-use; the sink is what an investigation follows.
+            Where the money ends up. Follow this account first.
           </p>
         </div>
       )}

@@ -45,7 +45,7 @@ export default function GraphModelPanel() {
           ['Transfers', n(m.num_edges), 'between them'],
           ['Parameters', n(rt.model?.parameters), `${rt.model?.k_hop ?? 2} hops · ${rt.model?.in_dim ?? '—'} features`],
           ['Forward passes', n(rt.model?.inferences), rt.serving_mode === 'live_inference'
-            ? 'weights loaded, scoring live' : 'answering from precomputed scores'],
+            ? 'scoring live' : 'using saved scores'],
         ].map(([k, v, note]) => (
           <div key={k} className="min-w-0">
             <p className="ds-mono text-[11px] uppercase tracking-[.13em]"
@@ -67,10 +67,10 @@ export default function GraphModelPanel() {
           </p>
           <div className="mt-3 grid gap-5 sm:grid-cols-3 lg:grid-cols-5">
             {[
-              ['Precision', perf.metrics?.precision, 'of those it flags, this share are mules'],
-              ['Recall', perf.metrics?.recall, 'of the mules present, this share are found'],
+              ['Precision', perf.metrics?.precision, 'flagged accounts that are mules'],
+              ['Recall', perf.metrics?.recall, 'mules that were found'],
               ['F1', perf.metrics?.f1, 'the balance of the two'],
-              ['AUROC', perf.metrics?.auroc, 'how well it ranks mules above the rest'],
+              ['AUROC', perf.metrics?.auroc, 'how well it ranks mules first'],
               ['Accuracy', perf.metrics?.accuracy, 'see the note below'],
             ].map(([k, v, note]) => (
               <div key={k} className="min-w-0">
@@ -97,10 +97,10 @@ export default function GraphModelPanel() {
 
           <p className="mt-3 text-[13px] leading-relaxed"
              style={{ color: 'rgb(var(--ds-sev-high))' }}>
-            Accuracy flatters here — flagging nothing would score{' '}
+            Accuracy misleads here: flagging nothing would score{' '}
             {perf.actual_mules && perf.evaluated_accounts
               ? (1 - perf.actual_mules / perf.evaluated_accounts).toFixed(3) : '—'}.
-            Precision and recall are the figures that mean something.
+            Precision and recall matter more.
           </p>
         </div>
       )}
@@ -112,7 +112,7 @@ export default function GraphModelPanel() {
           ['Flags at', bands.high != null ? Number(bands.high).toFixed(4) : '—',
             'the tuned decision threshold'],
           ['Critical at', bands.critical != null ? Number(bands.critical).toFixed(4) : '—',
-            'the extreme tail of scored accounts'],
+            'the top tail of scores'],
           ['Validation F1', meta.val_f1_at_tuned_threshold != null
             ? Number(meta.val_f1_at_tuned_threshold).toFixed(3) : '—',
             'what the threshold was chosen on'],
@@ -142,10 +142,8 @@ export default function GraphModelPanel() {
       </dl>
 
       <p className="mt-4 text-[13px] leading-relaxed" style={{ color: 'rgb(var(--ds-faint))' }}>
-        Trained and evaluated on separate time windows, so nothing above was
-        measured on data the model had already learned from. The F1 is the
-        validation figure the threshold was chosen on — it is not a test score,
-        and is shown as what it is.
+        Tested on a later time window than it was trained on. The F1 is the
+        validation score used to pick the threshold, not a test score.
       </p>
     </section>
   )

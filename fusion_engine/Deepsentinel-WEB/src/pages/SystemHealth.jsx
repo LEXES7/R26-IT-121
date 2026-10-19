@@ -36,18 +36,18 @@ const HISTORY = 200
 
 /** The one line that matters per detector: can it score right now, and why not. */
 function verdict(d) {
-  if (!d) return { tone: 'down', label: 'No answer', why: 'The service did not respond to the probe.' }
-  if (!d.reachable) return { tone: 'down', label: 'Unreachable', why: 'Nothing is listening on its address.' }
+  if (!d) return { tone: 'down', label: 'No answer', why: 'The service did not respond.' }
+  if (!d.reachable) return { tone: 'down', label: 'Unreachable', why: 'Nothing is running at its address.' }
   if (d.load_error) return { tone: 'down', label: 'Loaded with errors', why: d.load_error }
   if (d.warming_up) {
     const filled = d.buffer_filled ?? 0
     const size = d.window_size ?? 32
     return {
       tone: 'warm', label: 'Warming up',
-      why: `Needs a full window before it can score: ${filled} of ${size} buffered.`,
+      why: `Filling its window: ${filled} of ${size}.`,
     }
   }
-  if (!d.ready) return { tone: 'warm', label: 'Not ready', why: 'Reachable, but reports it cannot score yet.' }
+  if (!d.ready) return { tone: 'warm', label: 'Not ready', why: 'Running, but cannot score yet.' }
   return { tone: 'ok', label: 'Serving', why: null }
 }
 
@@ -227,7 +227,7 @@ export function SystemBoard({ rt, history, at, now, go, onRefresh }) {
           <div className="dash-head" style={{ marginTop: 36 }}>
             <h2 className="dash-h">Detectors</h2>
             <span style={{ fontSize: 13, color: 'rgb(var(--ds-faint))' }}>
-              {broken.length ? 'A detector that cannot answer abstains; screening does not stop.'
+              {broken.length ? 'Screening continues without the missing detector.'
                 : 'Each scores every transaction in parallel'}
             </span>
           </div>
@@ -256,20 +256,20 @@ export function SystemBoard({ rt, history, at, now, go, onRefresh }) {
                         background: delivery.delivered === 0 ? 'rgb(var(--ds-signal-soft))' : 'rgb(var(--ds-warn-soft))',
                         color: delivery.delivered === 0 ? 'rgb(var(--ds-signal))' : 'rgb(var(--ds-warn))' }}>
               {delivery.delivered === 0
-                ? `None of ${delivery.raised} alerts reached anyone. Screening is working; the mail is not.`
-                : `${missed} of ${delivery.raised} alerts did not reach anyone. The rest were delivered.`}
+                ? `None of ${delivery.raised} alerts were delivered. Check the email settings.`
+                : `${missed} of ${delivery.raised} alerts were not delivered.`}
             </p>
           )}
           <Person colour={delivery.configured ? 'rgb(var(--ds-sev-low))' : 'rgb(var(--ds-signal))'}
                   mark={<Glyph d={G.mail} size={18} />} name="SMTP"
-                  sub={delivery.configured ? `sending as ${delivery.sending_as ?? 'unknown'}` : 'not configured; nothing can be sent'}
+                  sub={delivery.configured ? `sending as ${delivery.sending_as ?? 'unknown'}` : 'not set up'}
                   badge={rt ? (delivery.configured ? 'up' : 'down') : null} badgeAlert={rt ? !delivery.configured : false}
                   onClick={() => go('/settings')} />
           <Person colour={(delivery.recipients ?? 0) > 0 ? 'rgb(var(--ds-sev-low))' : 'rgb(var(--ds-signal))'}
                   mark={<Glyph d={G.accounts} size={18} />} name="Recipients"
                   sub={delivery.recipients
                     ? `${delivery.recipients} risk manager${delivery.recipients > 1 ? 's' : ''} on the list`
-                    : 'nobody is listed; alerts have no destination'}
+                    : 'nobody on the list'}
                   badge={rt ? String(delivery.recipients ?? 0) : null} badgeAlert={rt ? !delivery.recipients : false}
                   onClick={() => go('/settings')} />
 
@@ -282,7 +282,7 @@ export function SystemBoard({ rt, history, at, now, go, onRefresh }) {
             </div>
             <div className="dash-hero-num">{rt ? `+${compact(Number(mon.screened ?? 0))}` : '—'}</div>
             <div className="dash-hero-sub">
-              transactions screened since the monitor last started
+              screened since the monitor started
               {mon.uptime_seconds != null ? `, ${clock(Number(mon.uptime_seconds) + (mon.running ? age : 0))} ago` : ''}
             </div>
           </div>
@@ -292,9 +292,9 @@ export function SystemBoard({ rt, history, at, now, go, onRefresh }) {
       <div className="dash-row">
         <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', minWidth: 0 }}>
           {[
-            ['/monitor', 'Live monitor', 'Watch the pipeline and start, pause or stop screening.', G.score],
-            ['/thresholds', 'Thresholds', 'Where a fused verdict becomes medium, high or critical.', G.layers],
-            ['/settings', 'Administration', 'Alerting, people, audit trail and account.', G.server],
+            ['/monitor', 'Live monitor', 'Start, pause or stop screening.', G.score],
+            ['/thresholds', 'Thresholds', 'Set when a verdict becomes an alert.', G.layers],
+            ['/settings', 'Administration', 'Alerts, people and the audit log.', G.server],
           ].map(([to, label, desc, glyph]) => (
             <button key={to} className="dash-card dash-case"
                     style={{ textAlign: 'left', font: 'inherit', color: 'inherit', display: 'flex',
@@ -332,14 +332,13 @@ export function SystemBoard({ rt, history, at, now, go, onRefresh }) {
             </div>
           ) : (
             <div style={{ fontSize: 13, lineHeight: 1.6, color: 'rgb(var(--ds-muted))' }}>
-              No ingestion queue. The monitor is replaying sample transactions rather than reading
-              submitted traffic, so there is no backlog to report.
+              No queue. The monitor is replaying sample transactions.
             </div>
           )}
         </div>
       </div>
 
-      <Footer left="Detector state is probed live; nothing here is read from a registry." />
+      <Footer left="Checked live." />
     </div>
   )
 }

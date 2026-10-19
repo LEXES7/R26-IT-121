@@ -97,8 +97,7 @@ export default function TypologyBook({ matched, similarity }) {
         {matched
           ? <>The current transaction matched <strong>{matched}</strong>
               {similarity != null && <> at {Number(similarity).toFixed(3)}</>}.
-              The signal columns say which detectors that pattern expects to be
-              loud.</>
+              The columns show which detectors it should trigger.</>
           : <>Score a transaction and the match is highlighted here.</>}
       </p>
     </section>

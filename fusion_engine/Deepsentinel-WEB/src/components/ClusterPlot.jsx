@@ -127,10 +127,9 @@ export default function ClusterPlot({ rows, groups }) {
       </svg>
       <p className="mt-1.5 text-[12px] leading-relaxed"
          style={{ color: 'rgb(var(--ds-faint))' }}>
-        Every scored transaction, placed by its own reconstruction fingerprint and
-        reduced to two dimensions by PCA. Larger marks were flagged and are coloured
-        by the typology they fell into; small grey ones were cleared. Filled means the
-        file labels it fraud. The axes have no units — distance is what carries meaning.
+        Each dot is a scored payment. Large dots were flagged, coloured by pattern;
+        small grey ones were cleared. Filled means labelled fraud. Closer dots are
+        more alike.
       </p>
     </div>
   )

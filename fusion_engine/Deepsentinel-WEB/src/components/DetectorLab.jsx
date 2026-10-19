@@ -236,8 +236,8 @@ export default function DetectorLab({
         </p>
       ) : result?.available === false ? (
         <Alert tone="warning">
-          This detector did not answer. {result.summary || ''} Its score is excluded
-          from any fused verdict rather than counted as low.
+          This detector did not answer. {result.summary || ''} It is left out of
+          the verdict, not counted as safe.
         </Alert>
       ) : result ? (
         children(result)

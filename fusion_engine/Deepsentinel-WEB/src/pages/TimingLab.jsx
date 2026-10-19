@@ -20,7 +20,7 @@ export default function TimingLab() {
       eyebrow="Detector · Timing"
       title="Transaction-Sequence TCN"
       model="Transaction-Sequence TCN"
-      subtitle="Each transaction is read alongside the thirty-two before it."
+      subtitle="Each payment is read with the 32 before it."
     >
       {(r) => {
         const ev = r.evidence ?? {}
@@ -115,7 +115,7 @@ export default function TimingLab() {
                   </div>
                 ) : (
                   <p className="text-[15px]" style={{ color: 'rgb(var(--ds-muted))' }}>
-                    No single predecessor stood out for this transaction.
+                    No earlier payment stood out.
                   </p>
                 )}
               </section>
@@ -145,10 +145,8 @@ export default function TimingLab() {
 
             <p className="text-[13px] leading-relaxed"
                style={{ color: 'rgb(var(--ds-faint))' }}>
-              This detector needs the 32 transactions before this one, and on a
-              page that scores one at a time there is no stream to supply them.
-              The window is filled on arrival with real transactions from the
-              served graph, so the predecessor it names is a genuine one.
+              This model needs the 32 payments before this one. Here they are filled
+              with real payments from the graph, so the one it names is real.
             </p>
 
             {/* A file is a stream, which is the one thing a single-row page

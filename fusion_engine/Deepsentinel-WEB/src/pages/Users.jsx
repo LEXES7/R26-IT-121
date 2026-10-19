@@ -150,7 +150,7 @@ export default function Users() {
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-10 sm:px-6">
       <PageHeader
         title="Users"
-        description="Who can sign in, and what each of them is allowed to do."
+        description="Who can sign in, and what they can do."
         action={
           <Button onClick={() => setShowForm((v) => !v)} variant={showForm ? 'secondary' : 'primary'}>
             {showForm ? 'Cancel' : '+ Add user'}

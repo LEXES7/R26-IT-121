@@ -206,7 +206,7 @@ export default function FusionLab() {
               </tbody>
             </table>
             <p className="text-[15px]" style={{ color: 'rgb(var(--ds-muted))' }}>
-              Right of centre argues for fraud, left against.
+              Right means fraud, left means not.
             </p>
 
             {/* The deciding detector's own sentence — one, not three. */}

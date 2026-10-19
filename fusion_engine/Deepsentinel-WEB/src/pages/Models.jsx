@@ -28,10 +28,8 @@ const DETECTORS = [
   {
     key: 'graph',
     name: 'Edge-Enhanced GraphSAGE',
-    reads: 'The payment network around this transaction.',
-    novelty: 'Edge features carried through neighbourhood aggregation, a '
-           + 'graph-aware imbalance sampler, and a suspicious-subgraph extractor '
-           + 'that returns the accounts and transfers behind the score.',
+    reads: 'The payment network around it.',
+    novelty: 'Uses transfer details, handles rare fraud, and returns the accounts behind the score.',
     evidence: (r) => r.evidence && <>
       <NetworkGraph evidence={r.evidence} height={320} />
       <GraphEvidence evidence={r.evidence} />
@@ -40,19 +38,15 @@ const DETECTORS = [
   {
     key: 'behavioural',
     name: 'Stratified VAE with Dual-Signal Anomaly Attribution',
-    reads: 'Whether this fits normal behaviour for its transaction type.',
-    novelty: 'One autoencoder per transaction type, trained only on non-fraud '
-           + 'traffic, with reconstruction error and latent distance attributed '
-           + 'back to individual features.',
+    reads: 'Whether it fits normal behaviour for its type.',
+    novelty: 'One model per type, trained on normal payments, that names what did not fit.',
     evidence: (r) => r.evidence && <BehaviouralEvidence evidence={r.evidence} />,
   },
   {
     key: 'temporal',
     name: 'Transaction-Sequence TCN with fraud_attention',
-    reads: 'The transactions immediately preceding this one.',
-    novelty: 'A dilated causal TCN over a system-wide 32-transaction window, '
-           + 'with a self-attention layer that names the single prior '
-           + 'transaction that drove the score.',
+    reads: 'The payments just before it.',
+    novelty: 'Reads the last 32 payments and names the one that drove the score.',
     evidence: (r) => r.evidence && <TemporalEvidence evidence={r.evidence} />,
   },
 ]
@@ -135,7 +129,7 @@ export default function Models() {
           ))}
           {hits.length === 0 && (
             <div style={{ fontSize: 14, color: 'rgb(var(--ds-faint))', padding: '8px 0' }}>
-              No ingested transactions yet — upload a file on Batch upload.
+              No transactions yet. Upload a file in Batch upload.
             </div>
           )}
         </div>
@@ -175,8 +169,7 @@ export default function Models() {
 
             {!r ? (
               <div className="ds-empty">
-                Not run. Pick a transaction above and run this model on its own —
-                no fusion, no retrieval, just what this detector returns.
+                Not run yet. Pick a transaction and run this model on its own.
               </div>
             ) : r.error ? (
               <div style={{ background: 'rgb(var(--ds-signal-soft))',
@@ -197,7 +190,7 @@ export default function Models() {
                   <div>
                     <div className="ds-section-label">Answered</div>
                     <div style={{ fontSize: 15, marginTop: 8 }}>
-                      {r.available ? 'yes' : 'no — it abstained'}
+                      {r.available ? 'yes' : 'no'}
                     </div>
                   </div>
                   <div>
@@ -252,18 +245,15 @@ export default function Models() {
       <Panel className="ds-panel-pad">
         <SectionHeading
           label="Reconciles all three"
-          title="Fusion engine, retrieval and forensic reporting"
+          title="Fusion and reports"
           action={canRunAnalysis
             ? <Link to="/analyzer" className="ds-btn">Open the analyzer →</Link>
             : null}
         />
         <p style={{ fontSize: 14, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
                     margin: '0 0 12px', maxWidth: 720 }}>
-          A meta-classifier combines the three scores above into one calibrated
-          probability, applying an uncertainty penalty when a detector abstains.
-          The fused profile then retrieves the closest FATF typology, and
-          Chain-of-Evidence prompting constrains the report to cite only that
-          typology and the scores actually supplied.
+          The three scores are combined into one. The closest laundering method is
+          found, and the report cites only that method and the scores.
         </p>
         <div style={{ display: 'grid', gap: 10,
                       gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
@@ -272,9 +262,9 @@ export default function Models() {
               link goes somewhere. */}
           {[
             ['Fused verdict + typology', 'Run a transaction on the Analyzer.', '/analyzer'],
-            ['Forensic report and PDF', 'Generated per run; “Save as PDF” prints it.', '/analyzer'],
+            ['Forensic report and PDF', 'Made per run; use “Save as PDF”.', '/analyzer'],
             ['Grounded vs ungrounded', 'Tick “Also run without retrieval”.', '/analyzer'],
-            ['SAR draft', 'Watermarked, never filed, from a scored analysis.', '/analyzer'],
+            ['SAR draft', 'A draft only, never filed for you.', '/analyzer'],
           ].map(([t, sub, to]) => {
             const Tag = canRunAnalysis ? Link : 'div'
             return (

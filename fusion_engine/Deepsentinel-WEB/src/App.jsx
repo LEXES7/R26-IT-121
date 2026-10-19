@@ -201,14 +201,14 @@ function Shell() {
 // the two disagree in front of the reader. Thresholds and Detectors moved when
 // the console split in two; these followed them.
 const CONSOLE_PAGES = {
-  '/monitor':   ['Workspace / Observe', 'Live monitor', 'Every transaction, screened as it arrives.'],
-  '/analyzer':  ['Workspace / Observe', 'Analyzer', 'One transaction, through all five stages.'],
-  '/cases':     ['Workspace / Investigate', 'Cases', 'What the models caught, and what you decided.'],
-  '/thresholds':['Workspace / Configure', 'Thresholds', 'Replay past decisions at a different line.'],
-  '/batch':     ['Workspace / Investigate', 'Batch upload', 'Score a file and measure it against its labels.'],
+  '/monitor':   ['Workspace / Observe', 'Live monitor', 'Every payment, checked as it arrives.'],
+  '/analyzer':  ['Workspace / Observe', 'Analyzer', 'Check one payment.'],
+  '/cases':     ['Workspace / Investigate', 'Cases', 'What was caught and your decisions.'],
+  '/thresholds':['Workspace / Configure', 'Thresholds', 'Set when a score becomes an alert.'],
+  '/batch':     ['Workspace / Investigate', 'Batch upload', 'Score a file of payments.'],
   '/models':    ['Workspace / Operate', 'Detectors',
-                 'Each model on its own — no fusion, no retrieval.'],
-  '/assistant': ['Workspace / Understand', 'Assistant', 'Ask about the system in plain language.'],
+                 'Test each model on its own.'],
+  '/assistant': ['Workspace / Understand', 'Assistant', 'Ask in plain language.'],
   '/settings':  ['Workspace / Configure', 'Administration', 'Alerting, people, audit and your account.'],
   '/users':     ['Workspace / Configure', 'Administration', 'Alerting, people, audit and your account.'],
   '/audit-log': ['Workspace / Configure', 'Administration', 'Alerting, people, audit and your account.'],

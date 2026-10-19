@@ -16,13 +16,12 @@ import { Badge, Card, CardHeader, SectionLabel, cx } from './ui'
  */
 
 const STRATUM_COPY = {
-  TRANSFER: 'A dedicated model trained only on non-fraud TRANSFER traffic.',
-  CASH_OUT: 'A dedicated model trained only on non-fraud CASH_OUT traffic.',
+  TRANSFER: 'Its own model, trained on normal transfers.',
+  CASH_OUT: 'Its own model, trained on normal cash-outs.',
   PAYMENT:
-    'The false-positive control stratum — PaySim contains no fraud here, so a '
-    + 'flag is by definition a false alarm and is used to measure them.',
+    'A control group with no fraud, so any flag here is a false alarm.',
   GLOBAL:
-    'The pooled model, used for transaction types with no stratum of their own.',
+    'A shared model for types without their own.',
 }
 
 const pct = (n) => (typeof n === 'number' ? `${(n * 100).toFixed(0)}%` : '—')
@@ -66,9 +65,9 @@ export default function BehaviouralEvidence({ evidence }) {
   // weight it carries. Showing the products makes it visible which term
   // actually drove the number rather than which one has the largest z.
   const terms = [
-    ['Reconstruction', reconZ, weights.alpha, 'how poorly the model rebuilt this transaction'],
-    ['Latent KL', klZ, weights.beta, 'how far the encoding sits from the learned prior'],
-    ['Latent density', densityZ, weights.gamma, 'how isolated the encoding is among normal traffic'],
+    ['Reconstruction', reconZ, weights.alpha, 'how badly it rebuilt the payment'],
+    ['Latent KL', klZ, weights.beta, 'how far it sits from normal'],
+    ['Latent density', densityZ, weights.gamma, 'how isolated it is from normal payments'],
   ].filter(([, z]) => typeof z === 'number')
 
   const maxContribution = Math.max(
@@ -82,7 +81,7 @@ export default function BehaviouralEvidence({ evidence }) {
     <Card className="p-5 sm:p-6">
       <CardHeader
         title="Behavioural attribution"
-        description="Read directly out of the VAE objective at inference time — not generated text."
+        description="Straight from the model, not generated text."
         action={stratum ? <Badge tone="low">{stratum} model</Badge> : null}
       />
 
@@ -93,10 +92,8 @@ export default function BehaviouralEvidence({ evidence }) {
             Outside the training distribution
           </p>
           <p className="mt-1 text-xs leading-relaxed text-slate-400">
-            {txType} traffic is not represented in any stratum&rsquo;s training
-            data, which covers TRANSFER, CASH_OUT and PAYMENT. The score below is
-            extrapolation and should carry little weight — PaySim labels no
-            fraud in this transaction type.
+            The model was not trained on {txType} payments, so treat this score
+            with caution.
           </p>
         </div>
       )}
@@ -114,7 +111,7 @@ export default function BehaviouralEvidence({ evidence }) {
           </p>
           <p className="mt-1 text-xs leading-relaxed text-slate-400">
             {STRATUM_COPY[stratum]
-              ?? 'One variational autoencoder per transaction type, each trained only on that type&rsquo;s normal behaviour.'}
+              ?? 'One model per transaction type, each trained on normal payments.'}
           </p>
           {featureSet && (
             <p className="mt-1.5 font-mono text-[15px] text-slate-500">
@@ -164,8 +161,7 @@ export default function BehaviouralEvidence({ evidence }) {
           {riskLevel ? ` · ${riskLevel}` : ''}.
         </p>
         <p className="mt-1 text-xs text-slate-400">
-          The threshold was selected on a held-out validation window, never on
-          the data the score is reported against.
+          The threshold was set on separate validation data.
         </p>
       </div>
 
@@ -174,9 +170,7 @@ export default function BehaviouralEvidence({ evidence }) {
         <div className="mt-6">
           <SectionLabel>What drove the score</SectionLabel>
           <p className="mt-1 text-xs text-slate-400">
-            The composite is three standardised terms, each with a fixed weight.
-            Bars show weighted contribution, so a large term with a small weight
-            does not look like the cause when it was not.
+            The score adds three signals with fixed weights. Bars show each one’s share.
           </p>
           <div className="mt-3 space-y-2.5">
             {terms.map(([label, z, w, blurb]) => {
@@ -216,11 +210,9 @@ export default function BehaviouralEvidence({ evidence }) {
       {/* ── Signal 1: which input features ── */}
       {s1.length > 0 && (
         <div className="mt-6">
-          <SectionLabel>Signal 1 — which behaviour was unusual</SectionLabel>
+          <SectionLabel>Signal 1: what was unusual</SectionLabel>
           <p className="mt-1 text-xs text-slate-400">
-            Reconstruction error split across the input features. Shares sum to
-            one, so this is the model&rsquo;s own statement of what it could not
-            rebuild.
+            The parts of the payment the model could not rebuild.
           </p>
           {shownFeatures.some(hasGap) ? (
             <>
@@ -234,7 +226,7 @@ export default function BehaviouralEvidence({ evidence }) {
                   what the model rebuilt
                 </span>
                 <span className="text-slate-600">
-                  each feature on its own range — the bar is comparable, the pair is not
+                  each on its own scale
                 </span>
               </p>
               <div className="mt-4 space-y-4">
@@ -265,9 +257,9 @@ export default function BehaviouralEvidence({ evidence }) {
         <div className="mt-6 grid gap-6 sm:grid-cols-2">
           {s2.length > 0 && (
             <div>
-              <SectionLabel>Signal 2 — latent divergence</SectionLabel>
+              <SectionLabel>Signal 2: hidden drift</SectionLabel>
               <p className="mt-1 text-xs text-slate-400">
-                KL divergence per latent dimension.
+                How far each hidden dimension moved from normal.
               </p>
               <ShareBars
                 items={s2.slice(0, 4).map((x) => [x.dimension, x.share])}
@@ -277,9 +269,9 @@ export default function BehaviouralEvidence({ evidence }) {
           )}
           {s3.length > 0 && (
             <div>
-              <SectionLabel>Signal 3 — latent density</SectionLabel>
+              <SectionLabel>Signal 3: isolation</SectionLabel>
               <p className="mt-1 text-xs text-slate-400">
-                Displacement from the nearest cluster of normal behaviour.
+                Distance from the nearest group of normal payments.
               </p>
               <ShareBars
                 items={s3.slice(0, 4).map((x) => [x.dimension, x.share])}
@@ -300,9 +292,7 @@ export default function BehaviouralEvidence({ evidence }) {
                 No typology asserted
               </p>
               <p className="mt-1 text-xs leading-relaxed text-slate-400">
-                The fingerprint fell outside every discovered cluster. That is a
-                normal outcome, and is reported rather than forcing the nearest
-                label onto a transaction that does not resemble it.
+                It does not match any known pattern. That is normal, and no label is forced.
               </p>
             </>
           ) : (
@@ -337,10 +327,7 @@ export default function BehaviouralEvidence({ evidence }) {
             </>
           )}
           <p className="mt-3 border-t border-subtle pt-2.5 text-[14px] leading-relaxed text-slate-500">
-            Typologies are discovered by clustering attribution fingerprints with
-            no label used at any point. The name is a post-hoc reading of what
-            distinguishes the cluster, and the FATF tag is an advisory retrieval
-            key — neither makes the discovery supervised.
+            Patterns are found automatically, without labels, then named.
           </p>
         </div>
       )}

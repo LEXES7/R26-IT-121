@@ -97,7 +97,7 @@ export default function ForensicReport({
   if (loading) {
     return (
       <Card className="p-5 sm:p-6">
-        <CardHeader title="Forensic report" description="Generating the grounded narrative…" />
+        <CardHeader title="Forensic report" description="Writing the report…" />
         <div className="mt-5 space-y-2.5">
           {[92, 100, 78, 96, 64].map((w, i) => (
             <div
@@ -116,10 +116,10 @@ export default function ForensicReport({
       <Card className="p-5 sm:p-6">
         <CardHeader
           title="Forensic report"
-          description="Generated once the pipeline reaches the report stage."
+          description="Appears after a run."
         />
         <div className="mt-5 rounded-xl border border-dashed border-subtle p-6 text-center text-xs text-slate-500">
-          No report yet — run the pipeline.
+          No report yet.
         </div>
       </Card>
     )
@@ -129,7 +129,7 @@ export default function ForensicReport({
     <Card className="p-5 sm:p-6">
       <CardHeader
         title="Forensic report"
-        description="The model may cite only the retrieved typology and the actual scores from earlier stages."
+        description="Cites only the scores and the matched method."
         action={
           <div className="flex items-center gap-2 print:hidden">
             {typeof durationMs === 'number' && (
@@ -168,7 +168,7 @@ export default function ForensicReport({
           {/* Said plainly, because a reader must not mistake this for a second
               opinion that independently agrees with the first. */}
           <p className="mt-3 text-[14px] leading-relaxed text-slate-500">
-            A restatement of the report below — same evidence, no new analysis.
+            The report below in plain words. Nothing new added.
           </p>
         </div>
       )}
@@ -187,8 +187,7 @@ export default function ForensicReport({
           </p>
           {!grounded && (
             <p className="mt-2 text-[15px] font-medium text-risk-medium">
-              Ungrounded baseline — generated without retrieved context, for
-              comparison only.
+              Ungrounded version, for comparison only.
             </p>
           )}
         </div>
@@ -234,10 +233,8 @@ export default function ForensicReport({
         </div>
 
         <p className="mt-6 border-t border-subtle pt-3 text-[14px] leading-relaxed text-slate-500">
-          Every claim above traces to a pipeline stage that produced it. Scores
-          come from the deployed models; the typology comes from the FATF
-          retrieval step; the narrative may not introduce facts absent from
-          those inputs.
+          Every claim above comes from the models’ scores or the matched laundering
+          method. Nothing else is added.
         </p>
       </div>
     </Card>

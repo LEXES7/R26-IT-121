@@ -21,7 +21,7 @@ export default function BehaviourLab() {
       eyebrow="Detector · Behaviour"
       title="Stratified VAE with dual-signal attribution"
       model="Stratified VAE + DSAA"
-      subtitle="What normal looks like for each transaction type, and how far this sits from it."
+      subtitle="How far a payment sits from normal for its type."
     >
       {(r) => {
         const ev = r.evidence ?? {}
@@ -44,7 +44,7 @@ export default function BehaviourLab() {
               <Stat label="Risk score" value={(r.score ?? 0).toFixed(4)}
                     note={ev.risk_level ?? (d.flagged ? 'flagged' : 'not flagged')} />
               <Stat label="Stratum" value={d.stratum ?? ev.transaction_type ?? '—'}
-                    note="its own model, not a shared one" />
+                    note="its own model" />
               <Stat label="Raw anomaly" value={(d.raw_score ?? 0).toFixed(3)}
                     note={`threshold ${d.threshold ?? '—'}`} />
               <Stat label="Calibration" value={d.calibration_method ?? '—'}
@@ -69,8 +69,7 @@ export default function BehaviourLab() {
               <p className="text-[14px] leading-relaxed"
                  style={{ color: 'rgb(var(--ds-muted))' }}>
                 {fp.dominant_reconstruction_signal
-                  ?? 'This response carries the headline signals only; the '
-                     + 'per-feature decomposition is not in it.'}
+                  ?? 'Only the headline signals came back.'}
               </p>
             )}
 
@@ -107,9 +106,8 @@ export default function BehaviourLab() {
                 </div>
                 <p className="text-[13px] leading-relaxed"
                    style={{ color: 'rgb(var(--ds-muted))' }}>
-                  Three decompositions of the same alert, read straight off the
-                  model rather than from a separate explainer. Clustering these
-                  vectors, not the scores, is what produces the typology below.
+                  Three views of the same alert, straight from the model. Grouping these
+                  gives the patterns below.
                 </p>
               </section>
               </>
@@ -124,7 +122,7 @@ export default function BehaviourLab() {
 
             {d.out_of_training_distribution && (
               <p className="text-[15px]" style={{ color: 'rgb(var(--ds-sev-high))' }}>
-                Outside the training distribution — read this score as less reliable.
+                Not a trained type, so this score is less reliable.
               </p>
             )}
           </div>

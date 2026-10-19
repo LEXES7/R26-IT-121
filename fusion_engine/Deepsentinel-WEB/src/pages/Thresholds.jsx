@@ -93,9 +93,9 @@ export default function Thresholds() {
         <Metric label="Alerts at this line" value={point?.alerts ?? null} tone="accent"
                 meta={`${DETECTORS.find(([k]) => k === selected)?.[1]} · ${t.toFixed(2)}`} />
         <Metric label="Precision" value={hasLabels ? pct(point?.precision) : null}
-                meta={hasLabels ? 'of alerts, how many were real' : 'no labels in this history'} />
+                meta={hasLabels ? 'alerts that were real' : 'no labels yet'} />
         <Metric label="Recall" value={hasLabels ? pct(point?.recall) : null} tone="alert"
-                meta={hasLabels ? 'of real fraud, how much was caught' : 'no labels in this history'} />
+                meta={hasLabels ? 'fraud that was caught' : 'no labels yet'} />
         <Metric label="Scored" value={active?.sample_size ?? null}
                 meta={`${active?.labelled ?? 0} carry a label`} />
       </div>
@@ -112,8 +112,7 @@ export default function Thresholds() {
 
           {empty ? (
             <div className="ds-empty">
-              This page replays decisions the platform has already made. Ingest a
-              file with the Query Runner, or analyse a transaction, and it fills in.
+              This replays past decisions. Upload a file or analyse a payment to fill it.
             </div>
           ) : (
             <>
@@ -123,8 +122,7 @@ export default function Thresholds() {
             <Panel style={{ overflow: 'hidden' }}>
               <div style={{ padding: '17px 19px 4px' }}>
                 <SectionHeading
-                  label="Every line, on the same history"
-                  title="Choose which threshold to tune"
+                  label="Same history for each" title="Pick a threshold to tune"
                   action={<span className="ds-mono" style={{ fontSize: 14,
                           color: 'rgb(var(--ds-muted))' }}>
                     {data?.sample_size ?? 0} scored
@@ -176,8 +174,7 @@ export default function Thresholds() {
               </div>
               <p style={{ padding: '11px 19px 15px', fontSize: 13, lineHeight: 1.6,
                           color: 'rgb(var(--ds-faint))', margin: 0 }}>
-                The table replays past decisions. Saving a line changes what
-                the monitor alerts on from the next transaction onward.
+                Saving a line changes what the monitor alerts on from now on.
               </p>
             </Panel>
 
@@ -219,7 +216,7 @@ export default function Thresholds() {
                       aria-label="Decision threshold"
                     />
                     <div className="mt-1 flex justify-between text-[14px] text-slate-600">
-                      <span>0.00 — alert on everything</span>
+                      <span>0.00: alert on everything</span>
                       {active?.best && (
                         <button
                           onClick={() => setT(active.best.threshold)}
@@ -228,7 +225,7 @@ export default function Thresholds() {
                           best F1 at {active.best.threshold.toFixed(2)} →
                         </button>
                       )}
-                      <span>1.00 — alert on nothing</span>
+                      <span>1.00: alert on nothing</span>
                     </div>
                   </div>
                 </Panel>
@@ -250,10 +247,8 @@ export default function Thresholds() {
 
                 {!hasLabels && (
                   <p className="text-xs leading-relaxed text-slate-500">
-                    Alert volume is real, but no ground-truth labels exist in this
-                    history, so accuracy cannot be computed. Ingest a file with an
-                    <span className="numeric"> isFraud </span> column to see
-                    precision and recall here.
+                    No labels yet, so accuracy cannot be shown. Upload a file with an
+                    <span className="numeric"> isFraud </span> column to see it.
                   </p>
                 )}
               </div>
@@ -270,7 +265,7 @@ export default function Thresholds() {
                     {t.toFixed(2)}
                   </p>
                   <p className="mt-2 text-[15px] leading-relaxed text-slate-500">
-                    Everything scored at or above this raises an alert.
+                    Anything at or above this raises an alert.
                   </p>
 
                   {/* The fused line is settable: the monitor reads it and
@@ -338,9 +333,7 @@ export default function Thresholds() {
                       <Row label="Alerts" value={active.best.alerts} />
                     </div>
                     <p className="mt-3 text-[14px] leading-relaxed text-slate-600">
-                      The optimum on this history. It is not automatically the
-                      right operating point — that depends on how much an analyst
-                      hour costs against a missed case.
+                      Best on this history. The right line also depends on how much a missed case costs.
                     </p>
                   </Panel>
                 )}
@@ -361,7 +354,7 @@ export default function Thresholds() {
         </>
       </Locked>
 
-      <Footer left="Replayed against past decisions. Alert volume moves with traffic." />
+      <Footer left="Based on past decisions." />
     </div>
   )
 }
@@ -428,11 +421,11 @@ function Outcomes({ point }) {
   const total = point.true_positives + point.false_positives + point.false_negatives
   const parts = [
     ['Real fraud caught', point.true_positives, HUE.real,
-     'confirmed by the source label'],
+     'confirmed by the label'],
     ['False alarms', point.false_positives, HUE.false,
-     'an analyst hour spent on nothing'],
+     'wasted review time'],
     ['Missed', point.false_negatives, HUE.missed,
-     'fraud that went through unflagged'],
+     'fraud not flagged'],
   ]
   return (
     <>

@@ -22,7 +22,7 @@ const STAGE_META = {
     subtitle: 'record in',
     accent: 'slate',
     explain:
-      'A single transfer arrives with its amount, both account identifiers, and the balances before and after.',
+      'A payment arrives with its amount, both accounts and their balances.',
   },
   models: {
     step: '02',
@@ -30,7 +30,7 @@ const STAGE_META = {
     subtitle: 'in parallel',
     accent: 'blue',
     explain:
-      'Each model examines a different dimension of the same transaction. They run concurrently and none of them sees the others’ output.',
+      'Three models check it at the same time, each on its own.',
   },
   fusion: {
     step: '03',
@@ -38,7 +38,7 @@ const STAGE_META = {
     subtitle: 'meta-classifier',
     accent: 'green',
     explain:
-      'A logistic regression trained on the three scores produces one calibrated confidence. The weighting is learned, not hand-tuned.',
+      'A trained model turns the three scores into one confidence.',
   },
   retrieval: {
     step: '04',
@@ -46,7 +46,7 @@ const STAGE_META = {
     subtitle: 'FATF retrieval',
     accent: 'amber',
     explain:
-      'The risk profile queries a vector store of FATF typologies. The closest match becomes the factual anchor for the report.',
+      'The closest known laundering method is looked up for the report.',
   },
   report: {
     step: '05',
@@ -54,7 +54,7 @@ const STAGE_META = {
     subtitle: 'chain of evidence',
     accent: 'red',
     explain:
-      'The language model may cite only the retrieved typology and the actual scores. It cannot introduce a fact that did not come from an earlier stage.',
+      'The report may only cite the scores and the matched method.',
   },
 }
 
@@ -86,27 +86,19 @@ const MODALITY_STYLE = {
 
 const WALKTHROUGH = {
   input: {
-    note: 'The transaction is validated against the schema every detector expects. '
-        + 'A malformed record is rejected here rather than halfway through the pipeline.',
+    note: 'The payment is checked first, so a bad record stops here.',
   },
   models: {
-    note: 'The three detectors run concurrently and none of them sees the others\' output. '
-        + 'If one is unreachable its score is imputed and the fused confidence penalised, '
-        + 'rather than the request failing.',
+    note: 'All three run at once. If one is down, the result is marked less certain instead of failing.',
   },
   fusion: {
-    note: 'Agreement across independent modalities is what makes a score trustworthy — '
-        + 'any single model is far easier to fool. Scores are calibrated first, so they '
-        + 'share a scale and can meaningfully be combined.',
+    note: 'Three models agreeing is harder to fool than one.',
   },
   retrieval: {
-    note: 'The closest matching FATF typology is retrieved by embedding similarity. '
-        + 'This step is what separates a grounded report from a plausible-sounding invention.',
+    note: 'The closest known laundering method is found, so the report is grounded.',
   },
   report: {
-    note: 'The language model may cite only the scores produced above and the one retrieved '
-        + 'typology. Every claim traces back to a stage, which is what makes the output '
-        + 'defensible in an investigation.',
+    note: 'Every claim in the report points back to a step above.',
   },
 }
 
@@ -117,7 +109,7 @@ const MODEL_CARDS = [
     key: 'graph',
     model: 'Edge-Enhanced GraphSAGE',
     modality: 'Network',
-    detects: 'Who pays whom. Finds mule rings, hub-and-spoke funnels and layering chains.',
+    detects: 'Who pays whom. Finds mule rings and layering.',
   },
   {
     key: 'behavioral',
@@ -125,16 +117,13 @@ const MODEL_CARDS = [
     modality: 'Behaviour',
     // Per transaction type, not per account — the per-account description was
     // wrong, and its own author corrected it.
-    detects: 'Whether the transaction fits normal behaviour for its type, against a '
-           + 'model trained only on non-fraud traffic of that type.',
+    detects: 'Whether the payment fits normal behaviour for its type.',
   },
   {
     key: 'temporal',
     model: 'Transaction-Sequence TCN',
     modality: 'Timing',
-    detects: 'Reads this transaction as one step in a rolling window of those '
-           + 'that came before it, and names the single prior transaction that '
-           + 'drove the score.',
+    detects: 'Reads it with the payments before it and names the one that mattered.',
     detectsShort: 'Sequence',
   },
 ]
@@ -356,8 +345,7 @@ function ModelsPanel({ data }) {
               </p>
             ) : m.available === false ? (
               <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                Not reachable. Its score was imputed and the fused confidence
-                penalised.
+                Not reachable. Left out, and the result marked less certain.
               </p>
             ) : (
               <>
@@ -398,16 +386,14 @@ function ModelsPanel({ data }) {
             These scores did not come from the models
           </p>
           <p className="mt-0.5 text-xs leading-relaxed text-amber-400/70">
-            None of the three model APIs responded, so the pipeline substituted
-            simulated scores to keep the downstream stages demonstrable. Fusion,
-            retrieval and the report below are real; the three scores above are
-            not.
+            No model responded, so these three scores are simulated. Fusion,
+            retrieval and the report are real.
           </p>
         </div>
       ) : data?.mock_scenario ? (
         <p className="text-xs text-amber-400/80">
-          Simulated scenario ({data.mock_scenario}) — the model APIs were not
-          called. Fusion, retrieval and reporting are live.
+          Sample scenario ({data.mock_scenario}) with simulated scores. Fusion,
+          retrieval and the report are real.
         </p>
       ) : null}
     </div>

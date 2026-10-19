@@ -149,8 +149,8 @@ export default function FusionModelPanel() {
 
           <p className="mt-3 text-[13px] leading-relaxed"
              style={{ color: 'rgb(var(--ds-muted))' }}>
-            Read PR-AUC — the right metric at this class balance, and the fused
-            verdict leads it. On AUROC behaviour edges ahead; both are shown.
+            PR-AUC suits rare fraud best, and fusion leads it. Behaviour is slightly
+            ahead on AUROC.
           </p>
 
           {perf.at_threshold && (

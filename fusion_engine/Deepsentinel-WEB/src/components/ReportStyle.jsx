@@ -99,9 +99,7 @@ export default function ReportStyle() {
       <div>
         <h2 className="text-sm font-semibold text-slate-100">Forensic report style</h2>
         <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
-          How the PDF attached to every alert looks. The styles differ in
-          appearance only — the same facts, in the same order, in the same
-          words. {canManageAlerts
+          How the alert PDF looks. Only the look changes, never the content. {canManageAlerts
             ? 'Your choice applies to every report the system sends from now on.'
             : 'An administrator or risk manager sets which one is used.'}
         </p>
@@ -186,8 +184,7 @@ export default function ReportStyle() {
       </div>
 
       <p className="text-[15px] text-slate-500">
-        This is the real PDF, produced by the same code that builds the
-        attachment — not a mock-up of it.
+        This is the real PDF that gets attached.
       </p>
     </section>
   )

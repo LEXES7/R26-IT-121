@@ -93,7 +93,7 @@ export default function SarDraft({ analysisId, classification }) {
     <Card className="p-5 sm:p-6">
       <CardHeader
         title="Regulatory report"
-        description="A draft for a compliance officer to review. This system does not file reports."
+        description="A draft for review. Nothing is filed automatically."
         action={
           <div className="flex items-center gap-2 print:hidden">
             {draft && <Badge tone={status.tone}>{status.label}</Badge>}
@@ -115,9 +115,7 @@ export default function SarDraft({ analysisId, classification }) {
       {!draft && (
         <div className="mt-5">
           <p className="text-xs leading-relaxed text-slate-400">
-            Drafts a suspicious activity report from this alert&rsquo;s stored
-            evidence — the accounts, the model scores, the matched typology and
-            the forensic narrative. It cites only what is already on the record.
+            Drafts a suspicious activity report from this alert’s saved evidence.
           </p>
           <Button
             className="mt-4"
@@ -128,8 +126,7 @@ export default function SarDraft({ analysisId, classification }) {
           </Button>
           {classification === 'LOW' && (
             <p className="mt-2 text-[15px] text-slate-500">
-              This alert is classified LOW. A report is usually drafted for
-              escalated cases.
+              This alert is LOW. Reports are usually for serious cases.
             </p>
           )}
         </div>
@@ -215,9 +212,7 @@ export default function SarDraft({ analysisId, classification }) {
               </dl>
               {draft.was_edited && (
                 <p className="mt-2 text-[14px] leading-relaxed text-slate-500">
-                  The originally generated text is retained unchanged alongside
-                  these edits, so what the model wrote can always be compared
-                  with what was approved.
+                  The original text is kept, so you can compare it with the edits.
                 </p>
               )}
             </div>
@@ -268,9 +263,7 @@ export default function SarDraft({ analysisId, classification }) {
           </div>
 
           <p className="mt-3 text-[14px] leading-relaxed text-slate-500 print:hidden">
-            Approving records that you accepted this text. It does not submit
-            anything — filing remains a separate action in your own system of
-            record.
+            Approving saves your sign-off. It does not file anything.
           </p>
         </>
       )}

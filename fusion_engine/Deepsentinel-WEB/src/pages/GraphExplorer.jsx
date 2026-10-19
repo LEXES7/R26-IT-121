@@ -224,12 +224,11 @@ export default function GraphExplorer() {
     // server refuses the same things, and says so if this is ever bypassed.
     const value = Number(amount)
     if (account === neighbour) {
-      setAddError('An account cannot receive from itself. '
-                  + 'Name a different sender.')
+      setAddError('Pick a different sender.')
       return
     }
     if (!Number.isFinite(value) || value <= 0) {
-      setAddError(`'${amount}' is not an amount. Enter a number above zero.`)
+      setAddError('Enter an amount above zero.')
       return
     }
 
@@ -720,10 +719,10 @@ export default function GraphExplorer() {
             </p>
             <p className="text-[15px]" style={{ color: 'rgb(var(--ds-muted))' }}>
               {off
-                ? 'The network detector is reserved for the pipeline.'
+                ? 'Reserved for live screening.'
                 : expanded
                   ? 'Search an account to see its network.'
-                  : 'Nothing is loaded until you open it.'}
+                  : 'Open it to load.'}
             </p>
           </div>
         </div>
@@ -873,7 +872,7 @@ export default function GraphExplorer() {
                             <p className="text-[14px]"
                                style={{ color: spread > 1 ? '#c084fc' : 'rgb(var(--ds-muted))' }}>
                               {spread > 1
-                                ? `${spread} different scores across ${runs.length} runs — only the sender changed.`
+                                ? `${spread} different scores in ${runs.length} runs, with only the sender changed.`
                                 : 'Same score so far. Try a different sender.'}
                             </p>
                           )}
@@ -976,7 +975,7 @@ export default function GraphExplorer() {
                 <p className="px-4 py-2 text-[14px] leading-relaxed"
                    style={{ color: 'rgb(var(--ds-faint))',
                             borderTop: '1px solid rgba(168,85,247,.18)' }}>
-                  Raw model output, not calibrated. Runs are comparable with each other.
+                  Raw scores. Compare runs with each other.
                 </p>
               </section>
             )}
@@ -1073,13 +1072,9 @@ export default function GraphExplorer() {
               <p className="text-[15px]" style={{ color: 'rgb(var(--ds-muted))' }}>
                 {counts.nodes_returned} accounts, {counts.edges_returned} transfers
                 {counts.truncated
-                  ? ` — ${counts.edges_in_ball} exist here, showing the ${counts.edges_returned}
-                      the model weighted most heavily`
-                  : ''}
-                . Blue collects from two or more accounts, green only pays out,
-                violet does both, and amber scores above the medium band. Size
-                follows how many accounts touch it. Click any account to move
-                there.
+                  ? ` (top ${counts.edges_returned} of ${counts.edges_in_ball})` : ''}
+                . Blue receives, green pays, violet does both, amber is high risk.
+                Click an account to move there.
               </p>
             )}
         </>
@@ -1096,7 +1091,7 @@ export default function GraphExplorer() {
             Explorer availability
           </p>
           <p className="mt-1 text-[15px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
-            Switch off to keep the network detector free for the pipeline.
+            Switch off to free the detector for live screening.
           </p>
           <div className="mt-3 flex items-center gap-3">
             <Button

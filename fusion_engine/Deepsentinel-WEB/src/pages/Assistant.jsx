@@ -119,9 +119,8 @@ export default function Assistant() {
 
       {!caps.llm_configured && (
         <Alert tone="warning" title="Running without a language model" className="mt-4">
-          Tools still execute and return real data, but answers are raw results rather
-          than written explanations. Configure a Gemini key or an Ollama endpoint for
-          full answers.
+          You get raw results instead of written answers. Add a Gemini key or an
+          Ollama endpoint for full answers.
         </Alert>
       )}
 
@@ -251,7 +250,7 @@ function Turn({ message }) {
 
         {message.truncated && (
           <p className="mt-2 text-[15px] text-amber-400">
-            Stopped at the configured step limit — the answer may be partial.
+            Stopped at the step limit, so the answer may be partial.
           </p>
         )}
 

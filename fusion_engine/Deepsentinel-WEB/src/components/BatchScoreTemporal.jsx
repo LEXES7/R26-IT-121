@@ -166,9 +166,8 @@ export default function BatchScoreTemporal() {
             <Button size="sm" variant="ghost" onClick={clear}>Clear</Button>
           )}
           <span className="text-[13px]" style={{ color: 'rgb(var(--ds-muted))' }}>
-            One row at a time, in file order — this model reads each transaction
-            against the ones before it, so the order is the measurement. First
-            {' '}{CAP} rows, nothing written to the platform.
+            One row at a time, in file order, because order matters to this model.
+            First{' '}{CAP} rows; nothing is saved.
           </span>
         </div>
 

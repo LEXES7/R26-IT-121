@@ -154,7 +154,7 @@ function CaseQueue() {
                   meta={stats.sev[k] ? 'awaiting a decision' : 'none'}
                   tone={k === 'CRITICAL' && stats.sev[k] ? 'alert' : ''} />
         ))}
-        <Metric label="Ground truth" value={stats.labelled} meta="labelled by the source file" />
+        <Metric label="Ground truth" value={stats.labelled} meta="labelled in the file" />
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between',
@@ -179,7 +179,7 @@ function CaseQueue() {
       {briefOpen && (
         <Panel className="ds-panel-pad">
           <SectionHeading
-            label="Last 24 hours" title="What was caught, and what is still waiting"
+            label="Last 24 hours" title="Caught and waiting"
             action={<button className="ds-btn ds-btn-quiet"
               onClick={() => sendBriefing()
                 .then(() => setBrief((b) => ({ ...(b || {}), sent: true })))
@@ -282,7 +282,7 @@ function CaseQueue() {
                 <div>
                   <p className="display text-2xl text-slate-300">Nothing selected.</p>
                   <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500">
-                    Cases appear here as the monitor screens the ingestion queue.
+                    Cases appear here as the monitor screens payments.
                   </p>
                 </div>
               </div>
@@ -529,8 +529,7 @@ function CaseDetail({ caseRef }) {
             <section className="hair rounded-xl border border-dashed px-8 py-14 text-center">
               <p className="display text-2xl text-slate-300">No network was recorded.</p>
               <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500">
-                The relational detector either did not run or found nothing
-                structurally connected to this transaction.
+                No connected accounts were found.
               </p>
             </section>
           )}
@@ -548,12 +547,10 @@ function CaseDetail({ caseRef }) {
           ) : c.behavioral_available ? (
             <section className="hair rounded-xl border border-dashed px-6 py-8 text-center">
               <p className="text-sm text-slate-400">
-                The behavioural detector scored this case, but no attribution was
-                recorded with it.
+                Scored, but no reasons were saved.
               </p>
               <p className="mx-auto mt-1.5 max-w-md text-xs leading-relaxed text-slate-600">
-                Cases written before the attribution was stored show the score
-                alone.
+                Older cases show the score only.
               </p>
             </section>
           ) : null}
@@ -568,15 +565,13 @@ function CaseDetail({ caseRef }) {
             <section className="hair rounded-xl border border-dashed px-8 py-12 text-center">
               <p className="display text-2xl text-slate-300">
                 {c.temporal_available
-                  ? 'The temporal detector left no working.'
-                  : 'The temporal detector has not shipped.'}
+                  ? 'No timing details were saved.'
+                  : 'The timing detector did not run for this case.'}
               </p>
               <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
                 {c.temporal_available
-                  ? 'It scored this case but recorded no evidence with the score.'
-                  : 'When it does, this is where the 32-transaction window ending '
-                    + 'here will appear, with the one earlier transaction it '
-                    + 'weighted most heavily.'}
+                  ? 'It scored this case without saving its reasons.'
+                  : 'When it runs, the 32 earlier payments and the one that mattered appear here.'}
               </p>
             </section>
           )}
@@ -639,7 +634,7 @@ function CaseDetail({ caseRef }) {
               <Verdict onClick={() => decide('closed')} k="" block>Close</Verdict>
             </div>
             <p className="mt-3 text-[14px] leading-relaxed text-slate-600">
-              Recorded against your name and used to build the retraining set.
+              Saved under your name and used for retraining.
             </p>
           </section>
 
@@ -665,7 +660,7 @@ function CaseDetail({ caseRef }) {
               </>
             ) : (
               <p className="mt-2 text-xs text-slate-500">
-                Below the alerting threshold — recorded, not escalated.
+                Below the alert line, so recorded but not escalated.
               </p>
             )}
           </section>
@@ -679,8 +674,7 @@ function CaseDetail({ caseRef }) {
                 </span>
               </p>
               <p className="mt-1.5 text-[14px] leading-relaxed text-slate-600">
-                From the source file. Shown for measuring the system after the
-                fact — it was not available to any model at scoring time.
+                From the source file, for checking accuracy. The models never saw it.
               </p>
             </section>
           )}

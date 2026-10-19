@@ -100,13 +100,13 @@ export default function Analyzer() {
      would sit in the same column as a real measurement. */
   const detectors = result ? [
     ['Network', result.graph_score, result.graph_available,
-     'Edge-Enhanced GraphSAGE', 'Who pays whom — mule rings, funnels, layering chains.'],
+     'Edge-Enhanced GraphSAGE', 'Who pays whom: mule rings and layering.'],
     ['Behaviour', result.behavioral_score, result.behavioral_available,
      'Stratified VAE with Dual-Signal Attribution',
-     'Whether this fits normal behaviour for its transaction type.'],
+     'Whether it fits normal behaviour for its type.'],
     ['Timing', result.temporal_score, result.temporal_available,
      'Transaction-Sequence TCN',
-     'Reads the transactions immediately before this one.'],
+     'Reads the payments just before it.'],
   ] : []
 
   return (
@@ -163,7 +163,7 @@ export default function Analyzer() {
                   {hits.length === 0 ? (
                     <div style={{ fontSize: 14, color: 'rgb(var(--ds-faint))', padding: '8px 0' }}>
                       {query ? 'Nothing matches that.'
-                        : 'No ingested transactions yet — upload a file with the Query Runner.'}
+                        : 'No transactions yet. Upload a file first.'}
                     </div>
                   ) : hits.map((t) => (
                     <button key={t.transaction_id} onClick={() => choose(t.transaction_id)}
@@ -207,8 +207,8 @@ export default function Analyzer() {
               <>
                 <div style={{ background: 'rgb(var(--ds-warn-soft))', color: 'rgb(var(--ds-warn))',
                               borderRadius: 6, padding: 10, fontSize: 14, marginBottom: 11 }}>
-                  Scenario mode <strong>simulates</strong> the three detector scores. It exercises
-                  fusion, retrieval and reporting — the scores are not measurements.
+                  Scenarios use <strong>simulated</strong> detector scores. Fusion,
+                  retrieval and the report are real.
                 </div>
                 <div style={{ display: 'grid', gap: 5,
                               gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
@@ -260,8 +260,7 @@ export default function Analyzer() {
             {!result ? (
               <div style={{ padding: '0 19px 19px' }}>
                 <div className="ds-empty">
-                  Choose a transaction and analyse it. Each detector's score and reasoning
-                  appears here once it has actually run.
+                  Pick a transaction and run it. Each detector’s result shows here.
                 </div>
               </div>
             ) : detectors.map(([name, score, available, model, blurb]) => {
@@ -291,8 +290,7 @@ export default function Analyzer() {
                     <div className="ds-fade-up" style={{ fontSize: 14, lineHeight: 1.55,
                                                          color: 'rgb(var(--ds-muted))', paddingTop: 3 }}>
                       {available ? blurb
-                        : 'This detector did not answer, so it abstained. Fusion applied an '
-                          + 'uncertainty penalty rather than treating silence as innocence.'}
+                        : 'No answer, so it was left out and the result marked less certain.'}
                     </div>
                   )}
                 </div>
@@ -333,8 +331,7 @@ export default function Analyzer() {
                 <p style={{ fontSize: 15, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
                             margin: '13px 0 0' }}>
                   {result.modalities_used < 3
-                    ? `Only ${result.modalities_used} of 3 detectors contributed, so an
-                       uncertainty penalty was applied.`
+                    ? `Only ${result.modalities_used} of 3 detectors answered, so this is less certain.`
                     : 'All three detectors contributed.'}
                 </p>
                 {result.retrieval?.typology_name && (
@@ -358,7 +355,7 @@ export default function Analyzer() {
             ) : (
               <div style={{ fontSize: 15, color: 'rgb(var(--ds-muted))', marginTop: 10,
                             lineHeight: 1.6 }}>
-                No verdict yet. Figures appear here only once a run produces them.
+                No verdict yet.
               </div>
             )}
           </Panel>
