@@ -1,17 +1,18 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  getMonitorRuntime, getMonitorState, listAnalyses, listCases, reviewCase, startMonitor,
+  getMonitorRuntime, getMonitorState, listCases, reviewCase, startMonitor,
 } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import NetworkGraph from '../components/NetworkGraph'
 import ConsoleShell, { Badge, Footer, Progress } from '../components/ConsoleShell'
+import { G, Glyph, Person, Statistics, compact } from '../components/DashKit'
 
 /**
  * The operator's home.
  *
- * Read from the top: the state of the system in a row of chips, how much was
- * screened and flagged hour by hour, then the cases that need a decision, with
+ * Read from the top: the state of the system in a row of chips, how many
+ * cases were opened hour by hour, then the cases that need a decision, with
  * what is arriving and what has waited longest beside them. Everything is read
  * from a live endpoint; a figure that cannot be determined renders as a dash,
  * never as zero, because "nothing happened" and "we could not reach the
@@ -25,6 +26,8 @@ const SEV = {
   LOW:      { hex: 'rgb(var(--ds-sev-low))',      label: 'Low',      rank: 1, tone: 'good' },
 }
 const ORDER = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
+// The most rows /cases returns in one call.
+const HISTORY = 200
 const FLAGGED = new Set(['CRITICAL', 'HIGH'])
 
 const MODELS = [
@@ -41,18 +44,8 @@ const DOT = {
   LEGITIMATE: 'hollow',
 }
 
-const DAY = 86_400_000
-const DAYS_SHOWN = 13
-
 const num = (v) => (typeof v === 'number' ? v.toLocaleString() : null)
-const compact = (v) => {
-  if (typeof v !== 'number') return '—'
-  if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M`
-  if (v >= 1e4) return `${(v / 1e3).toFixed(1)}k`
-  return v.toLocaleString()
-}
 const words = (s) => (s ?? '').toString().replace(/_/g, ' ').toLowerCase().trim()
-const startOfDay = (t) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime() }
 
 /** Time since `iso` as a running clock under a day, and in days beyond it. */
 function clock(iso, now) {
@@ -75,131 +68,6 @@ function waited(iso, now) {
 const greeting = () => {
   const h = new Date().getHours()
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
-}
-
-/* Small inline glyphs; they inherit currentColor. */
-const G = {
-  search: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm10 2-4.35-4.35',
-  clock: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0-15v5l3 2',
-  score: 'M3 12h4l3 8 4-16 3 8h4',
-  layers: 'M12 2 2 7l10 5 10-5-10-5ZM2 17l10 5 10-5M2 12l10 5 10-5',
-  sink: 'M12 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM5 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm14 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM6.4 6.4 10.6 15.6m7-9.2-4.2 9.2',
-  accounts: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0-14v.01M12 11v6',
-  swap: 'M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4m4 4H7',
-}
-function Glyph({ d, size = 15 }) {
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor"
-         strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d={d} />
-    </svg>
-  )
-}
-
-/** Width of an element, kept current as the layout changes. */
-function useWidth() {
-  const ref = useRef(null)
-  const [w, setW] = useState(0)
-  useEffect(() => {
-    if (!ref.current) return undefined
-    const ro = new ResizeObserver(([e]) => setW(e.contentRect.width))
-    ro.observe(ref.current)
-    return () => ro.disconnect()
-  }, [])
-  return [ref, w]
-}
-
-/** A smooth path through points that never overshoots them (monotone cubic). */
-function smooth(pts) {
-  if (pts.length < 2) return ''
-  const n = pts.length
-  const dx = [], m = [], t = []
-  for (let i = 0; i < n - 1; i++) {
-    dx[i] = pts[i + 1][0] - pts[i][0]
-    m[i] = (pts[i + 1][1] - pts[i][1]) / dx[i]
-  }
-  t[0] = m[0]; t[n - 1] = m[n - 2]
-  for (let i = 1; i < n - 1; i++) t[i] = m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2
-  for (let i = 0; i < n - 1; i++) {
-    if (m[i] === 0) { t[i] = 0; t[i + 1] = 0; continue }
-    const a = t[i] / m[i], b = t[i + 1] / m[i], h = a * a + b * b
-    if (h > 9) { const k = 3 / Math.sqrt(h); t[i] = k * a * m[i]; t[i + 1] = k * b * m[i] }
-  }
-  let d = `M${pts[0][0]},${pts[0][1]}`
-  for (let i = 0; i < n - 1; i++) {
-    const h = dx[i] / 3
-    d += ` C${pts[i][0] + h},${pts[i][1] + t[i] * h} ${pts[i + 1][0] - h},${pts[i + 1][1] - t[i + 1] * h} ${pts[i + 1][0]},${pts[i + 1][1]}`
-  }
-  return d
-}
-
-/** Screened as a filled line, flagged as a dashed one, on one scale. */
-function VolumeChart({ buckets }) {
-  const [ref, width] = useWidth()
-  const [hover, setHover] = useState(null)
-  const H = 250, padL = 34, padR = 8, padT = 16, padB = 30
-  const W = Math.max(width, 300)
-  const max = Math.max(1, ...buckets.map((b) => b.screened))
-  const step = Math.max(1, Math.ceil(max / 3))
-  const top = step * 3
-  const x = (i) => padL + (i / Math.max(1, buckets.length - 1)) * (W - padL - padR)
-  const y = (v) => padT + (1 - v / top) * (H - padT - padB)
-  // Hours still to come are not zeros; the line stops at the present.
-  const past = buckets.filter((b) => !b.future)
-  const line = past.map((b, i) => [x(i), y(b.screened)])
-  const dash = past.map((b, i) => [x(i), y(b.flagged)])
-  const area = line.length > 1 ? `${smooth(line)} L${x(past.length - 1)},${y(0)} L${x(0)},${y(0)} Z` : ''
-  const every = buckets.length > 14 ? 2 : 1
-
-  const onMove = (e) => {
-    const r = e.currentTarget.getBoundingClientRect()
-    const px = ((e.clientX - r.left) / r.width) * W
-    const i = Math.round(((px - padL) / (W - padL - padR)) * (buckets.length - 1))
-    setHover(Math.max(0, Math.min(past.length - 1, i)))
-  }
-  const h = hover === null ? null : buckets[hover]
-
-  return (
-    <div className="dash-chart" ref={ref}>
-      <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} role="img"
-           aria-label={`Screened and flagged per ${buckets.length === 24 ? 'hour' : 'day'}`}
-           onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
-        <defs>
-          <linearGradient id="dash-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="rgb(var(--dash-line))" stopOpacity=".32" />
-            <stop offset="1" stopColor="rgb(var(--dash-line))" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {[0, 1, 2, 3].map((k) => (
-          <g key={k}>
-            <line x1={padL} x2={W - padR} y1={y(k * step)} y2={y(k * step)}
-                  stroke="rgb(var(--ds-line))" strokeOpacity={k === 0 ? 0.9 : 0.45} />
-            <text x={0} y={y(k * step) + 4}>{k * step}</text>
-          </g>
-        ))}
-        <path d={area} fill="url(#dash-fill)" />
-        <path d={smooth(line)} fill="none" stroke="rgb(var(--dash-line))" strokeWidth="2.5" strokeLinejoin="round" />
-        <path d={smooth(dash)} fill="none" stroke="rgb(var(--ds-ink))" strokeOpacity=".7" strokeWidth="2" strokeDasharray="6 6" />
-        {buckets.map((b, i) => i % every === 0 && (
-          <text key={i} x={x(i)} y={H - 8} textAnchor="middle">{b.label}</text>
-        ))}
-        {h && (
-          <g>
-            <line x1={x(hover)} x2={x(hover)} y1={padT} y2={y(0)} stroke="rgb(var(--ds-ink))" strokeOpacity=".25" />
-            <circle cx={x(hover)} cy={y(h.screened)} r="5" fill="rgb(var(--dash-line))"
-                    stroke="rgb(var(--ds-workspace))" strokeWidth="2" />
-            <circle cx={x(hover)} cy={y(h.flagged)} r="4" fill="rgb(var(--ds-ink))"
-                    stroke="rgb(var(--ds-workspace))" strokeWidth="2" />
-          </g>
-        )}
-      </svg>
-      {h && (
-        <div className="dash-tip" style={{ left: `${(x(hover) / W) * 100}%` }}>
-          <b>{h.title}</b> · {h.screened.toLocaleString()} screened · {h.flagged.toLocaleString()} flagged
-        </div>
-      )}
-    </div>
-  )
 }
 
 /** The accounts in a case's ring, one dot each, the sink in the line colour. */
@@ -283,74 +151,26 @@ function CaseCard({ x, now, go, onDecide, deciding }) {
   )
 }
 
-function Person({ colour, mark, name, sub, badge, onClick, mono }) {
-  return (
-    <div className="dash-card dash-person" role="link" tabIndex={0} onClick={onClick}
-         onKeyDown={(e) => e.key === 'Enter' && onClick()}>
-      <div className="dash-avatar" style={{ width: 44, height: 44, color: colour,
-                                            background: `color-mix(in srgb, ${colour} 16%, transparent)` }}>
-        {mark}
-      </div>
-      <div style={{ minWidth: 0 }}>
-        <div className={`dash-person-name ${mono ? 'ds-mono' : ''}`} style={mono ? { fontSize: 13 } : undefined}>{name}</div>
-        <div className="dash-person-sub">{sub}</div>
-      </div>
-      {badge && <span className="dash-badge">{badge}</span>}
-    </div>
-  )
-}
-
 /**
  * The page body, from data alone. Kept apart from the fetching so it can be
  * looked at with recorded data, and so a slow endpoint never blanks the page.
  */
 export function Board({
-  state, runtime, cases, open, analyses, now, go, onDecide, deciding, canControlPipeline,
+  state, runtime, cases, open, history, now, go, onDecide, deciding, canControlPipeline,
 }) {
   const [query, setQuery] = useState('')
-  const [scale, setScale] = useState('hours')
-  const [day, setDay] = useState(() => startOfDay(Date.now()))
-
   const c = state?.counters ?? {}
   const queue = state?.queue ?? {}
   const running = Boolean(state?.running)
   const detectors = runtime?.detectors ?? {}
   const liveCount = MODELS.filter(({ keys }) => pick(detectors, keys)?.ready).length
 
-  // The strip of days, today last, each with how many screenings it holds.
-  const today = startOfDay(now)
-  const rows = useMemo(() => (analyses ?? [])
-    .map((a) => ({ t: Date.parse(a.created_at), flagged: FLAGGED.has(a.classification) }))
-    .filter((a) => !Number.isNaN(a.t)), [analyses])
-  const days = useMemo(() => Array.from({ length: DAYS_SHOWN }, (_, i) => {
-    const start = today - (DAYS_SHOWN - 1 - i) * DAY
-    const d = new Date(start)
-    return {
-      start,
-      date: String(d.getDate()).padStart(2, '0'),
-      weekday: d.toLocaleDateString(undefined, { weekday: 'short' }),
-      count: rows.filter((r) => r.t >= start && r.t < start + DAY).length,
-    }
-  }), [rows, today])
-  const oldest = rows.length ? Math.min(...rows.map((r) => r.t)) : null
-  const truncated = analyses?.length >= 500 && oldest !== null && oldest > days[0].start
-
-  const buckets = useMemo(() => {
-    if (scale === 'days') {
-      return days.map((d) => {
-        const inDay = rows.filter((r) => r.t >= d.start && r.t < d.start + DAY)
-        return { label: d.date, title: `${d.weekday} ${d.date}`, screened: inDay.length,
-                 flagged: inDay.filter((r) => r.flagged).length }
-      })
-    }
-    return Array.from({ length: 24 }, (_, h) => {
-      const from = day + h * 3_600_000
-      const inHour = rows.filter((r) => r.t >= from && r.t < from + 3_600_000)
-      const label = h === 0 ? '12 am' : h < 12 ? `${h} am` : h === 12 ? '12 pm' : `${h - 12} pm`
-      return { label, title: label, screened: inHour.length, flagged: inHour.filter((r) => r.flagged).length,
-               future: from > now }
-    })
-  }, [scale, day, days, rows, now])
+  // Cases are what the monitor records: every verdict above Low, and any the
+  // network model raised that fusion settled. The dashed line is the serious
+  // share of them.
+  const events = useMemo(() => (history ?? [])
+    .map((x) => ({ t: Date.parse(x.detected_at), b: FLAGGED.has(x.classification) }))
+    .filter((e) => !Number.isNaN(e.t)), [history])
 
   // Worst first, then the most certain, then the newest.
   const awaiting = useMemo(() => [...(open ?? [])].sort((a, b) =>
@@ -433,36 +253,9 @@ export function Board({
 
       <div className="dash-row">
         <div style={{ minWidth: 0 }}>
-          <div className="dash-head">
-            <h2 className="dash-h">Statistics</h2>
-            <div className="dash-tabs" role="tablist" aria-label="Chart scale">
-              <button role="tab" aria-selected={scale === 'hours'} onClick={() => setScale('hours')}>Hours</button>
-              <button role="tab" aria-selected={scale === 'days'} onClick={() => setScale('days')}>Days</button>
-            </div>
-          </div>
-          <div className="dash-days" role="group" aria-label="Day">
-            {days.map((d) => (
-              <button key={d.start} className="dash-day"
-                      aria-pressed={scale === 'hours' && d.start === day}
-                      data-empty={d.count === 0}
-                      title={`${d.count.toLocaleString()} screened`}
-                      onClick={() => { setDay(d.start); setScale('hours') }}>
-                <b>{d.date}</b><span>{d.weekday}</span>
-              </button>
-            ))}
-          </div>
-          {analyses === null ? (
-            <div className="ds-empty">Screening history could not be loaded.</div>
-          ) : (
-            <VolumeChart buckets={buckets} />
-          )}
-          <div className="dash-legend">
-            <span><i />Screened</span>
-            <span><i className="dashed" />Flagged high or critical</span>
-            <span style={{ marginLeft: 'auto', color: 'rgb(var(--ds-faint))' }}>
-              {truncated ? 'Older days fall outside the latest 500 screenings' : `${rows.length.toLocaleString()} screenings in view`}
-            </span>
-          </div>
+          <Statistics events={events} now={now} cap={HISTORY}
+                      failed={history === null}
+                      labels={{ a: 'Cases opened', b: 'High or critical' }} />
 
           <div className="dash-head" style={{ marginTop: 36 }}>
             <h2 className="dash-h">Needs your decision</h2>
@@ -672,7 +465,7 @@ export default function Dashboard() {
   const [runtime, setRuntime] = useState(null)
   const [cases, setCases] = useState([])
   const [open, setOpen] = useState(undefined)
-  const [analyses, setAnalyses] = useState(undefined)
+  const [history, setHistory] = useState(undefined)
   const [starting, setStarting] = useState(false)
   const [deciding, setDeciding] = useState(null)
   const [now, setNow] = useState(() => Date.now())
@@ -690,7 +483,7 @@ export default function Dashboard() {
 
   // History moves slowly and is the heaviest call, so it is read less often.
   const loadHistory = useCallback(() => {
-    listAnalyses(500).then((a) => setAnalyses(Array.isArray(a) ? a : [])).catch(() => setAnalyses(null))
+    listCases({ limit: HISTORY }).then((r) => setHistory(r.cases ?? [])).catch(() => setHistory(null))
   }, [])
 
   useEffect(() => {
@@ -747,7 +540,7 @@ export default function Dashboard() {
       )}
     >
       <Board state={state} runtime={runtime} cases={cases} open={open === undefined ? [] : open}
-             analyses={analyses === undefined ? [] : analyses} now={now}
+             history={history === undefined ? [] : history} now={now}
              go={navigate} onDecide={decide} deciding={deciding}
              canControlPipeline={canControlPipeline} />
     </ConsoleShell>
