@@ -54,6 +54,23 @@ const PALETTES = {
       temporal: "#2EE59D", // timing
     },
     hero: { from: "#FFE2A8", to: "#FFC56B", ink: "#1A1205", muted: "#5C4318" },
+    scene: {
+      top: "#16337A",
+      mid: "#0A1640",
+      bottom: "#05080F",
+      dot: "rgba(170,190,255,0.16)",
+      glass: "rgba(255,255,255,0.07)",
+      glassStrong: "rgba(255,255,255,0.13)",
+      glassBorder: "rgba(255,255,255,0.16)",
+      ink: "#EEF2FF",
+      inkMuted: "rgba(226,232,255,0.62)",
+      tileTop: "#3F72F0",
+      tileBottom: "#17337F",
+      wire: "#8C9BFF",
+      glow: "#FF5FA2",
+      danger: "#FF4F8B",
+      button: "#3D6DF2",
+    },
   },
   light: {
     bg: {
@@ -90,6 +107,23 @@ const PALETTES = {
       temporal: "#007D55",
     },
     hero: { from: "#FFF1C4", to: "#FFD27A", ink: "#2A1A00", muted: "#6A4A10" },
+    scene: {
+      top: "#BFD0FF",
+      mid: "#E3EBFF",
+      bottom: "#F7F9FF",
+      dot: "rgba(30,60,160,0.14)",
+      glass: "rgba(255,255,255,0.62)",
+      glassStrong: "rgba(255,255,255,0.88)",
+      glassBorder: "rgba(255,255,255,0.95)",
+      ink: "#101A3A",
+      inkMuted: "rgba(16,26,58,0.62)",
+      tileTop: "#4A7BF5",
+      tileBottom: "#1D46C8",
+      wire: "#5568E8",
+      glow: "#E83E8C",
+      danger: "#E5336F",
+      button: "#2F5FE8",
+    },
   },
 } as const;
 
@@ -133,6 +167,8 @@ export const risk = live("risk");
 export const modality = live("modality");
 /** The warm card that carries the most serious case on Home. */
 export const hero = live("hero");
+/** The deep-blue scene the money trail is drawn on. */
+export const scene = live("scene");
 
 export type RiskLevel = keyof Palette["risk"];
 

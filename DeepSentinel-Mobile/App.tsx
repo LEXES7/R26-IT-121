@@ -39,6 +39,7 @@ import CasesScreen from "./src/screens/CasesScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import LiveScreen from "./src/screens/LiveScreen";
 import LoginScreen from "./src/screens/LoginScreen";
+import NetworkScreen from "./src/screens/NetworkScreen";
 import OverviewScreen from "./src/screens/OverviewScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import UnlockScreen from "./src/screens/UnlockScreen";
@@ -75,6 +76,7 @@ type AnalysisPage = {
 type Page =
   | AnalysisPage
   | { kind: "case"; caseRef: string }
+  | { kind: "network"; caseRef: string }
   | { kind: "live" }
   | { kind: "analyze" }
   | { kind: "overview" };
@@ -86,6 +88,8 @@ function pageTitle(p: Page): string {
       return "Transaction";
     case "case":
       return p.caseRef;
+    case "network":
+      return "Money trail";
     case "live":
       return "Live";
     case "analyze":
@@ -409,7 +413,16 @@ function Root() {
           />
         );
       case "case":
-        return <CaseDeskScreen caseRef={page.caseRef} backLabel={backLabel} onBack={pop} />;
+        return (
+          <CaseDeskScreen
+            caseRef={page.caseRef}
+            backLabel={backLabel}
+            onBack={pop}
+            onTrace={() => push({ kind: "network", caseRef: page.caseRef })}
+          />
+        );
+      case "network":
+        return <NetworkScreen caseRef={page.caseRef} onBack={pop} />;
       case "live":
         return (
           <LiveScreen
@@ -477,17 +490,20 @@ function Root() {
       <View key={mode} style={styles.body}>
         {top ? renderPage(top) : renderRoot()}
       </View>
-      <TabBar
-        tab={tab}
-        onSelect={(t) => {
-          if (t === tab) {
-            // iOS: tapping the current tab returns to its root.
-            setStacks((s) => ({ ...s, [t]: [] }));
-          } else {
-            setTab(t);
-          }
-        }}
-      />
+      {/* The money trail is a full-screen scene with its own dock. */}
+      {top?.kind !== "network" && (
+        <TabBar
+          tab={tab}
+          onSelect={(t) => {
+            if (t === tab) {
+              // iOS: tapping the current tab returns to its root.
+              setStacks((s) => ({ ...s, [t]: [] }));
+            } else {
+              setTab(t);
+            }
+          }}
+        />
+      )}
     </View>
   );
 }

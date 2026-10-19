@@ -24,7 +24,7 @@ import {
   type ReviewStatus,
 } from "../api/cases";
 import ForensicReport from "../components/ForensicReport";
-import { confirmTap, type IconName } from "../components/ios";
+import { Button, confirmTap, type IconName } from "../components/ios";
 import Behavioural from "../components/evidence/Behavioural";
 import Graph from "../components/evidence/Graph";
 import Temporal from "../components/evidence/Temporal";
@@ -67,10 +67,13 @@ export default function CaseDeskScreen({
   caseRef,
   onBack,
   backLabel = "Cases",
+  onTrace,
 }: {
   caseRef: string;
   onBack: () => void;
   backLabel?: string;
+  /** Opens the money trail of this case as a full-screen scene. */
+  onTrace?: () => void;
 }) {
   const [c, setCase] = useState<CaseDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -196,6 +199,12 @@ export default function CaseDeskScreen({
                 </>
               ) : null}
             </View>
+
+            {onTrace && (c.graph_evidence as { nodes?: unknown[] } | null)?.nodes?.length ? (
+              <View style={{ marginTop: 14 }}>
+                <Button title="Trace the money" kind="tinted" icon="git-network-outline" onPress={onTrace} />
+              </View>
+            ) : null}
 
             <View style={styles.ensemble}>
               <View style={styles.ensembleHead}>
