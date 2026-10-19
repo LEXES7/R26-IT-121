@@ -199,8 +199,8 @@ export default function SarDraft({ analysisId, classification }) {
             <div className="mt-5 border-t border-subtle pt-3">
               <SectionLabel>Provenance</SectionLabel>
               <dl className="mt-2 grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
-                <Fact label="Drafted by" value={draft.generated_by ?? '—'} />
-                <Fact label="Model" value={draft.model_version ?? '—'} />
+                <Fact label="Drafted by" value={draft.generated_by ?? '-'} />
+                <Fact label="Model" value={draft.model_version ?? '-'} />
                 <Fact
                   label="Reviewed by"
                   value={draft.reviewed_by ?? 'Not yet reviewed'}

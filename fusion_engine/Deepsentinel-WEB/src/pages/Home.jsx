@@ -142,7 +142,7 @@ export default function Home() {
               <span className="display-italic text-accent-400">
                 open research gap
               </span>{' '}
-              by three independent 2025&ndash;2026 surveys.
+              by three independent 2025-2026 surveys.
             </blockquote>
           </Reveal>
 

@@ -116,7 +116,7 @@ export default function FusionLive() {
                             </span>
                             <span className="numeric w-14 shrink-0 text-right"
                                   style={{ color: 'rgb(var(--ds-faint))' }}>
-                              {r.scores?.[k] ?? '—'}
+                              {r.scores?.[k] ?? '-'}
                             </span>
                             {/* Centre line: right argues for fraud, left against. */}
                             <span className="relative h-[6px] flex-1 rounded"

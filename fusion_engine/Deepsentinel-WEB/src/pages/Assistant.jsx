@@ -257,7 +257,7 @@ function Turn({ message }) {
         {message.steps?.length > 0 && (
           <details className="mt-3 border-t border-subtle pt-2">
             <summary className="cursor-pointer text-[15px] text-slate-400 hover:text-slate-200">
-              {message.steps.length} tool call{message.steps.length > 1 ? 's' : ''} — show evidence
+              Show evidence ({message.steps.length} tool call{message.steps.length > 1 ? 's' : ''})
             </summary>
             <div className="mt-2 space-y-2">
               {message.steps.map((s, i) => (

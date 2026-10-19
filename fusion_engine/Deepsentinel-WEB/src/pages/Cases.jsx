@@ -46,8 +46,8 @@ const FILTERS = [
   ['all', 'All'],
 ]
 
-const score = (v) => (typeof v === 'number' ? v.toFixed(3) : '—')
-const when = (s) => (s ? String(s).slice(0, 19).replace('T', ' ') : '—')
+const score = (v) => (typeof v === 'number' ? v.toFixed(3) : '-')
+const when = (s) => (s ? String(s).slice(0, 19).replace('T', ' ') : '-')
 const tidy = (s) => (s ? String(s).toLowerCase().replace(/_/g, ' ') : null)
 const since = (iso) => {
   const t = Date.parse(iso)
@@ -386,7 +386,7 @@ function ModalityStrip({ c }) {
           <div className="flex items-baseline justify-between">
             <span className="eyebrow text-slate-500">{label}</span>
             <span className={cx('numeric text-xs', ok ? 'text-slate-200' : 'text-slate-600')}>
-              {ok && typeof v === 'number' ? v.toFixed(3) : '—'}
+              {ok && typeof v === 'number' ? v.toFixed(3) : '-'}
             </span>
           </div>
           <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface-overlay">
@@ -689,7 +689,7 @@ function CaseDetail({ caseRef }) {
 function Figure({ value, label, suffix, hex, decimals }) {
   const shown = typeof value === 'number'
     ? (decimals ? value.toFixed(3) : value)
-    : '—'
+    : '-'
   return (
     <div>
       <dd className="numeric text-[1.75rem] leading-none"

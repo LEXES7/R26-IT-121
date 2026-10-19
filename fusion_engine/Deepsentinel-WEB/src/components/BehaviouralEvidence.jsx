@@ -24,8 +24,8 @@ const STRATUM_COPY = {
     'A shared model for types without their own.',
 }
 
-const pct = (n) => (typeof n === 'number' ? `${(n * 100).toFixed(0)}%` : '—')
-const num = (n, d = 2) => (typeof n === 'number' ? n.toFixed(d) : '—')
+const pct = (n) => (typeof n === 'number' ? `${(n * 100).toFixed(0)}%` : '-')
+const num = (n, d = 2) => (typeof n === 'number' ? n.toFixed(d) : '-')
 
 export default function BehaviouralEvidence({ evidence }) {
   const [showAllFeatures, setShowAllFeatures] = useState(false)
@@ -148,7 +148,7 @@ export default function BehaviouralEvidence({ evidence }) {
           >
             {flagged ? 'Flagged' : 'Below threshold'}
           </span>
-          {' — '}
+          {': '}
           anomaly score <span className="font-mono">{num(raw)}</span> against the{' '}
           {stratum} threshold <span className="font-mono">{num(threshold)}</span>
           {typeof calThreshold === 'number' && (
@@ -474,7 +474,7 @@ function Fact({ label, value }) {
 function Stat({ value, label }) {
   return (
     <div className="text-right">
-      <p className="font-mono text-xl font-semibold text-slate-200">{value ?? '—'}</p>
+      <p className="font-mono text-xl font-semibold text-slate-200">{value ?? '-'}</p>
       <p className="text-[14px] uppercase tracking-wider text-slate-500">{label}</p>
     </div>
   )

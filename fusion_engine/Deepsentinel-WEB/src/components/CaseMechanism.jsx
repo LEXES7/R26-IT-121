@@ -45,7 +45,7 @@ function MechanismPanel({ lens, status, children }) {
       <div className="mt-4 min-h-[5rem]">{children}</div>
 
       <p className="hair-t mt-4 pt-2.5 text-[14px] leading-relaxed text-slate-600">
-        <span className="text-slate-500">Blind to</span> — {lens.blind}
+        <span className="text-slate-500">Blind to:</span> {lens.blind}
       </p>
     </div>
   )

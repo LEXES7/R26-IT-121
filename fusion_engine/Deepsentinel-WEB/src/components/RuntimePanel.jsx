@@ -21,7 +21,7 @@ function Dot({ ok, warn }) {
 }
 
 function uptime(sec) {
-  if (sec == null) return '—'
+  if (sec == null) return '-'
   const s = Math.floor(sec)
   if (s < 60) return `${s}s`
   if (s < 3600) return `${Math.floor(s / 60)}m ${s % 60}s`
@@ -78,7 +78,7 @@ export default function RuntimePanel({ runtime }) {
                   <div>
                     <dt className="text-slate-600">params</dt>
                     <dd className="numeric text-slate-400">
-                      {model.parameters?.toLocaleString() ?? '—'}
+                      {model.parameters?.toLocaleString() ?? '-'}
                     </dd>
                   </div>
                   <div>

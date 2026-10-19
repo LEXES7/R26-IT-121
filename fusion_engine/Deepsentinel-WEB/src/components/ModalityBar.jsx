@@ -18,7 +18,7 @@ export default function ModalityBar({ label, score, available, icon }) {
           )}
         </span>
         <span className="font-mono text-slate-200 font-semibold">
-          {score != null ? (score * 100).toFixed(1) + '%' : '—'}
+          {score != null ? (score * 100).toFixed(1) + '%' : '-'}
         </span>
       </div>
       <div className="h-2.5 bg-sentinel-800 rounded-full overflow-hidden">

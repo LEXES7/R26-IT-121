@@ -131,7 +131,7 @@ export default function FusionLab() {
               <div>
                 <p className="text-[26px] leading-none"
                    style={{ color: BAND_COLOURS[r.classification] ?? 'rgb(var(--ds-ink))' }}>
-                  {r.classification ?? '—'}
+                  {r.classification ?? '-'}
                 </p>
                 <p className="numeric mt-1 text-[14px]" style={{ color: 'rgb(var(--ds-faint))' }}>
                   {bands ? `critical ${bands.critical} · high ${bands.high} · medium ${bands.medium}`
@@ -179,7 +179,7 @@ export default function FusionLab() {
                       </td>
                       <td className="px-2 py-2" style={{ width: '55%' }}>
                         {v === undefined ? (
-                          <span className="text-[15px]" style={{ color: 'rgb(var(--ds-faint))' }}>—</span>
+                          <span className="text-[15px]" style={{ color: 'rgb(var(--ds-faint))' }}>-</span>
                         ) : (
                           <span style={{ position: 'relative', display: 'block', height: 8,
                                          borderRadius: 4, background: 'rgb(var(--ds-line))' }}>

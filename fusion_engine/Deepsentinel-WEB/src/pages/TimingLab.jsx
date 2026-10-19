@@ -44,7 +44,7 @@ export default function TimingLab() {
                     note="on the transaction below" />
               <Stat label="Decided in"
                     value={ev.inference_time_ms != null
-                      ? `${Number(ev.inference_time_ms).toFixed(0)} ms` : '—'}
+                      ? `${Number(ev.inference_time_ms).toFixed(0)} ms` : '-'}
                     note={ev.model_version ?? ''} />
             </div>
 

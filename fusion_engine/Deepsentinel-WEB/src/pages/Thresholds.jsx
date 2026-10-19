@@ -29,7 +29,7 @@ import { Badge, Footer, Metric, Panel, Progress, SectionHeading } from '../compo
  * "40% likely", and therefore what makes this page honest.
  */
 
-const pct = (v) => (typeof v === 'number' ? `${(v * 100).toFixed(1)}%` : '—')
+const pct = (v) => (typeof v === 'number' ? `${(v * 100).toFixed(1)}%` : '-')
 const HUE = {
   real: 'rgb(var(--ds-sev-low))',        // caught, and it was fraud
   false: 'rgb(var(--ds-sev-high))',      // caught, and it was not
@@ -157,14 +157,14 @@ export default function Thresholds() {
                           <td style={{ color: 'rgb(var(--ds-muted))' }}>{reads}</td>
                           <td className="ds-mono" style={{ color: on
                                 ? 'rgb(var(--ds-accent-strong))' : undefined }}>
-                            {d?.curve?.length ? line.toFixed(2) : '—'}
+                            {d?.curve?.length ? line.toFixed(2) : '-'}
                           </td>
-                          <td className="ds-mono">{pt ? pt.alerts : '—'}</td>
+                          <td className="ds-mono">{pt ? pt.alerts : '-'}</td>
                           <td className="ds-mono">{pct(pt?.precision)}</td>
                           <td className="ds-mono">{pct(pt?.recall)}</td>
                           <td className="ds-mono">{pct(pt?.f1)}</td>
                           <td className="ds-mono" style={{ color: 'rgb(var(--ds-muted))' }}>
-                            {d?.best ? d.best.threshold.toFixed(2) : '—'}
+                            {d?.best ? d.best.threshold.toFixed(2) : '-'}
                           </td>
                         </tr>
                       )
@@ -186,8 +186,7 @@ export default function Thresholds() {
                 <Panel className="ds-panel-pad">
                   <div className="hair-b flex flex-wrap items-baseline justify-between gap-3 pb-2.5">
                     <h2 className="ds-section-title">
-                      {DETECTORS.find(([k]) => k === selected)?.[1]} — alert volume
-                      across every threshold
+                      {DETECTORS.find(([k]) => k === selected)?.[1]}: alerts at each threshold
                     </h2>
                     <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-slate-500">
                       {hasLabels ? (
@@ -452,7 +451,7 @@ function Outcomes({ point }) {
 function Figure({ value, label, accent, percent }) {
   const shown = typeof value === 'number'
     ? (percent ? `${(value * 100).toFixed(1)}%` : value)
-    : '—'
+    : '-'
   return (
     <div>
       <dd className={cx('numeric text-[1.75rem] leading-none',

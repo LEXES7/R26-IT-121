@@ -107,7 +107,7 @@ export default function BatchScoreTemporal() {
       // Buckets across the window rather than one bar per offset: thirty-two
       // bars would be mostly empty on a file this size and would read as noise.
       const hist = BUCKETS.map(([lo, hi]) => ({
-        label: lo === hi ? `${lo}` : `${lo}–${hi}`,
+        label: lo === hi ? `${lo}` : `${lo}-${hi}`,
         n: withPred.filter((s) => s.offset >= lo && s.offset <= hi).length,
       }))
 
@@ -215,7 +215,7 @@ export default function BatchScoreTemporal() {
                     )}
                   </span>
                   <span className="shrink-0" style={{ color: 'rgb(var(--ds-muted))' }}>
-                    {s.score == null ? '—' : s.score.toFixed(4)}
+                    {s.score == null ? '-' : s.score.toFixed(4)}
                     {s.label === 1 && (
                       <span style={{ color: 'rgb(var(--ds-sev-critical))' }}> · fraud</span>
                     )}
@@ -233,7 +233,7 @@ export default function BatchScoreTemporal() {
                 ['rows sent', result.rows],
                 ['scored', result.answered],
                 ['filling the window', result.warming],
-                ['labelled fraud in file', result.labelled ? result.actualFraud : '—'],
+                ['labelled fraud in file', result.labelled ? result.actualFraud : '-'],
               ].map(([k, v]) => (
                 <div key={k}>
                   <p className="ds-mono text-[11px] uppercase tracking-wider"

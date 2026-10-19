@@ -50,7 +50,7 @@ const words = (s) => (s ?? '').toString().replace(/_/g, ' ').toLowerCase().trim(
 /** Time since `iso` as a running clock under a day, and in days beyond it. */
 function clock(iso, now) {
   const t = Date.parse(iso)
-  if (Number.isNaN(t)) return '—'
+  if (Number.isNaN(t)) return '-'
   const s = Math.max(0, Math.floor((now - t) / 1000))
   if (s >= 86400) return `${Math.floor(s / 86400)}d ${Math.floor((s % 86400) / 3600)}h`
   const p = (n) => String(n).padStart(2, '0')
@@ -58,7 +58,7 @@ function clock(iso, now) {
 }
 function waited(iso, now) {
   const t = Date.parse(iso)
-  if (Number.isNaN(t)) return '—'
+  if (Number.isNaN(t)) return '-'
   const m = Math.max(0, Math.round((now - t) / 60000))
   if (m < 60) return `${m}m`
   if (m < 1440) return `${Math.floor(m / 60)}h ${m % 60}m`
@@ -110,7 +110,7 @@ function CaseCard({ x, now, go, onDecide, deciding }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
         <div className="dash-avatar" style={{ color: sev?.hex, background: `color-mix(in srgb, ${sev?.hex} 16%, transparent)`,
                                               boxShadow: `inset 0 0 0 2px ${sev?.hex}` }}>
-          {typeof x.fused_score === 'number' ? Math.round(x.fused_score * 100) : '—'}
+          {typeof x.fused_score === 'number' ? Math.round(x.fused_score * 100) : '-'}
         </div>
         <div style={{ minWidth: 0 }}>
           <div className="ds-mono" style={{ fontSize: 15, fontWeight: 600, color: 'rgb(var(--ds-ink))' }}>{x.case_ref}</div>
@@ -239,10 +239,10 @@ export function Board({
               )
             })}
           </span>
-          <b>{runtime ? `${liveCount} of 3` : '—'}</b> detectors ready
+          <b>{runtime ? `${liveCount} of 3` : '-'}</b> detectors ready
         </span>
         <button className="dash-chip" style={{ cursor: 'pointer' }} onClick={() => go('/cases')}>
-          <b>{open ? open.length : '—'}</b> waiting
+          <b>{open ? open.length : '-'}</b> waiting
         </button>
         <span className="dash-chip">
           <span className={running ? 'hero-pulse' : ''}
@@ -283,7 +283,7 @@ export function Board({
                     colour={SEV[e.risk_level]?.hex ?? 'rgb(var(--ds-faint))'}
                     mark={<Glyph d={G.swap} size={18} />}
                     name={e.transaction_id}
-                    sub={`${typeof e.amount === 'number' ? e.amount.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'} · ${SEV[e.risk_level]?.label ?? 'scored'}`}
+                    sub={`${typeof e.amount === 'number' ? e.amount.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '-'} · ${SEV[e.risk_level]?.label ?? 'scored'}`}
                     onClick={() => go('/monitor')} />
           ))}
 
@@ -307,7 +307,7 @@ export function Board({
                       borderColor: '#C2F2EC', fontSize: 11, fontWeight: 700, width: 32, height: 32 }}>{glyph}</span>
               ))}
             </div>
-            <div className="dash-hero-num">{typeof c.screened === 'number' ? `+${compact(c.screened)}` : '—'}</div>
+            <div className="dash-hero-num">{typeof c.screened === 'number' ? `+${compact(c.screened)}` : '-'}</div>
             <div className="dash-hero-sub">
               transactions screened by the monitor
               {typeof c.flagged === 'number' ? `, ${num(c.flagged)} flagged` : ''}
@@ -358,7 +358,7 @@ export function Board({
             <div className="dash-head" style={{ marginBottom: 14 }}>
               <h2 className="dash-h dash-h-sm">Models</h2>
               <span className="ds-mono" style={{ fontSize: 14, color: 'rgb(var(--ds-muted))' }}>
-                {runtime ? `${liveCount} / 3` : '—'}
+                {runtime ? `${liveCount} / 3` : '-'}
               </span>
             </div>
             <div style={{ display: 'grid', gap: 14 }}>
@@ -435,7 +435,7 @@ export function Board({
             {queue.available ? (
               <div style={{ display: 'flex', gap: 26 }}>
                 {[['Pending', queue.pending ?? 0], ['Screened', queue.screened ?? 0],
-                  ['Per minute', typeof c.throughput_per_min === 'number' ? c.throughput_per_min : '—']].map(([l, v]) => (
+                  ['Per minute', typeof c.throughput_per_min === 'number' ? c.throughput_per_min : '-']].map(([l, v]) => (
                   <div key={l}>
                     <div style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-.03em' }}>{v}</div>
                     <div className="ds-section-label" style={{ marginTop: 4 }}>{l}</div>

@@ -118,7 +118,7 @@ function DetectorCard({ id, name, model, what, colour, glyph, d, age, go }) {
 
       <div style={{ display: 'flex', gap: 18, marginTop: 18, flexWrap: 'wrap' }}>
         <span className="dash-stat"><Glyph d={G.bolt} />{lat != null ? `${Number(lat).toFixed(1)} ms` : 'no latency yet'}</span>
-        <span className="dash-stat"><Glyph d={G.layers} />{scored != null ? `${compact(Number(scored))} scored` : '—'}</span>
+        <span className="dash-stat"><Glyph d={G.layers} />{scored != null ? `${compact(Number(scored))} scored` : '-'}</span>
       </div>
       <div className="dash-sep" />
       <div className="ds-mono" style={{ fontSize: 12, color: 'rgb(var(--ds-muted))', marginBottom: 12 }}>{model}</div>
@@ -205,11 +205,11 @@ export function SystemBoard({ rt, history, at, now, go, onRefresh }) {
               )
             })}
           </span>
-          <b>{rt ? `${live} of 3` : '—'}</b> serving
+          <b>{rt ? `${live} of 3` : '-'}</b> serving
         </span>
         <span className="dash-chip">
           <Glyph d={G.mail} size={16} />
-          <b>{delivery.delivered ?? '—'}</b>
+          <b>{delivery.delivered ?? '-'}</b>
           {delivery.raised != null ? `of ${delivery.raised.toLocaleString()} alerts delivered` : 'alerts delivered'}
         </span>
         <button className="dash-chip" style={{ cursor: 'pointer' }} onClick={onRefresh}
@@ -246,7 +246,7 @@ export function SystemBoard({ rt, history, at, now, go, onRefresh }) {
                     colour={s?.ok ? 'rgb(var(--ds-sev-low))' : 'rgb(var(--ds-signal))'}
                     mark={<Glyph d={glyph} size={18} />}
                     name={label}
-                    sub={s?.detail ?? '—'}
+                    sub={s?.detail ?? '-'}
                     badge={s ? (s.ok ? 'up' : 'down') : null} badgeAlert={s ? !s.ok : false} />
           ))}
 
@@ -280,7 +280,7 @@ export function SystemBoard({ rt, history, at, now, go, onRefresh }) {
                       borderColor: '#C2F2EC', fontSize: 11, fontWeight: 700, width: 32, height: 32 }}>{glyph}</span>
               ))}
             </div>
-            <div className="dash-hero-num">{rt ? `+${compact(Number(mon.screened ?? 0))}` : '—'}</div>
+            <div className="dash-hero-num">{rt ? `+${compact(Number(mon.screened ?? 0))}` : '-'}</div>
             <div className="dash-hero-sub">
               screened since the monitor started
               {mon.uptime_seconds != null ? `, ${clock(Number(mon.uptime_seconds) + (mon.running ? age : 0))} ago` : ''}

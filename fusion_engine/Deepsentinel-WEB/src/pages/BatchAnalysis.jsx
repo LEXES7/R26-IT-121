@@ -52,7 +52,7 @@ function describe(name, d) {
     const who = d.nameDest ? `\u2192 ${d.nameDest}` : ''
     return {
       name,
-      label: `row ${d.index} ${who} \u00b7 ${score != null ? score.toFixed(4) : '—'}`,
+      label: `row ${d.index} ${who} \u00b7 ${score != null ? score.toFixed(4) : '-'}`,
       tone: ['critical', 'high', 'medium', 'low'].includes(cls) ? cls : undefined,
     }
   }
@@ -386,7 +386,7 @@ export default function BatchAnalysis() {
                 <div className="ds-mono" style={{ fontSize: 26,
                       color: inspect.labelCol ? 'rgb(var(--ds-accent-strong))'
                         : 'rgb(var(--ds-faint))' }}>
-                  {inspect.labelCol ? inspect.fraudLabelled : '—'}
+                  {inspect.labelCol ? inspect.fraudLabelled : '-'}
                 </div>
                 <div className="ds-section-label" style={{ marginTop: 4 }}>Labelled fraud</div>
               </div>
@@ -671,7 +671,7 @@ export default function BatchAnalysis() {
               <span className="ds-mono" style={{ fontSize: 17, minWidth: 52, textAlign: 'right',
                     color: latest.alerted ? 'rgb(var(--ds-sev-critical))'
                       : 'rgb(var(--ds-accent-strong))' }}>
-                {typeof latest.score === 'number' ? latest.score.toFixed(3) : '—'}
+                {typeof latest.score === 'number' ? latest.score.toFixed(3) : '-'}
               </span>
               <span className="ds-mono" style={{ fontSize: 14, color: 'rgb(var(--ds-faint))' }}>
                 {latest.modalities_used}/3
@@ -793,7 +793,7 @@ export default function BatchAnalysis() {
                       {m.scored ? m.scored : <span style={{ color: 'rgb(var(--ds-faint))' }}>
                         did not answer</span>}
                     </td>
-                    <td className="ds-mono">{m.scored ? m.alerts : '—'}</td>
+                    <td className="ds-mono">{m.scored ? m.alerts : '-'}</td>
                     <td className="ds-mono">{pctOrDash(m.precision)}</td>
                     <td className="ds-mono">{pctOrDash(m.recall)}</td>
                     <td className="ds-mono" style={{ color: m.key === 'fused'
@@ -943,7 +943,7 @@ export default function BatchAnalysis() {
 
       {!meta && !scoring && (
         <EmptyState
-          icon="—"
+          icon="-"
           title="No file analysed yet"
           description="Upload a transaction file above to score it."
         />
@@ -992,7 +992,7 @@ function TransactionRow({ row, hasLabels }) {
             />
           </div>
           <span className="font-mono text-xs text-slate-400">
-            {row.score != null ? row.score.toFixed(2) : '—'}
+            {row.score != null ? row.score.toFixed(2) : '-'}
           </span>
         </div>
       </td>
@@ -1010,7 +1010,7 @@ function TransactionRow({ row, hasLabels }) {
 }
 
 function Scorecard({ metrics, summary }) {
-  const pct = (v) => (v == null ? '—' : `${(v * 100).toFixed(1)}%`)
+  const pct = (v) => (v == null ? '-' : `${(v * 100).toFixed(1)}%`)
 
   return (
     <Panel className="ds-panel-pad">
@@ -1098,7 +1098,7 @@ function Stat({ label, value, tone }) {
 
 /** A percentage, or an em dash when the figure could not be computed. */
 function pctOrDash(v) {
-  return typeof v === 'number' ? `${(v * 100).toFixed(1)}%` : '—'
+  return typeof v === 'number' ? `${(v * 100).toFixed(1)}%` : '-'
 }
 
 

@@ -82,7 +82,7 @@ export default function TypologyBook({ matched, similarity }) {
                       <span className="ds-mono text-[12px]"
                             style={{ color: SIGNAL[String(t[k]).toLowerCase()]
                               ?? 'rgb(var(--ds-faint))' }}>
-                        {t[k] ?? '—'}
+                        {t[k] ?? '-'}
                       </span>
                     </td>
                   ))}

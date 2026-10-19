@@ -603,7 +603,7 @@ export default function NetworkGraph({ evidence, height = 420 }) {
               <Fact label="active steps"
                     value={detail.first_seen_step === detail.last_seen_step
                       ? detail.first_seen_step
-                      : `${detail.first_seen_step}–${detail.last_seen_step}`} />
+                      : `${detail.first_seen_step} to ${detail.last_seen_step}`} />
             </dl>
             {detail.first_seen_step === detail.last_seen_step && detail.out_degree > 0 && (
               <p className="mt-2.5 text-[15px] leading-relaxed text-slate-500">
@@ -626,7 +626,7 @@ function Fact({ label, value }) {
   return (
     <div>
       <dt className="eyebrow text-slate-500">{label}</dt>
-      <dd className="numeric mt-1 text-sm text-slate-200">{value ?? '—'}</dd>
+      <dd className="numeric mt-1 text-sm text-slate-200">{value ?? '-'}</dd>
     </div>
   )
 }

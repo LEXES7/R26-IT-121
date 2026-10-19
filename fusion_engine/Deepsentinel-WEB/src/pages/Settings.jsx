@@ -230,7 +230,7 @@ export default function Settings() {
         <div className="mt-4">
           {managers.length === 0 ? (
             <EmptyState
-              icon="—"
+              icon="-"
               title="No recipients yet"
               description="Add someone so alerts reach a person."
             />

@@ -290,7 +290,7 @@ function StageMark({ running, done, error, skipped, step, accentText }) {
   }
   if (done) return <span className="text-xs text-green-400">✓</span>
   if (error) return <span className="text-xs text-red-400">✕</span>
-  if (skipped) return <span className="text-xs text-slate-600">—</span>
+  if (skipped) return <span className="text-xs text-slate-600">-</span>
   return <span className={cx('font-mono text-[14px]', accentText)}>{step}</span>
 }
 
@@ -351,7 +351,7 @@ function ModelsPanel({ data }) {
               <>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="font-mono text-2xl font-bold text-slate-200">
-                    {m.score != null ? m.score.toFixed(3) : '—'}
+                    {m.score != null ? m.score.toFixed(3) : '-'}
                   </span>
                   <span className="text-[14px] text-slate-600">risk score</span>
                 </div>
@@ -470,7 +470,7 @@ function liveRows(stageId, d) {
     return [
       ['typology', d.typology_name],
       ['id', d.typology_id],
-      ['similarity', d.similarity_score != null ? `${(d.similarity_score * 100).toFixed(1)}%` : '—'],
+      ['similarity', d.similarity_score != null ? `${(d.similarity_score * 100).toFixed(1)}%` : '-'],
       ['stage', d.stage],
       ['risk level', d.risk_level],
     ]
@@ -478,7 +478,7 @@ function liveRows(stageId, d) {
   return null
 }
 
-const fmt = (n) => (n == null ? '—' : Number(n).toFixed(4))
+const fmt = (n) => (n == null ? '-' : Number(n).toFixed(4))
 
 function formatDuration(ms) {
   if (ms < 1) return '<1 ms'

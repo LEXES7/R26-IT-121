@@ -32,7 +32,7 @@ export default function GraphModelPanel() {
   const rt = m.runtime ?? {}
   const bands = m.risk_bands ?? {}
   const perf = m.performance
-  const n = (v) => (v == null ? '—' : Number(v).toLocaleString())
+  const n = (v) => (v == null ? '-' : Number(v).toLocaleString())
 
   return (
     <section className="rounded-xl border p-5"
@@ -43,7 +43,7 @@ export default function GraphModelPanel() {
         {[
           ['Accounts', n(m.num_nodes), 'in the served graph'],
           ['Transfers', n(m.num_edges), 'between them'],
-          ['Parameters', n(rt.model?.parameters), `${rt.model?.k_hop ?? 2} hops · ${rt.model?.in_dim ?? '—'} features`],
+          ['Parameters', n(rt.model?.parameters), `${rt.model?.k_hop ?? 2} hops · ${rt.model?.in_dim ?? '-'} features`],
           ['Forward passes', n(rt.model?.inferences), rt.serving_mode === 'live_inference'
             ? 'scoring live' : 'using saved scores'],
         ].map(([k, v, note]) => (
@@ -63,7 +63,7 @@ export default function GraphModelPanel() {
                                        paddingTop: 20 }}>
           <p className="ds-mono text-[11px] uppercase tracking-[.13em]"
              style={{ color: 'rgb(var(--ds-faint))' }}>
-            On the held-out window · steps {perf.window?.from_step}–{perf.window?.to_step}
+            On the held-out window · steps {perf.window?.from_step} to {perf.window?.to_step}
           </p>
           <div className="mt-3 grid gap-5 sm:grid-cols-3 lg:grid-cols-5">
             {[
@@ -77,7 +77,7 @@ export default function GraphModelPanel() {
                 <p className="ds-mono text-[11px] uppercase tracking-[.13em]"
                    style={{ color: 'rgb(var(--ds-faint))' }}>{k}</p>
                 <p className="numeric mt-1 text-[24px] leading-none">
-                  {v != null ? Number(v).toFixed(3) : '—'}
+                  {v != null ? Number(v).toFixed(3) : '-'}
                 </p>
                 <p className="mt-1 text-[13px] leading-snug"
                    style={{ color: 'rgb(var(--ds-muted))' }}>{note}</p>
@@ -99,7 +99,7 @@ export default function GraphModelPanel() {
              style={{ color: 'rgb(var(--ds-sev-high))' }}>
             Accuracy misleads here: flagging nothing would score{' '}
             {perf.actual_mules && perf.evaluated_accounts
-              ? (1 - perf.actual_mules / perf.evaluated_accounts).toFixed(3) : '—'}.
+              ? (1 - perf.actual_mules / perf.evaluated_accounts).toFixed(3) : '-'}.
             Precision and recall matter more.
           </p>
         </div>
@@ -109,12 +109,12 @@ export default function GraphModelPanel() {
       <div className="mt-6 grid gap-5 sm:grid-cols-3"
            style={{ borderTop: '1px solid rgb(var(--ds-line))', paddingTop: 20 }}>
         {[
-          ['Flags at', bands.high != null ? Number(bands.high).toFixed(4) : '—',
+          ['Flags at', bands.high != null ? Number(bands.high).toFixed(4) : '-',
             'the tuned decision threshold'],
-          ['Critical at', bands.critical != null ? Number(bands.critical).toFixed(4) : '—',
+          ['Critical at', bands.critical != null ? Number(bands.critical).toFixed(4) : '-',
             'the top tail of scores'],
           ['Validation F1', meta.val_f1_at_tuned_threshold != null
-            ? Number(meta.val_f1_at_tuned_threshold).toFixed(3) : '—',
+            ? Number(meta.val_f1_at_tuned_threshold).toFixed(3) : '-',
             'what the threshold was chosen on'],
         ].map(([k, v, note]) => (
           <div key={k} className="min-w-0">
@@ -129,9 +129,9 @@ export default function GraphModelPanel() {
       <dl className="mt-6 grid gap-2 text-[14px]"
           style={{ borderTop: '1px solid rgb(var(--ds-line))', paddingTop: 18 }}>
         {[
-          ['Protocol', meta.protocol ?? '—'],
-          ['Calibration', meta.calibration ?? '—'],
-          ['Graph version', m.graph_version ?? '—'],
+          ['Protocol', meta.protocol ?? '-'],
+          ['Calibration', meta.calibration ?? '-'],
+          ['Graph version', m.graph_version ?? '-'],
           ['Edge attention', meta.has_edge_attention ? 'on' : 'off'],
         ].map(([k, v]) => (
           <div key={k} className="flex flex-wrap justify-between gap-x-6">

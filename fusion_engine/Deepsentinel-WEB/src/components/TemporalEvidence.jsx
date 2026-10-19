@@ -23,10 +23,10 @@ const FEATURE_LABEL = {
 }
 
 const fmtAmount = (n) =>
-  typeof n === 'number' ? n.toLocaleString(undefined, { maximumFractionDigits: 0 }) : '—'
+  typeof n === 'number' ? n.toLocaleString(undefined, { maximumFractionDigits: 0 }) : '-'
 
 const fmtVal = (key, v) => {
-  if (v === undefined || v === null) return '—'
+  if (v === undefined || v === null) return '-'
   if (key === 'amount') return fmtAmount(v)
   if (key === 'dest_was_empty') return v ? 'yes' : 'no'
   if (typeof v === 'number') return v.toFixed(3)

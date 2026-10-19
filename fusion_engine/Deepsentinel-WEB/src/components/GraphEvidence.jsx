@@ -41,9 +41,9 @@ const ROLE_TONE = {
 const fmtAmount = (n) =>
   typeof n === 'number'
     ? n.toLocaleString(undefined, { maximumFractionDigits: 0 })
-    : '—'
+    : '-'
 
-const fmtPct = (n) => (typeof n === 'number' ? `${(n * 100).toFixed(0)}%` : '—')
+const fmtPct = (n) => (typeof n === 'number' ? `${(n * 100).toFixed(0)}%` : '-')
 
 export default function GraphEvidence({ evidence }) {
   const [showAll, setShowAll] = useState(false)
@@ -238,7 +238,7 @@ export default function GraphEvidence({ evidence }) {
 function Stat({ value, label }) {
   return (
     <div className="text-right">
-      <p className="font-mono text-xl font-semibold text-slate-200">{value ?? '—'}</p>
+      <p className="font-mono text-xl font-semibold text-slate-200">{value ?? '-'}</p>
       <p className="text-[14px] uppercase tracking-wider text-slate-500">{label}</p>
     </div>
   )

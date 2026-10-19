@@ -311,7 +311,7 @@ export function Badge({ children, tone = '' }) {
   return <span className={`ds-badge ${tone}`}>{children}</span>
 }
 
-/** A headline figure. `—` when the value is unknown, never 0: "nothing
+/** A headline figure. `-` when the value is unknown, never 0: "nothing
  *  happened" and "we could not reach the service" must not look the same. */
 export function Metric({ label, value, meta, tone = '', onClick }) {
   const Tag = onClick ? 'button' : 'div'
@@ -321,7 +321,7 @@ export function Metric({ label, value, meta, tone = '', onClick }) {
            style={{ all: 'unset', cursor: onClick ? 'pointer' : 'default', display: 'block', width: '100%' }}>
         <div className="ds-section-label">{label}</div>
         <div className="ds-kpi-value ds-mono">
-          {value === null || value === undefined ? '—' : value}
+          {value === null || value === undefined ? '-' : value}
         </div>
         <div className="ds-kpi-meta">{meta}</div>
       </Tag>

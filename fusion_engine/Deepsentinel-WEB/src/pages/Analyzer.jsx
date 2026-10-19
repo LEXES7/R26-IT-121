@@ -42,7 +42,7 @@ const SEV = {
 }
 
 const money = (n) =>
-  typeof n === 'number' ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'
+  typeof n === 'number' ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '-'
 
 export default function Analyzer() {
   const [mode, setMode] = useState('pick')
@@ -239,7 +239,7 @@ export default function Analyzer() {
                   ['step', txn.step], ['balance after', money(txn.newbalanceOrig)]].map(([k, v]) => (
                   <div key={k}>
                     <div className="ds-section-label">{k}</div>
-                    <div className="ds-mono" style={{ fontSize: 15, marginTop: 5 }}>{v ?? '—'}</div>
+                    <div className="ds-mono" style={{ fontSize: 15, marginTop: 5 }}>{v ?? '-'}</div>
                   </div>
                 ))}
               </div>

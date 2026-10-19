@@ -184,7 +184,7 @@ export default function Models() {
                     <div className="ds-section-label">Its score</div>
                     <div className="ds-mono" style={{ fontSize: 28, marginTop: 6,
                           color: r.available ? 'rgb(var(--ds-signal))' : 'rgb(var(--ds-faint))' }}>
-                      {r.available && typeof r.score === 'number' ? r.score.toFixed(4) : '—'}
+                      {r.available && typeof r.score === 'number' ? r.score.toFixed(4) : '-'}
                     </div>
                   </div>
                   <div>

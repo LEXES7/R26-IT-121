@@ -29,10 +29,10 @@ const SEV_HEX = {
 // Scores arrive already rounded by the server, so 0.9 and 0.8985 sit in the
 // same column at different widths. Fix the decimals here: a column of figures
 // that does not line up is harder to scan than one that does.
-const score3 = (v) => (typeof v === 'number' ? v.toFixed(3) : Number.isFinite(Number(v)) ? Number(v).toFixed(3) : '—')
+const score3 = (v) => (typeof v === 'number' ? v.toFixed(3) : Number.isFinite(Number(v)) ? Number(v).toFixed(3) : '-')
 const money = (v) => (Number.isFinite(Number(v))
   ? Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })
-  : '—')
+  : '-')
 
 export default function Monitor() {
   const [snap, setSnap] = useState(null)
@@ -352,7 +352,7 @@ export default function Monitor() {
                     <span className="min-w-0 flex-1 truncate text-xs text-slate-400">
                       {a.pattern?.replace(/_/g, ' ') ?? 'pattern unknown'}
                       <span className="text-slate-600"> · sink </span>
-                      <span className="numeric text-slate-500">{a.sink_account ?? '—'}</span>
+                      <span className="numeric text-slate-500">{a.sink_account ?? '-'}</span>
                     </span>
                     {canManageAlerts ? (
                       <Detectors alert={a} />
@@ -408,7 +408,7 @@ export default function Monitor() {
                     {e.kind === 'screened' &&
                       `${e.transaction_id} · ${e.risk_level} · ${e.graph_score}${e.escalated ? ' → early flag' : ''}`}
                     {e.kind === 'escalated' &&
-                      `${e.transaction_id} · ${e.pattern ?? '—'} · ${e.convergence ?? 0} senders`}
+                      `${e.transaction_id} · ${e.pattern ?? '-'} · ${e.convergence ?? 0} senders`}
                     {e.kind === 'model' && `${e.transaction_id} · ${e.model} = ${e.score ?? 'unavailable'}`}
                     {e.kind === 'fused' &&
                       `${e.transaction_id} · ${e.severity} · ${e.fused_score} (${e.modalities_used}/3)`}
@@ -508,14 +508,14 @@ function Detectors({ alert }) {
             title={absent
               ? `${label}: did not answer, so it contributed nothing to the verdict`
               : isDriver
-                ? `${label} drove this verdict (contribution ${alert.contributions?.[key]?.toFixed(2) ?? '—'})`
+                ? `${label} drove this verdict (contribution ${alert.contributions?.[key]?.toFixed(2) ?? '-'})`
                 : `${label} score ${score3(v)}`}
           >
             {isDriver && (
               <span className="mr-1 inline-block h-1 w-1 -translate-y-[2px] rounded-full bg-accent-400" />
             )}
             <span className="text-slate-600">{label} </span>
-            {absent ? '—' : score3(v)}
+            {absent ? '-' : score3(v)}
           </span>
         )
       })}
@@ -529,7 +529,7 @@ function Figure({ value, label, note, suffix, accent, urgent }) {
       <dd className={cx('numeric text-[1.75rem] leading-none',
         typeof value !== 'number' ? 'text-slate-600'
           : accent ? 'text-accent-400' : urgent ? 'text-risk-medium' : 'text-slate-100')}>
-        {typeof value === 'number' ? value : '—'}
+        {typeof value === 'number' ? value : '-'}
         {suffix && typeof value === 'number' && <span className="text-slate-600">{suffix}</span>}
       </dd>
       <dt className="eyebrow mt-2 text-slate-500">{label}</dt>

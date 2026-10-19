@@ -62,12 +62,12 @@ export default function Validation({ rows, threshold = 0.39, scoreOf, labelOf })
       <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {cell('Correct', `${right} / ${judged.length}`,
           `${((right / judged.length) * 100).toFixed(1)}% of labelled rows`)}
-        {cell('Precision', precision != null ? precision.toFixed(3) : '—',
+        {cell('Precision', precision != null ? precision.toFixed(3) : '-',
           'of what it flagged, this share were fraud',
           precision === 1 ? 'rgb(var(--ds-accent-strong))' : undefined)}
-        {cell('Recall', recall != null ? recall.toFixed(3) : '—',
+        {cell('Recall', recall != null ? recall.toFixed(3) : '-',
           'of the fraud present, this share were caught')}
-        {cell('F1', f1 != null ? f1.toFixed(3) : '—', 'the balance of the two')}
+        {cell('F1', f1 != null ? f1.toFixed(3) : '-', 'the balance of the two')}
       </div>
 
       <p className="ds-mono mt-4 text-[13px]" style={{ color: 'rgb(var(--ds-faint))' }}>

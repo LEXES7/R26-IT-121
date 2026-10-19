@@ -172,7 +172,7 @@ export default function ReportStyle() {
             <iframe
               key={preview}
               src={preview}
-              title={`Forensic report preview — ${showing}`}
+              title={`Forensic report preview: ${showing}`}
               style={{ width: '100%', height: 620, border: 0, display: 'block' }}
             />
           ) : (

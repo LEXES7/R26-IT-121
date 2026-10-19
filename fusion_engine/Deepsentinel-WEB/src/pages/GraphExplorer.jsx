@@ -953,7 +953,7 @@ export default function GraphExplorer() {
                                 <td className="numeric px-2 py-1"
                                     style={{ color: r.score == null ? 'rgb(var(--ds-faint))'
                                       : 'rgb(var(--ds-ink))' }}>
-                                  {r.score == null ? '—' : r.score.toFixed(4)}
+                                  {r.score == null ? '-' : r.score.toFixed(4)}
                                 </td>
                                 <td className="px-2 py-1" style={{
                                   color: r.source === 'inductive' ? '#c084fc'

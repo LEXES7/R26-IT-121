@@ -17,7 +17,7 @@ const DAYS_SHOWN = 13
 export const startOfDay = (t) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime() }
 
 export const compact = (v) => {
-  if (typeof v !== 'number') return '—'
+  if (typeof v !== 'number') return '-'
   if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M`
   if (v >= 1e4) return `${(v / 1e3).toFixed(1)}k`
   return v.toLocaleString()

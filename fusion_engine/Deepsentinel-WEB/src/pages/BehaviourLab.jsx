@@ -43,11 +43,11 @@ export default function BehaviourLab() {
             <div className="grid gap-6 sm:grid-cols-4">
               <Stat label="Risk score" value={(r.score ?? 0).toFixed(4)}
                     note={ev.risk_level ?? (d.flagged ? 'flagged' : 'not flagged')} />
-              <Stat label="Stratum" value={d.stratum ?? ev.transaction_type ?? '—'}
+              <Stat label="Stratum" value={d.stratum ?? ev.transaction_type ?? '-'}
                     note="its own model" />
               <Stat label="Raw anomaly" value={(d.raw_score ?? 0).toFixed(3)}
-                    note={`threshold ${d.threshold ?? '—'}`} />
-              <Stat label="Calibration" value={d.calibration_method ?? '—'}
+                    note={`threshold ${d.threshold ?? '-'}`} />
+              <Stat label="Calibration" value={d.calibration_method ?? '-'}
                     note={d.operating_point ?? ''} />
             </div>
 

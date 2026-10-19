@@ -33,7 +33,7 @@ export default function ScoreGauge({ score, label, sublabel, size = 120 }) {
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           <span className={`text-xl font-bold font-mono ${text}`}>
-            {score != null ? (score * 100).toFixed(0) : '—'}
+            {score != null ? (score * 100).toFixed(0) : '-'}
           </span>
         </div>
       </div>

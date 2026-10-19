@@ -29,7 +29,7 @@ const ORG_TYPES = [
 ]
 
 const VOLUMES = [
-  '', 'Under 100k / month', '100k – 1M / month', '1M – 10M / month', 'Over 10M / month',
+  '', 'Under 100k a month', '100k to 1M a month', '1M to 10M a month', 'Over 10M a month',
 ]
 
 const TIMELINES = ['', 'Exploring', 'Within 3 months', 'Within 6 months', 'Budgeted, ready now']

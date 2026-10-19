@@ -37,7 +37,7 @@ const AGREEMENT_BAND = 0.15
 /** Above this, one of them is making a materially different claim. */
 const DISSENT_BAND = 0.3
 
-const fmt = (v, d = 4) => (typeof v === 'number' ? v.toFixed(d) : '—')
+const fmt = (v, d = 4) => (typeof v === 'number' ? v.toFixed(d) : '-')
 
 /**
  * The detector furthest from the consensus of the others.
