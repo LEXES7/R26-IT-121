@@ -33,27 +33,38 @@ export const modality = {
 } as const;
 
 /**
- * Surfaces, from iOS's dark system palette.
+ * Surfaces: the web app's warm near-black and warm greys.
  *
- * The app is laid out the way an iOS app is: a black canvas, grouped lists on
- * a raised grey, hairline separators. The risk ramp above is not part of this
- * and still matches the web console exactly.
+ * Still laid out the way an iOS app is, grouped lists on a raised surface with
+ * hairline separators, but in the site's palette rather than iOS grey, so the
+ * phone, the console and the public site read as one product. The risk ramp
+ * above is not part of this and still matches the web exactly.
  */
 export const bg = {
-  canvas: "#000000", // systemBackground
-  raised: "#1C1C1E", // secondarySystemBackground
-  card: "#1C1C1E", // grouped cell
-  elevated: "#2C2C2E", // tertiarySystemBackground, inputs and pressed cells
-  border: "#38383A", // separator
-  borderStrong: "#48484A", // systemGray3
+  canvas: "#0D0C0B", // the site's ground
+  raised: "#161412",
+  card: "#1A1715", // grouped cell
+  elevated: "#26221F", // inputs and pressed cells
+  border: "#2E2A27", // separator
+  borderStrong: "#46403B",
 } as const;
 
-/** Text ramp. A given step always means the same amount of emphasis. */
+/** Text ramp, warm like the site's. A given step always means the same emphasis. */
 export const text = {
-  primary: "#FFFFFF", // label
-  secondary: "#AEAEB2", // systemGray2
-  muted: "#8E8E93", // systemGray
-  faint: "#636366", // systemGray4
+  primary: "#FBFAF7",
+  secondary: "#D6D1C9",
+  muted: "#A39C92",
+  faint: "#6C655D",
+} as const;
+
+/**
+ * The site's display face, bundled in assets/fonts and loaded in App.tsx.
+ * Large titles are set in it, with an italic teal clause where a screen has
+ * one, as every page of the site is.
+ */
+export const serif = {
+  regular: "InstrumentSerif-Regular",
+  italic: "InstrumentSerif-Italic",
 } as const;
 
 /** Editorial accent and the app's tint. Teal, kept clear of the risk ramp. */

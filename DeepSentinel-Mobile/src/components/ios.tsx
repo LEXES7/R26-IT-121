@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { accent, bg, mono, radius, space, text, tile } from "../theme/tokens";
+import { accent, bg, mono, radius, serif, space, text, tile } from "../theme/tokens";
 
 /**
  * The building blocks of an iOS-style screen.
@@ -42,6 +42,8 @@ export function confirmTap(): void {
 
 type ScreenProps = {
   title: string;
+  /** A second line under a large title, set in the italic teal the site uses. */
+  accentLine?: string;
   subtitle?: string;
   /** A pushed screen shows a back button in the navigation bar. */
   back?: { label: string; onPress: () => void };
@@ -57,6 +59,7 @@ type ScreenProps = {
 
 export function Screen({
   title,
+  accentLine,
   subtitle,
   back,
   right,
@@ -89,7 +92,10 @@ export function Screen({
       )}
       {large && (
         <View style={styles.largeHeader}>
-          <Text style={styles.largeTitle}>{title}</Text>
+          <Text style={styles.largeTitle}>
+            {title}
+            {accentLine ? <Text style={styles.largeAccent}>{`\n${accentLine}`}</Text> : null}
+          </Text>
           {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
         </View>
       )}
@@ -527,7 +533,8 @@ const styles = StyleSheet.create({
   backText: { color: accent.base, fontSize: 17, marginLeft: -2 },
 
   largeHeader: { paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.sm },
-  largeTitle: { color: text.primary, fontSize: 34, fontWeight: "700", letterSpacing: 0.4 },
+  largeTitle: { color: text.primary, fontFamily: serif.regular, fontSize: 42, lineHeight: 44, letterSpacing: -0.4 },
+  largeAccent: { color: accent.base, fontFamily: serif.italic },
   subtitle: { color: text.muted, fontSize: 15, marginTop: 2 },
   inlineSubtitle: {
     color: text.muted,
@@ -539,13 +546,20 @@ const styles = StyleSheet.create({
 
   groupHeader: {
     color: text.muted,
-    fontSize: 13,
+    fontSize: 11,
+    fontWeight: "500",
     textTransform: "uppercase",
-    letterSpacing: 0.3,
+    letterSpacing: 1.4,
     marginLeft: space.lg,
     marginBottom: 6,
   },
-  group: { backgroundColor: bg.card, borderRadius: radius.lg, overflow: "hidden" },
+  group: {
+    backgroundColor: bg.card,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: bg.borderStrong,
+    overflow: "hidden",
+  },
   groupFooter: {
     color: text.muted,
     fontSize: 13,
@@ -577,7 +591,7 @@ const styles = StyleSheet.create({
 
   button: {
     minHeight: 50,
-    borderRadius: radius.lg,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: space.lg,
@@ -600,12 +614,12 @@ const styles = StyleSheet.create({
   segmentWrap: { paddingHorizontal: space.lg },
   segments: { flexDirection: "row", backgroundColor: bg.raised, borderRadius: 9, padding: 2 },
   segment: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 7 },
-  segmentOn: { backgroundColor: "#636366" },
+  segmentOn: { backgroundColor: bg.borderStrong },
   segmentText: { color: text.primary, fontSize: 13, fontWeight: "500" },
   segmentTextOn: { fontWeight: "600" },
 
   empty: { alignItems: "center", paddingVertical: 48, paddingHorizontal: space.xl, gap: space.sm },
-  emptyTitle: { color: text.primary, fontSize: 20, fontWeight: "600", textAlign: "center" },
+  emptyTitle: { color: text.primary, fontFamily: serif.regular, fontSize: 26, textAlign: "center" },
   emptyBody: { color: text.muted, fontSize: 15, lineHeight: 21, textAlign: "center" },
 
   avatar: { backgroundColor: accent.dark, alignItems: "center", justifyContent: "center" },

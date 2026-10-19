@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useFonts } from "expo-font";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -96,6 +97,14 @@ function pageTitle(p: Page): string {
 const EMPTY_STACKS: Record<Tab, Page[]> = { home: [], alerts: [], cases: [], assistant: [], settings: [] };
 
 export default function App() {
+  // The site's display face. Bundled, so this resolves in a frame; until it
+  // does the canvas shows rather than titles jumping from one face to another.
+  const [fontsLoaded, fontError] = useFonts({
+    "InstrumentSerif-Regular": require("./assets/fonts/InstrumentSerif-Regular.ttf"),
+    "InstrumentSerif-Italic": require("./assets/fonts/InstrumentSerif-Italic.ttf"),
+  });
+  if (!fontsLoaded && !fontError) return <View style={{ flex: 1, backgroundColor: bg.canvas }} />;
+
   return (
     <SafeAreaProvider>
       <Root />
