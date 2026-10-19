@@ -11,10 +11,10 @@ import ConfirmDialog from './ConfirmDialog'
 /**
  * The signed-in application shell.
  *
- * A sidebar rather than a top bar, because the console has fourteen
- * destinations grouped into three jobs — observe, investigate, understand —
- * and a horizontal strip can neither show that grouping nor hold that many
- * items without becoming a menu of menus.
+ * A sidebar rather than a top bar, because the console has a dozen
+ * destinations grouped by the job being done, and a horizontal strip can
+ * neither show that grouping nor hold that many items without becoming a
+ * menu of menus.
  *
  * The public site keeps its own chrome. A landing page is read once and has to
  * argue; a console is read all day and has to get out of the way, so the two
@@ -95,9 +95,6 @@ const ADMIN_NAV = [
     ['/report-style', 'Report style', I.page],
     ['/settings', 'Administration', I.settings],
   ]],
-  ['Understand', [
-    ['/about', 'Architecture', I.log],
-  ]],
 ]
 
 const OPS_NAV = [
@@ -115,10 +112,7 @@ const OPS_NAV = [
   ['Investigate', [
     ['/cases', 'Cases', I.archive],
     ['/batch', 'Batch upload', I.upload],
-  ]],
-  ['Understand', [
     ['/assistant', 'Assistant', I.brain],
-    ['/about', 'Architecture', I.log],
   ]],
   // Administration is an administrator's; the account inside it is everyone's.
   ['Workspace', [
