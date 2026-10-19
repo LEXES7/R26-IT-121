@@ -2336,3 +2336,196 @@ html.theme-transition * {
 @media (prefers-reduced-motion: reduce) {
   .dash-day, .dash-case { transition: none; }
 }
+
+/* ── the whole console, in the dashboard's style ─────────────────────
+   One layer over the console's own parts, so every page takes the home
+   pages' look without any page changing: rounded cards with the soft
+   gradient, Plus Jakarta Sans for headings and figures, pill controls, lime
+   for the accent and mint for what is selected, and a sidebar that floats.
+   Written last on purpose; each rule here restates one from the layers above
+   and wins by order, not by specificity. Severity and detector colours are
+   untouched. */
+
+.ds {
+  --ds-accent: 214 240 104;
+  --ds-accent-strong: 228 248 156;
+  --ds-accent-soft: 46 54 20;
+  --ds-on-accent: 13 12 11;
+}
+[data-theme='light'] .ds {
+  --ds-accent: 84 110 0;
+  --ds-accent-strong: 66 88 0;
+  --ds-accent-soft: 234 241 205;
+  --ds-on-accent: 255 255 255;
+}
+
+.ds-main, .ds-sidebar { font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; }
+.ds-main::before { background: rgb(var(--dash-mint) / 0.07); }
+.ds-shell::before {
+  background:
+    radial-gradient(48rem 32rem at 8% -6%, rgb(var(--dash-mint) / 0.05), transparent 70%),
+    radial-gradient(42rem 30rem at 104% 104%, rgb(var(--ds-signal) / 0.04), transparent 70%);
+}
+
+/* Cards */
+.ds-panel,
+.ds .rounded-2xl.bg-surface {
+  border-radius: 26px;
+  background: linear-gradient(170deg, rgb(var(--dash-card-top)), rgb(var(--dash-card-bottom)));
+  border: 1px solid rgb(var(--ds-line) / 0.7);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+.ds-panel::before { display: none; }
+[data-theme='light'] .ds-panel,
+[data-theme='light'] .ds .rounded-2xl.bg-surface {
+  background: linear-gradient(170deg, rgb(var(--dash-card-top)), rgb(var(--dash-card-bottom)));
+  border-color: rgb(var(--ds-line) / 0.7);
+  box-shadow: 0 10px 30px -18px rgb(var(--ds-shadow) / 0.25);
+}
+.ds-panel-pad { padding: 22px 24px; }
+.ds-content .rounded-xl.border,
+.ds-content .rounded-2xl.border { border-radius: 22px; }
+
+.ds-section-label { font-size: 11px; letter-spacing: 0.13em; }
+.ds-section-title {
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+/* Headline figures */
+.ds-kpi { padding: 20px 22px 18px; }
+.ds-kpi:hover {
+  background: linear-gradient(170deg, rgb(var(--dash-card-top)), rgb(var(--dash-card-bottom)));
+  border-color: rgb(var(--dash-line) / 0.55);
+  box-shadow: none;
+}
+.ds-kpi-value {
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 40px;
+  letter-spacing: -0.045em;
+}
+.ds-kpi-accent, .ds-kpi-alert, .ds-kpi-warn { border-top: 1px solid rgb(var(--ds-line) / 0.7); }
+[data-theme='light'] .ds-kpi-accent, [data-theme='light'] .ds-kpi-alert,
+[data-theme='light'] .ds-kpi-warn { border-top-color: rgb(var(--ds-line) / 0.7); }
+/* Which figures need attention: a dot before the label as well as the colour. */
+.ds-kpi-alert .ds-section-label::before,
+.ds-kpi-warn .ds-section-label::before,
+.ds-kpi-accent .ds-section-label::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 99px;
+  vertical-align: 1px;
+  background: rgb(var(--ds-accent));
+}
+.ds-kpi-alert .ds-section-label::before { background: rgb(var(--ds-signal)); }
+.ds-kpi-warn .ds-section-label::before { background: rgb(var(--ds-warn)); }
+
+/* Controls */
+.ds-btn {
+  min-height: 40px;
+  padding: 9px 17px;
+  border-radius: 99px;
+  font-size: 13.5px;
+  background: rgb(var(--dash-card-top));
+  border-color: rgb(var(--ds-line));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+.ds-btn:hover:not(:disabled) { border-color: rgb(var(--dash-line) / 0.7); box-shadow: none; }
+.ds-btn-primary,
+[data-theme='light'] .ds-btn-primary {
+  background: rgb(var(--ds-accent));
+  border-color: rgb(var(--ds-accent));
+  color: rgb(var(--ds-on-accent));
+  box-shadow: none;
+}
+.ds-btn-primary:hover:not(:disabled) { background: rgb(var(--ds-accent-strong)); border-color: rgb(var(--ds-accent-strong)); }
+.ds-btn-quiet { background: transparent; border-color: transparent; }
+.ds-icon-btn { width: 40px; height: 40px; border-radius: 99px; background: rgb(var(--dash-card-top)); }
+.ds-icon-btn:hover { color: rgb(var(--ds-ink)); border-color: rgb(var(--dash-line) / 0.7); }
+.ds button.rounded-lg { border-radius: 99px; }
+
+.ds-badge { padding: 3px 10px; font-weight: 600; }
+.ds-progress { height: 8px; }
+
+.ds-field { border-radius: 14px; padding: 11px 14px; background: rgb(var(--dash-card-top)); }
+.ds input.rounded-lg, .ds select.rounded-lg, .ds textarea.rounded-lg { border-radius: 14px; }
+.ds input:focus-visible, .ds select:focus-visible, .ds textarea:focus-visible,
+.ds input:focus, .ds select:focus, .ds textarea:focus {
+  outline: none;
+  border-color: rgb(var(--ds-accent));
+  box-shadow: 0 0 0 3px rgb(var(--ds-accent-soft));
+}
+
+.ds-empty { border-radius: 22px; }
+.ds-table th { font-weight: 600; }
+.ds-avatar { color: rgb(var(--ds-on-accent)); background: rgb(var(--ds-accent)); }
+
+/* The sidebar floats, like the rail in the dashboard's references. */
+.ds-sidebar {
+  margin: 12px 0 12px 12px;
+  top: 12px;
+  height: calc(100dvh - 24px);
+  border: 1px solid rgb(var(--ds-line) / 0.7);
+  border-radius: 26px;
+  background: linear-gradient(170deg, rgb(var(--dash-card-top)), rgb(var(--dash-card-bottom)));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+[data-theme='light'] .ds-sidebar { box-shadow: 0 10px 30px -18px rgb(var(--ds-shadow) / 0.25); }
+.ds-sidebar-foot { border-top-color: rgb(var(--ds-line) / 0.6); }
+.ds-nav-btn { min-height: 42px; border-radius: 14px; }
+.ds-nav-btn.active { background: rgb(var(--dash-mint)); color: rgb(var(--dash-on-mint)); font-weight: 600; }
+.ds-nav-btn.active svg { color: rgb(var(--dash-on-mint)); }
+
+/* The kit's own controls, inside the console only. The shader fill is the
+   public site's call to action; in the console a primary action is the same
+   lime pill as every other one. Tailwind's disabled utilities are generated
+   before this layer, so the disabled look is restated here. */
+.ds .btn-shader {
+  background: rgb(var(--ds-accent));
+  color: rgb(var(--ds-on-accent));
+  border-color: transparent;
+  box-shadow: none;
+  animation: none;
+}
+.ds .btn-shader::before, .ds .btn-shader::after { display: none; }
+.ds .btn-shader:hover:not(:disabled) { background: rgb(var(--ds-accent-strong)); box-shadow: none; }
+.ds .btn-shader:disabled {
+  background: rgb(var(--ds-surface-3));
+  color: rgb(var(--ds-faint));
+  filter: none;
+}
+.ds [role='switch'].bg-accent-500 { background: rgb(var(--ds-accent)); }
+
+/* The kit's alert colours are set for the dark ground; on paper they wash
+   out, so the console's light theme gives them its own measured tones. */
+[data-theme='light'] .ds .text-amber-300 { color: rgb(var(--ds-warn)); }
+[data-theme='light'] .ds .text-red-300 { color: rgb(var(--ds-signal)); }
+[data-theme='light'] .ds .text-green-300 { color: rgb(var(--ds-sev-low)); }
+[data-theme='light'] .ds .text-accent-400 { color: rgb(var(--ds-accent-strong)); }
+
+/* The site's Tailwind accent, remapped inside the console only, so figures,
+   bars and links written with `text-accent-400` or `bg-accent-500` follow the
+   lime too. 400 is read as text and 500 as a fill under dark text, so on the
+   light theme the fill is the brighter of the two. */
+.ds {
+  --accent-400: 214 240 104;
+  --accent-500: 196 226 80;
+  --accent-600: 160 190 50;
+}
+[data-theme='light'] .ds {
+  --accent-400: 84 110 0;
+  --accent-500: 168 204 40;
+  --accent-600: 66 88 0;
+}
