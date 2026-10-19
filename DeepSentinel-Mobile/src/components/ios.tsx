@@ -45,6 +45,8 @@ type ScreenProps = {
   /** A second line under a large title, set in the accent colour. */
   accentLine?: string;
   subtitle?: string;
+  /** Drawn in place of the large title, for a screen that sets its own top. */
+  header?: ReactNode;
   /** A pushed screen shows a back button in the navigation bar. */
   back?: { label: string; onPress: () => void };
   /** Up to two controls on the right of the navigation bar. */
@@ -61,6 +63,7 @@ export function Screen({
   title,
   accentLine,
   subtitle,
+  header: customHeader,
   back,
   right,
   large = !back,
@@ -90,7 +93,8 @@ export function Screen({
           <View style={[styles.navSide, styles.navRight]}>{right}</View>
         </View>
       )}
-      {large && (
+      {large && customHeader}
+      {large && !customHeader && (
         <View style={styles.largeHeader}>
           <Text style={styles.largeTitle}>
             {title}

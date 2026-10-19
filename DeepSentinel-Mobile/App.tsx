@@ -435,6 +435,7 @@ function Root() {
             user={current!.user}
             monitor={monitor.state}
             onOpenAlert={(a) => openTransaction(a.transaction_id)}
+            onOpenCase={(caseRef) => push({ kind: "case", caseRef })}
             onOpenLive={() => push({ kind: "live" })}
             onScreen={() => push({ kind: "analyze" })}
             onOverview={() => push({ kind: "overview" })}
