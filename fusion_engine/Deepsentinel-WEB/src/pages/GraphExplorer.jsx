@@ -128,7 +128,9 @@ export default function GraphExplorer() {
     let from = null
     const t0 = performance.now()
     const step = (now) => {
-      const k = Math.min(1, (now - t0) / ms)
+      // A frame's timestamp can predate t0, and a negative k would ease the
+      // view the wrong way, far past where it was going.
+      const k = Math.min(1, Math.max(0, (now - t0) / ms))
       // easeOutCubic: quick to leave, gentle to arrive.
       const e = 1 - (1 - k) ** 3
       setView((v) => {
