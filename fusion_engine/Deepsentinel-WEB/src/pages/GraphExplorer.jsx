@@ -1276,9 +1276,12 @@ export default function GraphExplorer() {
                   downloadCsv(resultsName(csv.file, 'network'), csv.rows, [
                     ['row', (r) => r.row], ['transaction', (r) => r.transaction_id], ['from', (r) => r.nameOrig],
                     ['to', (r) => r.nameDest], ['isFraud', (r) => r.isFraud], ['graph_score', (r) => r.score],
-                    ['flagged', (r) => (r.score == null ? '' : r.score >= line ? 'yes' : 'no')],
+                    // A new account's score is the network's raw output, not a
+                    // calibrated probability, so the line does not apply to it.
+                    ['flagged', (r) => (r.score == null || r.source !== 'precomputed' ? ''
+                      : r.score >= line ? 'yes' : 'no')],
                     ['how', (r) => (r.source === 'precomputed' ? 'in the graph'
-                      : r.source === 'inductive' ? 'new, from neighbours' : 'not scoreable')],
+                      : r.source === 'inductive' ? 'new, scored live from neighbours (raw score)' : 'not scoreable')],
                     ['note', (r) => r.note],
                   ])
                 }}>
@@ -1296,10 +1299,47 @@ export default function GraphExplorer() {
                   {csv.notes.join(' ')}
                 </p>
               )}
-              {/* Scored at the model's own decision threshold, as it publishes it. */}
+              {/* Scored at the model's own decision threshold, as it publishes it.
+                  Only looked-up accounts: their scores are calibrated probabilities.
+                  A new account's score is the raw network output, on a different
+                  scale, so it is ranked below instead of judged against the line. */}
               {csv && (
-                <Validation rows={csv.rows} threshold={csv.bands?.high ?? 0.183} scoreOf={(r) => r.score} />
+                <Validation rows={csv.rows.filter((r) => r.source === 'precomputed')}
+                            threshold={csv.bands?.high ?? 0.183} scoreOf={(r) => r.score} />
               )}
+              {csv && csv.rows.some((r) => r.source === 'inductive') && (() => {
+                const fresh = csv.rows.filter((r) => r.source === 'inductive' && r.score != null)
+                  .sort((a, b) => b.score - a.score)
+                const lab = (r) => (r.isFraud == null || r.isFraud === '' ? null : String(r.isFraud) === '1')
+                const nf = fresh.filter((r) => lab(r) === true).length
+                const top = fresh.slice(0, nf).filter((r) => lab(r) === true).length
+                return (
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    <div style={{ fontSize: 14 }}>
+                      <b>{fresh.length} new accounts</b>, scored live from their neighbours
+                      <span style={{ color: 'rgb(var(--ds-muted))' }}> · raw scores, ranked, not judged against the line</span>
+                    </div>
+                    {nf > 0 && (
+                      <div style={{ fontSize: 13, color: 'rgb(var(--ds-muted))' }}>
+                        Of the top {nf} by score, <b style={{ color: 'rgb(var(--ds-ink))' }}>{top}</b> are labelled fraud
+                        (the file has {nf} fraud among its new accounts).
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }} aria-label="New accounts by raw score">
+                      {fresh.map((r) => (
+                        <span key={r.row} title={`${r.nameDest} · ${r.score.toFixed(4)}`} className="ds-mono"
+                              style={{ fontSize: 11, padding: '3px 7px', borderRadius: 8,
+                                       background: lab(r) ? 'color-mix(in srgb, rgb(var(--ds-sev-critical)) 18%, transparent)'
+                                         : 'rgb(var(--ds-surface-3))',
+                                       color: lab(r) ? 'rgb(var(--ds-sev-critical))' : 'rgb(var(--ds-muted))' }}>
+                          {r.score.toFixed(3)}
+                        </span>
+                      ))}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'rgb(var(--ds-faint))' }}>Highest first; red = labelled fraud.</div>
+                  </div>
+                )
+              })()}
               {csv && (
                 <div style={{ overflow: 'auto', maxHeight: 210 }}>
                   <table className="ds-table">

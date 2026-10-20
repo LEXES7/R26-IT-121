@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  analyzeTransaction, getThresholds, downloadAnalysisReport,
+  getThresholds, downloadAnalysisReport,
 } from '../services/api'
-import { PRESETS } from '../components/DetectorLab'
 import ConsoleShell from '../components/ConsoleShell'
 import FusionModelPanel from '../components/FusionModelPanel'
 import FusionStages from '../components/FusionStages'
@@ -160,17 +159,17 @@ function Waterfall({ steps, fused, critical }) {
 }
 
 export default function FusionLab() {
-  const [pick, setPick] = useState(0)
-  const [sample, setResult] = useState(null)
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [bands, setBands] = useState(null)
   const [saving, setSaving] = useState(false)
-  const [tab, setTab] = useState('pipeline')
+  // Opens on Live: the panels above show real verdicts from the monitor, not a
+  // built-in example.
+  const [tab, setTab] = useState('live')
   const [showReport, setShowReport] = useState(false)
   const tabsRef = useRef(null)
-  // While the Live tab is open the panels above follow the monitor: the newest
-  // verdict, or the one picked from the list until "Follow latest" is pressed.
+  // The panels above show a live verdict: the newest, or the one picked from
+  // the Live list until "Follow latest" is pressed. On another tab they keep
+  // the last one shown.
   const [liveRow, setLiveRow] = useState(null)
   const [pinned, setPinned] = useState(false)
   const pinnedRef = useRef(false)
@@ -185,26 +184,11 @@ export default function FusionLab() {
   }, [])
   const followLatest = () => { pinnedRef.current = false; setPinned(false) }
   const inLive = tab === 'live'
-  const r = inLive ? (liveRow ? fromLive(liveRow) : null) : sample
+  const r = liveRow ? fromLive(liveRow) : null
 
   useEffect(() => {
     getThresholds().then((t) => setBands(t?.bands ?? null)).catch(() => setBands(null))
   }, [])
-
-  const run = useCallback(async (i) => {
-    setLoading(true)
-    setError(null)
-    try {
-      setResult(await analyzeTransaction(PRESETS[i].txn))
-    } catch (err) {
-      setError(err?.userMessage ?? 'The pipeline did not answer.')
-      setResult(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { run(pick) }, [run, pick])
 
   const download = async () => {
     if (r?.analysis_id == null) return
@@ -266,9 +250,7 @@ export default function FusionLab() {
       actions={
         <>
           <button className="ds-btn" onClick={() => openTab('file')}>Score a file</button>
-          <button className="ds-btn" onClick={() => run(pick)} disabled={loading}>
-            {loading ? 'Running…' : 'Run again'}
-          </button>
+          <button className="ds-btn" onClick={() => openTab('live')}>Live</button>
           {r?.analysis_id != null && (
             <button className="ds-btn ds-btn-primary" onClick={download} disabled={saving}>
               {saving ? 'Preparing…' : 'Download PDF'}
@@ -280,39 +262,22 @@ export default function FusionLab() {
       <div className="dash" style={{ gap: 18 }}>
         {error && <Alert tone="error">{error}</Alert>}
 
-        <div className="dash-chips" role="group" aria-label="Sample transaction">
-          {PRESETS.map((x, i) => (
-            <button key={x.ref} type="button" aria-pressed={!inLive && i === pick} onClick={() => { setPick(i); if (inLive) setTab('pipeline') }}
-                    className="dash-chip"
-                    style={{ cursor: 'pointer',
-                             background: !inLive && i === pick ? 'rgb(var(--dash-mint))' : 'transparent',
-                             borderColor: !inLive && i === pick ? 'transparent' : undefined,
-                             color: !inLive && i === pick ? 'rgb(var(--dash-on-mint))' : undefined }}>
-              <span className="ds-mono" style={{ fontSize: 13, fontWeight: 600 }}>{x.ref}</span>
-              <span style={{ opacity: 0.8 }}>{x.note}</span>
-            </button>
-          ))}
-        </div>
-
-        {inLive && (
-          <div className="dash-card" role="status" style={{ padding: '12px 18px', display: 'flex', gap: 12,
+        <div className="dash-card" role="status" style={{ padding: '12px 18px', display: 'flex', gap: 12,
                                                             alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ width: 9, height: 9, borderRadius: 99, background: 'rgb(var(--ds-accent))' }} />
             <span style={{ fontSize: 14 }}>
               {liveRow
                 ? <>Showing the live verdict for <b className="ds-mono">{liveRow.transaction_id}</b>
-                    {pinned ? ' · pinned' : ' · following the monitor'}</>
-                : 'Waiting for the first live verdict. Start the live monitor, or run the Query Runner.'}
+                    {!inLive ? ' · the last one shown; open Live to follow the monitor'
+                      : pinned ? ' · pinned' : ' · following the monitor'}</>
+                : 'Waiting for the first live verdict. Start the live monitor and upload a file with the Query Runner.'}
             </span>
-            {pinned && (
+            {pinned && inLive && (
               <button className="ds-btn" style={{ marginLeft: 'auto' }} onClick={followLatest}>Follow latest</button>
             )}
           </div>
-        )}
 
-        {loading && !r && !inLive ? (
-          <div className="ds-empty">Running all three detectors…</div>
-        ) : r ? (
+        {r ? (
           <>
             <div style={{ display: 'grid', gap: 18, gridTemplateColumns: 'minmax(300px, 420px) minmax(0, 1fr)' }}
                  className="ds-split">
