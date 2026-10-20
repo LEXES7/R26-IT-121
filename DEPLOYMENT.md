@@ -99,6 +99,29 @@ All five rebuild on every push, even for a one-line change. That is deliberate:
 a path filter is one more thing to get wrong, and getting it wrong means a push
 that silently deploys stale code.
 
+### If you change the fusion backend's dependencies
+
+`fusion_engine/DeepSentinel/Dockerfile` installs from `poetry.lock`, and
+`poetry install` refuses a lock it cannot vouch for. Editing `pyproject.toml`
+without regenerating the lock fails the build with:
+
+```
+pyproject.toml changed significantly since poetry.lock was last generated.
+```
+
+`npm install` would shrug at this; poetry will not. **Regenerate and commit the
+lock in the same change:**
+
+```powershell
+cd fusion_engine\DeepSentinel
+poetry lock          # or: python -m venv tmp; tmp\Scripts\pip install poetry==2.4.1
+poetry check --lock  # expect "All set!"
+```
+
+This has broken the build twice — once from a dependency edit, once from a
+merge of `main` that carried one in. A merge counts: if `pyproject.toml` moved,
+the lock has to move with it.
+
 ### Watching a deploy
 
 The build passing is rarely the question. What matters is whether the app ended
@@ -348,3 +371,5 @@ container logs from a failing replica, and sending a real request through
 | An app stuck in `ActivationFailed` | `--min-replicas 1`, read the logs, fix, set back to 0. |
 | Login fails against the deployed API | Check `DATABASE_URL` reached the container intact — the `&` trap in §3. A bogus login returning 401 (not 500) proves the database round-trips. |
 | Deploy "did nothing" | Compare `az containerapp show --query "...image"` with your commit SHA; you may be reading the previous revision. |
+| One app stuck on an old image while the rest updated | That app's job failed. The others deploy independently — `fail-fast: false` is set so one failure does not cancel the rest, which means a partly-deployed state is normal after a failed run, not a second bug. |
+| `fusion-api` build fails on `poetry install` | The lock is stale. See §2. |
