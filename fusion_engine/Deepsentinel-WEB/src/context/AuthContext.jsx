@@ -129,6 +129,11 @@ export function AuthProvider({ children }) {
       // a case and submitting batches all change the record.
       canDecideCases: role === ROLES.RISK_MANAGER,
       canRunAnalysis: role === ROLES.RISK_MANAGER || role === ROLES.ANALYST,
+
+      // The assistant is open to every role, administrators included. Whether
+      // this account is licensed for it is the server's call, and the page
+      // shows the upsell when it is not.
+      canUseAssistant: role === ROLES.ADMIN || role === ROLES.RISK_MANAGER || role === ROLES.ANALYST,
     }
   }, [user, initialising, signIn, signOut])
 

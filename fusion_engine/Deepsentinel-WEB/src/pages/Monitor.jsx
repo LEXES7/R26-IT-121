@@ -42,7 +42,7 @@ export default function Monitor() {
   // canManageAlerts is administrators and risk managers — the people who act
   // on an alert, and so the people who need to know which detector raised it.
   const {
-    canControlPipeline, canViewCases, canRunAnalysis, canConfigureSystem,
+    canControlPipeline, canViewCases, canRunAnalysis, canConfigureSystem, canUseAssistant,
     canManageAlerts,
   } = useAuth()
   const [escalating, setEscalating] = useState(false)
@@ -453,7 +453,7 @@ export default function Monitor() {
                 canViewCases && ['/cases', 'Review the queue'],
                 canRunAnalysis && ['/analyzer', 'Analyse a transaction'],
                 canConfigureSystem && ['/thresholds', 'Tune the threshold'],
-                canViewCases && ['/assistant', 'Ask the assistant'],
+                canUseAssistant && ['/assistant', 'Ask the assistant'],
                 canControlPipeline && ['/models', 'Test each detector'],
               ].filter(Boolean).map(([to, label]) => (
                 <Link key={to} to={to}

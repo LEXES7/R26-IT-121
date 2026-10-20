@@ -82,6 +82,7 @@ const ADMIN_NAV = [
   ['Operate', [
     ['/', 'System', I.gauge],
     ['/monitor', 'Live monitor', I.activity],
+    ['/assistant', 'Assistant', I.brain],
   ]],
   ['Detectors', [
     ['/graph', 'Network', I.graph],

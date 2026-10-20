@@ -144,7 +144,7 @@ function Shell() {
             {/* Addressable so a case can be sent to a colleague. Still gated. */}
             <Route path="/cases/:caseRef" element={<ProtectedRoute capability="canViewCases"><Cases /></ProtectedRoute>} />
             <Route path="/batch" element={<ProtectedRoute capability="canDecideCases"><Console><BatchAnalysis /></Console></ProtectedRoute>} />
-            <Route path="/assistant" element={<ProtectedRoute capability="canViewCases"><Console><Assistant /></Console></ProtectedRoute>} />
+            <Route path="/assistant" element={<ProtectedRoute capability="canUseAssistant"><Console><Assistant /></Console></ProtectedRoute>} />
 
             {/* The operating point the monitor alerts on — a configuration
                 decision, and audited as one. */}
@@ -208,7 +208,7 @@ const CONSOLE_PAGES = {
   '/batch':     ['Workspace / Investigate', 'Batch upload', 'Score a file of payments.'],
   '/models':    ['Workspace / Operate', 'Detectors',
                  'Test each model on its own.'],
-  '/assistant': ['Workspace / Understand', 'Assistant', 'Ask in plain language.'],
+  '/assistant': ['Workspace', 'Assistant', 'Ask in plain language.'],
   '/settings':  ['Workspace / Configure', 'Administration', 'Alerting, people, audit and your account.'],
   '/users':     ['Workspace / Configure', 'Administration', 'Alerting, people, audit and your account.'],
   '/audit-log': ['Workspace / Configure', 'Administration', 'Alerting, people, audit and your account.'],
