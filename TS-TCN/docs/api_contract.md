@@ -113,6 +113,8 @@ Flat body — the fusion engine spreads the full transaction dict and adds
 | `triggering_predecessor.offset_from_current` | int, negative | Position relative to the current transaction, e.g. `-3` = 3 transactions back in the window |
 | `triggering_predecessor.features` | object | Feature vector of the predecessor transaction, read from the rolling buffer |
 | `triggering_predecessor.predecessor_signal` | string | Human-readable label of the escalation pattern |
+| `triggering_predecessor.window_attention` | float[32], optional | The full `fraud_attention` row over the window, oldest slot first; the last slot is the current transaction. Additive — carried in this block because the fusion adapter forwards it whole |
+| `triggering_predecessor.window_types` | string[32], optional | Each window slot's transaction type, in the same order |
 | `model_version` | string | Identifies which trained checkpoint answered. `ts-tcn-v2.0-final` is the Stage 4 FINAL training run — see caveat below |
 | `inference_time_ms` | float | End-to-end serving time for this request |
 
