@@ -15,7 +15,7 @@
  * some other reason, and saying so is more useful than hiding it.
  */
 
-const pct = (v) => (v == null ? '—' : `${(v * 100).toFixed(0)}%`)
+const pct = (v) => (v == null ? '-' : `${(v * 100).toFixed(0)}%`)
 
 function Cell({ label, value, tone }) {
   return (
@@ -84,8 +84,8 @@ export default function TypologyPanel({ typology }) {
 
             <div className="mt-4 grid grid-cols-2 gap-4 border-t pt-3 sm:grid-cols-4"
                  style={{ borderColor: 'rgb(var(--ds-line))' }}>
-              <Cell label="cluster" value={id ?? '—'} />
-              <Cell label="rows in it" value={size ?? '—'} />
+              <Cell label="cluster" value={id ?? '-'} />
+              <Cell label="rows in it" value={size ?? '-'} />
               <Cell label="were fraud" value={pct(purity)} tone={pureTone} />
               <Cell label="closeness" value={pct(confidence)} />
             </div>

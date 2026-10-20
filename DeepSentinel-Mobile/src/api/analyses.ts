@@ -12,6 +12,11 @@ import { request } from "./client";
 
 /** One row of `GET /analyses`. Null scores mean that detector did not answer. */
 export type Analysis = {
+  /**
+   * The stored record's id, which every per-analysis route is keyed on. Null
+   * when a screening was not persisted, so there is nothing to draft from.
+   */
+  id: number | null;
   transaction_id: string;
   created_at: string;
   fraud_confidence_score: number;

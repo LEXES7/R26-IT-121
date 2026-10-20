@@ -81,7 +81,7 @@ export default function AuditLog() {
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-10 sm:px-6">
       <PageHeader
         title="Audit log"
-        description="Append-only record of security-relevant activity. Entries are never modified or removed."
+        description="Security events. Entries are never changed or removed."
         action={
           <Button variant="secondary" onClick={load} loading={loading}>
             Refresh
@@ -92,9 +92,8 @@ export default function AuditLog() {
       {error && <Alert tone="error" onDismiss={() => setError(null)}>{error}</Alert>}
 
       {failureCount > 0 && (
-        <Alert tone="warning" title={`${failureCount} non-successful event(s) in this window`}>
-          Failed sign-ins, blocked accounts and denied access attempts. Filter by
-          outcome to review them.
+        <Alert tone="warning" title={`${failureCount} failed event(s)`}>
+          Failed sign-ins and denied access. Filter by outcome to see them.
         </Alert>
       )}
 
@@ -137,11 +136,11 @@ export default function AuditLog() {
           </div>
         ) : filtered.length === 0 ? (
           <EmptyState
-            icon="—"
+            icon="-"
             title={entries.length === 0 ? 'No activity recorded yet' : 'Nothing matches these filters'}
             description={
               entries.length === 0
-                ? 'Events appear here as people sign in and change configuration.'
+                ? 'Events appear as people sign in and change settings.'
                 : 'Try widening the search or clearing a filter.'
             }
           />
@@ -166,7 +165,7 @@ export default function AuditLog() {
                     <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-500">
                       {new Date(e.timestamp).toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-slate-300">{e.actor ?? '—'}</td>
+                    <td className="px-4 py-3 text-slate-300">{e.actor ?? '-'}</td>
                     <td className="px-4 py-3">
                       <code className="rounded bg-surface-overlay px-1.5 py-0.5 font-mono text-xs text-slate-400">
                         {e.action}
@@ -178,13 +177,13 @@ export default function AuditLog() {
                       )}
                     </td>
                     <td className="max-w-[12rem] truncate px-4 py-3 text-slate-400" title={e.target ?? ''}>
-                      {e.target ?? '—'}
+                      {e.target ?? '-'}
                     </td>
                     <td className="px-4 py-3">
                       <Badge tone={OUTCOME_TONE[e.outcome] ?? 'neutral'}>{e.outcome}</Badge>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-slate-600">
-                      {e.client_ip ?? '—'}
+                      {e.client_ip ?? '-'}
                     </td>
                   </tr>
                 ))}

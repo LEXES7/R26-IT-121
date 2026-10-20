@@ -39,13 +39,13 @@ export default function DetectorRuntime({ detector, model, children }) {
   const ready = d?.ready
   const lat = d?.mean_latency_ms ?? d?.model?.mean_latency_ms
   const rows = [
-    ['Build', d?.model_version ?? d?.model?.stage ?? '—', d?.model_meta?.features
+    ['Build', d?.model_version ?? d?.model?.stage ?? '-', d?.model_meta?.features
       ? `feature set ${d.model_meta.features}` : d?.detection_method ?? ''],
-    ['Serving for', secs(d?.service_uptime_seconds ?? d?.startup_seconds) ?? '—',
+    ['Serving for', secs(d?.service_uptime_seconds ?? d?.startup_seconds) ?? '-',
       'since the process started'],
     ['Scored', (d?.transactions_scored ?? d?.model?.inferences ?? 0).toLocaleString(),
       'transactions this run'],
-    ['Mean latency', lat != null ? `${Number(lat).toFixed(1)} ms` : '—',
+    ['Mean latency', lat != null ? `${Number(lat).toFixed(1)} ms` : '-',
       lat != null ? 'per verdict' : 'nothing scored yet'],
   ]
 

@@ -47,6 +47,12 @@ def evaluate(meta_classifier, bands: dict) -> dict | None:
 
     try:
         rows = list(csv.DictReader(TRIPLES.open()))
+        # A meta-classifier fitted on the replay's earlier steps is judged only
+        # on the later ones; scoring it on its own training rows would flatter it.
+        pipe = getattr(meta_classifier, "_pipeline", None)
+        fit_until = getattr(pipe, "ds_fit_until_step", None) if getattr(pipe, "ds_source", None) == "recorded" else None
+        if fit_until is not None:
+            rows = [r for r in rows if int(r["step"]) > fit_until]
         y = np.array([int(r["is_fraud"]) for r in rows], dtype=bool)
         fused = np.array([
             meta_classifier.fuse(_num(r["graph"]), _num(r["behavioural"]),
@@ -86,8 +92,8 @@ def evaluate(meta_classifier, bands: dict) -> dict | None:
         recall = tp / (tp + fn) if tp + fn else 0.0
 
         _CACHE = {
-            "window": {"name": "held-out test", "rows": len(rows),
-                       "frauds": int(y.sum())},
+            "window": {"name": "held-out test" if fit_until is None else f"held-out test, steps {fit_until + 1}-743 (the fusion was fitted on earlier steps)",
+                       "rows": len(rows), "frauds": int(y.sum())},
             "fusion": pair(fused),
             "detectors": detectors,
             "at_threshold": {

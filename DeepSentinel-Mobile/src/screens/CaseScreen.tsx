@@ -1,12 +1,12 @@
 import {
   Pressable,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import type {
   Analysis,
@@ -15,17 +15,20 @@ import type {
   TemporalEvidence as TemporalShape,
 } from "../api/analyses";
 import ForensicReport from "../components/ForensicReport";
+import { NavBar } from "../components/ios";
+import SarPanel from "../components/SarPanel";
 import Behavioural from "../components/evidence/Behavioural";
 import Graph from "../components/evidence/Graph";
 import Temporal from "../components/evidence/Temporal";
 import { Card, Fact, Label, MODALITIES, Note, RiskBadge, ScoreBar, Section } from "../components/ui";
 import { ago, money, score } from "../lib/format";
-import { accent, bg, mono, radius, riskColour, space, text } from "../theme/tokens";
-import { statusBarInset } from "../theme/layout";
+import { accent, bg, modality, mono, radius, riskColour, space, statusBar, text, themed } from "../theme/tokens";
 
 type Props = {
   row: Analysis;
   onBack: () => void;
+  /** What the back button says: the screen this was opened from. */
+  backLabel?: string;
   /** Evidence, when the caller has it. The analysis list does not serve it. */
   evidence?: {
     behavioural?: BehaviouralShape | null;
@@ -74,6 +77,7 @@ export default function CaseScreen({
   available,
   groundTruth,
   forensicReport,
+  backLabel = "Alerts",
 }: Props) {
   const colour = riskColour(row.classification);
   const used = row.modalities_used ?? 0;
@@ -86,12 +90,10 @@ export default function CaseScreen({
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
+    <SafeAreaView edges={["top"]} style={styles.screen}>
+      <StatusBar barStyle={statusBar()} backgroundColor={bg.canvas} />
+      <NavBar title="Transaction" back={{ label: backLabel, onPress: onBack }} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable onPress={onBack} hitSlop={12} style={styles.back}>
-          <Text style={styles.backText}>← Alerts</Text>
-        </Pressable>
 
         <Card>
           <View style={styles.verdictTop}>
@@ -123,10 +125,10 @@ export default function CaseScreen({
           <View style={styles.divider} />
 
           <Fact label="Transaction" value={row.transaction_id} monospace />
-          <Fact label="Type" value={row.type ?? "—"} />
+          <Fact label="Type" value={row.type ?? "-"} />
           <Fact label="Amount" value={money(row.amount)} monospace />
-          <Fact label="From" value={row.nameOrig ?? "—"} monospace />
-          <Fact label="To" value={row.nameDest ?? "—"} monospace />
+          <Fact label="From" value={row.nameOrig ?? "-"} monospace />
+          <Fact label="To" value={row.nameDest ?? "-"} monospace />
           {row.typology_name && (
             <Fact
               label="Retrieved typology"
@@ -136,7 +138,7 @@ export default function CaseScreen({
           {row.mock_scenario && (
             <View style={styles.mock}>
               <Text style={styles.mockText}>
-                SIMULATED · scenario "{row.mock_scenario}" — not a real detection
+                SIMULATED · scenario "{row.mock_scenario}", not a real detection
               </Text>
             </View>
           )}
@@ -159,10 +161,8 @@ export default function CaseScreen({
               </Text>
             </View>
             <Note>
-              PaySim carries a label for every row. It is held out of screening
-              entirely — the models never see it — and shown here only so a
-              score can be read against it. One transaction is an illustration,
-              not a measurement of accuracy.
+              The dataset label, shown for comparison. The models never see it. One
+              payment is an example, not a measure of accuracy.
             </Note>
           </Card>
         )}
@@ -177,6 +177,17 @@ export default function CaseScreen({
           {forensicReport && <ForensicReport report={forensicReport} />}
         </Section>
 
+        <Section
+          title="Report and SAR"
+          subtitle="Share the PDF · draft and approve a SAR"
+          accent={accent.deep}
+          disabled={row.id == null}
+        >
+          {row.id != null && (
+            <SarPanel analysisId={row.id} transactionId={row.transaction_id} />
+          )}
+        </Section>
+
         <Card>
           <Label>Model contributions</Label>
           <Note>
@@ -184,7 +195,8 @@ export default function CaseScreen({
             answer is imputed at 0.5 and excluded from the fused score rather
             than counted as a vote for innocence.
           </Note>
-          {MODALITIES.map(([key, label, tone]) => {
+          {MODALITIES.map(([key, label]) => {
+            const tone = modality[key];
             const answered = available?.[key];
             const absent = answered === false;
             return (
@@ -206,16 +218,14 @@ export default function CaseScreen({
                   )}
                 </View>
                 <Text style={[styles.modalityScore, absent && styles.absent]}>
-                  {absent ? "—" : score(scores[key])}
+                  {absent ? "-" : score(scores[key])}
                 </Text>
               </View>
             );
           })}
           {!available && (
             <Note>
-              Which of the three answered is not carried in the analysis list,
-              so these cannot be marked individually — only the count above is
-              certain.
+              This list does not say which detectors answered, only how many.
             </Note>
           )}
         </Card>
@@ -223,7 +233,7 @@ export default function CaseScreen({
         <Section
           title="Behavioural attribution"
           subtitle="Stratified VAE · dual-signal"
-          accent={MODALITIES[0][2]}
+          accent={modality.behavioral}
           initiallyOpen
           disabled={!evidence?.behavioural}
         >
@@ -233,7 +243,7 @@ export default function CaseScreen({
         <Section
           title="Graph evidence"
           subtitle="Edge-enhanced GraphSAGE · subgraph"
-          accent={MODALITIES[1][2]}
+          accent={modality.graph}
           disabled={!evidence?.graph}
         >
           {evidence?.graph && <Graph evidence={evidence.graph} />}
@@ -242,7 +252,7 @@ export default function CaseScreen({
         <Section
           title="Temporal evidence"
           subtitle="TS-TCN · peak attention"
-          accent={MODALITIES[2][2]}
+          accent={modality.temporal}
           disabled={!evidence?.temporal}
         >
           {evidence?.temporal && (
@@ -267,8 +277,8 @@ export default function CaseScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: bg.canvas, paddingTop: statusBarInset },
+const styles = themed(() => ({
+  screen: { flex: 1, backgroundColor: bg.canvas },
   content: { padding: space.lg, gap: space.md, paddingBottom: space.xxl },
 
   back: { paddingVertical: space.sm },
@@ -334,4 +344,4 @@ const styles = StyleSheet.create({
   truthCall: { color: text.muted, fontSize: 12 },
 
   gap: { borderStyle: "dashed" },
-});
+}));

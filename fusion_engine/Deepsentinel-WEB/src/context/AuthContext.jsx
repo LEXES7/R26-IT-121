@@ -128,7 +128,15 @@ export function AuthProvider({ children }) {
       // An analyst reads; a risk manager decides. Confirming fraud, dismissing
       // a case and submitting batches all change the record.
       canDecideCases: role === ROLES.RISK_MANAGER,
-      canRunAnalysis: role === ROLES.RISK_MANAGER || role === ROLES.ANALYST,
+      // Analysing a payment is open to administrators too: the Network page's
+      // Analyze button and the detector pages lead here, and every endpoint the
+      // analyzer calls already accepts any signed-in role.
+      canRunAnalysis: role === ROLES.ADMIN || role === ROLES.RISK_MANAGER || role === ROLES.ANALYST,
+
+      // The assistant is open to every role, administrators included. Whether
+      // this account is licensed for it is the server's call, and the page
+      // shows the upsell when it is not.
+      canUseAssistant: role === ROLES.ADMIN || role === ROLES.RISK_MANAGER || role === ROLES.ANALYST,
     }
   }, [user, initialising, signIn, signOut])
 

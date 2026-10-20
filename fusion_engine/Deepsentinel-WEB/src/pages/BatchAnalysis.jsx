@@ -52,7 +52,7 @@ function describe(name, d) {
     const who = d.nameDest ? `\u2192 ${d.nameDest}` : ''
     return {
       name,
-      label: `row ${d.index} ${who} \u00b7 ${score != null ? score.toFixed(4) : '—'}`,
+      label: `row ${d.index} ${who} \u00b7 ${score != null ? score.toFixed(4) : '-'}`,
       tone: ['critical', 'high', 'medium', 'low'].includes(cls) ? cls : undefined,
     }
   }
@@ -356,11 +356,11 @@ export default function BatchAnalysis() {
           <div className="ds-fade-up" style={{ marginTop: 16 }}>
             <div className="ds-divider" style={{ marginBottom: 15 }} />
             <SectionHeading
-              label="Checked before anything is scored"
+              label="Checked before scoring"
               title={inspect.blocked
                 ? 'This file cannot be scored yet'
                 : inspect.findings.length
-                  ? 'Ready, with things worth knowing'
+                  ? 'Ready, with notes'
                   : 'Ready for the pipeline'}
               action={<DsBadge tone={inspect.blocked ? 'alert'
                 : inspect.findings.length ? 'warn' : 'good'}>
@@ -386,7 +386,7 @@ export default function BatchAnalysis() {
                 <div className="ds-mono" style={{ fontSize: 26,
                       color: inspect.labelCol ? 'rgb(var(--ds-accent-strong))'
                         : 'rgb(var(--ds-faint))' }}>
-                  {inspect.labelCol ? inspect.fraudLabelled : '—'}
+                  {inspect.labelCol ? inspect.fraudLabelled : '-'}
                 </div>
                 <div className="ds-section-label" style={{ marginTop: 4 }}>Labelled fraud</div>
               </div>
@@ -460,9 +460,8 @@ export default function BatchAnalysis() {
                 ? `Add ${inspect.missing.join(', ')} and choose the file again.`
                 : inspect.labelCol
                   ? `${inspect.fraudLabelled} of ${inspect.rows} rows are labelled fraud. `
-                    + 'Labels are read as ground truth to score detection — they are '
-                    + 'never given to the models.'
-                  : 'No isFraud column, so alert volume can be measured but accuracy cannot.'}
+                    + 'Labels are used to measure accuracy, never shown to the models.'
+                  : 'No isFraud column, so accuracy cannot be measured.'}
             </p>
 
             <div style={{ overflowX: 'auto', marginBottom: 4 }}>
@@ -482,8 +481,7 @@ export default function BatchAnalysis() {
               </table>
             </div>
             <p style={{ fontSize: 13, color: 'rgb(var(--ds-faint))' }}>
-              First {inspect.preview.length} rows, read locally. Nothing has been
-              uploaded or scored yet.
+              First {inspect.preview.length} rows. Nothing uploaded yet.
             </p>
           </div>
         )}
@@ -510,8 +508,8 @@ export default function BatchAnalysis() {
             />
             <span className="text-[15px] text-[rgb(var(--ds-faint))]">
               {thresholdInput.trim() === ''
-                ? 'blank uses whatever the live monitor alerts on'
-                : 'this run only — the monitor is unchanged'}
+                ? 'blank uses the monitor’s line'
+                : 'this run only'}
             </span>
           </label>
           {scoring && (
@@ -541,11 +539,11 @@ export default function BatchAnalysis() {
         <div style={{ marginTop: 18 }}>
           <div className="ds-divider" style={{ marginBottom: 14 }} />
           <SectionHeading
-            label="Applied in the browser the moment a file is chosen"
-            title="What every file is checked against"
+            label="Checked as soon as you choose a file"
+            title="File checks"
             action={<span className="ds-mono" style={{ fontSize: 13,
                     color: 'rgb(var(--ds-faint))' }}>
-              mirrors backend/batch.py
+              checked again on upload
             </span>}
           />
 
@@ -554,7 +552,7 @@ export default function BatchAnalysis() {
             <div>
               <div className="ds-section-label" style={{ color: 'rgb(var(--ds-signal))',
                     marginBottom: 8 }}>
-                Blocking — the run is prevented
+                Must pass
               </div>
               <ul style={{ margin: 0, padding: 0, listStyle: 'none',
                            display: 'grid', gap: 7 }}>
@@ -562,14 +560,14 @@ export default function BatchAnalysis() {
                   ['Required columns present',
                    'step, type, amount, nameOrig, nameDest'],
                   ['No empty required values',
-                   'a transaction with no amount or counterparty cannot be scored, and imputing one would invent evidence'],
+                   'amount and accounts cannot be blank'],
                   ['Numeric columns are numeric',
-                   'amount and the four balance columns must parse as numbers'],
+                   'amount and balances must be numbers'],
                   ['Known transaction type',
-                   'TRANSFER, CASH_OUT, CASH_IN, PAYMENT, DEBIT — the behavioural model is trained per type'],
+                   'TRANSFER, CASH_OUT, CASH_IN, PAYMENT or DEBIT'],
                   ['Rows match the header',
-                   'one stray comma shifts every value after it'],
-                  ['At most 5,000 rows', 'larger files are split into batches'],
+                   'a stray comma shifts every value'],
+                  ['At most 5,000 rows', 'split larger files'],
                 ].map(([t, d]) => (
                   <li key={t} style={{ fontSize: 14, lineHeight: 1.55 }}>
                     <span style={{ color: 'rgb(var(--ds-signal))', marginRight: 6 }}>✗</span>
@@ -583,21 +581,21 @@ export default function BatchAnalysis() {
             <div>
               <div className="ds-section-label" style={{ color: 'rgb(var(--ds-warn))',
                     marginBottom: 8 }}>
-                Advisory — it runs, and says so
+                Warnings only
               </div>
               <ul style={{ margin: 0, padding: 0, listStyle: 'none',
                            display: 'grid', gap: 7 }}>
                 {[
                   ['isFraud column present',
-                   'without it alert volume can be measured but accuracy cannot'],
+                   'needed to measure accuracy'],
                   ['Labels are readable',
-                   '0/1 or true/false; anything else is ignored when scoring'],
+                   '0/1 or true/false'],
                   ['At least one positive label',
-                   'with none, recall cannot exist — there is nothing to recall'],
+                   'needed to measure recall'],
                   ['No negative amounts',
-                   'usually a reversal or an export artefact'],
+                   'often a reversal or export error'],
                   ['No duplicate transaction ids',
-                   'repeats are each scored separately'],
+                   'repeats are scored separately'],
                 ].map(([t, d]) => (
                   <li key={t} style={{ fontSize: 14, lineHeight: 1.55 }}>
                     <span style={{ color: 'rgb(var(--ds-warn))', marginRight: 6 }}>!</span>
@@ -611,8 +609,7 @@ export default function BatchAnalysis() {
 
           <p style={{ fontSize: 13, lineHeight: 1.6, color: 'rgb(var(--ds-faint))',
                       marginTop: 14 }}>
-            Header names are matched case-insensitively. Findings name the
-            offending rows. The upload is validated again server-side.
+            Column names are not case-sensitive. Problems list the rows.
           </p>
         </div>
       </Panel>
@@ -644,7 +641,7 @@ export default function BatchAnalysis() {
                 {meta.rows.toLocaleString()} transactions
                 {meta.has_labels
                   ? ` · ${meta.labelled.toLocaleString()} labelled for scoring`
-                  : ' · no labels, detection cannot be scored'}
+                  : ' · no labels'}
               </p>
             </div>
             <Badge tone={scoring ? 'warn' : 'good'}>
@@ -674,7 +671,7 @@ export default function BatchAnalysis() {
               <span className="ds-mono" style={{ fontSize: 17, minWidth: 52, textAlign: 'right',
                     color: latest.alerted ? 'rgb(var(--ds-sev-critical))'
                       : 'rgb(var(--ds-accent-strong))' }}>
-                {typeof latest.score === 'number' ? latest.score.toFixed(3) : '—'}
+                {typeof latest.score === 'number' ? latest.score.toFixed(3) : '-'}
               </span>
               <span className="ds-mono" style={{ fontSize: 14, color: 'rgb(var(--ds-faint))' }}>
                 {latest.modalities_used}/3
@@ -721,9 +718,8 @@ export default function BatchAnalysis() {
         >
           {upstreamNotices.length === 3 ? (
             <p className="leading-relaxed">
-              None of the three model APIs could be reached, so no transaction in
-              this file could be scored. Start the model services and run the
-              file again. Nothing below is a detection result.
+              No model could be reached, so nothing was scored. Start the model
+              services and try again.
             </p>
           ) : (
             <ul className="mt-1 space-y-1">
@@ -741,11 +737,10 @@ export default function BatchAnalysis() {
         <Panel className="ds-panel-pad">
           <CardHeader
             title="No results"
-            description={`All ${summary.analysed.toLocaleString()} rows were read and validated successfully, but none could be scored because no model was reachable.`}
+            description={`All ${summary.analysed.toLocaleString()} rows were read, but no model was reachable to score them.`}
           />
           <p className="mt-4 text-xs leading-relaxed text-slate-500">
-            The file parsed correctly, so nothing needs changing about it. Bring
-            the model APIs up and upload it again.
+            The file is fine. Start the models and upload it again.
           </p>
         </Panel>
       )}
@@ -759,7 +754,7 @@ export default function BatchAnalysis() {
         <Panel className="ds-panel-pad">
           <CardHeader
             title="Results"
-            description="This file carried no isFraud column, so detection cannot be scored against ground truth."
+            description="No isFraud column, so accuracy cannot be measured."
           />
           <div className="mt-4 flex flex-wrap gap-6">
             <Stat label="Transactions" value={summary.analysed.toLocaleString()} />
@@ -775,8 +770,8 @@ export default function BatchAnalysis() {
       {perModel && !scoring && (
         <Panel className="ds-panel-pad">
           <SectionHeading
-            label="Each detector scored at its own operating point"
-            title="What each part of the system contributed"
+            label="Each at its own threshold"
+            title="How each part did"
             action={<span className="ds-mono" style={{ fontSize: 14,
                     color: 'rgb(var(--ds-muted))' }}>this file only</span>}
           />
@@ -798,7 +793,7 @@ export default function BatchAnalysis() {
                       {m.scored ? m.scored : <span style={{ color: 'rgb(var(--ds-faint))' }}>
                         did not answer</span>}
                     </td>
-                    <td className="ds-mono">{m.scored ? m.alerts : '—'}</td>
+                    <td className="ds-mono">{m.scored ? m.alerts : '-'}</td>
                     <td className="ds-mono">{pctOrDash(m.precision)}</td>
                     <td className="ds-mono">{pctOrDash(m.recall)}</td>
                     <td className="ds-mono" style={{ color: m.key === 'fused'
@@ -816,8 +811,7 @@ export default function BatchAnalysis() {
               const singles = perModel.filter((m) => m.key !== 'fused' && m.f1 !== null)
               const fused = perModel.find((m) => m.key === 'fused')
               if (!singles.length || !fused?.f1) {
-                return 'Not enough labelled rows answered by more than one detector to '
-                     + 'compare fusion against the individual models on this file.'
+                return 'Not enough labelled rows to compare fusion with each model.'
               }
               const best = singles.reduce((a, b) => (b.f1 > a.f1 ? b : a))
               const delta = (fused.f1 - best.f1) * 100
@@ -826,21 +820,15 @@ export default function BatchAnalysis() {
                   + `detector (${best.name}) on this file.`
                 : delta < -0.5
                   ? `${best.name} alone scored ${Math.abs(delta).toFixed(1)} F1 points `
-                    + 'above the fused verdict on this file. Fusion is conservative '
-                    + 'while a detector is missing.'
+                    + 'above fusion on this file. Fusion is cautious while a detector is missing.'
                   : `Fusion and ${best.name} are within half an F1 point on this file.`
             })()}
           </p>
           <p style={{ fontSize: 13, lineHeight: 1.6, color: 'rgb(var(--ds-faint))',
                       marginTop: 8 }}>
-            Each detector is measured at its own threshold — graph{' '}
-            {OWN_THRESHOLD.graph}, behaviour {OWN_THRESHOLD.behavioural}
-            {own?.behavioural?.source?.startsWith('midpoint') ? ' (a midpoint, '
-              + 'not a tuned value — this model publishes none)' : ''},
-            timing {OWN_THRESHOLD.temporal} — and the fused row at {fusedAt},
-            the line this run was scored at. Measuring all four at one shared
-            number asked GraphSAGE to clear a line above its own critical band.
-              Figures describe this file only.
+            Thresholds: graph {OWN_THRESHOLD.graph}, behaviour {OWN_THRESHOLD.behavioural}
+            {own?.behavioural?.source?.startsWith('midpoint') ? ' (a midpoint)' : ''},
+            timing {OWN_THRESHOLD.temporal}, fused {fusedAt}. For this file only.
           </p>
         </Panel>
       )}
@@ -849,7 +837,7 @@ export default function BatchAnalysis() {
       {narratives.length > 0 && (
         <Panel className="ds-panel-pad" data-print-region="forensic-report">
           <SectionHeading
-            label="Retrieval-grounded, generated during this run"
+            label="Written for this run"
             title="Forensic narratives"
             action={
               <span className="print:hidden" style={{ display: 'flex', gap: 8 }}>
@@ -860,10 +848,8 @@ export default function BatchAnalysis() {
           />
           <p style={{ fontSize: 14, lineHeight: 1.6, color: 'rgb(var(--ds-muted))',
                       marginBottom: 14 }}>
-            Written only for the highest-scoring rows — one per row would cost
-            seconds each. Each is constrained by Chain-of-Evidence prompting to
-            cite only the scores supplied and the one retrieved FATF typology,
-            so every figure below traces back to this run.
+            For the highest-scoring rows. Each cites only this run’s scores and
+            the matched laundering method.
           </p>
           <div style={{ display: 'grid', gap: 12 }}>
             {narratives.map((n) => (
@@ -957,7 +943,7 @@ export default function BatchAnalysis() {
 
       {!meta && !scoring && (
         <EmptyState
-          icon="—"
+          icon="-"
           title="No file analysed yet"
           description="Upload a transaction file above to score it."
         />
@@ -1006,7 +992,7 @@ function TransactionRow({ row, hasLabels }) {
             />
           </div>
           <span className="font-mono text-xs text-slate-400">
-            {row.score != null ? row.score.toFixed(2) : '—'}
+            {row.score != null ? row.score.toFixed(2) : '-'}
           </span>
         </div>
       </td>
@@ -1024,7 +1010,7 @@ function TransactionRow({ row, hasLabels }) {
 }
 
 function Scorecard({ metrics, summary }) {
-  const pct = (v) => (v == null ? '—' : `${(v * 100).toFixed(1)}%`)
+  const pct = (v) => (v == null ? '-' : `${(v * 100).toFixed(1)}%`)
 
   return (
     <Panel className="ds-panel-pad">
@@ -1061,14 +1047,12 @@ function Scorecard({ metrics, summary }) {
 
       {metrics.false_positive === 0 && metrics.true_negative > 0 && (
         <Alert tone="success" className="mt-5">
-          No legitimate transaction was flagged — {metrics.true_negative} clean
-          rows passed without a false alarm.
+          No false alarms: all {metrics.true_negative} clean rows passed.
         </Alert>
       )}
 
       <p className="mt-5 text-xs leading-relaxed text-slate-600">
-        These figures describe this file only. They are not a general accuracy
-        claim, which belongs to each model's held-out evaluation.
+        For this file only, not a general accuracy claim.
       </p>
     </Panel>
   )
@@ -1114,7 +1098,7 @@ function Stat({ label, value, tone }) {
 
 /** A percentage, or an em dash when the figure could not be computed. */
 function pctOrDash(v) {
-  return typeof v === 'number' ? `${(v * 100).toFixed(1)}%` : '—'
+  return typeof v === 'number' ? `${(v * 100).toFixed(1)}%` : '-'
 }
 
 
@@ -1150,7 +1134,7 @@ function validateCsv(text, file) {
   const header = cut(lines[0])
   const key = header.map((h) => h.toLowerCase().replace(/[\s_]/g, ''))
   if (header.length < 3 || key.every((k) => !k)) {
-    throw new Error('This does not look like a transaction file — no usable header row.')
+    throw new Error('This does not look like a transaction file. No header row found.')
   }
 
   const mapped = REQUIRED.map(([label, k]) => ({
@@ -1159,8 +1143,7 @@ function validateCsv(text, file) {
   const missing = mapped.filter((m) => m.idx === -1)
   if (missing.length) {
     block('Required columns are missing',
-      `${missing.map((m) => m.label).join(', ')} — the models cannot score a `
-      + 'transaction without them.')
+      `Add ${missing.map((m) => m.label).join(', ')}.`)
   }
 
   const labelIdx = key.indexOf('isfraud')
@@ -1169,7 +1152,7 @@ function validateCsv(text, file) {
   if (body.length > MAX_ROWS) {
     block('Too many rows',
       `${body.length.toLocaleString()} rows; the limit is ${MAX_ROWS.toLocaleString()}. `
-      + 'Split it into smaller batches.')
+      + 'Split it into smaller files.')
   }
 
   // ── row-level checks ──
@@ -1210,13 +1193,12 @@ function validateCsv(text, file) {
   if (ragged.length) {
     block('Rows do not match the header',
       `${ragged.length} row(s) have a different number of cells than the header `
-      + `(${header.length}). An extra or missing comma shifts every value after it.`,
+      + `(${header.length}). Check for a stray comma.`,
       some(ragged))
   }
   if (blank.length) {
     block('Required values are empty',
-      `${blank.length} required cell(s) are blank. A transaction with no amount or `
-      + 'no counterparty cannot be scored, and imputing one would invent evidence.',
+      `${blank.length} required cell(s) are blank.`,
       some(blank))
   }
   if (badNum.length) {
@@ -1226,18 +1208,17 @@ function validateCsv(text, file) {
   if (badType.length) {
     block('Unrecognised transaction type',
       `${badType.length} row(s) use a type outside ${VALID_TYPES.join(', ')}. `
-      + 'The behavioural model is trained per type and has no stratum for these.',
+      + 'These cannot be scored.',
       some(badType))
   }
   if (negative.length) {
     warn('Negative amounts',
-      `${negative.length} row(s) have a negative amount. These will score, but a `
-      + 'negative transfer is usually a reversal or an export artefact.',
+      `${negative.length} row(s) have a negative amount, often a reversal or export error.`,
       some(negative))
   }
   if (dupes.length) {
     warn('Duplicate transaction ids',
-      `${dupes.length} row(s) repeat an id seen earlier. They will each be scored.`,
+      `${dupes.length} row(s) repeat an id. Each will be scored.`,
       some(dupes))
   }
 
@@ -1251,18 +1232,15 @@ function validateCsv(text, file) {
     })
     if (badLabel) {
       warn('Unreadable labels',
-        `${badLabel} isFraud value(s) are neither 0/1 nor true/false and will be `
-        + 'ignored when scoring accuracy.')
+        `${badLabel} isFraud value(s) are not 0/1 or true/false and will be ignored.`)
     }
     if (fraudLabelled === 0) {
       warn('No positive labels',
-        'Every row is labelled not-fraud, so recall cannot be computed — there is '
-        + 'nothing to recall.')
+        'Every row is labelled not-fraud, so recall cannot be measured.')
     }
   } else {
     warn('No isFraud column',
-      'Alert volume can be measured but accuracy cannot. Add an isFraud column to '
-      + 'score detection against ground truth.')
+      'Add an isFraud column to measure accuracy.')
   }
 
   const preview = body.slice(0, 5).map((l) => {

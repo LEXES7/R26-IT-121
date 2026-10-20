@@ -31,7 +31,7 @@ export default function Navbar() {
   // computed from a layout guess, so it stays right when the font or the
   // link set changes.
   const linksRef = useRef(null)
-  const [pill, setPill] = useState({ left: 0, width: 0, on: false })
+  const [pill, setPill] = useState({ left: 0, width: 0, on: false, to: null })
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -41,12 +41,12 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const movePill = (el) => {
+  const movePill = (el, to) => {
     const box = linksRef.current
     if (!box || !el) return
     const b = box.getBoundingClientRect()
     const r = el.getBoundingClientRect()
-    setPill({ left: r.left - b.left, width: r.width, on: true })
+    setPill({ left: r.left - b.left, width: r.width, on: true, to })
   }
 
   /* At rest the pill sits on the current page, so it marks where you are as
@@ -56,10 +56,10 @@ export default function Navbar() {
   const restPill = useCallback(() => {
     const box = linksRef.current
     const active = box?.querySelector('[aria-current="page"]')
-    if (!active) return setPill((p) => ({ ...p, on: false }))
+    if (!active) return setPill((p) => ({ ...p, on: false, to: null }))
     const b = box.getBoundingClientRect()
     const r = active.getBoundingClientRect()
-    setPill({ left: r.left - b.left, width: r.width, on: true })
+    setPill({ left: r.left - b.left, width: r.width, on: true, to: active.getAttribute('data-to') })
   }, [])
 
 
@@ -150,9 +150,9 @@ export default function Navbar() {
     <nav
       ref={navRef}
       data-scrolled={scrolled}
-      className="liquid nav-liquid"
+      className="nav-island"
     >
-      <div className="flex h-[3.75rem] items-center justify-between gap-6 px-5 sm:px-7">
+      <div className="mx-auto flex h-[4.5rem] max-w-[88rem] items-center justify-between gap-6 px-5 sm:px-7">
         <Link to="/" className="shrink-0" aria-label="DeepSentinel home">
           <Logo />
         </Link>
@@ -161,7 +161,10 @@ export default function Navbar() {
         <div
           ref={linksRef}
           onMouseLeave={restPill}
-          className="relative hidden items-center gap-1 lg:flex"
+          className={cx(
+            'liquid nav-island-links relative hidden items-center gap-0.5',
+            auth.isAuthenticated ? 'xl:flex' : 'lg:flex',
+          )}
         >
           <span className="nav-pill" data-on={pill.on}
                 style={{ left: pill.left, width: pill.width }} />
@@ -169,14 +172,13 @@ export default function Navbar() {
             <Link
               key={l.to}
               to={l.to}
+              data-to={l.to}
               aria-current={pathname === l.to ? 'page' : undefined}
-              onMouseEnter={(e) => movePill(e.currentTarget)}
-              onFocus={(e) => movePill(e.currentTarget)}
+              onMouseEnter={(e) => movePill(e.currentTarget, l.to)}
+              onFocus={(e) => movePill(e.currentTarget, l.to)}
               className={cx(
-                'relative z-10 rounded-full px-3 py-1.5 text-[0.8125rem] transition-colors',
-                pathname === l.to
-                  ? 'font-medium text-slate-100'
-                  : 'text-slate-400 hover:text-slate-100',
+                'relative z-10 rounded-full px-[0.95rem] py-2 text-[0.8125rem] font-medium transition-colors duration-300',
+                pill.on && pill.to === l.to ? 'nav-on' : 'text-slate-400 hover:text-slate-100',
               )}
             >
               {l.label}
@@ -190,7 +192,7 @@ export default function Navbar() {
                 aria-expanded={openMenu === 'admin'}
                 aria-haspopup="menu"
                 className={cx(
-                  'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  'relative z-10 flex items-center gap-1.5 rounded-full px-[0.95rem] py-2 text-[0.8125rem] font-medium transition-colors',
                   isAdminSectionActive || openMenu === 'admin'
                     ? 'bg-surface-overlay text-slate-200'
                     : 'text-slate-400 hover:bg-surface-raised hover:text-slate-200',
@@ -242,7 +244,7 @@ export default function Navbar() {
         {/* Right side */}
         <div className="flex items-center gap-2">
           {auth.isAuthenticated ? (
-            <div className="relative hidden lg:block">
+            <div className="relative hidden xl:block">
               <button
                 onClick={() => setOpenMenu((m) => (m === 'user' ? null : 'user'))}
                 aria-expanded={openMenu === 'user'}
@@ -301,25 +303,23 @@ export default function Navbar() {
             </div>
           ) : (
             <div className="hidden items-center gap-2 lg:flex">
-              <Link
-                to="/signup"
-                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:text-slate-200"
-              >
-                Talk to us
-              </Link>
-              <Link
-                to="/login"
-                className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-400"
-              >
+              <ThemeToggle />
+              <Link to="/login" className="island-btn island-btn-line">
                 Sign in
+              </Link>
+              <Link to="/signup" className="island-btn island-btn-fill">
+                Talk to us
               </Link>
             </div>
           )}
 
-          <ThemeToggle className="hidden lg:inline-flex" />
+          {auth.isAuthenticated && <ThemeToggle className="hidden xl:inline-flex" />}
 
           <button
-            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-surface-raised hover:text-slate-200 lg:hidden"
+            className={cx(
+              'rounded-full p-2 text-slate-400 transition-colors hover:bg-surface-raised hover:text-slate-200',
+              auth.isAuthenticated ? 'xl:hidden' : 'lg:hidden',
+            )}
             onClick={() => setMobileOpen((v) => !v)}
             aria-expanded={mobileOpen}
             aria-label="Toggle navigation"
@@ -332,8 +332,11 @@ export default function Navbar() {
       {/* Mobile */}
       {mobileOpen && (
         <div
-          className="max-h-[calc(100vh-4rem)] space-y-1 overflow-y-auto border-t border-subtle bg-sentinel-950 px-4 py-3 lg:hidden"
-                  >
+          className={cx(
+            'mx-4 mb-3 max-h-[calc(100vh-6rem)] space-y-1 overflow-y-auto rounded-3xl border border-subtle bg-sentinel-950 px-4 py-3',
+            auth.isAuthenticated ? 'xl:hidden' : 'lg:hidden',
+          )}
+        >
           {primary.map((l) => (
             <Link
               key={l.to}

@@ -119,7 +119,7 @@ export default function TransactionEditor({ txn, onChange, onReset, dirty }) {
         </span>
         <span className="numeric text-[22px] leading-none"
               style={{ color: drained ? 'rgb(var(--ds-sev-critical))' : 'rgb(var(--ds-ink))' }}>
-          {ratio == null ? '—' : `${(ratio * 100).toFixed(1)}%`}
+          {ratio == null ? '-' : `${(ratio * 100).toFixed(1)}%`}
         </span>
         <span className="text-[13px]" style={{ color: 'rgb(var(--ds-muted))' }}>
           {ratio == null ? 'the account had no balance to draw on'

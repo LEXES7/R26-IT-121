@@ -11,10 +11,10 @@ import ConfirmDialog from './ConfirmDialog'
 /**
  * The signed-in application shell.
  *
- * A sidebar rather than a top bar, because the console has fourteen
- * destinations grouped into three jobs — observe, investigate, understand —
- * and a horizontal strip can neither show that grouping nor hold that many
- * items without becoming a menu of menus.
+ * A sidebar rather than a top bar, because the console has a dozen
+ * destinations grouped by the job being done, and a horizontal strip can
+ * neither show that grouping nor hold that many items without becoming a
+ * menu of menus.
  *
  * The public site keeps its own chrome. A landing page is read once and has to
  * argue; a console is read all day and has to get out of the way, so the two
@@ -82,6 +82,8 @@ const ADMIN_NAV = [
   ['Operate', [
     ['/', 'System', I.gauge],
     ['/monitor', 'Live monitor', I.activity],
+    ['/analyzer', 'Analyzer', I.search],
+    ['/assistant', 'Assistant', I.brain],
   ]],
   ['Detectors', [
     ['/graph', 'Network', I.graph],
@@ -94,9 +96,6 @@ const ADMIN_NAV = [
     ['/thresholds', 'Thresholds', I.sliders],
     ['/report-style', 'Report style', I.page],
     ['/settings', 'Administration', I.settings],
-  ]],
-  ['Understand', [
-    ['/about', 'Architecture', I.log],
   ]],
 ]
 
@@ -115,10 +114,7 @@ const OPS_NAV = [
   ['Investigate', [
     ['/cases', 'Cases', I.archive],
     ['/batch', 'Batch upload', I.upload],
-  ]],
-  ['Understand', [
     ['/assistant', 'Assistant', I.brain],
-    ['/about', 'Architecture', I.log],
   ]],
   // Administration is an administrator's; the account inside it is everyone's.
   ['Workspace', [
@@ -190,6 +186,7 @@ export default function ConsoleShell({ eyebrow, title, subtitle, actions, childr
                  className="shrink-0 select-none object-contain"
                  draggable={false} />
             <div className="ds-brand-copy">
+              <div className="ds-brand-word">Deep<span>Sentinel</span></div>
               <div className="ds-brand-sub">
                 {isAdmin ? 'System administration' : 'Fraud operations'}
               </div>
@@ -316,7 +313,7 @@ export function Badge({ children, tone = '' }) {
   return <span className={`ds-badge ${tone}`}>{children}</span>
 }
 
-/** A headline figure. `—` when the value is unknown, never 0: "nothing
+/** A headline figure. `-` when the value is unknown, never 0: "nothing
  *  happened" and "we could not reach the service" must not look the same. */
 export function Metric({ label, value, meta, tone = '', onClick }) {
   const Tag = onClick ? 'button' : 'div'
@@ -326,7 +323,7 @@ export function Metric({ label, value, meta, tone = '', onClick }) {
            style={{ all: 'unset', cursor: onClick ? 'pointer' : 'default', display: 'block', width: '100%' }}>
         <div className="ds-section-label">{label}</div>
         <div className="ds-kpi-value ds-mono">
-          {value === null || value === undefined ? '—' : value}
+          {value === null || value === undefined ? '-' : value}
         </div>
         <div className="ds-kpi-meta">{meta}</div>
       </Tag>
@@ -347,6 +344,28 @@ export function Footer({ left = 'Evidence stays attached to the decision.' }) {
     <div className="ds-footer">
       <span>{left}</span>
       <span className="ds-mono">DEEPSENTINEL / INTERNAL</span>
+    </div>
+  )
+}
+
+/** The dot-matrix status sign. `items` are short phrases; `alert` ones glow red.
+ *  Hidden from assistive technology: everything on it is said elsewhere on the
+ *  page in plain text. */
+export function Ticker({ items }) {
+  if (!items?.length) return null
+  return (
+    <div aria-hidden className="ds-ticker">
+      <div className="ticker-window">
+        <div className="ticker-track">
+          {[0, 1].map((copy) => (
+            <span key={copy} className="ticker-run">
+              {items.map((t, i) => (
+                <span key={i} className={t.alert ? 'ticker-alert' : undefined}>{t.text}</span>
+              ))}
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

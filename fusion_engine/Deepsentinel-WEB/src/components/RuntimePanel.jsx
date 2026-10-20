@@ -21,7 +21,7 @@ function Dot({ ok, warn }) {
 }
 
 function uptime(sec) {
-  if (sec == null) return '—'
+  if (sec == null) return '-'
   const s = Math.floor(sec)
   if (s < 60) return `${s}s`
   if (s < 3600) return `${Math.floor(s / 60)}m ${s % 60}s`
@@ -78,7 +78,7 @@ export default function RuntimePanel({ runtime }) {
                   <div>
                     <dt className="text-slate-600">params</dt>
                     <dd className="numeric text-slate-400">
-                      {model.parameters?.toLocaleString() ?? '—'}
+                      {model.parameters?.toLocaleString() ?? '-'}
                     </dd>
                   </div>
                   <div>
@@ -95,14 +95,10 @@ export default function RuntimePanel({ runtime }) {
               {!ready && (
                 <p className="mt-1 pl-3.5 text-[14px] leading-relaxed text-slate-600">
                   {!reachable
-                    ? `Not reachable — this detector abstains, and fusion applies
-                       an uncertainty penalty rather than treating silence as
-                       innocence.`
+                    ? 'Not reachable. Left out, and results are marked less certain.'
                     : d.missing_artifacts?.length
-                      ? `Running, but its weights are not on disk, so it cannot
-                         score. Missing: ${d.missing_artifacts.join(', ')}.`
-                      : `Running, but not ready to score. It abstains until it
-                         is.`}
+                      ? `Running, but its model files are missing: ${d.missing_artifacts.join(', ')}.`
+                      : 'Running, but not ready to score yet.'}
                 </p>
               )}
             </div>

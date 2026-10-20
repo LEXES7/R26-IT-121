@@ -14,7 +14,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 const fmtBytes = (n) => {
-  if (n == null) return '—'
+  if (n == null) return '-'
   if (n < 1024) return `${n} B`
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
   return `${(n / 1024 / 1024).toFixed(2)} MB`
@@ -229,9 +229,7 @@ export default function StreamMonitor({
       </div>
 
       <p className="text-[13px] leading-relaxed" style={{ color: 'rgb(var(--ds-faint))' }}>
-        Bytes are summed from the chunks the connection actually delivered, and
-        the rate is measured over the last four seconds. Nothing here is a
-        placeholder animation.
+        Measured from the live connection over the last four seconds.
       </p>
     </section>
   )

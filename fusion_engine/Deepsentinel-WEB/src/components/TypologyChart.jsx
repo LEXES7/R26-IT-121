@@ -62,7 +62,7 @@ export default function TypologyChart({ groups, rows, labelled }) {
            role="img" aria-label={`${total} flagged transactions across ${groups.length} typologies`}>
         {arcs.map((a) => (
           <path key={a.name} d={a.d} fill={a.fill} opacity="0.85">
-            <title>{`${a.name} — ${a.n} of ${total}`}</title>
+            <title>{`${a.name}: ${a.n} of ${total}`}</title>
           </path>
         ))}
         <text x="70" y="66" textAnchor="middle" className="numeric"

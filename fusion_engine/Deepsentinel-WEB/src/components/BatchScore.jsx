@@ -233,7 +233,7 @@ export default function BatchScore() {
                     </span>
                   </span>
                   <span className="shrink-0" style={{ color: 'rgb(var(--ds-muted))' }}>
-                    {s.score == null ? '—' : s.score.toFixed(4)}
+                    {s.score == null ? '-' : s.score.toFixed(4)}
                     {s.label === 1 && (
                       <span style={{ color: 'rgb(var(--ds-sev-critical))' }}> · fraud</span>
                     )}
@@ -250,8 +250,8 @@ export default function BatchScore() {
               {[
                 ['rows scored', result.answered],
                 ['flagged', result.flagged],
-                ['labelled fraud in file', result.labelled ? result.actualFraud : '—'],
-                ['of those, caught', result.labelled ? result.caught : '—'],
+                ['labelled fraud in file', result.labelled ? result.actualFraud : '-'],
+                ['of those, caught', result.labelled ? result.caught : '-'],
               ].map(([k, v]) => (
                 <div key={k}>
                   <p className="ds-mono text-[11px] uppercase tracking-wider"

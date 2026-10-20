@@ -21,46 +21,36 @@ export const COMPONENTS = {
     tagline: 'Fraud is a shape, not a number',
     question: 'Who pays whom?',
     intro:
-      'A transaction that looks ordinary on its own can be one spoke of a mule ring. '
-      + 'This component builds the payment network — accounts as nodes, transfers as '
-      + 'directed edges — and learns structure that per-transaction models are blind to.',
+      'A normal-looking payment can be one spoke of a mule ring. This model maps who '
+      + 'pays whom and spots the shapes fraud makes.',
     detects: [
-      ['Hub-and-spoke', 'Many senders converging on one collection account'],
-      ['Smurfing', 'Deliberately similar amounts split to stay under attention'],
-      ['Layering', 'Funds chained through intermediaries to obscure origin'],
+      ['Hub-and-spoke', 'Many senders paying one collection account'],
+      ['Smurfing', 'Money split into similar small amounts'],
+      ['Layering', 'Money passed through middle accounts to hide its source'],
       ['Account takeover', 'A dormant account drained in one move'],
     ],
     metrics: [
-      { label: 'Accounts mapped', value: '3.3M', note: 'nodes in the payment graph' },
-      { label: 'Transfers mapped', value: '2.8M', note: 'directed edges between them' },
-      { label: 'Neighbourhood', value: '2 hops', note: 'read around every transaction' },
-      { label: 'Serving', value: 'precomputed', note: 'no graph traversal at request time' },
+      { label: 'Accounts mapped', value: '3.3M', note: 'in the payment network' },
+      { label: 'Transfers mapped', value: '2.8M', note: 'between those accounts' },
+      { label: 'Neighbourhood', value: '2 hops', note: 'read around each payment' },
+      { label: 'Serving', value: 'precomputed', note: 'fast answers, no live search' },
     ],
     findings: [
       {
         title: 'It scores accounts it has never seen',
-        body:
-          'New accounts appear constantly, and retraining for each one is not an '
-          + 'option. The model applies the structure it has learned elsewhere to an '
-          + 'account opened this morning.',
+        body: 'An account opened this morning is scored without retraining.',
       },
       {
         title: 'The ring comes back with the score',
-        body:
-          'A flag is not useful on its own. Every alert arrives with the accounts '
-          + 'around it, the role each played, the transfers that carried the most '
-          + 'weight, and the account the money ended up in.',
+        body: 'Every alert lists the accounts involved, their roles, and where the money ended up.',
       },
       {
         title: 'It says which transfers implicated the account',
-        body:
-          'Each transfer is weighted as the model reads it, and those weights rank '
-          + 'the evidence. An investigator sees the two or three movements that '
-          + 'mattered, not a list of forty.',
+        body: 'You see the two or three transfers that mattered, not a list of forty.',
       },
     ],
     pipeline: ['Transaction', 'k=2 neighbourhood', 'Edge-aware message passing', 'Calibrated score', 'Ring + pattern'],
-    output: 'A relational risk score plus the extracted ring: sink account, money-laundering pattern, per-account roles, and the transfers the model weighted most.',
+    output: 'A risk score, plus the ring: where the money ended up, the pattern, each account’s role and the key transfers.',
     status: 'delivered',
   },
 
@@ -70,54 +60,38 @@ export const COMPONENTS = {
     color: 'behavioral',
     title: 'Stratified VAE with Dual-Signal Anomaly Attribution',
     tagline: 'Unusual is not an explanation',
-    question: 'Which part of this behaviour does not fit?',
+    question: 'What does not fit?',
     intro:
-      'An anomaly detector that only emits a number tells an investigator nothing '
-      + 'they can act on. This component trains one variational autoencoder per '
-      + 'transaction type on non-fraud traffic alone, then decomposes every alert '
-      + 'back through the model’s own objective — which input features it could '
-      + 'not reconstruct, and which latent dimensions diverged — so the score '
-      + 'arrives with the reason attached.',
+      'A score alone tells an investigator nothing. This model learns what normal '
+      + 'looks like for each transaction type, then says which parts of a payment '
+      + 'did not fit.',
     detects: [
-      ['Balance-shape anomalies', 'Origin-side movement that does not match the type’s normal pattern'],
-      ['Off-pattern value', 'Amounts outside the learned range for that transaction type'],
-      ['Behavioural typologies', 'Recurring attribution patterns, discovered without labels'],
+      ['Odd balance changes', 'The sender’s balance moves in an unusual way'],
+      ['Unusual amounts', 'Far outside the normal range for that type'],
+      ['Repeat patterns', 'Recurring kinds of oddity, found automatically'],
     ],
     metrics: [
       { label: 'Models', value: '4', note: 'one per transaction type' },
-      { label: 'Response', value: '~5 ms', note: 'score and full attribution' },
-      { label: 'Attribution', value: 'per feature', note: 'and per latent dimension' },
-      { label: 'Patterns found', value: '17', note: 'recurring behavioural signatures' },
+      { label: 'Response', value: '~5 ms', note: 'score and reasons' },
+      { label: 'Reasons', value: 'per feature', note: 'what did not fit' },
+      { label: 'Patterns found', value: '17', note: 'recurring kinds of oddity' },
     ],
     findings: [
       {
         title: 'A cash withdrawal is not a bill payment',
-        body:
-          'One model for everything means everything is judged against an average '
-          + 'that describes nothing. There is a separate model per transaction type, '
-          + 'so each is measured against its own normal.',
+        body: 'Each transaction type has its own model, so each is judged against its own normal.',
       },
       {
         title: 'The reason arrives with the score',
-        body:
-          'It reports which parts of the transaction it could not account for \u2014 the '
-          + 'balance movement rather than the amount, say. That decomposition comes '
-          + 'from the model\u2019s own workings, which is why a full explanation still '
-          + 'returns in single-digit milliseconds.',
+        body: 'It says which part did not fit, such as the balance rather than the amount, in milliseconds.',
       },
       {
-        title: 'Recurring signatures are grouped, then named',
-        body:
-          'Explanations that look alike are clustered together, and the groups that '
-          + 'emerge are given readable names. The patterns are found first and '
-          + 'labelled second, not invented and then looked for.',
+        title: 'Repeat patterns get names',
+        body: 'Similar oddities are grouped and named, so you can recognise them next time.',
       },
     ],
     pipeline: ['Transaction', 'Type stratum', 'VAE reconstruction', 'Signal 1 + 2 + 3', 'Typology match'],
-    output:
-      'A calibrated behavioural risk score, the per-feature and per-latent-dimension '
-      + 'attribution behind it, and the nearest discovered typology — or an explicit '
-      + 'statement that none matched.',
+    output: 'A risk score, the reasons behind it, and the closest known pattern (or a note that none matched).',
     status: 'delivered',
   },
 
@@ -129,51 +103,36 @@ export const COMPONENTS = {
     tagline: 'No transaction happens in isolation',
     question: 'What happened right before this?',
     intro:
-      'A transaction scored on its own looks unremarkable; the same transaction after '
-      + 'two prior partial drains from the same account is a pattern. This component '
-      + 'reads every transaction as one step in a system-wide 32-transaction sliding '
-      + 'window — not a per-account history, which PaySim cannot support — and a dilated '
-      + 'causal TCN with a self-attention layer, fraud_attention, names the single prior '
-      + 'transaction that drove the score.',
+      'One payment can look fine on its own and suspicious after what came before it. '
+      + 'This model reads each payment with the 32 before it and names the one that '
+      + 'mattered most.',
     detects: [
-      ['Escalating drains', 'A partial drain from an account followed by a full one shortly after'],
-      ['Mule priming', 'A destination account emptied shortly before receiving a large transfer'],
-      ['Fraud clustering', 'Multiple fraud transactions falling inside the same short window'],
+      ['Escalating drains', 'A partial drain, then a full one soon after'],
+      ['Mule priming', 'An account emptied just before a large payment arrives'],
+      ['Fraud bursts', 'Several fraud payments close together'],
     ],
     metrics: [
-      { label: 'Context', value: '32', note: 'preceding transactions read with each one' },
-      { label: 'Direction', value: 'causal', note: 'it cannot see what has not happened' },
-      { label: 'Evidence', value: 'named', note: 'returns the prior transaction itself' },
-      { label: 'Deployment', value: 'stateless', note: 'no per-account history to store' },
+      { label: 'Context', value: '32', note: 'earlier payments read each time' },
+      { label: 'Direction', value: 'causal', note: 'never looks ahead' },
+      { label: 'Evidence', value: 'named', note: 'points to the earlier payment' },
+      { label: 'Deployment', value: 'stateless', note: 'no account history stored' },
     ],
     findings: [
       {
         title: 'It reads the run, not the transaction',
-        body:
-          'A transfer on its own can be unremarkable. The same transfer arriving '
-          + 'after two partial drains is a pattern. Each transaction is read '
-          + 'alongside the thirty-two that came before it.',
+        body: 'Each payment is read together with the 32 that came before it.',
       },
       {
-        title: 'It hands back a transaction, not a timestamp',
-        body:
-          'Most attention mechanisms report which position in a sequence mattered. '
-          + 'This one returns the whole prior transaction \u2014 its amount, its accounts, '
-          + 'its balances \u2014 so the evidence is something a reviewer can open.',
+        title: 'It points to the payment that mattered',
+        body: 'You get the earlier payment itself, with its amount and accounts, ready to open.',
       },
       {
         title: 'Nothing to store per account',
-        body:
-          'The window runs over arrival order across the whole stream rather than '
-          + 'per-account history, so deploying it needs no customer log and no '
-          + 'migration.',
+        body: 'It reads the live stream in order, so there is no customer history to keep.',
       },
     ],
     pipeline: ['Transaction stream', '32-tx sliding window', 'Dilated causal TCN', 'fraud_attention', 'Risk + predecessor'],
-    output:
-      'A temporal risk score plus the one prior transaction fraud_attention weighted '
-      + 'most heavily — its own feature vector, not just a position — for the forensic '
-      + 'layer to cite by name.',
+    output: 'A risk score plus the one earlier payment that mattered most, for the report to cite.',
     status: 'delivered',
   },
 
@@ -185,47 +144,35 @@ export const COMPONENTS = {
     tagline: 'Three opinions, one defensible verdict',
     question: 'So what should we do about it?',
     intro:
-      'Three detectors can disagree, and one can be unavailable. The fusion engine '
-      + 'weighs the signals it actually has into a single score, then retrieves the '
-      + 'matching money-laundering typology and writes a narrative that cites the '
-      + 'evidence behind every claim.',
+      'The three detectors are combined into one score. Then the matching laundering '
+      + 'method is found and a report is written that cites its evidence.',
     detects: [
-      ['Weighted fusion', 'A meta-classifier over the available modalities'],
-      ['Graceful degradation', 'A missing detector abstains rather than voting zero'],
-      ['Grounded reporting', 'Retrieval ties each statement to a typology and a score'],
+      ['Weighted fusion', 'A trained model combines the three scores'],
+      ['Handles outages', 'A missing detector is left out, not counted as safe'],
+      ['Cited reports', 'Every statement points to a score or a known method'],
     ],
     metrics: [
       { label: 'Signals combined', value: '3', note: 'network, behaviour and timing' },
-      { label: 'Typologies indexed', value: '10', note: 'recognised laundering methods' },
-      { label: 'Report', value: 'cited', note: 'every claim traced to a stored input' },
-      { label: 'Export', value: 'PDF', note: 'plus a regulatory filing draft' },
+      { label: 'Methods indexed', value: '10', note: 'known laundering methods' },
+      { label: 'Report', value: 'cited', note: 'every claim has a source' },
+      { label: 'Export', value: 'PDF', note: 'plus a draft filing' },
     ],
     findings: [
       {
         title: 'Absence is not innocence',
-        body:
-          'When a detector cannot be reached its signal is excluded rather than '
-          + 'counted as a low score, and the verdict says so. Otherwise an outage '
-          + 'would quietly start looking like safety.',
+        body: 'If a detector is down, it is left out and the verdict says so.',
       },
       {
-        title: 'Every sentence traces to something recorded',
-        body:
-          'The narrative is written from the retrieved laundering method and the '
-          + 'scores actually produced. It cannot introduce a fact absent from the '
-          + 'record, so an analyst can check any claim instead of trusting prose.',
+        title: 'Every sentence has a source',
+        body: 'The report only uses recorded scores and the matched method, so every claim can be checked.',
       },
       {
         title: 'The filing is drafted for you',
-        body:
-          'A confirmed alert arrives with a suspicious-activity report already '
-          + 'written \u2014 subject accounts, the transaction chain, the method and the '
-          + 'narrative. Watermarked as a draft, never filed automatically, and it '
-          + 'records who approved it.',
+        body: 'A suspicious-activity report is drafted for you. A person approves it; nothing is filed automatically.',
       },
     ],
     pipeline: ['Three scores', 'Weighted fusion', 'Typology retrieval', 'Grounded generation', 'Forensic report'],
-    output: 'A fused verdict, a risk classification, and a cited case narrative.',
+    output: 'One verdict, a risk level and a cited report.',
     status: 'delivered',
   },
 }

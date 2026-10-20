@@ -14,6 +14,11 @@ import { useEffect, useRef } from 'react'
  *   - pauses entirely when scrolled out of view, so it costs nothing on the
  *     rest of the page
  *   - redraws on resize at device pixel ratio, so it stays crisp on retina
+ *
+ * Two looks. `wire` is ink lines over whatever sits behind the canvas, and
+ * inverts with the theme. `planet` paints a dark body lit from the upper left
+ * with a teal rim, so the globe reads as a solid object on either ground; the
+ * home hero uses it rising over the bottom edge of the page.
  */
 
 const LAT_LINES = 13
@@ -30,10 +35,14 @@ const IDLE_RESUME_MS = 2200
 
 /* The wireframe is drawn in ink, which must invert with the theme — white
    lines on a pale canvas are invisible. Read at draw time rather than module
-   load so a theme switch takes effect on the next frame. */
-const inkRGB = () =>
-  document.documentElement.dataset.theme === 'light' ? '15,23,42,' : '255,255,255,'
-const ACCENT = '53,88,246,'     // accent-500
+   load so a theme switch takes effect on the next frame.
+
+   The planet variant paints its own dark body, so its ink and arcs stay in
+   the dark palette on either ground. */
+const isLight = () => document.documentElement.dataset.theme === 'light'
+const inkRGB = (planet) => (!planet && isLight() ? '15,23,42,' : '255,255,255,')
+// The teal accent, stepped per ground the way --accent-400 and --accent-500 are.
+const accentRGB = (planet) => (!planet && isLight() ? '0,133,122,' : '45,212,191,')
 const ALERT = '239,68,68,'      // risk-critical
 
 /** Deterministic PRNG so the layout is identical on every mount. */
@@ -78,7 +87,7 @@ function project(theta, phi, spin, radius, tilt = TILT) {
   return { x: x * radius, y: yt * radius, z: zt, depth: (zt + 1) / 2 }
 }
 
-export default function Globe({ className = '' }) {
+export default function Globe({ className = '', variant = 'wire' }) {
   const canvasRef = useRef(null)
 
   useEffect(() => {
@@ -89,10 +98,12 @@ export default function Globe({ className = '' }) {
 
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     const scene = buildScene()
+    const planet = variant === 'planet'
 
     let width = 0
     let height = 0
     let radius = 0
+    let body = null           // the planet's shaded fill, rebuilt per size
     let raf = 0
     let spin = reduced ? 0.6 : 0
     let tilt = TILT
@@ -110,20 +121,38 @@ export default function Globe({ className = '' }) {
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      const rect = canvas.getBoundingClientRect()
-      width = rect.width
-      height = rect.height
+      // Layout size, not getBoundingClientRect: the hero scales this canvas
+      // in on load, and a box measured mid-transform comes back too small.
+      width = canvas.clientWidth
+      height = canvas.clientHeight
       canvas.width = Math.round(width * dpr)
       canvas.height = Math.round(height * dpr)
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       radius = Math.min(width, height) * 0.44
+      if (planet) {
+        // Lit from the upper left, so the sphere has a side facing the light
+        // and reads as a body rather than a flat disc.
+        body = ctx.createRadialGradient(
+          -radius * 0.3, -radius * 0.45, radius * 0.05, 0, 0, radius)
+        body.addColorStop(0, '#1d3b37')
+        body.addColorStop(0.45, '#14110f')
+        body.addColorStop(1, '#0b0a09')
+      }
     }
 
     const draw = () => {
-      const INK = `rgba(${inkRGB()}`
+      const INK = `rgba(${inkRGB(planet)}`
+      const ACCENT = accentRGB(planet)
       ctx.clearRect(0, 0, width, height)
       ctx.save()
       ctx.translate(width / 2, height / 2)
+
+      if (planet) {
+        ctx.beginPath()
+        ctx.arc(0, 0, radius, 0, Math.PI * 2)
+        ctx.fillStyle = body
+        ctx.fill()
+      }
 
       // ── Wireframe: latitude rings ──────────────────────────────────────
       for (let i = 1; i < LAT_LINES; i++) {
@@ -159,8 +188,8 @@ export default function Globe({ className = '' }) {
       // ── Rim ────────────────────────────────────────────────────────────
       ctx.beginPath()
       ctx.arc(0, 0, radius, 0, Math.PI * 2)
-      ctx.strokeStyle = `${INK}0.34)`
-      ctx.lineWidth = 1.2
+      ctx.strokeStyle = planet ? `rgba(${ACCENT}0.5)` : `${INK}0.34)`
+      ctx.lineWidth = planet ? 1.4 : 1.2
       ctx.stroke()
 
       // ── Account points ─────────────────────────────────────────────────
@@ -306,7 +335,7 @@ export default function Globe({ className = '' }) {
       canvas.removeEventListener('pointercancel', endDrag)
       canvas.removeEventListener('pointerleave', endDrag)
     }
-  }, [])
+  }, [variant])
 
   return (
     <canvas

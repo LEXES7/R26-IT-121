@@ -196,7 +196,7 @@ export default function TransactionForm({ onSubmit, loading }) {
       <Field
         label="Time step"
         error={errors.step}
-        hint="PaySim simulation hour, 1–744"
+        hint="PaySim simulation hour, 1 to 744"
         htmlFor="tx-step"
       >
         <Input

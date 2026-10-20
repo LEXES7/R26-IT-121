@@ -29,10 +29,10 @@ const SEV_HEX = {
 // Scores arrive already rounded by the server, so 0.9 and 0.8985 sit in the
 // same column at different widths. Fix the decimals here: a column of figures
 // that does not line up is harder to scan than one that does.
-const score3 = (v) => (typeof v === 'number' ? v.toFixed(3) : Number.isFinite(Number(v)) ? Number(v).toFixed(3) : '—')
+const score3 = (v) => (typeof v === 'number' ? v.toFixed(3) : Number.isFinite(Number(v)) ? Number(v).toFixed(3) : '-')
 const money = (v) => (Number.isFinite(Number(v))
   ? Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })
-  : '—')
+  : '-')
 
 export default function Monitor() {
   const [snap, setSnap] = useState(null)
@@ -42,7 +42,7 @@ export default function Monitor() {
   // canManageAlerts is administrators and risk managers — the people who act
   // on an alert, and so the people who need to know which detector raised it.
   const {
-    canControlPipeline, canViewCases, canRunAnalysis, canConfigureSystem,
+    canControlPipeline, canViewCases, canRunAnalysis, canConfigureSystem, canUseAssistant,
     canManageAlerts,
   } = useAuth()
   const [escalating, setEscalating] = useState(false)
@@ -212,9 +212,8 @@ export default function Monitor() {
               )}
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-400">
-              All three detectors read every transaction as it arrives, at the
-              same time, and their scores are fused into one verdict. None of
-              them waits on another&rsquo;s opinion.
+              Three detectors check every payment as it arrives and their scores are
+              combined into one verdict.
             </p>
           </div>
 
@@ -333,7 +332,7 @@ export default function Monitor() {
             {!alerts.length ? (
               <p className="py-10 text-center text-sm text-slate-500">
                 {running
-                  ? 'Nothing flagged yet. Most traffic is legitimate — that is the point.'
+                  ? 'Nothing flagged yet. Most payments are normal.'
                   : 'Start monitoring to screen the live stream.'}
               </p>
             ) : (
@@ -353,7 +352,7 @@ export default function Monitor() {
                     <span className="min-w-0 flex-1 truncate text-xs text-slate-400">
                       {a.pattern?.replace(/_/g, ' ') ?? 'pattern unknown'}
                       <span className="text-slate-600"> · sink </span>
-                      <span className="numeric text-slate-500">{a.sink_account ?? '—'}</span>
+                      <span className="numeric text-slate-500">{a.sink_account ?? '-'}</span>
                     </span>
                     {canManageAlerts ? (
                       <Detectors alert={a} />
@@ -409,7 +408,7 @@ export default function Monitor() {
                     {e.kind === 'screened' &&
                       `${e.transaction_id} · ${e.risk_level} · ${e.graph_score}${e.escalated ? ' → early flag' : ''}`}
                     {e.kind === 'escalated' &&
-                      `${e.transaction_id} · ${e.pattern ?? '—'} · ${e.convergence ?? 0} senders`}
+                      `${e.transaction_id} · ${e.pattern ?? '-'} · ${e.convergence ?? 0} senders`}
                     {e.kind === 'model' && `${e.transaction_id} · ${e.model} = ${e.score ?? 'unavailable'}`}
                     {e.kind === 'fused' &&
                       `${e.transaction_id} · ${e.severity} · ${e.fused_score} (${e.modalities_used}/3)`}
@@ -440,8 +439,7 @@ export default function Monitor() {
               {runtime?.monitor?.fusion
                 ? <>Strategy <span className="numeric text-slate-300">{runtime.monitor.fusion}</span>.</>
                 : 'Strategy unavailable.'}{' '}
-              A detector that cannot be reached abstains — fusion applies an
-              uncertainty penalty rather than reading silence as innocence.
+              A missing detector is left out and the verdict is marked less certain.
             </p>
           </section>
 
@@ -455,7 +453,7 @@ export default function Monitor() {
                 canViewCases && ['/cases', 'Review the queue'],
                 canRunAnalysis && ['/analyzer', 'Analyse a transaction'],
                 canConfigureSystem && ['/thresholds', 'Tune the threshold'],
-                canViewCases && ['/assistant', 'Ask the assistant'],
+                canUseAssistant && ['/assistant', 'Ask the assistant'],
                 canControlPipeline && ['/models', 'Test each detector'],
               ].filter(Boolean).map(([to, label]) => (
                 <Link key={to} to={to}
@@ -465,7 +463,7 @@ export default function Monitor() {
               ))}
             </div>
             <p className="mt-3 text-[14px] leading-relaxed text-slate-600">
-              The assistant reads this same live state.
+              The assistant sees this live view too.
             </p>
           </section>
         </aside>
@@ -510,14 +508,14 @@ function Detectors({ alert }) {
             title={absent
               ? `${label}: did not answer, so it contributed nothing to the verdict`
               : isDriver
-                ? `${label} drove this verdict (contribution ${alert.contributions?.[key]?.toFixed(2) ?? '—'})`
+                ? `${label} drove this verdict (contribution ${alert.contributions?.[key]?.toFixed(2) ?? '-'})`
                 : `${label} score ${score3(v)}`}
           >
             {isDriver && (
               <span className="mr-1 inline-block h-1 w-1 -translate-y-[2px] rounded-full bg-accent-400" />
             )}
             <span className="text-slate-600">{label} </span>
-            {absent ? '—' : score3(v)}
+            {absent ? '-' : score3(v)}
           </span>
         )
       })}
@@ -531,7 +529,7 @@ function Figure({ value, label, note, suffix, accent, urgent }) {
       <dd className={cx('numeric text-[1.75rem] leading-none',
         typeof value !== 'number' ? 'text-slate-600'
           : accent ? 'text-accent-400' : urgent ? 'text-risk-medium' : 'text-slate-100')}>
-        {typeof value === 'number' ? value : '—'}
+        {typeof value === 'number' ? value : '-'}
         {suffix && typeof value === 'number' && <span className="text-slate-600">{suffix}</span>}
       </dd>
       <dt className="eyebrow mt-2 text-slate-500">{label}</dt>

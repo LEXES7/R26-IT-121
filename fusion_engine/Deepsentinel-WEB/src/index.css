@@ -1,6 +1,6 @@
 /* @import must come first — CSS drops any @import that follows another rule,
    which is why the font previously failed to load. */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Doto:wght@800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -271,8 +271,9 @@ html.theme-transition * {
    ---------------------------------------------------------------------------
    Three typefaces, each with one job:
 
-     Instrument Serif   headlines and hero figures. The editorial voice, and the
-                        single strongest signal that a person designed this.
+     Plus Jakarta Sans  headlines and hero figures, set heavy and tight. The
+                        same face as the dashboards and the mobile app, so the
+                        product reads as one thing from the site to the phone.
      Inter              everything functional — labels, body, controls.
      JetBrains Mono     data. Tabular figures so columns of numbers align and
                         a changing value does not shift its neighbours.
@@ -307,16 +308,17 @@ html.theme-transition * {
 }
 
 @layer components {
-  /* Editorial display type. Optical sizing matters at these sizes: the serif
-     is set tight and slightly negative-tracked so a large figure reads as one
-     shape rather than as spaced glyphs. */
+  /* Display type. Set heavy and negative-tracked so a large headline reads as
+     one shape rather than as spaced glyphs. The accent clause keeps its colour
+     and stays upright: a slanted geometric sans reads as a mistake, not a
+     voice. */
   .display {
-    font-family: 'Instrument Serif', Georgia, serif;
-    font-weight: 400;
-    letter-spacing: -0.015em;
-    line-height: 0.95;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    line-height: 1.02;
   }
-  .display-italic { font-style: italic; }
+  .display-italic { font-style: normal; }
 
   /* Tabular figures. Without this a counter animating from 9 to 10 shifts
      everything beside it. */
@@ -385,24 +387,26 @@ html.theme-transition * {
    rather than a local `.dark` class, so the toggle in the header keeps working
    and a signed-in user does not get a second, disagreeing theme control.
 
-   Page titles keep Instrument Serif. Everything else — labels, tables,
-   controls — is Space Grotesk, and every figure is DM Mono. The serif is the
-   one thing carried over from the public site, so the product still sounds
-   like itself the moment someone signs in.
+   It now speaks the public site's type and palette as well as its voice.
+   Page titles are Plus Jakarta Sans with an accent clause, labels and tables
+   are Inter, figures are JetBrains Mono, and the neutrals are the site's warm
+   ones, so signing in feels like walking further into the same building
+   rather than through a door into another one. The severity colours below
+   were measured and are unchanged.
    ────────────────────────────────────────────────────────────────────────── */
 
 .ds {
-  --ds-ink: 226 232 236;
-  --ds-muted: 148 162 171;
-  --ds-faint: 104 118 127;
-  --ds-line: 42 50 56;
-  --ds-workspace: 14 17 19;
-  --ds-surface: 22 26 29;
-  --ds-surface-2: 29 34 38;
-  --ds-surface-3: 40 47 52;
+  --ds-ink: 240 237 231;
+  --ds-muted: 163 156 146;
+  --ds-faint: 133 126 117;
+  --ds-line: 46 42 39;
+  --ds-workspace: 13 12 11;
+  --ds-surface: 22 20 18;
+  --ds-surface-2: 30 27 25;
+  --ds-surface-3: 44 40 37;
   --ds-accent: 45 212 191;
   --ds-accent-strong: 94 231 213;
-  --ds-accent-soft: 22 66 61;
+  --ds-accent-soft: 18 58 54;
   --ds-signal: 255 107 92;
   --ds-signal-soft: 74 34 30;
   --ds-warn: 255 180 84;
@@ -418,26 +422,26 @@ html.theme-transition * {
 
   color: rgb(var(--ds-ink));
   background: rgb(var(--ds-workspace));
-  font-family: 'Space Grotesk', 'Trebuchet MS', sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 [data-theme='light'] .ds {
-  --ds-ink: 22 28 33;
-  --ds-muted: 88 100 110;
+  --ds-ink: 26 24 21;
+  --ds-muted: 90 83 75;
   /* --ds-faint carries every eyebrow, dt label and table header in the
      console. The old value sat at 3.4:1 on --ds-workspace — under the
      4.5:1 floor these are all set well below 14px — which read as
      washed-out captions across every screen built on this system
      (System, Monitor, Cases, Thresholds…). Darkened to 5.2:1. */
-  --ds-faint: 96 106 114;
-  --ds-line: 219 224 229;
-  --ds-workspace: 247 248 249;
+  --ds-faint: 110 101 93;
+  --ds-line: 226 220 211;
+  --ds-workspace: 246 243 238;
   --ds-surface: 255 255 255;
-  --ds-surface-2: 239 241 243;
-  --ds-surface-3: 226 230 234;
-  --ds-accent: 14 140 125;
-  --ds-accent-strong: 9 110 98;
-  --ds-accent-soft: 214 240 235;
+  --ds-surface-2: 240 236 229;
+  --ds-surface-3: 228 222 213;
+  --ds-accent: 0 133 122;
+  --ds-accent-strong: 0 110 101;
+  --ds-accent-soft: 214 238 233;
   --ds-signal: 190 40 30;
   --ds-signal-soft: 252 228 225;
   /* 4.0:1 at the old value — under 4.5:1, and this is what "Warming up" /
@@ -445,7 +449,7 @@ html.theme-transition * {
   --ds-warn: 150 88 8;
   --ds-warn-soft: 251 238 214;
   --ds-lavender: 108 93 177;
-  --ds-shadow: 18 28 38;
+  --ds-shadow: 20 17 15;
 
   /* Re-derived for paper, not dimmed: the same hues fail contrast on a light
      ground — the old amber sat at 1.72:1, effectively invisible. */
@@ -459,7 +463,7 @@ html.theme-transition * {
 .ds button { cursor: pointer; }
 .ds ::selection { background: rgb(var(--ds-accent-soft)); color: rgb(var(--ds-ink)); }
 
-.ds-mono { font-family: 'DM Mono', ui-monospace, 'SFMono-Regular', monospace; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.ds-mono { font-family: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
 .ds-fade-up { animation: ds-fade-up .5s ease both; }
 @keyframes ds-fade-up { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .ds-fade-up { animation: none; } }
@@ -497,11 +501,11 @@ html.theme-transition * {
 
 .ds-main { min-width: 0; flex: 1; display: flex; flex-direction: column; }
 .ds-topbar { min-height: 78px; padding: 17px 30px; border-bottom: 1px solid rgb(var(--ds-line)); display: flex; align-items: center; justify-content: space-between; gap: 16px; background: rgb(var(--ds-workspace)); }
-.ds-eyebrow { color: rgb(var(--ds-accent-strong)); font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: .17em; font-weight: 600; }
+.ds-eyebrow { color: rgb(var(--ds-faint)); font-family: 'Inter', system-ui, sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: .14em; font-weight: 500; }
 /* The one thing kept from the public site's voice. */
-.ds-page-title { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: clamp(28px, 2.7vw, 38px); letter-spacing: -.015em; line-height: 1.02; margin-top: 6px; }
-.ds-page-title em { font-style: italic; color: rgb(var(--ds-accent-strong)); }
-.ds-page-sub { font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; font-size: 16px; color: rgb(var(--ds-muted)); margin-top: 6px; }
+.ds-page-title { font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: clamp(28px, 2.7vw, 38px); letter-spacing: -.035em; line-height: 1.05; margin-top: 6px; }
+.ds-page-title em { font-style: normal; color: rgb(var(--ds-accent-strong)); }
+.ds-page-sub { font-family: 'Inter', system-ui, sans-serif; font-size: 16px; color: rgb(var(--ds-muted)); margin-top: 6px; }
 .ds-top-actions { display: flex; align-items: center; gap: 8px; }
 .ds-icon-btn { width: 31px; height: 31px; border: 1px solid rgb(var(--ds-line)); color: rgb(var(--ds-muted)); background: rgb(var(--ds-surface)); border-radius: 6px; display: grid; place-items: center; transition: border .18s ease, color .18s ease, transform .18s ease; }
 .ds-icon-btn:hover { color: rgb(var(--ds-accent-strong)); border-color: rgb(var(--ds-accent)); transform: translateY(-1px); }
@@ -510,14 +514,14 @@ html.theme-transition * {
 /* Console content sets its own face and base size.
  *
  * Scoped here rather than on body so the sidebar, top bar and footer keep the
- * type they were designed with — the chrome is not what anyone is reading from
- * across a room. Plus Jakarta Sans has more character than Inter at these
- * sizes and holds up in dense tables, which is most of this application.
+ * type they were designed with: the chrome is not what anyone is reading from
+ * across a room. Inter, the site's own face, holds up in dense tables, which
+ * is most of this application.
  *
  * The 15px base matters as much as the family: a great deal of console text is
  * unstyled and inherited the browser default before this. */
 .ds-content { padding: 26px 30px 44px; max-width: 1560px; width: 100%; margin: 0 auto;
-  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: 15px; line-height: 1.55; }
 .ds-content h1, .ds-content h2, .ds-content h3 { letter-spacing: -.015em; }
 
@@ -658,7 +662,7 @@ html.theme-transition * {
 .ds-prose h2,
 .ds-prose h3,
 .ds-prose h4 {
-  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   color: rgb(var(--ds-ink));
   text-wrap: balance;
   line-height: 1.28;
@@ -695,7 +699,7 @@ html.theme-transition * {
 .ds-prose li::marker { color: rgb(var(--ds-faint)); }
 
 .ds-prose code {
-  font-family: 'DM Mono', ui-monospace, monospace;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 0.87em;
   background: rgb(var(--ds-surface-2));
   border-radius: 4px;
@@ -1224,16 +1228,18 @@ html.theme-transition * {
    Latin display face, and without them the first two greetings would be
    boxes. */
 .greeting-word {
-  font-family: 'Instrument Serif',
-               'Noto Serif Sinhala', 'Iskoola Pota',          /* Sinhala  */
-               'Noto Serif Tamil', 'Latha',                    /* Tamil    */
-               'Noto Serif Devanagari', 'Nirmala UI',          /* Hindi    */
-               'Noto Serif Hebrew', 'David',                   /* Hebrew   */
-               'Noto Serif Thai', 'Leelawadee UI',             /* Thai     */
+  font-family: 'Plus Jakarta Sans',
+               'Noto Sans Sinhala', 'Iskoola Pota',           /* Sinhala  */
+               'Noto Sans Tamil', 'Latha',                     /* Tamil    */
+               'Noto Sans Devanagari', 'Nirmala UI',           /* Hindi    */
+               'Noto Sans Hebrew', 'Arial Hebrew',             /* Hebrew   */
+               'Noto Sans Thai', 'Leelawadee UI',              /* Thai     */
                'Apple SD Gothic Neo', 'Malgun Gothic',         /* Korean   */
-               'Hiragino Mincho ProN', 'Yu Mincho',            /* Japanese */
-               'Songti SC', 'SimSun',                          /* Chinese  */
-               Georgia, serif;
+               'Hiragino Sans', 'Yu Gothic',                   /* Japanese */
+               'PingFang SC', 'Microsoft YaHei',               /* Chinese  */
+               system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.03em;
   font-size: clamp(2.6rem, 7vw, 4.6rem);
   line-height: 1;
   color: rgb(var(--slate-200));
@@ -1480,6 +1486,110 @@ html.theme-transition * {
   .ds-kpi:hover, .ds-btn:active:not(:disabled) { transform: none; }
 }
 
+/* ── the console, in the site's language ─────────────────────────────
+   The same pieces, reshaped: rounded glass panels (solid white on the light
+   theme, where frosted white over paper has nothing to frost), serif section
+   titles and headline figures, a quieter top bar with the page title set
+   large, and a sidebar whose active item is ink rather than a teal slab.
+   Severity colours are untouched; they were measured, not chosen. */
+
+.ds-main { position: relative; isolation: isolate; overflow-x: clip; }
+.ds-main::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -18rem;
+  right: -8rem;
+  width: 48rem;
+  height: 30rem;
+  border-radius: 50%;
+  background: rgb(var(--ds-accent) / 0.09);
+  filter: blur(110px);
+  pointer-events: none;
+}
+
+.ds-topbar {
+  min-height: 104px;
+  padding: 24px 30px 14px;
+  border-bottom: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.ds-page-title { font-size: clamp(30px, 3vw, 44px); line-height: 1; margin-top: 8px; }
+.ds-page-title em { color: rgb(var(--ds-accent)); }
+.ds-page-sub { font-size: 15px; margin-top: 8px; }
+
+.ds-sidebar { background: rgb(var(--ds-surface) / 0.55); }
+.ds-brand { height: 76px; border-bottom: 0; padding: 18px 20px; }
+.ds-brand-word { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: rgb(var(--ds-ink)); }
+.ds-brand-word span { color: rgb(var(--ds-accent)); }
+.ds-brand-sub { margin-top: 3px; font-size: 10px; letter-spacing: 0.14em; }
+.ds-nav-label { font-size: 10.5px; letter-spacing: 0.14em; padding: 0 12px 8px; }
+.ds-nav-btn { min-height: 40px; padding: 0 12px; border-radius: 11px; }
+.ds-nav-btn.active { background: rgb(var(--ds-ink) / 0.07); color: rgb(var(--ds-ink)); }
+.ds-nav-btn.active svg { color: rgb(var(--ds-accent)); }
+.ds-avatar { width: 32px; height: 32px; color: rgb(var(--ds-accent)); background: rgb(var(--ds-accent) / 0.14); }
+
+.ds-panel { border-radius: 20px; }
+.ds-panel-pad { padding: 20px 22px; }
+.ds-section-label { font-size: 10.5px; letter-spacing: 0.14em; }
+.ds-section-title {
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 25px;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+[data-theme='light'] .ds-panel {
+  background: rgb(255 255 255);
+  border-color: rgb(20 17 15 / 0.07);
+  box-shadow: 0 1px 2px rgb(20 17 15 / 0.05), 0 18px 36px -24px rgb(20 17 15 / 0.28);
+}
+[data-theme='light'] .ds-panel::before { display: none; }
+
+/* Headline figures in the serif, as on the site; colour, not a top rule,
+   says which ones need attention. */
+.ds-kpi { padding: 18px 20px 17px; }
+.ds-kpi-value {
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 48px;
+  letter-spacing: -0.01em;
+}
+.ds-kpi-accent, .ds-kpi-alert, .ds-kpi-warn { border-top: 1px solid rgb(var(--ds-line)); }
+[data-theme='light'] .ds-kpi-accent, [data-theme='light'] .ds-kpi-alert,
+[data-theme='light'] .ds-kpi-warn { border-top-color: rgb(20 17 15 / 0.07); }
+.ds-kpi-alert .ds-kpi-value { color: rgb(var(--ds-signal)); }
+.ds-kpi-warn .ds-kpi-value { color: rgb(var(--ds-warn)); }
+
+.ds-btn { min-height: 38px; padding: 8px 15px; border-radius: 12px; font-size: 13.5px; }
+.ds-icon-btn { width: 38px; height: 38px; border-radius: 12px; }
+[data-theme='light'] .ds-btn-primary { color: #fff; }
+.ds-field { border-radius: 11px; padding: 10px 12px; }
+.ds-empty { border-radius: 14px; }
+.ds-table th { padding: 12px 14px; font-size: 10.5px; letter-spacing: 0.12em; }
+.ds-table td { padding: 13px 14px; }
+
+/* The status sign: a dot-matrix strip of what the monitor is doing, dark on
+   both themes like the one on the site. Uses the site's ticker classes. */
+.ds-ticker {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #0b0a09;
+  border: 1px solid rgb(255 255 255 / 0.08);
+}
+.ds-ticker::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgb(45 212 191 / 0.1) 1.1px, transparent 1.4px);
+  background-size: 6px 6px;
+}
+.ds-ticker .ticker-window { padding-block: 0.6rem; }
+.ds-ticker .ticker-run { font-size: 1.125rem; gap: 2.75rem; padding-right: 2.75rem; }
+
 /* ── scroll-revealed text ────────────────────────────────────────────
    Words resolve as the block travels through the viewport, left to right at
    reading pace.
@@ -1525,26 +1635,45 @@ html.theme-transition * {
 
    .liquid does the pane, the refracting rim and the pointer highlight. What
    is added here is only the shape and the behaviour on scroll. */
-.nav-liquid {
+/* The centred island: the logo and the actions sit on the page, and only the
+   links float, in a small glass pill in the middle. */
+.nav-island {
   position: sticky;
-  top: 12px;
+  top: 0;
   z-index: 50;
-  margin: 12px auto 0;
-  width: calc(100% - 24px);
-  max-width: 88rem;
-  border-radius: 18px;
-  transition: top .35s var(--ease-hover), width .35s var(--ease-hover),
-              border-radius .35s var(--ease-hover), box-shadow .35s var(--ease-hover);
+  width: 100%;
+  transition: background .35s var(--ease-hover);
 }
-/* Once the page has moved, the bar tightens and lifts — a small acknowledgement
-   that it is now floating over content rather than sitting at the top of it. */
-.nav-liquid[data-scrolled='true'] {
-  top: 8px;
-  width: calc(100% - 40px);
-  box-shadow:
-    inset 0 1px 1px rgb(255 255 255 / 0.16),
-    0 18px 46px -18px rgb(0 0 0 / 0.7);
+/* Once the page has moved, the logo and the buttons would sit on top of
+   content, so the band behind them fades in from the canvas. */
+.nav-island[data-scrolled='true'] {
+  background: linear-gradient(180deg, rgb(var(--sentinel-950)) 0%, rgb(var(--sentinel-950) / 0.86) 60%, rgb(var(--sentinel-950) / 0) 100%);
 }
+.nav-island-links { border-radius: 999px; padding: 5px; }
+.nav-island-links:hover, .nav-island-links:active { transform: none; }
+.nav-island-links::after { display: none; }
+
+.nav-on { color: #0D0C0B; }
+[data-theme='light'] .nav-on { color: #FBFAF7; }
+
+.island-btn {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background .2s ease, border-color .2s ease, color .2s ease;
+}
+.island-btn-line { border: 1px solid rgb(255 255 255 / 0.2); color: #F0EDE7; }
+.island-btn-line:hover { border-color: rgb(255 255 255 / 0.4); }
+.island-btn-fill { background: #F0EDE7; color: #0D0C0B; }
+.island-btn-fill:hover { background: #FFFFFF; }
+[data-theme='light'] .island-btn-line { border-color: rgb(20 17 15 / 0.18); color: #14110F; }
+[data-theme='light'] .island-btn-line:hover { border-color: rgb(20 17 15 / 0.4); }
+[data-theme='light'] .island-btn-fill { background: #14110F; color: #FBFAF7; }
+[data-theme='light'] .island-btn-fill:hover { background: #000000; }
 
 /* The pill that slides between links. One element that moves, rather than a
    background on each link: the movement is what ties the items together. */
@@ -1554,22 +1683,18 @@ html.theme-transition * {
   height: 32px;
   translate: 0 -50%;
   border-radius: 999px;
-  background: rgb(255 255 255 / 0.09);
-  border: 1px solid rgb(255 255 255 / 0.10);
+  background: #F0EDE7;
   pointer-events: none;
   opacity: 0;
   transition: left .38s var(--ease-hover), width .38s var(--ease-hover),
               opacity .25s ease;
 }
 .nav-pill[data-on='true'] { opacity: 1; }
-[data-theme='light'] .nav-pill {
-  background: rgb(16 30 40 / 0.06);
-  border-color: rgb(16 30 40 / 0.08);
-}
+[data-theme='light'] .nav-pill { background: #14110F; }
 
 
 @media (prefers-reduced-motion: reduce) {
-  .nav-liquid, .nav-pill { transition: none; }
+  .nav-island, .nav-pill { transition: none; }
 }
 
 /* ── shader buttons ───────────────────────────────────────────────────
@@ -1702,3 +1827,718 @@ html.theme-transition * {
 .ds-range::-moz-range-track {
   height: 4px; border-radius: 3px; background: rgb(var(--ds-surface-3));
 }
+
+
+/* ── the home hero ───────────────────────────────────────────────────
+   The claim, centred, with the platform at work under it: a globe of
+   accounts rising over the bottom edge like a planet over a horizon, the
+   worked example orbiting it, and a dot-matrix sign along the horizon line.
+
+   The light theme is not the dark one inverted. Its ground is a warmer paper
+   with a fine grain, its cards are solid white with real shadows, and the
+   planet and the sign stay dark: they are the two heavy objects that give a
+   pale page somewhere to look. */
+
+.hero-cine {
+  --hero-ground: var(--sentinel-950);
+  --hero-dot: 255 255 255 / 0.05;
+  background: rgb(var(--hero-ground));
+}
+[data-theme='light'] .hero-cine {
+  --hero-ground: var(--sentinel-900);
+  --hero-dot: 20 17 15 / 0.07;
+}
+
+/* Colour behind the headline: a teal field on both themes, and on the light
+   one a faint rose and amber at the edges, so the paper is not flat. */
+.hero-fields { position: absolute; inset: 0; pointer-events: none; }
+.hero-fields::before {
+  content: '';
+  position: absolute;
+  width: 60rem; height: 40rem;
+  top: -18rem; left: 50%; margin-left: -30rem;
+  border-radius: 50%;
+  background: rgb(var(--accent-500) / 0.14);
+  filter: blur(120px);
+}
+[data-theme='light'] .hero-fields {
+  background:
+    radial-gradient(circle 22rem at 0 36rem, rgb(var(--modality-behavioral) / 0.07), transparent),
+    radial-gradient(circle 22rem at 100% 32rem, rgb(var(--modality-temporal) / 0.08), transparent);
+}
+[data-theme='light'] .hero-fields::before { background: rgb(var(--accent-500) / 0.16); }
+
+.hero-dots {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image: radial-gradient(rgb(var(--hero-dot)) 1px, transparent 1.3px);
+  background-size: 28px 28px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 30%, #000 20%, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 55% at 50% 30%, #000 20%, transparent 75%);
+}
+
+/* Paper grain, light theme only. On a dark ground, noise reads as dirt. */
+.hero-grain {
+  position: absolute; inset: 0; pointer-events: none;
+  display: none;
+  opacity: 0.08;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+[data-theme='light'] .hero-grain { display: block; }
+
+.hero-pulse {
+  flex: none;
+  width: 7px; height: 7px;
+  border-radius: 999px;
+  background: rgb(var(--accent-400));
+  animation: hero-pulse 1.9s ease-out infinite;
+}
+@keyframes hero-pulse {
+  from { box-shadow: 0 0 0 0 rgb(var(--accent-400) / 0.5); }
+  to   { box-shadow: 0 0 0 10px rgb(var(--accent-400) / 0); }
+}
+
+/* The primary button turns to ink on the light theme. A white button on
+   paper reads as a hole in the page, not as a control. */
+[data-theme='light'] .liquid-solid.cta-ink {
+  background: linear-gradient(180deg, #2b2623 0%, #14110f 100%);
+  color: #f6f2eb;
+  border-color: rgb(20 17 15 / 0.9);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.16),
+    0 12px 28px -14px rgb(20 17 15 / 0.55);
+}
+[data-theme='light'] .liquid-solid.cta-ink::before {
+  background: conic-gradient(from 210deg,
+    rgb(255 255 255 / 0.28) 0deg,
+    rgb(45 212 191 / 0.35) 80deg,
+    rgb(255 255 255 / 0.18) 160deg,
+    rgb(255 160 190 / 0.22) 250deg,
+    rgb(255 255 255 / 0.28) 360deg);
+}
+[data-theme='light'] .liquid-solid.cta-ink::after {
+  background: radial-gradient(12rem circle at var(--mx, 50%) var(--my, 0%),
+              rgb(45 212 191 / 0.3), transparent 60%);
+}
+[data-theme='light'] .liquid-solid.cta-ink:hover {
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.2),
+    0 18px 36px -16px rgb(20 17 15 / 0.6),
+    0 0 32px -10px rgb(var(--accent-400) / 0.45);
+}
+
+/* The planet rises further and slower than anything else enters, so it
+   lands last and heaviest. */
+.enter--planet { animation-name: enter-planet; animation-duration: 1.9s; }
+@keyframes enter-planet { from { opacity: 0; transform: translateY(120px) scale(0.95); } }
+
+/* Atmosphere: a glow behind the body, seen only past its rim. */
+.planet-glow {
+  position: absolute; inset: 8%;
+  border-radius: 50%;
+  background: rgb(15 155 142 / 0.24);
+  filter: blur(80px);
+  animation: planet-breathe 3.4s ease-in-out infinite alternate;
+}
+[data-theme='light'] .planet-glow {
+  inset: 5%;
+  background: rgb(0 133 122 / 0.38);
+  filter: blur(46px);
+}
+@keyframes planet-breathe { from { opacity: 0.55; } to { opacity: 1; } }
+
+/* Cards in orbit, and any card that sits on the open page (`solid-card`).
+   Glass on the dark theme. On the light one they are solid white: frosted
+   white over pale paper has nothing to frost, and only looks washed out. */
+[data-theme='light'] .glass.orbit-card,
+[data-theme='light'] .glass.solid-card {
+  background: #fff;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: rgb(20 17 15 / 0.07);
+  box-shadow: 0 1px 2px rgb(20 17 15 / 0.06), 0 30px 60px -28px rgb(20 17 15 / 0.38);
+}
+[data-theme='light'] .glass.orbit-card::before,
+[data-theme='light'] .glass.solid-card::before { display: none; }
+
+.orbit-bob { animation: orbit-bob var(--bob, 6s) ease-in-out infinite alternate; }
+@keyframes orbit-bob { to { transform: translateY(-12px); } }
+
+/* Each score fills to its value as its card arrives. */
+.orbit-bar {
+  transform-origin: left center;
+  animation: orbit-bar 1.2s var(--ease-settle) var(--d, 1.5s) both;
+}
+@keyframes orbit-bar { from { transform: scaleX(0); } }
+
+/* The sign along the horizon, dark on both themes like the planet behind it.
+   The one thing on the page that moves at a constant speed: it is a sign
+   being read, not an object settling. */
+.ticker {
+  position: absolute; z-index: 5; left: 0; right: 0; bottom: 0;
+  padding-top: 3.5rem;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgb(var(--hero-ground) / 0) 0%, rgb(var(--hero-ground)) 38%);
+}
+.ticker-band {
+  position: relative;
+  overflow: hidden;
+  background: rgb(10 9 8 / 0.85);
+  border-block: 1px solid rgb(214 209 201 / 0.13);
+}
+[data-theme='light'] .ticker-band {
+  background: #14110f;
+  border-color: rgb(20 17 15 / 0.4);
+  box-shadow: 0 -20px 50px -30px rgb(20 17 15 / 0.5);
+}
+/* The unlit lamps. */
+.ticker-band::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgb(45 212 191 / 0.09) 1.1px, transparent 1.4px);
+  background-size: 7px 7px;
+}
+.ticker-window {
+  position: relative;
+  padding-block: 0.875rem;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker-run 46s linear infinite;
+}
+.ticker-run {
+  display: flex;
+  gap: 4rem;
+  padding-right: 4rem;
+  white-space: nowrap;
+  font-family: 'Doto', 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 800;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #2dd4bf;
+  text-shadow: 0 0 14px rgb(45 212 191 / 0.65);
+}
+.ticker-alert {
+  color: rgb(255 107 92);
+  text-shadow: 0 0 14px rgb(255 107 92 / 0.6);
+}
+@keyframes ticker-run { to { transform: translateX(-50%); } }
+@media (min-width: 640px) {
+  .ticker { padding-top: 5.5rem; }
+  .ticker-window { padding-block: 1.375rem; }
+  .ticker-run { font-size: 2.375rem; }
+}
+
+/* ── the four chapters ──────────────────────────────────────────────── */
+
+[data-theme='light'] .chapters-band { background: rgb(var(--sentinel-800)); }
+
+.chapter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  height: 100%;
+  min-height: 22rem;
+  padding: 1.625rem;
+  border-radius: 26px;
+  overflow: hidden;
+  transition: transform 0.4s var(--ease-hover), border-color 0.3s var(--ease-hover),
+              box-shadow 0.4s var(--ease-hover);
+}
+@media (min-width: 640px) { .chapter { min-height: 25rem; } }
+@media (min-width: 1280px) { .chapter { min-height: 27.5rem; } }
+.chapter:hover { transform: translateY(-8px); border-color: rgb(var(--accent-400) / 0.4); }
+.chapter-glow {
+  position: absolute;
+  inset: -40% -20% auto -20%;
+  height: 60%;
+  border-radius: 50%;
+  background: rgb(var(--tint) / 0.26);
+  filter: blur(60px);
+  pointer-events: none;
+}
+.chapter--anchor { border-color: rgb(45 212 191 / 0.35); }
+
+[data-theme='light'] .glass.chapter {
+  background: #fff;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: rgb(20 17 15 / 0.07);
+  box-shadow: 0 1px 2px rgb(20 17 15 / 0.06), 0 30px 60px -28px rgb(20 17 15 / 0.38);
+}
+[data-theme='light'] .glass.chapter::before { display: none; }
+[data-theme='light'] .chapter:hover {
+  border-color: rgb(20 17 15 / 0.07);
+  box-shadow: 0 2px 4px rgb(20 17 15 / 0.06), 0 44px 80px -36px rgb(20 17 15 / 0.45);
+}
+[data-theme='light'] .chapter-glow { opacity: 0.75; }
+
+/* Fusion is solid ink on paper. Its contents keep the dark palette, so the
+   tokens are re-pointed for this one card rather than every class inside it
+   being overridden. */
+[data-theme='light'] .glass.chapter--anchor {
+  color-scheme: dark;
+  background: #14110f;
+  border-color: #14110f;
+  box-shadow: 0 1px 2px rgb(20 17 15 / 0.1), 0 30px 60px -28px rgb(20 17 15 / 0.55);
+  --slate-100: 251 250 247;
+  --slate-200: 240 237 231;
+  --slate-300: 214 209 201;
+  --slate-400: 163 156 146;
+  --slate-500: 133 126 117;
+  --accent-400: 45 212 191;
+  --modality-graph: 15 155 142;
+  --modality-behavioral: 220 38 73;
+  --modality-temporal: 194 116 10;
+}
+[data-theme='light'] .chapter--anchor:hover {
+  border-color: #14110f;
+  box-shadow: 0 2px 4px rgb(20 17 15 / 0.1), 0 44px 80px -36px rgb(20 17 15 / 0.6);
+}
+[data-theme='light'] .chapter--anchor .chapter-glow { opacity: 1; }
+
+/* A block that stays dark on both themes: the fusion step in a diagram, a
+   closing call to action. Like the fusion chapter, its contents take the dark
+   palette, so the tokens are re-pointed here rather than overridden inside. */
+.fusion-anchor {
+  color-scheme: dark;
+  background: #14110f;
+  border: 1px solid rgb(45 212 191 / 0.3);
+  box-shadow: 0 1px 2px rgb(20 17 15 / 0.1), 0 30px 60px -28px rgb(20 17 15 / 0.55);
+  --slate-100: 251 250 247;
+  --slate-200: 240 237 231;
+  --slate-300: 214 209 201;
+  --slate-400: 163 156 146;
+  --slate-500: 133 126 117;
+  --accent-400: 45 212 191;
+}
+
+/* Motion inside the chapter pictures: transfers running along their edges,
+   and a flagged account pulsing. */
+.art-flow { stroke-dasharray: 5 10; animation: art-flow 1.8s linear infinite; }
+@keyframes art-flow { to { stroke-dashoffset: -30; } }
+.art-ping {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: art-ping 2.4s ease-out infinite;
+}
+@keyframes art-ping {
+  from { transform: scale(1); opacity: 0.6; }
+  to   { transform: scale(2.6); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-pulse, .planet-glow, .orbit-bob, .orbit-bar, .ticker-track,
+  .art-flow, .art-ping { animation: none !important; }
+  .chapter:hover { transform: none; }
+}
+
+
+/* ── photographs ──────────────────────────────────────────────────────
+   Pictures sit in shaped frames rather than plain rectangles: rounded, or an
+   arch for the one image a page leads with. On the dark theme they are pulled
+   down a little so a bright photo does not punch a hole in the page.
+
+   The network drawing is black ink on white paper. Inverted on the dark
+   theme it becomes light lines on black, and a teal wash multiplied over it
+   puts it in the page's colour without touching the picture. */
+
+/* No position here: a frame is placed by the page (relative in the flow,
+   absolute over a hero), and a position set in this sheet would beat the
+   utility class and drop every absolutely placed frame back into the flow. */
+.photo-frame {
+  overflow: hidden;
+  border: 1px solid rgb(var(--border-subtle));
+  background: rgb(var(--sentinel-800));
+}
+.photo-frame > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.photo-arch { border-radius: 18rem 18rem 1.75rem 1.75rem; }
+
+:root:not([data-theme='light']) .photo-dim { filter: saturate(0.85) brightness(0.8); }
+
+.photo-ink { filter: invert(1) brightness(0.92) contrast(1.15); }
+[data-theme='light'] .photo-ink { filter: none; }
+
+.photo-tint::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(150deg, rgb(45 212 191 / 0.55), rgb(13 12 11 / 0.1) 70%);
+  mix-blend-mode: multiply;
+}
+[data-theme='light'] .photo-tint::after {
+  background: linear-gradient(150deg, rgb(0 153 140 / 0.3), rgb(255 255 255 / 0) 70%);
+}
+
+/* Meridians on the console's small planet: each ellipse narrows to a line
+   and opens again on the far side, so the wireframe appears to turn. */
+@keyframes planet-meridian {
+  0%   { transform: scaleX(1);  animation-timing-function: ease-in; }
+  25%  { transform: scaleX(0);  animation-timing-function: ease-out; }
+  50%  { transform: scaleX(-1); animation-timing-function: ease-in; }
+  75%  { transform: scaleX(0);  animation-timing-function: ease-out; }
+  100% { transform: scaleX(1); }
+}
+.mer { transform-box: fill-box; transform-origin: center; animation: planet-meridian 28s infinite; }
+@media (prefers-reduced-motion: reduce) { .mer { animation: none; } }
+
+/* Two-column console rows (queue beside feed, case beside health) stack once
+   the side column would be squeezed. The columns are set inline, so this has
+   to say it louder. */
+@media (max-width: 1100px) {
+  .ds-split { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+
+/* ── operator dashboard ───────────────────────────────────────────────
+   Big rounded cards on the console ground, one lime line for volume and a
+   mint mark for what is selected, numbers in Plus Jakarta Sans. Scoped to
+   the dashboard so the rest of the console keeps its quieter panels. */
+.ds {
+  --dash-line: 214 240 104;
+  --dash-line-ink: 214 240 104;
+  --dash-mint: 190 244 228;
+  --dash-dot: 190 244 228;
+  --dash-on-mint: 13 12 11;
+  --dash-card-top: 30 28 26;
+  --dash-card-bottom: 20 18 17;
+}
+[data-theme='light'] .ds {
+  --dash-line: 132 168 0;
+  --dash-line-ink: 84 110 0;
+  --dash-mint: 200 240 226;
+  --dash-dot: 72 176 148;
+  --dash-on-mint: 13 40 33;
+  --dash-card-top: 255 255 255;
+  --dash-card-bottom: 250 248 244;
+}
+.dash { display: grid; gap: 26px; font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; }
+.dash-row { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr) minmax(280px, 330px); align-items: start; }
+.dash-h { font-size: 30px; font-weight: 600; letter-spacing: -.025em; line-height: 1.1; }
+.dash-h-sm { font-size: 24px; }
+.dash-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.dash-card {
+  border-radius: 26px;
+  background: linear-gradient(170deg, rgb(var(--dash-card-top)), rgb(var(--dash-card-bottom)));
+  border: 1px solid rgb(var(--ds-line) / .7);
+}
+[data-theme='light'] .dash-card { box-shadow: 0 10px 30px -18px rgb(var(--ds-shadow) / .25); }
+
+.dash-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.dash-chip {
+  height: 48px; display: inline-flex; align-items: center; gap: 10px; padding: 0 18px;
+  border-radius: 16px; border: 1px solid rgb(var(--ds-line)); background: transparent;
+  color: rgb(var(--ds-muted)); font-size: 14px; white-space: nowrap;
+}
+.dash-chip b { color: rgb(var(--ds-ink)); font-size: 17px; font-weight: 600; }
+.dash-search { width: 260px; color: rgb(var(--ds-ink)); background: rgb(var(--dash-card-top)); }
+.dash-search input { all: unset; flex: 1; min-width: 0; font-size: 14px; }
+.dash-search input::placeholder { color: rgb(var(--ds-faint)); }
+.dash-search:focus-within { border-color: rgb(var(--dash-line)); }
+.dash-faces { display: inline-flex; }
+.dash-face {
+  width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  border: 2px solid rgb(var(--ds-workspace)); margin-left: -8px;
+}
+.dash-face:first-child { margin-left: 0; }
+
+.dash-tabs { display: flex; gap: 16px; font-size: 16px; }
+.dash-tabs button { all: unset; cursor: pointer; color: rgb(var(--ds-faint)); font-weight: 500; }
+.dash-tabs button[aria-selected='true'] { color: rgb(var(--ds-ink)); font-weight: 600; }
+.dash-tabs button:focus-visible { outline: 2px solid rgb(var(--dash-line)); outline-offset: 4px; border-radius: 4px; }
+
+.dash-days { display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); gap: 6px; margin-bottom: 18px; }
+.dash-day {
+  all: unset; cursor: pointer; box-sizing: border-box; text-align: center; padding: 12px 0 11px;
+  border-radius: 16px; background: rgb(var(--dash-card-top)); border: 1px solid rgb(var(--ds-line) / .7);
+  transition: background .2s ease, transform .2s ease;
+}
+.dash-day:hover { transform: translateY(-2px); }
+.dash-day:focus-visible { outline: 2px solid rgb(var(--dash-line)); outline-offset: 2px; }
+.dash-day b { display: block; font-size: 18px; font-weight: 600; color: rgb(var(--ds-ink)); }
+.dash-day span { display: block; font-size: 12px; color: rgb(var(--ds-faint)); margin-top: 2px; }
+.dash-day[aria-pressed='true'] { background: rgb(var(--dash-mint)); border-color: transparent; }
+.dash-day[aria-pressed='true'] b, .dash-day[aria-pressed='true'] span { color: rgb(var(--dash-on-mint)); }
+.dash-day[data-empty='true'] b { color: rgb(var(--ds-faint)); }
+
+.dash-chart { position: relative; }
+.dash-chart svg text { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; font-size: 12px; fill: rgb(var(--ds-faint)); }
+.dash-tip {
+  position: absolute; top: 0; pointer-events: none; transform: translateX(-50%);
+  padding: 8px 11px; border-radius: 12px; font-size: 12px; white-space: nowrap;
+  background: rgb(var(--ds-ink)); color: rgb(var(--ds-workspace));
+}
+.dash-tip b { font-weight: 700; }
+.dash-legend { display: flex; gap: 18px; font-size: 12px; color: rgb(var(--ds-muted)); margin-top: 6px; }
+.dash-legend i { display: inline-block; width: 18px; height: 0; vertical-align: middle; margin-right: 7px; border-top: 2.5px solid rgb(var(--dash-line)); }
+.dash-legend i.dashed { border-top-style: dashed; border-top-color: rgb(var(--ds-ink) / .7); }
+
+.dash-cases { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+.dash-case { padding: 22px 22px 18px; cursor: pointer; transition: transform .2s ease, border-color .2s ease; }
+.dash-case:hover { transform: translateY(-3px); border-color: rgb(var(--dash-line) / .6); }
+.dash-case:focus-visible { outline: 2px solid rgb(var(--dash-line)); outline-offset: 3px; }
+.dash-avatar {
+  width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto;
+  font-size: 14px; font-weight: 700;
+}
+.dash-timer {
+  display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: 99px;
+  background: rgb(var(--dash-line)); color: rgb(13 12 11); font-size: 11px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.dash-stat { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: rgb(var(--ds-ink)); }
+.dash-stat svg { color: rgb(var(--dash-line-ink)); }
+.dash-sep { height: 1px; background: rgb(var(--ds-line)); margin: 16px 0; }
+.dash-dots { display: flex; flex-wrap: wrap; gap: 4px; min-height: 34px; align-content: flex-start; }
+.dash-dot { width: 13px; height: 13px; border-radius: 50%; }
+.dash .dash-mini {
+  all: unset; cursor: pointer; padding: 4px 9px; border-radius: 99px; font-size: 12px; font-weight: 600;
+  border: 1px solid rgb(var(--ds-line)); color: rgb(var(--ds-muted));
+}
+.dash-mini:hover { color: rgb(var(--ds-ink)); border-color: rgb(var(--ds-ink) / .4); }
+.dash-mini:focus-visible { outline: 2px solid rgb(var(--dash-line)); outline-offset: 2px; }
+.dash-mini:disabled { opacity: .5; cursor: default; }
+
+.dash-person { display: flex; align-items: center; gap: 13px; padding: 14px 16px; border-radius: 20px; position: relative; cursor: pointer; }
+.dash-person + .dash-person { margin-top: 8px; }
+.dash-person:hover { border-color: rgb(var(--dash-line) / .5); }
+.dash-person:focus-visible { outline: 2px solid rgb(var(--dash-line)); outline-offset: 2px; }
+.dash-person-name { font-size: 15px; font-weight: 600; color: rgb(var(--ds-ink)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-person-sub { font-size: 12px; color: rgb(var(--ds-faint)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-badge {
+  position: absolute; top: -7px; right: 10px; padding: 1px 8px; border-radius: 99px;
+  background: rgb(var(--dash-line)); color: rgb(13 12 11); font-size: 11px; font-weight: 700;
+  border: 2px solid rgb(var(--ds-workspace)); font-variant-numeric: tabular-nums;
+}
+
+.dash-hero {
+  border-radius: 28px; padding: 26px 22px 24px; text-align: center; color: #0D0C0B;
+  background: linear-gradient(165deg, #D7FAEF 0%, #A8EEE9 55%, #92E2F2 100%);
+}
+.dash-hero-num { font-size: 56px; font-weight: 700; letter-spacing: -.045em; line-height: 1; margin-top: 14px; }
+.dash-hero-sub { font-size: 13px; font-weight: 600; margin-top: 8px; opacity: .8; }
+
+@media (max-width: 1180px) {
+  .dash-row { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .dash-days { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .dash-days > :nth-child(-n+6) { display: none; }
+  .dash-search { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dash-day, .dash-case { transition: none; }
+}
+
+/* ── the whole console, in the dashboard's style ─────────────────────
+   One layer over the console's own parts, so every page takes the home
+   pages' look without any page changing: rounded cards with the soft
+   gradient, Plus Jakarta Sans for headings and figures, pill controls, lime
+   for the accent and mint for what is selected, and a sidebar that floats.
+   Written last on purpose; each rule here restates one from the layers above
+   and wins by order, not by specificity. Severity and detector colours are
+   untouched. */
+
+.ds {
+  --ds-accent: 214 240 104;
+  --ds-accent-strong: 228 248 156;
+  --ds-accent-soft: 46 54 20;
+  --ds-on-accent: 13 12 11;
+}
+[data-theme='light'] .ds {
+  --ds-accent: 84 110 0;
+  --ds-accent-strong: 66 88 0;
+  --ds-accent-soft: 234 241 205;
+  --ds-on-accent: 255 255 255;
+}
+
+.ds-main, .ds-sidebar { font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; }
+.ds-main::before { background: rgb(var(--dash-mint) / 0.07); }
+.ds-shell::before {
+  background:
+    radial-gradient(48rem 32rem at 8% -6%, rgb(var(--dash-mint) / 0.05), transparent 70%),
+    radial-gradient(42rem 30rem at 104% 104%, rgb(var(--ds-signal) / 0.04), transparent 70%);
+}
+
+/* Cards */
+.ds-panel,
+.ds .rounded-2xl.bg-surface {
+  border-radius: 26px;
+  background: linear-gradient(170deg, rgb(var(--dash-card-top)), rgb(var(--dash-card-bottom)));
+  border: 1px solid rgb(var(--ds-line) / 0.7);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+.ds-panel::before { display: none; }
+[data-theme='light'] .ds-panel,
+[data-theme='light'] .ds .rounded-2xl.bg-surface {
+  background: linear-gradient(170deg, rgb(var(--dash-card-top)), rgb(var(--dash-card-bottom)));
+  border-color: rgb(var(--ds-line) / 0.7);
+  box-shadow: 0 10px 30px -18px rgb(var(--ds-shadow) / 0.25);
+}
+.ds-panel-pad { padding: 22px 24px; }
+.ds-content .rounded-xl.border,
+.ds-content .rounded-2xl.border { border-radius: 22px; }
+
+.ds-section-label { font-size: 11px; letter-spacing: 0.13em; }
+.ds-section-title {
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+/* Headline figures */
+.ds-kpi { padding: 20px 22px 18px; }
+.ds-kpi:hover {
+  background: linear-gradient(170deg, rgb(var(--dash-card-top)), rgb(var(--dash-card-bottom)));
+  border-color: rgb(var(--dash-line) / 0.55);
+  box-shadow: none;
+}
+.ds-kpi-value {
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 40px;
+  letter-spacing: -0.045em;
+}
+.ds-kpi-accent, .ds-kpi-alert, .ds-kpi-warn { border-top: 1px solid rgb(var(--ds-line) / 0.7); }
+[data-theme='light'] .ds-kpi-accent, [data-theme='light'] .ds-kpi-alert,
+[data-theme='light'] .ds-kpi-warn { border-top-color: rgb(var(--ds-line) / 0.7); }
+/* Which figures need attention: a dot before the label as well as the colour. */
+.ds-kpi-alert .ds-section-label::before,
+.ds-kpi-warn .ds-section-label::before,
+.ds-kpi-accent .ds-section-label::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 99px;
+  vertical-align: 1px;
+  background: rgb(var(--ds-accent));
+}
+.ds-kpi-alert .ds-section-label::before { background: rgb(var(--ds-signal)); }
+.ds-kpi-warn .ds-section-label::before { background: rgb(var(--ds-warn)); }
+
+/* Controls */
+.ds-btn {
+  min-height: 40px;
+  padding: 9px 17px;
+  border-radius: 99px;
+  font-size: 13.5px;
+  background: rgb(var(--dash-card-top));
+  border-color: rgb(var(--ds-line));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+.ds-btn:hover:not(:disabled) { border-color: rgb(var(--dash-line) / 0.7); box-shadow: none; }
+.ds-btn-primary,
+[data-theme='light'] .ds-btn-primary {
+  background: rgb(var(--ds-accent));
+  border-color: rgb(var(--ds-accent));
+  color: rgb(var(--ds-on-accent));
+  box-shadow: none;
+}
+.ds-btn-primary:hover:not(:disabled) { background: rgb(var(--ds-accent-strong)); border-color: rgb(var(--ds-accent-strong)); }
+.ds-btn-quiet { background: transparent; border-color: transparent; }
+.ds-icon-btn { width: 40px; height: 40px; border-radius: 99px; background: rgb(var(--dash-card-top)); }
+.ds-icon-btn:hover { color: rgb(var(--ds-ink)); border-color: rgb(var(--dash-line) / 0.7); }
+.ds button.rounded-lg { border-radius: 99px; }
+/* A left-aligned button is a card that wraps onto several lines, and a pill's
+   round ends would cut its text off. */
+.ds button.rounded-lg.text-left { border-radius: 18px; }
+
+.ds-badge { padding: 3px 10px; font-weight: 600; }
+.ds-progress { height: 8px; }
+
+.ds-field { border-radius: 14px; padding: 11px 14px; background: rgb(var(--dash-card-top)); }
+.ds input.rounded-lg, .ds select.rounded-lg, .ds textarea.rounded-lg { border-radius: 14px; }
+.ds input:focus-visible, .ds select:focus-visible, .ds textarea:focus-visible,
+.ds input:focus, .ds select:focus, .ds textarea:focus {
+  outline: none;
+  border-color: rgb(var(--ds-accent));
+  box-shadow: 0 0 0 3px rgb(var(--ds-accent-soft));
+}
+
+.ds-empty { border-radius: 22px; }
+.ds-table th { font-weight: 600; }
+.ds-avatar { color: rgb(var(--ds-on-accent)); background: rgb(var(--ds-accent)); }
+
+/* The sidebar floats, like the rail in the dashboard's references. */
+.ds-sidebar {
+  margin: 12px 0 12px 12px;
+  top: 12px;
+  height: calc(100dvh - 24px);
+  border: 1px solid rgb(var(--ds-line) / 0.7);
+  border-radius: 26px;
+  background: linear-gradient(170deg, rgb(var(--dash-card-top)), rgb(var(--dash-card-bottom)));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+[data-theme='light'] .ds-sidebar { box-shadow: 0 10px 30px -18px rgb(var(--ds-shadow) / 0.25); }
+.ds-sidebar-foot { border-top-color: rgb(var(--ds-line) / 0.6); }
+.ds-nav-btn { min-height: 42px; border-radius: 14px; }
+.ds-nav-btn.active { background: rgb(var(--dash-mint)); color: rgb(var(--dash-on-mint)); font-weight: 600; }
+.ds-nav-btn.active svg { color: rgb(var(--dash-on-mint)); }
+
+/* The kit's own controls, inside the console only. The shader fill is the
+   public site's call to action; in the console a primary action is the same
+   lime pill as every other one. Tailwind's disabled utilities are generated
+   before this layer, so the disabled look is restated here. */
+.ds .btn-shader {
+  background: rgb(var(--ds-accent));
+  color: rgb(var(--ds-on-accent));
+  border-color: transparent;
+  box-shadow: none;
+  animation: none;
+}
+.ds .btn-shader::before, .ds .btn-shader::after { display: none; }
+.ds .btn-shader:hover:not(:disabled) { background: rgb(var(--ds-accent-strong)); box-shadow: none; }
+.ds .btn-shader:disabled {
+  background: rgb(var(--ds-surface-3));
+  color: rgb(var(--ds-faint));
+  filter: none;
+}
+.ds [role='switch'].bg-accent-500 { background: rgb(var(--ds-accent)); }
+
+/* The kit's alert colours are set for the dark ground; on paper they wash
+   out, so the console's light theme gives them its own measured tones. */
+[data-theme='light'] .ds .text-amber-300 { color: rgb(var(--ds-warn)); }
+[data-theme='light'] .ds .text-red-300 { color: rgb(var(--ds-signal)); }
+[data-theme='light'] .ds .text-green-300 { color: rgb(var(--ds-sev-low)); }
+[data-theme='light'] .ds .text-accent-400 { color: rgb(var(--ds-accent-strong)); }
+
+/* The site's Tailwind accent, remapped inside the console only, so figures,
+   bars and links written with `text-accent-400` or `bg-accent-500` follow the
+   lime too. 400 is read as text and 500 as a fill under dark text, so on the
+   light theme the fill is the brighter of the two. */
+.ds {
+  --accent-400: 214 240 104;
+  --accent-500: 196 226 80;
+  --accent-600: 160 190 50;
+}
+[data-theme='light'] .ds {
+  --accent-400: 84 110 0;
+  --accent-500: 168 204 40;
+  --accent-600: 66 88 0;
+}
+
+/* Display headlines were given line-heights under 1 for the old serif, whose
+   descenders were short. The sans needs a little more room between lines, so
+   tight display leading is lifted to a floor rather than edited page by page. */
+.display.leading-none,
+.display[class*='leading-[0.9'] { line-height: 1.04; }

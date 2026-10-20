@@ -55,6 +55,13 @@ const GLYPH_W = 5
 const SPACING = 1          // blank columns between letters
 const GAP = 6              // blank columns between repeats of the word
 
+// Lamps are ink on the light theme. White lamps on a paper ground cannot be
+// seen at all. Read every frame, so a theme switch shows on the next one.
+const LAMPS = {
+  dark: { on: 'rgba(255,255,255,0.92)', off: 'rgba(255,255,255,0.055)' },
+  light: { on: 'rgba(20,17,15,0.86)', off: 'rgba(20,17,15,0.07)' },
+}
+
 /** The word as one column-major bitmap: bitmap[col][row] = lit. */
 function toColumns(word) {
   const cols = []
@@ -115,12 +122,13 @@ export default function LedSign({
 
       ctx.clearRect(0, 0, width, ROWS * pitch)
       const r = dot / 2
+      const lamp = LAMPS[document.documentElement.dataset.theme === 'light' ? 'light' : 'dark']
       for (let c = 0; c < visibleCols; c += 1) {
         const src = Math.floor(offset + c) % period
         const column = src < glyph.length ? glyph[src] : null
         for (let y = 0; y < ROWS; y += 1) {
           const lit = column ? column[y] : false
-          ctx.fillStyle = lit ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.055)'
+          ctx.fillStyle = lit ? lamp.on : lamp.off
           ctx.beginPath()
           ctx.arc(c * pitch + r, y * pitch + r, r, 0, Math.PI * 2)
           ctx.fill()

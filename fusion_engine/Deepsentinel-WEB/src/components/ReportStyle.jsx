@@ -99,9 +99,7 @@ export default function ReportStyle() {
       <div>
         <h2 className="text-sm font-semibold text-slate-100">Forensic report style</h2>
         <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
-          How the PDF attached to every alert looks. The styles differ in
-          appearance only — the same facts, in the same order, in the same
-          words. {canManageAlerts
+          How the alert PDF looks. Only the look changes, never the content. {canManageAlerts
             ? 'Your choice applies to every report the system sends from now on.'
             : 'An administrator or risk manager sets which one is used.'}
         </p>
@@ -119,21 +117,21 @@ export default function ReportStyle() {
                 key={s.name}
                 onClick={() => setShowing(s.name)}
                 className={cx(
-                  'rounded-lg border p-3 text-left transition-colors',
+                  'rounded-lg border px-4 py-3.5 text-left transition-colors',
                   active
                     ? 'border-accent-400/60 bg-accent-400/5'
                     : 'border-slate-800 hover:border-slate-700',
                 )}
               >
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-medium text-slate-100">{s.label}</span>
+                  <span className="text-[15px] font-semibold text-slate-100">{s.label}</span>
                   {inUse && (
-                    <span className="numeric shrink-0 text-[14px] uppercase tracking-wider text-accent-400">
+                    <span className="numeric shrink-0 text-[12px] uppercase tracking-wider text-accent-400">
                       in use
                     </span>
                   )}
                 </div>
-                <p className="mt-1 text-[15px] leading-relaxed text-slate-500">{s.blurb}</p>
+                <p className="mt-1 text-[13px] leading-relaxed text-slate-500">{s.blurb}</p>
                 {canManageAlerts && !inUse && (
                   <span
                     role="button"
@@ -144,7 +142,7 @@ export default function ReportStyle() {
                         e.preventDefault(); e.stopPropagation(); if (!busy) pick(s.name)
                       }
                     }}
-                    className="mt-2 inline-block text-[15px] text-slate-300 underline
+                    className="mt-2 inline-block text-[13px] font-medium text-slate-300 underline
                                decoration-slate-600 underline-offset-2 hover:text-slate-100"
                   >
                     {busy ? 'Applying…' : 'Use this one'}
@@ -174,7 +172,7 @@ export default function ReportStyle() {
             <iframe
               key={preview}
               src={preview}
-              title={`Forensic report preview — ${showing}`}
+              title={`Forensic report preview: ${showing}`}
               style={{ width: '100%', height: 620, border: 0, display: 'block' }}
             />
           ) : (
@@ -186,8 +184,7 @@ export default function ReportStyle() {
       </div>
 
       <p className="text-[15px] text-slate-500">
-        This is the real PDF, produced by the same code that builds the
-        attachment — not a mock-up of it.
+        This is the real PDF that gets attached.
       </p>
     </section>
   )

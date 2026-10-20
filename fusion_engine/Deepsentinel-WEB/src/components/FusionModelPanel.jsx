@@ -51,7 +51,7 @@ export default function FusionModelPanel() {
                 <div className="flex items-baseline justify-between gap-3 text-[14px]">
                   <span>{LABEL[k]}</span>
                   <span className="numeric" style={{ color: 'rgb(var(--ds-muted))' }}>
-                    {w[k] != null ? w[k].toFixed(3) : '—'}
+                    {w[k] != null ? w[k].toFixed(3) : '-'}
                   </span>
                 </div>
                 <span className="block h-[7px] rounded"
@@ -64,7 +64,7 @@ export default function FusionModelPanel() {
             ))}
           </div>
           <p className="mt-3 text-[13px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
-            With the intercept at {m.intercept ?? '—'}, these three numbers
+            With the intercept at {m.intercept ?? '-'}, these three numbers
             reproduce any verdict this engine returns.
           </p>
         </div>
@@ -79,7 +79,7 @@ export default function FusionModelPanel() {
           <p className="text-[13px]" style={{ color: 'rgb(var(--ds-muted))' }}>
             transactions fused, mean confidence{' '}
             {decided.mean_confidence != null
-              ? Number(decided.mean_confidence).toFixed(4) : '—'}
+              ? Number(decided.mean_confidence).toFixed(4) : '-'}
           </p>
 
           <div className="mt-4 grid gap-1.5">
@@ -135,11 +135,11 @@ export default function FusionModelPanel() {
                             fontWeight: isFusion ? 700 : 400 }}>{name}</td>
                       <td className="numeric px-2 py-2"
                           style={{ fontWeight: isFusion ? 700 : 400 }}>
-                        {v?.pr_auc?.toFixed(4) ?? '—'}
+                        {v?.pr_auc?.toFixed(4) ?? '-'}
                       </td>
                       <td className="numeric px-2 py-2"
                           style={{ color: 'rgb(var(--ds-muted))' }}>
-                        {v?.auroc?.toFixed(4) ?? '—'}
+                        {v?.auroc?.toFixed(4) ?? '-'}
                       </td>
                     </tr>
                   ))}
@@ -149,8 +149,8 @@ export default function FusionModelPanel() {
 
           <p className="mt-3 text-[13px] leading-relaxed"
              style={{ color: 'rgb(var(--ds-muted))' }}>
-            Read PR-AUC — the right metric at this class balance, and the fused
-            verdict leads it. On AUROC behaviour edges ahead; both are shown.
+            PR-AUC suits rare fraud best, and fusion leads it. Behaviour is slightly
+            ahead on AUROC.
           </p>
 
           {perf.at_threshold && (
@@ -165,7 +165,7 @@ export default function FusionModelPanel() {
                   <p className="ds-mono text-[11px] uppercase tracking-[.13em]"
                      style={{ color: 'rgb(var(--ds-faint))' }}>{k}</p>
                   <p className="numeric mt-1 text-[24px] leading-none">
-                    {v != null ? Number(v).toFixed(3) : '—'}
+                    {v != null ? Number(v).toFixed(3) : '-'}
                   </p>
                   <p className="mt-1 text-[13px]"
                      style={{ color: 'rgb(var(--ds-muted))' }}>{note}</p>
@@ -185,9 +185,9 @@ export default function FusionModelPanel() {
       <dl className="mt-6 grid gap-2 text-[14px]"
           style={{ borderTop: '1px solid rgb(var(--ds-line))', paddingTop: 18 }}>
         {[
-          ['Method', m.method ?? '—'],
+          ['Method', m.method ?? '-'],
           ['Missing-detector penalty', m.uncertainty_shrink != null
-            ? `${m.uncertainty_shrink} of the log-odds, per absent detector` : '—'],
+            ? `${m.uncertainty_shrink} of the log-odds, per absent detector` : '-'],
           ['Alerting band', m.bands?.critical != null
             ? `critical ${m.bands.critical} · high ${m.bands.high} · medium ${m.bands.medium}`
             : 'the model’s own calibrated bands'],

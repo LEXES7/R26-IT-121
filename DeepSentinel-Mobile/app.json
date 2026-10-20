@@ -6,13 +6,8 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "deepsentinel",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "backgroundColor": "#06091A",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#06091A"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "lk.ac.sliit.r26it121.deepsentinel"
@@ -31,7 +26,28 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#06091A"
+        }
+      ],
       "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "DeepSentinel uses Face ID to unlock your signed-in session."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#2DD4BF"
+        }
+      ],
       [
         "expo-build-properties",
         {
@@ -39,7 +55,8 @@
             "usesCleartextTraffic": true
           }
         }
-      ]
+      ],
+      "expo-status-bar"
     ]
   }
 }

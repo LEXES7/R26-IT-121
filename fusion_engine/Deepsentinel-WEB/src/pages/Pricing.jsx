@@ -1,248 +1,241 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Eyebrow } from '../components/Editorial'
+import Reveal from '../components/Reveal'
+import { cx } from '../components/ui'
+import { PHOTOS } from '../data/photos'
 import { getCatalogue } from '../services/api'
 
 /**
  * The public price list.
  *
- * Every plan and feature line comes from the backend, which builds them out of
- * the same tables the licence gate enforces — a pricing page maintained by hand
- * drifts from what the software actually unlocks, and then the site is selling
- * something the product will refuse to do.
+ * Every plan, price and feature line comes from the backend, which builds them
+ * out of the same tables the licence gate enforces. A pricing page maintained
+ * by hand drifts from what the software actually unlocks, and then the site is
+ * selling something the product will refuse to do. The comparison table at the
+ * foot is built from that same list, so it cannot disagree with the cards.
  *
- * Each tier shows only what it *adds*. Listing Professional's seven features
+ * Each card shows only what its tier *adds*. Listing Professional's features
  * again under Enterprise made the third card a wall of ticks that nobody reads
  * and buried the three things Enterprise is actually for.
- *
- * The track is a scroll-snap carousel rather than a JS slider: on a wide screen
- * all three cards fit and there is nothing to slide, and on a narrow one the
- * browser's own touch scrolling is better than anything reimplemented here.
- * The arrows and dots drive scrollTo, so keyboard, trackpad and touch all work
- * without three separate code paths.
  */
+
+function Check({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" className={cx('h-[18px] w-[18px] shrink-0 text-accent-400', className)}
+         fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"
+         strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  )
+}
+
+/** "From $25,000" → a small "From" before the figure. */
+function Price({ value }) {
+  const from = value.startsWith('From ')
+  return (
+    <span className="display text-[4.25rem] leading-none text-slate-100">
+      {from && <span className="mr-2 text-[1.75rem] text-slate-500">From</span>}
+      {from ? value.slice(5) : value}
+    </span>
+  )
+}
+
 export default function Pricing() {
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
-  const [active, setActive] = useState(0)
-  const trackRef = useRef(null)
 
   useEffect(() => {
     getCatalogue().then(setData)
       .catch(() => setError('The price list could not be loaded.'))
   }, [])
 
-  // Which card is centred, read from scroll position rather than tracked
-  // separately — a swipe and an arrow press then agree by construction.
-  const onScroll = useCallback(() => {
-    const el = trackRef.current
-    if (!el) return
-    const cards = [...el.children]
-    const mid = el.scrollLeft + el.clientWidth / 2
-    let best = 0
-    let dist = Infinity
-    cards.forEach((c, i) => {
-      const d = Math.abs(c.offsetLeft + c.offsetWidth / 2 - mid)
-      if (d < dist) { dist = d; best = i }
-    })
-    setActive(best)
-  }, [])
+  const plans = useMemo(() => data?.plans ?? [], [data])
 
-  const go = useCallback((i) => {
-    const el = trackRef.current
-    const card = el?.children?.[i]
-    if (!el || !card) return
-    el.scrollTo({
-      left: card.offsetLeft - (el.clientWidth - card.offsetWidth) / 2,
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        ? 'auto' : 'smooth',
-    })
-  }, [])
-
-  const plans = data?.plans ?? []
+  // Every feature any plan carries, in the order the plans list them: the
+  // comparison's rows.
+  const rows = useMemo(() => {
+    const seen = new Map()
+    plans.forEach((p) => p.features.forEach((f) => { if (!seen.has(f.key)) seen.set(f.key, f) }))
+    return [...seen.values()]
+  }, [plans])
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-6 py-20">
-      <style>{`
-        @keyframes ds-rise { from { opacity: 0; translate: 0 18px }
-                             to   { opacity: 1; translate: 0 0 } }
-        .ds-rise { animation: ds-rise .6s cubic-bezier(.22,.7,.3,1) both }
-        .ds-card { transition: transform .35s cubic-bezier(.22,.7,.3,1),
-                               border-color .35s ease, box-shadow .35s ease }
-        .ds-card:hover { transform: translateY(-6px) }
-        .ds-track { scrollbar-width: none; -ms-overflow-style: none }
-        .ds-track::-webkit-scrollbar { display: none }
-        @media (prefers-reduced-motion: reduce) {
-          .ds-rise { animation: none; opacity: 1; translate: none }
-          .ds-card, .ds-card:hover { transition: none; transform: none }
-        }
-      `}</style>
+    <div className="overflow-x-clip pb-8">
 
-      <div className="ds-rise text-center">
-        <p className="ds-mono mx-auto inline-block rounded-full border px-3 py-1 text-[12px] uppercase tracking-[.16em]"
-           style={{ borderColor: 'rgb(var(--ds-line))', color: 'rgb(var(--ds-muted))' }}>
-          Pricing
-        </p>
-        <h1 className="mx-auto mt-5 max-w-[16ch] text-[52px] leading-[1.02] tracking-tight"
-            style={{ fontFamily: "'Instrument Serif', Georgia, serif", textWrap: 'balance' }}>
-          Detection is never the thing you pay for
-        </h1>
-        <p className="mx-auto mt-5 max-w-[54ch] text-[17px]"
-           style={{ color: 'rgb(var(--ds-muted))' }}>
-          Every plan screens every transaction through all three detectors. The
-          plans differ on how much the product helps you understand a result and
-          answer for it afterwards.
-        </p>
-      </div>
+      {/* ── the claim ──────────────────────────────────────────────────── */}
+      <section className="relative mx-auto max-w-[88rem] px-5 pb-14 pt-16 text-center sm:px-8 lg:pt-24">
+        <div aria-hidden className="pointer-events-none absolute -top-96 left-1/2 h-[36rem] w-[60rem] -translate-x-1/2 rounded-full blur-[120px]"
+             style={{ background: 'rgb(var(--accent-500) / 0.14)' }} />
+        <Reveal className="relative flex flex-col items-center gap-6">
+          <Eyebrow>Pricing</Eyebrow>
+          <h1 className="display text-[3.25rem] leading-[0.92] text-slate-100 sm:text-[5rem] xl:text-[6.5rem]">
+            Detection is never
+            <br />
+            <span className="display-italic text-accent-400">the thing you pay for.</span>
+          </h1>
+          <p className="max-w-[40rem] text-lg leading-relaxed text-slate-400">
+            Every plan checks every payment with all three models and alerts your
+            team. Plans differ in how much help you get explaining a result.
+          </p>
+        </Reveal>
+      </section>
 
       {error && (
-        <p className="mt-10 text-[15px]" style={{ color: 'rgb(var(--ds-sev-critical))' }}>
-          {error}
+        <p className="mx-auto max-w-[88rem] px-5 pb-10 text-center text-[15px] text-risk-critical sm:px-8">{error}</p>
+      )}
+      {!data && !error && (
+        <p className="mx-auto max-w-[88rem] px-5 pb-10 text-center text-[15px] text-slate-500 sm:px-8">
+          Loading the price list…
         </p>
       )}
 
       {data && (
         <>
-          <section className="ds-rise mt-10 rounded-xl border p-5"
-                   style={{ borderColor: 'rgba(45,212,191,.35)',
-                            background: 'rgba(45,212,191,.05)',
-                            animationDelay: '.08s' }}>
-            <p className="text-[15px] font-semibold">Included on every plan, always</p>
-            <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {data.never_gated.map((f) => (
-                <li key={f} className="flex gap-2 text-[15px]"
-                    style={{ color: 'rgb(var(--ds-muted))' }}>
-                  <span style={{ color: 'rgb(var(--ds-accent))' }}>✓</span>{f}
-                </li>
-              ))}
-            </ul>
+          {/* ── never gated ────────────────────────────────────────────── */}
+          <section className="mx-auto flex max-w-[88rem] flex-wrap items-center justify-center gap-2.5 px-5 pb-14 sm:px-8">
+            <span className="eyebrow mr-1.5 text-slate-500">In every plan</span>
+            {data.never_gated.map((f) => (
+              <span key={f} className="rounded-full border border-subtle bg-surface-overlay px-3.5 py-1.5 text-[13px] text-slate-300">
+                {f}
+              </span>
+            ))}
           </section>
 
-          <div
-            ref={trackRef}
-            onScroll={onScroll}
-            className="ds-track mt-8 flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2"
-          >
+          {/* ── the plans ──────────────────────────────────────────────── */}
+          <section className="mx-auto grid max-w-[88rem] gap-4 px-5 pb-24 sm:px-8 lg:grid-cols-3">
             {plans.map((p, i) => {
-              // Only what this tier adds over the one before it.
               const prev = new Set((plans[i - 1]?.features ?? []).map((f) => f.key))
               const own = p.features.filter((f) => !f.always_included && !prev.has(f.key))
-              const rows = i === 0
-                ? p.features.filter((f) => f.always_included).map((f) => f.label)
-                : [`Everything in ${plans[i - 1].name}`, ...own.map((f) => f.label)]
-              const mid = p.id === 'professional'
-
-              // The featured card is filled rather than outlined, so every
-              // colour on it has to come from the fill, not the page.
-              const ink = mid ? 'rgb(232 240 242)' : 'rgb(var(--ds-ink))'
-              const soft = mid ? 'rgb(232 240 242 / .74)' : 'rgb(var(--ds-muted))'
-              const line = mid ? 'rgb(255 255 255 / .12)' : 'rgb(var(--ds-line))'
-
+              const featured = p.id === 'professional'
               return (
-                <section
-                  key={p.id}
-                  className="ds-card ds-rise flex w-[86%] shrink-0 snap-center flex-col
-                             rounded-2xl border p-7 sm:w-[58%] lg:w-[calc((100%-2.5rem)/3)]"
-                  style={{
-                    borderColor: mid ? 'rgb(45 212 191 / .45)' : 'rgb(var(--ds-line))',
-                    background: mid
-                      ? 'linear-gradient(180deg, rgb(16 96 86), rgb(10 62 56))'
-                      : 'rgb(var(--ds-surface))',
-                    color: ink,
-                    boxShadow: mid ? '0 26px 64px -28px rgb(45 212 191 / .40)' : 'none',
-                    animationDelay: `${0.14 + i * 0.09}s`,
-                  }}
-                >
-                  {mid && (
-                    <p className="ds-mono mx-auto rounded-full px-3 py-1 text-[11px] uppercase tracking-[.14em]"
-                       style={{ background: 'rgb(45 212 191 / .16)',
-                                color: 'rgb(var(--ds-accent-strong))' }}>
-                      Most chosen
-                    </p>
-                  )}
-
-                  {/* The number, at the size the decision deserves. */}
-                  <p className="mt-7 text-center">
-                    <span className="text-[52px] font-bold leading-none tracking-tight"
-                          style={mid ? { color: 'rgb(var(--ds-accent-strong))' } : undefined}>
-                      {p.price}
-                    </span>
-                  </p>
-                  <p className="mt-2 text-center text-[13px]" style={{ color: soft }}>
-                    {p.unit}
-                  </p>
-
-                  <div className="mx-auto mt-4 h-px w-10" style={{ background: line }} />
-                  <p className="ds-mono mt-3 text-center text-[12px] uppercase tracking-[.18em]"
-                     style={{ color: soft }}>
-                    {p.name}
-                  </p>
-
-                  <p className="mt-7 text-[15px] font-semibold">Includes</p>
-                  {/* Divided rows rather than a tick per line: at seven items a
-                      column of ticks is texture, and the rule already says
-                      "these are separate things". */}
-                  <ul className="mt-2 flex-1">
-                    {rows.map((label, r) => (
-                      <li key={label}
-                          className="py-3 text-[15px]"
-                          style={{
-                            color: r === 0 && i > 0 ? ink : soft,
-                            fontWeight: r === 0 && i > 0 ? 600 : 400,
-                            borderTop: r === 0 ? 'none' : `1px solid ${line}`,
-                          }}>
-                        {label}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <p className="mt-6 text-center text-[13px] leading-relaxed"
-                     style={{ color: soft }}>
-                    {p.who}
-                  </p>
-
-                  <Link to="/request-access"
-                        className="btn-shader mt-5 block w-full rounded-lg px-4 py-3 text-center text-[15px]">
-                    {p.id === 'enterprise' ? 'Talk to us' : 'Request access'}
-                  </Link>
-                  <p className="mt-3 text-center text-[12px]" style={{ color: soft }}>
-                    {p.overage}
-                  </p>
-                </section>
+                <Reveal key={p.id} delay={i * 90}>
+                  {/* The featured edge is inline: on the light theme the solid
+                      card sets its own border colour, which would beat a class. */}
+                  <article className="glass solid-card relative flex h-full flex-col gap-6 overflow-hidden rounded-[28px] p-8"
+                           style={featured ? { borderColor: 'rgb(var(--accent-500) / 0.7)' } : undefined}>
+                    {featured && (
+                      <span aria-hidden className="pointer-events-none absolute -top-44 left-[-20%] right-[-20%] h-72 rounded-full blur-[70px]"
+                            style={{ background: 'rgb(var(--accent-500) / 0.18)' }} />
+                    )}
+                    <div className="relative">
+                      <h2 className="text-[22px] font-semibold text-slate-100">{p.name}</h2>
+                      <p className="mt-1.5 text-[15px] text-slate-400">{p.tagline}</p>
+                    </div>
+                    <div className="relative flex flex-col gap-2">
+                      <Price value={p.price} />
+                      <span className="text-sm text-slate-500">{p.unit}</span>
+                    </div>
+                    <p className="relative text-sm leading-relaxed text-slate-300">{p.who}</p>
+                    <dl className="relative text-[13px]">
+                      {[['Included', p.volume], ['After that', p.overage], ['Term', p.term]].map(([k, v]) => (
+                        <div key={k} className="flex justify-between gap-4 border-t border-subtle py-2.5 last:border-b">
+                          <dt className="text-slate-500">{k}</dt>
+                          <dd className="text-right text-slate-300">{v}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                    <div className="relative grid gap-3">
+                      <p className="eyebrow text-slate-500">
+                        {i === 0 ? 'Includes' : `Everything in ${plans[i - 1].name}, plus`}
+                      </p>
+                      {i === 0 ? (
+                        <span className="flex gap-2.5 text-sm leading-relaxed text-slate-300">
+                          <Check />The {data.never_gated.length} capabilities in every plan
+                        </span>
+                      ) : own.map((f) => (
+                        <span key={f.key} className="flex gap-2.5 text-sm leading-relaxed text-slate-300">
+                          <Check />{f.label}
+                        </span>
+                      ))}
+                    </div>
+                    <Link to="/signup"
+                          className={cx('relative mt-auto inline-flex min-h-[3rem] items-center justify-center rounded-[14px] px-5 text-[15px] font-semibold',
+                                        featured ? 'bg-accent-500 text-white'
+                                          : p.id === 'enterprise' ? 'liquid-solid cta-ink' : 'liquid text-slate-200')}>
+                      {p.id === 'enterprise' ? 'Talk to us' : 'Request access'}
+                    </Link>
+                  </article>
+                </Reveal>
               )
             })}
-          </div>
+          </section>
 
-          {/* Controls. Hidden where all three already fit. */}
-          <div className="mt-5 flex items-center justify-center gap-4 lg:hidden">
-            <button onClick={() => go(Math.max(0, active - 1))} aria-label="Previous plan"
-                    disabled={active === 0}
-                    className="rounded-full border px-3 py-1 text-[16px] disabled:opacity-35"
-                    style={{ borderColor: 'rgb(var(--ds-line))' }}>‹</button>
-            <div className="flex gap-2">
-              {plans.map((p, i) => (
-                <button key={p.id} onClick={() => go(i)}
-                        aria-label={`Show ${p.name}`}
-                        aria-current={i === active}
-                        style={{
-                          width: i === active ? 22 : 8, height: 8, borderRadius: 99,
-                          background: i === active ? 'rgb(var(--ds-accent))'
-                            : 'rgb(var(--ds-line))',
-                          transition: 'width .3s ease, background .3s ease',
-                        }} />
-              ))}
+          {/* ── enterprise, in its own light ───────────────────────────── */}
+          <section className="mx-auto max-w-[88rem] px-5 pb-24 sm:px-8">
+            <div className="fusion-anchor grid overflow-hidden rounded-[34px] lg:grid-cols-2">
+              <div className="flex flex-col justify-center gap-6 p-10 sm:p-14">
+                <p className="eyebrow text-accent-400">Enterprise</p>
+                <h2 className="display text-[2.75rem] leading-[0.98] text-slate-100 sm:text-[3.75rem]">
+                  Trained on your data.{' '}
+                  <span className="display-italic text-accent-400">Governed by your regulator.</span>
+                </h2>
+                <p className="max-w-[30rem] text-base leading-relaxed text-slate-400">
+                  The models learn your own payments, you get the documents a review asks
+                  for, and you are told when the models drift.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Link to="/signup" className="inline-flex items-center rounded-[14px] bg-[#F0EDE7] px-6 py-3.5 text-[15px] font-semibold text-[#0D0C0B]">
+                    Talk to us
+                  </Link>
+                  <Link to="/about" className="inline-flex items-center rounded-[14px] border border-white/20 bg-white/[0.08] px-6 py-3.5 text-[15px] font-semibold text-[#F0EDE7]">
+                    Read the architecture
+                  </Link>
+                </div>
+              </div>
+              <div className="relative min-h-[22rem]">
+                <img src={PHOTOS.towers.src} alt={PHOTOS.towers.alt} loading="lazy"
+                     className="absolute inset-0 h-full w-full object-cover"
+                     style={{ filter: 'saturate(0.8) brightness(0.72)' }} />
+                <div aria-hidden className="absolute inset-0 hidden lg:block"
+                     style={{ background: 'linear-gradient(90deg, #14110f 0%, rgb(20 17 15 / 0) 45%)' }} />
+              </div>
             </div>
-            <button onClick={() => go(Math.min(plans.length - 1, active + 1))}
-                    aria-label="Next plan" disabled={active === plans.length - 1}
-                    className="rounded-full border px-3 py-1 text-[16px] disabled:opacity-35"
-                    style={{ borderColor: 'rgb(var(--ds-line))' }}>›</button>
-          </div>
+          </section>
 
-          <p className="mt-8 text-[14px]" style={{ color: 'rgb(var(--ds-faint))' }}>
-            {data.note} Plans are activated by an administrator; there is no card
-            payment in this deployment.
-          </p>
+          {/* ── every feature, side by side ────────────────────────────── */}
+          <section className="mx-auto max-w-[88rem] px-5 pb-8 sm:px-8">
+            <h2 className="display text-[2.75rem] leading-none text-slate-100 sm:text-[3.5rem]">
+              Compare <span className="display-italic text-accent-400">every feature.</span>
+            </h2>
+            <div className="mt-8 overflow-x-auto">
+              <table className="w-full min-w-[46rem] border-collapse text-sm">
+                <thead>
+                  <tr>
+                    <th scope="col" className="eyebrow border-b border-strong px-3 py-3.5 text-left text-slate-500">Feature</th>
+                    {plans.map((p) => (
+                      <th key={p.id} scope="col"
+                          className={cx('w-40 border-b border-strong px-3 py-3.5 text-[15px] font-semibold',
+                                        p.id === 'professional' ? 'text-accent-400' : 'text-slate-100')}>
+                        {p.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((f) => (
+                    <tr key={f.key}>
+                      <th scope="row" className="border-b border-subtle px-3 py-3.5 text-left font-normal text-slate-300">
+                        {f.label}
+                      </th>
+                      {plans.map((p) => (
+                        <td key={p.id} className="border-b border-subtle px-3 py-3.5 text-center">
+                          {p.features.some((x) => x.key === f.key)
+                            ? <Check className="mx-auto" />
+                            : <span className="mx-auto block h-[1.5px] w-3 rounded bg-slate-600/50" aria-label="Not included" />}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-6 text-[13px] leading-relaxed text-slate-500">
+              {data.note} An administrator turns plans on; there is no card payment.
+            </p>
+          </section>
         </>
       )}
-    </main>
+    </div>
   )
 }

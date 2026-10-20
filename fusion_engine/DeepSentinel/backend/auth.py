@@ -98,6 +98,24 @@ class PasswordChange(BaseModel):
         return v
 
 
+class ProfileUpdate(BaseModel):
+    """What a user may change about themselves. Username and role are not here:
+    the first is the audit identity, the second is an administrator's call."""
+
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+
+    @field_validator("full_name")
+    @classmethod
+    def _name_ok(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v = " ".join(v.split())
+        if not 1 <= len(v) <= 120:
+            raise ValueError("full name must be 1 to 120 characters")
+        return v
+
+
 class UserOut(BaseModel):
     username: str
     email: str
@@ -343,6 +361,40 @@ async def change_password(username: str, current: str, new: str) -> None:
         raise failure
 
     logger.info(f"Password changed: {username}")
+
+
+async def update_profile(username: str, changes: ProfileUpdate) -> User:
+    """Change a user's own name or email. Email stays unique, ignoring case."""
+    fields = changes.model_dump(exclude_none=True)
+    if not fields:
+        raise HTTPException(status_code=422, detail="Nothing to change")
+
+    async with get_session() as db:
+        user = await db.scalar(select(User).where(User.username == username))
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        if "email" in fields:
+            email = str(fields["email"]).strip()
+            taken = await db.scalar(
+                select(User.id).where(
+                    func.lower(User.email) == email.lower(), User.id != user.id
+                )
+            )
+            if taken is not None:
+                raise HTTPException(
+                    status_code=409, detail="That email is already used by another account"
+                )
+            user.email = email
+        if "full_name" in fields:
+            user.full_name = fields["full_name"]
+        await db.flush()
+        await db.refresh(user)
+
+    await audit(
+        "auth.profile_update", actor=username, target=username,
+        detail=", ".join(sorted(fields)),
+    )
+    return user
 
 
 async def set_user_enabled(username: str, enabled: bool, actor: str) -> None:

@@ -1,19 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import DotGlobe from '../components/DotGlobe'
 import SentinelBot from '../components/SentinelBot'
+import { Eyebrow } from '../components/Editorial'
+import { PHOTOS } from '../data/photos'
 
 /**
- * Fraud, as it happens — the threat-map view.
+ * Fraud, as it happens: the threat-map view.
  *
- * The events are simulated and the page says so in as many words. A live map
- * that quietly invents its own traffic is the same dishonesty as a monitor
- * replaying sample data while looking live, which this project has already
- * been bitten by once. What is real here is the shape of the thing: rates
- * drawn from published card-fraud figures, weighted to places by population
- * and card use.
+ * The events are simulated and the page says so, in the panel, in the sign
+ * and under the map. A live map that quietly invents its own traffic is the
+ * same dishonesty as a monitor replaying sample data while looking live, which
+ * this project has already been bitten by once. What is real here is the
+ * shape of the thing: rates drawn from published card-fraud figures, weighted
+ * to places by population and card use.
  *
  * The bot is the argument. Fraud runs unchecked until you switch him on, and
- * then most of it stops — which is the product in one gesture.
+ * then most of it stops, which is the product in one gesture.
+ *
+ * The map sits in a dark frame on both themes, over a photograph of the Earth
+ * at night, so everything drawn inside it uses fixed dark-ground colours.
  */
 
 // Cities weighted by how much card traffic actually moves through them.
@@ -30,17 +35,31 @@ const PLACES = [
 const WEIGHTED = PLACES.flatMap((p) => Array.from({ length: p[3] }, () => p))
 const LEVELS = ['medium', 'high', 'critical']
 
+// Fixed colours: the frame is dark on both themes.
+const LEVEL_STYLE = {
+  critical: { color: '#FCA5A5', background: 'rgb(239 68 68 / 0.16)', borderColor: 'rgb(239 68 68 / 0.4)' },
+  high: { color: '#FDBA74', background: 'rgb(249 115 22 / 0.14)', borderColor: 'rgb(249 115 22 / 0.38)' },
+  medium: { color: '#C4B5FD', background: 'rgb(179 166 245 / 0.14)', borderColor: 'rgb(179 166 245 / 0.36)' },
+}
+const night = {
+  background: 'rgb(13 12 11 / 0.6)',
+  border: '1px solid rgb(255 255 255 / 0.12)',
+  boxShadow: '0 20px 44px -26px rgb(0 0 0 / 0.8)',
+  backdropFilter: 'blur(20px) saturate(160%)',
+  WebkitBackdropFilter: 'blur(20px) saturate(160%)',
+}
+const clock = (t) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+
 export default function LiveMap() {
   const [events, setEvents] = useState([])
   const [blocked, setBlocked] = useState(0)
   const [seen, setSeen] = useState(0)
   const [guarding, setGuarding] = useState(false)
   const [speech, setSpeech] = useState(false)
-  const feedRef = useRef(null)
 
-  // With the guard on, the detectors stop most of it before it lands — so the
-  // globe thins out rather than going quiet, because nothing catches all of it
-  // and a map that emptied would be a lie.
+  // With the guard on, the detectors stop most of it before it lands, so the
+  // globe thins out rather than going quiet: nothing catches all of it, and a
+  // map that emptied would be a lie.
   const guardingRef = useRef(guarding)
   guardingRef.current = guarding
 
@@ -88,101 +107,146 @@ export default function LiveMap() {
     setEvents((prev) => prev.slice(0, 3))
   }, [])
 
-  const rate = guarding ? 'suppressed' : 'unchecked'
+  const sign = events.slice(0, 5)
 
   return (
-    <main className="relative mx-auto w-full max-w-6xl px-6 py-16">
-      <div className="text-center">
-        <p className="ds-mono inline-block rounded-full border px-3 py-1 text-[12px] uppercase tracking-[.16em]"
-           style={{ borderColor: 'rgb(var(--ds-line))', color: 'rgb(var(--ds-muted))' }}>
-          Live map
-        </p>
-        <h1 className="mx-auto mt-5 max-w-[18ch] text-[52px] leading-[1.02] tracking-tight"
-            style={{ fontFamily: "'Instrument Serif', Georgia, serif", textWrap: 'balance' }}>
-          Fraud does not wait for office hours
-        </h1>
-        <p className="mx-auto mt-5 max-w-[54ch] text-[17px]"
-           style={{ color: 'rgb(var(--ds-muted))' }}>
-          Card fraud is attempted somewhere every few seconds. Watch it land —
-          then ask the sentinel to do something about it.
-        </p>
-      </div>
+    <div className="overflow-x-clip pb-8">
+      <section className="px-3 pt-5 sm:px-6">
+        <div className="relative mx-auto min-h-[46rem] max-w-[96rem] overflow-hidden rounded-[32px] border border-white/10 bg-[#050505]">
+          <img src={PHOTOS.earthNight.src} alt="" aria-hidden
+               className="absolute inset-0 h-full w-full object-cover"
+               style={{ filter: 'saturate(0.85) brightness(0.55)' }} />
+          <div aria-hidden className="absolute inset-0"
+               style={{ background: 'linear-gradient(180deg, rgb(5 5 5 / 0.55) 0%, rgb(5 5 5 / 0.1) 40%, rgb(5 5 5 / 0.75) 100%)' }} />
 
-      {/* counters */}
-      <div className="mx-auto mt-10 grid max-w-3xl grid-cols-3 gap-4">
-        {[['Attempts seen', seen, 'rgb(var(--ds-ink))'],
-          ['Getting through', events.length, guarding ? 'rgb(var(--ds-sev-high))' : 'rgb(255 86 72)'],
-          ['Stopped', blocked, 'rgb(var(--ds-accent-strong))']].map(([label, value, colour]) => (
-          <div key={label} className="rounded-xl border p-4 text-center"
-               style={{ borderColor: 'rgb(var(--ds-line))' }}>
-            <p className="numeric text-[32px] font-bold leading-none" style={{ color: colour }}>
-              {value.toLocaleString()}
-            </p>
-            <p className="ds-mono mt-2 text-[11px] uppercase tracking-[.14em]"
-               style={{ color: 'rgb(var(--ds-faint))' }}>{label}</p>
+          {/* The globe itself, drawn over the photograph. */}
+          <DotGlobe className="absolute inset-x-0 top-10 mx-auto block h-[40rem] w-full max-w-[60rem]" markers={events} />
+
+          <div className="relative flex min-h-[46rem] flex-col gap-4 p-4 sm:p-7 lg:flex-row lg:items-start lg:justify-between">
+            <div className="w-full max-w-[27rem] rounded-[24px] p-7 text-[#F0EDE7]" style={night}>
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.08] px-3 py-1.5 text-xs text-[#D6D1C9]">
+                <span className="h-2 w-2 rounded-full" style={{ background: guarding ? '#2DD4BF' : '#FF6B5C' }} />
+                Simulated feed · {guarding ? 'sentinel on' : 'unchecked'}
+              </span>
+              <h1 className="display mt-5 text-[3.25rem] leading-[0.95] text-[#FBFAF7] sm:text-[4rem]">
+                Fraud does not wait <span className="display-italic text-[#2DD4BF]">for office hours.</span>
+              </h1>
+              <p className="mt-4 text-[15px] leading-relaxed text-[#A39C92]">
+                Card fraud is tried every few seconds. Watch it land, then switch on
+                the sentinel.
+              </p>
+              <dl className="mt-6 grid grid-cols-3 gap-3 border-t border-white/10 pt-5">
+                {[['Attempts seen', seen, '#FBFAF7'],
+                  ['Getting through', events.length, guarding ? '#FDBA74' : '#FCA5A5'],
+                  ['Stopped', blocked, '#2DD4BF']].map(([label, value, colour]) => (
+                  <div key={label}>
+                    <dd className="numeric text-[1.6rem] leading-none" style={{ color: colour }}>{value.toLocaleString()}</dd>
+                    <dt className="mt-2 text-[11px] text-[#857E75]">{label}</dt>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            <aside aria-label="Latest events" className="hidden w-[22rem] rounded-[24px] p-5 text-[#F0EDE7] lg:block" style={night}>
+              <div className="flex items-center justify-between pb-2">
+                <p className="eyebrow text-[#A39C92]">Latest</p>
+                <span className="numeric text-[11px] text-[#857E75]">newest first</span>
+              </div>
+              {events.length === 0 && (
+                <p className="py-6 text-sm text-[#857E75]">Nothing getting through right now.</p>
+              )}
+              {events.slice(0, 7).map((e) => (
+                <div key={e.id} className="flex items-center justify-between gap-3 border-t border-white/[0.08] py-2.5">
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm text-[#FBFAF7]">{e.name}</span>
+                    <span className="numeric text-[11px] text-[#857E75]">{clock(e.at)}</span>
+                  </span>
+                  <span className="rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em]"
+                        style={LEVEL_STYLE[e.level]}>
+                    {e.level}
+                  </span>
+                </div>
+              ))}
+            </aside>
           </div>
-        ))}
-      </div>
 
-      {/* the globe */}
-      <div className="relative mt-8 overflow-hidden rounded-2xl border"
-           style={{ borderColor: 'rgb(var(--ds-line))', background: '#05070a' }}>
-        <DotGlobe className="block h-[520px] w-full" markers={events} />
+          {/* the bot */}
+          <div className="absolute bottom-24 right-5 flex flex-col items-end gap-3 sm:right-8">
+            {speech && !guarding && (
+              <div className="max-w-[15rem] rounded-2xl rounded-br-sm px-4 py-3" style={night}>
+                <p className="text-[15px] text-[#F0EDE7]">&ldquo;Want to get rid of fraud?&rdquo;</p>
+                <button onClick={engage}
+                        className="mt-3 w-full rounded-lg bg-[#0F9B8E] px-3 py-2 text-[14px] font-semibold text-white">
+                  Yes, switch it on
+                </button>
+              </div>
+            )}
+            {guarding && (
+              <div className="max-w-[15rem] rounded-2xl rounded-br-sm border border-[#2DD4BF]/40 bg-[#2DD4BF]/10 px-4 py-3">
+                <p className="text-[15px] text-[#F0EDE7]">&ldquo;Watching. Most of it stops here now.&rdquo;</p>
+              </div>
+            )}
+            <button onClick={wake} aria-expanded={speech}
+                    aria-label={guarding ? 'Stand the sentinel down' : 'Wake the sentinel'}
+                    className="transition-transform hover:-translate-y-1">
+              <SentinelBot size={96} awake={speech || guarding} />
+            </button>
+          </div>
 
-        <p className="ds-mono absolute left-5 top-5 text-[11px] uppercase tracking-[.16em]"
-           style={{ color: guarding ? 'rgb(var(--ds-accent))' : 'rgb(255 120 108)' }}>
-          ● {rate}
-        </p>
+          {/* The sign along the bottom: the latest events, as a dot-matrix board. */}
+          <div aria-hidden className="absolute inset-x-0 bottom-0 overflow-hidden border-t border-white/10 bg-[#080807]/80">
+            <div className="absolute inset-0"
+                 style={{ backgroundImage: 'radial-gradient(rgb(45 212 191 / 0.1) 1.1px, transparent 1.4px)', backgroundSize: '7px 7px' }} />
+            <div className="ticker-window relative">
+              <div className="ticker-track">
+                {[0, 1].map((copy) => (
+                  <span key={copy} className="ticker-run" style={{ fontSize: '1.75rem' }}>
+                    <span>Simulated feed</span>
+                    {sign.length === 0 && <span>Waiting for the next attempt</span>}
+                    {sign.map((e) => (
+                      <span key={e.id} className={e.level === 'critical' ? 'ticker-alert' : undefined}>
+                        {e.level} {e.name}
+                      </span>
+                    ))}
+                    <span>{guarding ? 'Sentinel on' : 'Unchecked'}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-        {/* the feed, threat-map style */}
-        <div ref={feedRef}
-             className="pointer-events-none absolute bottom-5 left-5 hidden w-64 sm:block">
-          {events.slice(0, 6).map((e) => (
-            <p key={e.id} className="ds-mono truncate text-[11px]"
-               style={{ color: e.level === 'critical' ? 'rgb(255 120 108)'
-                 : e.level === 'high' ? 'rgb(255 180 84)' : 'rgb(148 162 171)' }}>
-              {e.level.padEnd(8, ' ')} {e.name}
-            </p>
+      <section className="mx-auto max-w-[88rem] px-5 py-20 sm:px-8">
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <Eyebrow>How to read it</Eyebrow>
+            <h2 className="display mt-4 text-[2.75rem] leading-[0.98] text-slate-100 sm:text-[3.5rem]">
+              What the map <span className="display-italic text-accent-400">is showing you.</span>
+            </h2>
+          </div>
+          <p className="max-w-md text-base leading-relaxed text-slate-400">
+            The rate and the places are real in shape; the transactions are not.
+            The screening itself happens in the console, on your own traffic.
+          </p>
+        </div>
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
+          {[
+            ['A light is an attempt', 'A simulated fraud attempt in a city.'],
+            ['Red is critical', 'The worst attempts glow red.'],
+            ['The sentinel stops them', 'Switch it on and most attempts are blocked.'],
+          ].map(([title, body]) => (
+            <article key={title} className="glass solid-card rounded-[24px] p-6">
+              <h3 className="text-lg font-semibold text-slate-100">{title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-400">{body}</p>
+            </article>
           ))}
         </div>
-
-        {/* the bot */}
-        <div className="absolute bottom-5 right-5 flex flex-col items-end gap-3">
-          {speech && !guarding && (
-            <div className="max-w-[15rem] rounded-2xl rounded-br-sm border px-4 py-3"
-                 style={{ borderColor: 'rgb(var(--ds-line))',
-                          background: 'rgb(var(--ds-surface))' }}>
-              <p className="text-[15px]" style={{ color: 'rgb(var(--ds-ink))' }}>
-                “Want to get rid of fraud?”
-              </p>
-              <button onClick={engage}
-                      className="btn-shader mt-3 w-full rounded-lg px-3 py-2 text-[14px]">
-                Yes — switch it on
-              </button>
-            </div>
-          )}
-          {guarding && (
-            <div className="max-w-[15rem] rounded-2xl rounded-br-sm border px-4 py-3"
-                 style={{ borderColor: 'rgba(45,212,191,.4)',
-                          background: 'rgba(45,212,191,.08)' }}>
-              <p className="text-[15px]" style={{ color: 'rgb(var(--ds-ink))' }}>
-                “Watching. Most of it stops here now.”
-              </p>
-            </div>
-          )}
-          <button onClick={wake} aria-expanded={speech}
-                  aria-label={guarding ? 'Stand the sentinel down' : 'Wake the sentinel'}
-                  className="transition-transform hover:-translate-y-1">
-            <SentinelBot size={96} awake={speech || guarding} />
-          </button>
-        </div>
-      </div>
-
-      <p className="mt-6 text-center text-[13px]" style={{ color: 'rgb(var(--ds-faint))' }}>
-        Events on this map are simulated for demonstration. The rate and the
-        places are drawn from published card-fraud figures; the transactions
-        themselves are not real, and nothing here is screened by the platform.
-      </p>
-    </main>
+        <p className="mt-8 text-[13px] leading-relaxed text-slate-500">
+          This map is a simulation. The rates follow published figures, but the
+          payments are not real.
+        </p>
+      </section>
+    </div>
   )
 }

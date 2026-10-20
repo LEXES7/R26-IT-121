@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  getGraphSettings, setGraphSettings, getNeighbourhood,
+  getGraphSettings, setGraphSettings, getNeighbourhood, getGraphModel,
   demoScoreAccount, demoScoreCsv,
 } from '../services/api'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Alert, Button, Input, cx } from '../components/ui'
 import ConsoleShell from '../components/ConsoleShell'
@@ -54,11 +55,29 @@ const BUSY = [
 // layout was only ever using ~36% of the height. So the frame can be shorter
 // without crowding anything, and the page stops needing a scroll to see the
 // caption under it.
-const FRAME_H = 480
+const FRAME_H = 560
 // The layout runs on a world larger than the frame, so there is somewhere to
 // move to. Packing 90 accounts into 620px makes a dense blob; spreading them
 // over twice that and letting the viewer travel makes the structure legible.
 const WORLD = 2.1
+
+// The score at which an account is drawn as high risk, until the detector
+// reports its own alert line; then that line is used everywhere on the page.
+const RISKY = 0.09
+
+// What an account is in this network, by how money moves through it. Kept in
+// one table so the map, the legend, the hover card and the inspector agree.
+const ROLE = {
+  invented: { rgb: '196,132,252', label: 'Added in demo' },
+  risky: { rgb: '255,107,92', label: 'High risk' },
+  bridge: { rgb: '179,166,245', label: 'Pays and receives' },
+  collector: { rgb: '125,180,255', label: 'Collects from 2+' },
+  pays: { rgb: '190,244,228', label: 'Only pays' },
+}
+const roleFor = (n, line = RISKY) => (n.invented ? 'invented'
+  : (n.score ?? 0) >= line ? 'risky'
+    : (n.in_degree ?? 0) > 0 && (n.out_degree ?? 0) > 0 ? 'bridge'
+      : (n.in_degree ?? 0) >= 2 ? 'collector' : 'pays')
 
 export default function GraphExplorer() {
   const { isAdmin } = useAuth()
@@ -72,6 +91,16 @@ export default function GraphExplorer() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [hover, setHover] = useState(null)
+  // What the detector reports about itself: size, latency, alert lines and
+  // held-out scores. Read once; the header chips and the model card use it.
+  const [model, setModel] = useState(null)
+  const loadModel = useCallback(() => {
+    getGraphModel().then(setModel).catch(() => setModel(null))
+  }, [])
+  useEffect(() => { loadModel() }, [loadModel])
+  const riskLine = Number(model?.risk_bands?.high ?? RISKY)
+  const criticalLine = model?.risk_bands?.critical != null ? Number(model.risk_bands.critical) : null
+  const roleOf = (n) => roleFor(n, riskLine)
 
   // Closed until asked for. The explorer is the one screen that makes the
   // network detector do real work, and a page that quietly loads a few hundred
@@ -99,7 +128,9 @@ export default function GraphExplorer() {
     let from = null
     const t0 = performance.now()
     const step = (now) => {
-      const k = Math.min(1, (now - t0) / ms)
+      // A frame's timestamp can predate t0, and a negative k would ease the
+      // view the wrong way, far past where it was going.
+      const k = Math.min(1, Math.max(0, (now - t0) / ms))
       // easeOutCubic: quick to leave, gentle to arrive.
       const e = 1 - (1 - k) ** 3
       setView((v) => {
@@ -117,13 +148,12 @@ export default function GraphExplorer() {
 
   useEffect(() => () => cancelAnimationFrame(tweenRef.current), [])
 
-  // ── Demo mode ──────────────────────────────────────────────────────────
+  // ── What if and Score a file ───────────────────────────────────────────
   // Folded into this page rather than living on its own, because the point of
   // the demo is the picture: an account that did not exist gets scored, and
   // then appears in the graph attached to whoever it transacted with. Split
   // across two pages that story needs a tab change in the middle of the
   // sentence.
-  const [demo, setDemo] = useState(false)
   const [csv, setCsv] = useState(null)
   const [csvBusy, setCsvBusy] = useState(false)
   // Kept separate from the page-level error, which renders at the very top:
@@ -224,12 +254,11 @@ export default function GraphExplorer() {
     // server refuses the same things, and says so if this is ever bypassed.
     const value = Number(amount)
     if (account === neighbour) {
-      setAddError('An account cannot receive from itself. '
-                  + 'Name a different sender.')
+      setAddError('Pick a different sender.')
       return
     }
     if (!Number.isFinite(value) || value <= 0) {
-      setAddError(`'${amount}' is not an amount. Enter a number above zero.`)
+      setAddError('Enter an amount above zero.')
       return
     }
 
@@ -296,7 +325,6 @@ export default function GraphExplorer() {
         setError(null)
         setCsv(null)
         setRuns([])
-        setDemo(false)
         setView({ x: 0, y: 0, z: 1 })
       }
       return !was
@@ -480,6 +508,12 @@ export default function GraphExplorer() {
   }, [])
 
   // ── draw ──────────────────────────────────────────────────────────────
+  //
+  // Same layout, same data. What changed is how it reads: each collector sits
+  // in a soft halo with its sender count, transfers are curved and weighted by
+  // the attention the model gave them, every account carries a thin arc for
+  // its score, and pointing at an account dims everything it is not connected
+  // to, so its own transfers stand out.
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -495,11 +529,11 @@ export default function GraphExplorer() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     layoutRef.current = []
 
-    // Ground: a deep teal wash, brightest behind the centre.
+    // Ground: the console's near-black, a touch lighter behind the centre.
     const bg = ctx.createRadialGradient(
       W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.7 * (0.62 + view.z * 0.5))
-    bg.addColorStop(0, '#0b2430')
-    bg.addColorStop(1, '#05121a')
+    bg.addColorStop(0, '#1b1917')
+    bg.addColorStop(1, '#0b0a09')
     ctx.fillStyle = bg
     ctx.fillRect(0, 0, W, H)
 
@@ -507,15 +541,11 @@ export default function GraphExplorer() {
     const TW = W * 1.6
     const TH = H * 1.6
     stars.forEach(({ depth, pts }) => {
-      // A layer only feels `depth` of the zoom, so the near field spreads
-      // fast and the far field holds — which is what makes moving in read as
-      // travelling rather than as scaling.
       const z = 1 + (view.z - 1) * depth
       const px = view.x * depth
       const py = view.y * depth
       for (let i = 0; i < pts.length; i += 1) {
         const p = pts[i]
-        // Tile, so panning keeps finding stars instead of leaving a void.
         let x = (p.x * TW + px) % TW
         let y = (p.y * TH + py) % TH
         if (x < 0) x += TW
@@ -523,7 +553,7 @@ export default function GraphExplorer() {
         const sx = W / 2 + (x - TW / 2) * z
         const sy = H / 2 + (y - TH / 2) * z
         if (sx < -8 || sx > W + 8 || sy < -8 || sy > H + 8) continue
-        ctx.fillStyle = `rgba(180,235,255,${p.a})`
+        ctx.fillStyle = `rgba(240,237,231,${p.a * 0.8})`
         ctx.beginPath()
         ctx.arc(sx, sy, p.r * (0.7 + z * 0.4), 0, Math.PI * 2)
         ctx.fill()
@@ -531,107 +561,180 @@ export default function GraphExplorer() {
     })
     if (!graph) return
 
-    // Everything after this is drawn in world space; the viewer's pan and zoom
-    // are one transform rather than an offset threaded through every call.
+    // The layout runs on a world WORLD times the frame, with the searched
+    // account at the world's middle. The view is centred on that middle, not
+    // on the frame's: centring on the frame put the searched account off the
+    // bottom-right of the screen on arrival.
+    const CX = (W * WORLD) / 2
+    const CY = (H * WORLD) / 2
     ctx.save()
     ctx.translate(W / 2 + view.x, H / 2 + view.y)
     ctx.scale(view.z, view.z)
-    ctx.translate(-W / 2, -H / 2)
+    ctx.translate(-CX, -CY)
 
     const { nodes, links } = layout(graph, W, H)
     const maxAtt = Math.max(...graph.edges.map((e) => e.attention ?? 0), 0.0001)
     const maxDeg = Math.max(...nodes.map((n) => n.in_degree + n.out_degree), 1)
+    const sizeOf = (n) => {
+      const deg = (n.in_degree ?? 0) + (n.out_degree ?? 0)
+      return n.is_centre ? 22 : n.invented ? 15
+        : 3.4 + Math.pow(Math.max(deg, 0) / maxDeg, 0.62) * 15
+    }
 
-    // Edges, drawn twice: a wide soft pass for the bloom, a thin bright core.
+    // What the pointer is on, and everything one transfer from it.
+    const near = hover ? new Set([hover]) : null
+    if (near) {
+      links.forEach(({ a, b }) => {
+        if (a.id === hover) near.add(b.id)
+        if (b.id === hover) near.add(a.id)
+      })
+    }
+    const fade = (id) => (near && !near.has(id) ? 0.28 : 1)
+
+    // Halos: one per collector and one behind the searched account.
+    nodes.forEach((n) => {
+      const collector = (n.in_degree ?? 0) >= 2
+      if (!collector && !n.is_centre) return
+      const rgb = n.is_centre || (n.score ?? 0) >= riskLine ? '255,107,92' : '125,180,255'
+      const rad = 46 + Math.sqrt(n.in_degree ?? 1) * 24
+      const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, rad)
+      g.addColorStop(0, `rgba(${rgb},${0.2 * fade(n.id)})`)
+      g.addColorStop(1, `rgba(${rgb},0)`)
+      ctx.fillStyle = g
+      ctx.beginPath(); ctx.arc(n.x, n.y, rad, 0, Math.PI * 2); ctx.fill()
+    })
+
+    // Transfers, curved and weighted. The ones the model leaned on most are
+    // drawn warm, so the evidence is visible before anything is read.
     links.forEach(({ a, b, e }) => {
       const w = (e.attention ?? 0) / maxAtt
-      ctx.strokeStyle = `rgba(80,200,230,${0.05 + w * 0.10})`
-      ctx.lineWidth = 3.5 + w * 4
-      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke()
-      ctx.strokeStyle = `rgba(150,240,255,${0.22 + w * 0.55})`
-      ctx.lineWidth = 0.6 + w * 1.1
-      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke()
+      const dx = b.x - a.x
+      const dy = b.y - a.y
+      const len = Math.hypot(dx, dy) || 1
+      const bend = (wobble(`${e.source}>${e.target}`, 'b') - 0.5) * 0.32 * len
+      const cx = (a.x + b.x) / 2 - (dy / len) * bend
+      const cy = (a.y + b.y) / 2 + (dx / len) * bend
+      const lit = !near || (near.has(a.id) && near.has(b.id) && (a.id === hover || b.id === hover))
+      const f = lit ? 1 : 0.22
+      const hot = w >= 0.5
+      ctx.lineCap = 'round'
+      ctx.strokeStyle = hot ? `rgba(255,107,92,${(0.08 + w * 0.12) * f})`
+        : `rgba(214,209,201,${0.05 * f})`
+      ctx.lineWidth = 3 + w * 5
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(cx, cy, b.x, b.y); ctx.stroke()
+      if (hot) {
+        const g = ctx.createLinearGradient(a.x, a.y, b.x, b.y)
+        g.addColorStop(0, `rgba(179,166,245,${0.9 * f})`)
+        g.addColorStop(1, `rgba(255,107,92,${0.95 * f})`)
+        ctx.strokeStyle = g
+      } else {
+        ctx.strokeStyle = `rgba(214,209,201,${(0.22 + w * 0.45) * f})`
+      }
+      ctx.lineWidth = 0.8 + w * 2.6
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(cx, cy, b.x, b.y); ctx.stroke()
     })
 
     nodes.forEach((n) => {
-      const deg = (n.in_degree ?? 0) + (n.out_degree ?? 0)
-      // A wider spread than before. Everything used to land between 5 and 14
-      // pixels, so a collector taking forty accounts looked much like the
-      // accounts feeding it — and the shape is the whole point.
-      const r = n.is_centre ? 26 : n.invented ? 15
-        : 3.4 + Math.pow(Math.max(deg, 0) / maxDeg, 0.62) * 17
-      const risky = (n.score ?? 0) >= 0.09
-      const hot = n.id === hover
+      const r = sizeOf(n)
+      const rgb = ROLE[roleOf(n)].rgb
+      const f = fade(n.id)
 
-      // Halo. An invented account gets its own colour so nobody in the room
-      // has to take on trust which node is the one that was just added.
-      const g1 = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r * 3.4)
-      // Role, not just risk. A collector, an account that only pays, and one
-      // that does both are three different things in a fraud network, and
-      // colouring them alike threw that away — every dot was the same blue, so
-      // the picture said nothing until you read the labels.
-      const collector = (n.in_degree ?? 0) >= 2
-      const bridge = (n.in_degree ?? 0) > 0 && (n.out_degree ?? 0) > 0
-      const tint = n.invented ? '196,132,252'
-        : risky ? '255,176,72'
-          : bridge ? '167,139,250'
-            : collector ? '56,208,255'
-              : '74,222,160'
-      g1.addColorStop(0, `rgba(${tint},${n.is_centre ? 0.5 : 0.32})`)
-      g1.addColorStop(0.5, `rgba(${tint},0.10)`)
-      g1.addColorStop(1, `rgba(${tint},0)`)
+      const g1 = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r * 2.6)
+      g1.addColorStop(0, `rgba(${rgb},${0.34 * f})`)
+      g1.addColorStop(1, `rgba(${rgb},0)`)
       ctx.fillStyle = g1
-      ctx.beginPath(); ctx.arc(n.x, n.y, r * 3.4, 0, Math.PI * 2); ctx.fill()
+      ctx.beginPath(); ctx.arc(n.x, n.y, r * 2.6, 0, Math.PI * 2); ctx.fill()
 
-      // Sphere: a bright core falling off to a rim.
-      const g2 = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r)
-      g2.addColorStop(0, '#f2ffff')
-      g2.addColorStop(0.34, `rgb(${tint})`)
-      g2.addColorStop(1, `rgba(${tint},.28)`)
-      ctx.fillStyle = g2
+      ctx.fillStyle = `rgba(${rgb},${f})`
       ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.fill()
+      ctx.strokeStyle = `rgba(11,10,9,${0.9 * f})`
+      ctx.lineWidth = 2
+      ctx.stroke()
 
-      // Wireframe, on the larger spheres only — meridians read as a globe at
-      // 20px and as noise at 6px.
-      if (r > 9) {
-        ctx.strokeStyle = `rgba(190,250,255,${n.is_centre ? 0.5 : 0.32})`
-        ctx.lineWidth = 0.6
-        for (let k = 1; k <= 3; k += 1) {
-          const rx = r * (k / 3.4)
-          ctx.beginPath(); ctx.ellipse(n.x, n.y, rx, r, 0, 0, Math.PI * 2); ctx.stroke()
-          ctx.beginPath(); ctx.ellipse(n.x, n.y, r, rx, 0, 0, Math.PI * 2); ctx.stroke()
-        }
+      // The score as an arc: a full ring would be a score of one.
+      if (r >= 5 && typeof n.score === 'number') {
+        const ra = r + 5
+        ctx.lineWidth = 2.2
+        ctx.strokeStyle = `rgba(255,255,255,${0.1 * f})`
+        ctx.beginPath(); ctx.arc(n.x, n.y, ra, 0, Math.PI * 2); ctx.stroke()
+        ctx.strokeStyle = n.score >= riskLine ? `rgba(255,107,92,${f})` : `rgba(255,180,84,${f})`
+        ctx.beginPath()
+        ctx.arc(n.x, n.y, ra, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, Math.max(0.02, n.score)))
+        ctx.stroke()
       }
-      ctx.strokeStyle = hot ? 'rgba(255,255,255,.95)' : `rgba(${tint},.75)`
-      ctx.lineWidth = hot ? 2 : 1
-      ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.stroke()
-
+      if (n.is_centre) {
+        ctx.strokeStyle = '#D6F068'
+        ctx.lineWidth = 2.5
+        ctx.beginPath(); ctx.arc(n.x, n.y, r + 11, 0, Math.PI * 2); ctx.stroke()
+      }
+      if (n.id === hover && !n.is_centre) {
+        ctx.strokeStyle = 'rgba(255,255,255,.9)'
+        ctx.lineWidth = 2
+        ctx.beginPath(); ctx.arc(n.x, n.y, r + 10, 0, Math.PI * 2); ctx.stroke()
+      }
       layoutRef.current.push({ id: n.id, x: n.x, y: n.y, r: Math.max(r, 9), node: n })
     })
 
-    // Labels last, so nothing is drawn over them. The centre, anything risky,
-    // and whatever is under the cursor — labelling every node turns a full
-    // frame into overlapping text.
-    ctx.font = '12px ui-monospace, SFMono-Regular, monospace'
+    // Cluster names, then account labels, so nothing is drawn over them.
     ctx.textAlign = 'center'
+    ctx.font = '600 11px "Plus Jakarta Sans", system-ui, sans-serif'
     nodes.forEach((n) => {
-      const risky = (n.score ?? 0) >= 0.09
+      if (n.is_centre || (n.in_degree ?? 0) < 3) return
+      ctx.fillStyle = `rgba(214,209,201,${0.62 * fade(n.id)})`
+      ctx.fillText(`collector · ${n.in_degree} senders`, n.x, n.y - sizeOf(n) - 34)
+    })
+    ctx.font = '12px "JetBrains Mono", ui-monospace, monospace'
+    nodes.forEach((n) => {
+      const risky = (n.score ?? 0) >= riskLine
       if (!n.is_centre && !risky && !n.invented && n.id !== hover) return
-      const deg = (n.in_degree ?? 0) + (n.out_degree ?? 0)
-      // A wider spread than before. Everything used to land between 5 and 14
-      // pixels, so a collector taking forty accounts looked much like the
-      // accounts feeding it — and the shape is the whole point.
-      const r = n.is_centre ? 26 : n.invented ? 15
-        : 3.4 + Math.pow(Math.max(deg, 0) / maxDeg, 0.62) * 17
-      const text = n.id
-      const w = ctx.measureText(text).width
-      ctx.fillStyle = 'rgba(3,16,22,.72)'
-      ctx.fillRect(n.x - w / 2 - 5, n.y - r - 23, w + 10, 17)
-      ctx.fillStyle = n.invented ? '#eaddff' : n.is_centre ? '#dffbff' : '#cfe6ee'
-      ctx.fillText(text, n.x, n.y - r - 11)
+      if (fade(n.id) < 1) return
+      const r = sizeOf(n)
+      const w = ctx.measureText(n.id).width
+      ctx.fillStyle = 'rgba(11,10,9,.78)'
+      ctx.beginPath()
+      ctx.roundRect?.(n.x - w / 2 - 7, n.y + r + 14, w + 14, 19, 9.5)
+      if (!ctx.roundRect) ctx.rect(n.x - w / 2 - 7, n.y + r + 14, w + 14, 19)
+      ctx.fill()
+      ctx.fillStyle = n.invented ? '#eaddff' : '#F2EFE9'
+      ctx.fillText(n.id, n.x, n.y + r + 28)
     })
     ctx.restore()
-  }, [graph, hover, layout, view])
+
+    // Minimap: the whole neighbourhood, and the part of it in view.
+    if (nodes.length > 1) {
+      const MW = 120, MH = 80, mx = W - MW - 70, my = 14
+      const xs = nodes.map((n) => n.x), ys = nodes.map((n) => n.y)
+      const x0 = Math.min(...xs) - 30, x1 = Math.max(...xs) + 30
+      const y0 = Math.min(...ys) - 30, y1 = Math.max(...ys) + 30
+      const k = Math.min((MW - 12) / (x1 - x0), (MH - 12) / (y1 - y0))
+      const ox = mx + (MW - (x1 - x0) * k) / 2
+      const oy = my + (MH - (y1 - y0) * k) / 2
+      const toMap = (x, y) => [ox + (x - x0) * k, oy + (y - y0) * k]
+      ctx.fillStyle = 'rgba(27,25,23,.92)'
+      ctx.strokeStyle = 'rgba(214,209,201,.2)'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.roundRect?.(mx, my, MW, MH, 12)
+      if (!ctx.roundRect) ctx.rect(mx, my, MW, MH)
+      ctx.fill(); ctx.stroke()
+      ctx.save()
+      ctx.beginPath(); ctx.rect(mx, my, MW, MH); ctx.clip()
+      nodes.forEach((n) => {
+        const [px, py] = toMap(n.x, n.y)
+        ctx.fillStyle = `rgb(${ROLE[roleOf(n)].rgb})`
+        ctx.beginPath(); ctx.arc(px, py, n.is_centre ? 2.6 : 1.4, 0, Math.PI * 2); ctx.fill()
+      })
+      // The screen's corners, taken back into the world.
+      const wx = (sx) => (sx - W / 2 - view.x) / view.z + CX
+      const wy = (sy) => (sy - H / 2 - view.y) / view.z + CY
+      const [ax, ay] = toMap(wx(0), wy(0))
+      const [bx, by] = toMap(wx(W), wy(H))
+      ctx.strokeStyle = '#D6F068'
+      ctx.lineWidth = 1.5
+      ctx.strokeRect(ax, ay, bx - ax, by - ay)
+      ctx.restore()
+    }
+  }, [graph, hover, layout, view, riskLine])  // eslint-disable-line react-hooks/exhaustive-deps
 
   // Screen point back to world point — the inverse of the transform the draw
   // applies. Without this, hit-testing is correct only at zoom 1 with no pan,
@@ -645,8 +748,8 @@ export default function GraphExplorer() {
     const sx = evt.clientX - r.left
     const sy = evt.clientY - r.top
     return {
-      x: (sx - W / 2 - view.x) / view.z + W / 2,
-      y: (sy - H / 2 - view.y) / view.z + H / 2,
+      x: (sx - W / 2 - view.x) / view.z + (W * WORLD) / 2,
+      y: (sy - H / 2 - view.y) / view.z + (H * WORLD) / 2,
     }
   }
 
@@ -665,34 +768,86 @@ export default function GraphExplorer() {
   const counts = graph?.counts
   const off = settings && settings.enabled === false
 
+  // The account the inspector describes: whatever the pointer is on, else the
+  // searched one.
+  const focusId = hover ?? centre
+  const focusNode = graph?.nodes?.find((n) => n.id === focusId) ?? null
+  const focusEdges = graph && focusNode
+    ? graph.edges
+      .filter((e) => e.source === focusNode.id || e.target === focusNode.id)
+      .sort((a, b) => (b.attention ?? 0) - (a.attention ?? 0))
+      .slice(0, 3)
+    : []
+  const maxAttention = Math.max(...(graph?.edges ?? []).map((e) => e.attention ?? 0), 0.0001)
+  const hoverPoint = hover ? layoutRef.current.find((p) => p.id === hover) : null
+  const canvasW = canvasRef.current?.clientWidth ?? 0
+  const hoverScreen = hoverPoint && canvasW ? {
+    x: (hoverPoint.x - (canvasW * WORLD) / 2) * view.z + canvasW / 2 + view.x,
+    y: (hoverPoint.y - (FRAME_H * WORLD) / 2) * view.z + FRAME_H / 2 + view.y,
+  } : null
+
+  const zoomBy = (k) => glideTo({ z: Math.max(0.35, Math.min(3, viewRef.current.z * k)) }, 320)
+  const card = 'dash-card'
+
+  // The inspector's facts, all read from the loaded neighbourhood.
+  const focusSteps = focusNode
+    ? (graph?.edges ?? [])
+      .filter((e) => (e.source === focusNode.id || e.target === focusNode.id) && e.step != null)
+      .map((e) => Number(e.step))
+    : []
+  const firstStep = focusSteps.length ? Math.min(...focusSteps) : null
+  const lastStep = focusSteps.length ? Math.max(...focusSteps) : null
+  const level = (v) => (typeof v !== 'number' ? null
+    : criticalLine != null && v >= criticalLine ? ['CRITICAL', 'rgb(var(--ds-sev-critical))']
+      : v >= riskLine ? ['HIGH', 'rgb(var(--ds-sev-high))']
+        : ['BELOW THE LINE', 'rgb(var(--ds-sev-low))'])
+  const focusLevel = focusNode ? level(focusNode.score) : null
+  const latency = model?.runtime?.model?.mean_latency_ms
+  const perf = model?.performance?.metrics
+  const canPull2 = hops === 1 && !(settings?.max_hops < 2)
+
   return (
     <ConsoleShell
-      eyebrow="Explore"
-      title="The payment graph"
+      eyebrow="Detector · Network"
+      title={<>The payment graph. <em>Who paid whom.</em></>}
       subtitle="Search an account to see the network around it."
+      actions={
+        <>
+          <span className="dash-chip" style={{ height: 40 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 99,
+                           background: model ? 'rgb(var(--ds-sev-low))' : 'rgb(var(--ds-faint))' }} />
+            <b style={{ fontSize: 14 }}>{model ? 'Serving' : 'Checking'}</b>
+            {latency != null && <span>{Number(latency).toFixed(0)} ms</span>}
+          </span>
+          <button className="ds-btn" onClick={() => { loadModel(); if (centre) load(centre, hops, false) }}>
+            Refresh
+          </button>
+        </>
+      }
     >
       {error && <Alert tone="error">{error}</Alert>}
 
-      <div style={{ display: "grid", gap: 18 }}>
-      <DetectorRuntime detector="graph" model="Edge-Enhanced GraphSAGE" />
-      {/* One switch, at the top, before anything else.
-        *
-        * The explorer is the only screen here that can put real load on the
-        * network detector: every search walks the served graph. Closed it
-        * fetches nothing and holds nothing, and closing it drops whatever was
-        * loaded rather than leaving a few hundred nodes resident for the rest
-        * of the session. So it opens on request, like a map that streams in
-        * only once you look at it. */}
-      <div className="flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-xl border px-4 py-3"
-           style={{
-             borderColor: 'rgb(var(--ds-line))',
-             background: 'rgb(var(--ds-surface-2))',
-             // The rail is the state: lit when open, inert when closed, amber
-             // when an administrator has taken it away entirely.
-             boxShadow: `inset 4px 0 0 0 ${off ? 'rgb(var(--ds-sev-high))'
-               : expanded ? 'rgb(var(--ds-accent))' : 'rgb(var(--ds-line))'}`,
-           }}>
-        <div className="flex items-center gap-3">
+      <div className="dash" style={{ gap: 18 }}>
+      {/* The explorer is the only screen here that puts real load on the
+          network detector, so it loads nothing until it is opened, and closing
+          it drops what was loaded. */}
+      <div className="dash-chips">
+        {!off && expanded && (
+          <form onSubmit={(e) => { e.preventDefault(); load(query.trim()) }}
+                className="dash-chip dash-search" role="search" style={{ width: 340, paddingRight: 6 }}>
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+                 strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+              <path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm10 2-4.35-4.35" />
+            </svg>
+            <input value={query} onChange={(e) => setQuery(e.target.value)}
+                   placeholder="Account, e.g. C1166671647" aria-label="Account" className="ds-mono" />
+            <button type="submit" className="ds-btn ds-btn-primary" disabled={loading || !query.trim()}
+                    style={{ minHeight: 36, padding: '6px 16px' }}>
+              {loading ? 'Loading…' : 'Find'}
+            </button>
+          </form>
+        )}
+        <span className="dash-chip" style={{ gap: 12 }}>
           <button
             type="button"
             role="switch"
@@ -701,402 +856,446 @@ export default function GraphExplorer() {
             disabled={off}
             onClick={toggleExplorer}
             style={{
-              width: 44, height: 24, borderRadius: 999, padding: 3,
+              width: 44, height: 24, borderRadius: 999, padding: 3, border: 0,
               display: 'flex', alignItems: 'center',
               justifyContent: expanded ? 'flex-end' : 'flex-start',
-              background: expanded ? 'rgb(var(--ds-accent))' : 'rgb(var(--ds-line))',
+              background: expanded ? 'rgb(var(--dash-line))' : 'rgb(var(--ds-line))',
               opacity: off ? 0.4 : 1,
               cursor: off ? 'not-allowed' : 'pointer',
               transition: 'background .15s',
             }}
           >
-            <span style={{ width: 18, height: 18, borderRadius: 999,
-                           background: '#fff', display: 'block' }} />
+            <span style={{ width: 18, height: 18, borderRadius: 999, background: '#fff', display: 'block' }} />
           </button>
-          <div>
-            <p className="text-[17px] font-semibold" style={{ color: 'rgb(var(--ds-ink))' }}>
-              {off ? 'Switched off by an administrator'
-                : expanded ? 'Explorer is open' : 'Explorer is closed'}
-            </p>
-            <p className="text-[15px]" style={{ color: 'rgb(var(--ds-muted))' }}>
-              {off
-                ? 'The network detector is reserved for the pipeline.'
-                : expanded
-                  ? 'Search an account to see its network.'
-                  : 'Nothing is loaded until you open it.'}
-            </p>
-          </div>
-        </div>
-
-        {expanded && !off && (
-          <Button size="sm" variant={demo ? 'primary' : 'secondary'}
-                  onClick={() => setDemo((v) => !v)}>
-            {demo ? 'Demo mode is on' : 'Demo mode'}
-          </Button>
+          <b style={{ fontSize: 14 }}>
+            {off ? 'Switched off by an administrator' : expanded ? 'Explorer open' : 'Explorer closed'}
+          </b>
+          {!expanded && <span>{off ? 'Reserved for live screening.' : 'Open it to load.'}</span>}
+        </span>
+        {!off && expanded && (
+          <span className="dash-chip" role="group" aria-label="Hops" style={{ padding: 4, gap: 2 }}>
+            {[1, 2].map((h) => (
+              <button key={h} type="button" aria-pressed={hops === h}
+                      disabled={h === 2 && settings?.max_hops < 2}
+                      onClick={() => { setHops(h); if (centre) load(centre, h, false) }}
+                      style={{ border: 0, cursor: 'pointer', borderRadius: 12, padding: '8px 14px', fontSize: 13,
+                               fontWeight: hops === h ? 600 : 500,
+                               background: hops === h ? 'rgb(var(--dash-mint))' : 'transparent',
+                               color: hops === h ? 'rgb(var(--dash-on-mint))' : 'rgb(var(--ds-muted))' }}>
+                {h} hop{h === 1 ? '' : 's'}
+              </button>
+            ))}
+          </span>
+        )}
+        {model?.num_nodes != null && (
+          <span className="dash-chip"><b>{compactNum(model.num_nodes)}</b> accounts</span>
+        )}
+        {model?.num_edges != null && (
+          <span className="dash-chip"><b>{compactNum(model.num_edges)}</b> transfers</span>
         )}
       </div>
 
       {!off && expanded && (
         <>
-            <form
-              onSubmit={(e) => { e.preventDefault(); load(query.trim()) }}
-              className="flex flex-wrap items-center gap-3"
-            >
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Account, e.g. C1166671647"
-                className="numeric w-64 rounded-md border px-3 py-2 text-[17px]"
-                style={{ borderColor: 'rgb(var(--ds-line))',
-                         background: 'rgb(var(--ds-surface))',
-                         color: 'rgb(var(--ds-ink))' }}
-              />
-              <Button type="submit" loading={loading} disabled={!query.trim()}>
-                {loading ? 'Loading…' : 'Show the network'}
-              </Button>
-              <span className="text-[15px]" style={{ color: 'rgb(var(--ds-faint))' }}>
-                largest networks:{' '}
-                {BUSY.map(([a, note], i) => (
-                  <span key={a}>
-                    {i > 0 && ' · '}
-                    <button type="button" title={note}
-                            onClick={() => { setQuery(a); load(a) }}
-                            className="numeric underline decoration-dotted underline-offset-2">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', fontSize: 13,
+                        color: 'rgb(var(--ds-faint))', marginTop: -6 }}>
+            Largest networks:
+            {BUSY.map(([a, note]) => (
+              <button key={a} type="button" title={note} className="dash-mini ds-mono"
+                      onClick={() => { setQuery(a); load(a) }}>{a}</button>
+            ))}
+            {trail.length > 1 && (
+              <span style={{ marginLeft: 'auto' }}>
+                {trail.map((a, i) => (
+                  <span key={`${a}-${i}`}>
+                    {i > 0 && ' → '}
+                    <button onClick={() => load(a, hops, false)} className="ds-mono"
+                            style={{ background: 'none', border: 0, color: 'inherit', cursor: 'pointer',
+                                     textDecoration: 'underline dotted', textUnderlineOffset: 3 }}>
                       {a}
                     </button>
                   </span>
                 ))}
               </span>
-              <label className="flex items-center gap-2 text-[16px]"
-                     style={{ color: 'rgb(var(--ds-muted))' }}>
-                Hops
-                <select
-                  value={hops}
-                  onChange={(e) => {
-                    const h = Number(e.target.value)
-                    setHops(h)
-                    if (centre) load(centre, h, false)
+            )}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 360px', gap: 18,
+                        alignItems: 'start' }} className="ds-split">
+            <div className={card} style={{ overflow: 'hidden', padding: 0 }}>
+              <div ref={frameRef} tabIndex={0} className="relative outline-none">
+                <canvas
+                  ref={canvasRef}
+                  style={{ display: 'block', width: '100%', height: FRAME_H,
+                           cursor: dragRef.current ? 'grabbing' : hover ? 'pointer' : 'grab' }}
+                  onMouseDown={(e) => {
+                    frameRef.current?.focus()
+                    dragRef.current = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, moved: false }
                   }}
-                  className="rounded-md border px-2 py-1 text-[16px]"
-                  style={{ borderColor: 'rgb(var(--ds-line))',
-                           background: 'rgb(var(--ds-surface))',
-                           color: 'rgb(var(--ds-ink))' }}
-                >
-                  <option value={1}>1</option>
-                  <option value={2} disabled={settings?.max_hops < 2}>2</option>
-                </select>
-              </label>
-            </form>
+                  onMouseMove={(e) => {
+                    const d = dragRef.current
+                    if (d) {
+                      const dx = e.clientX - d.x
+                      const dy = e.clientY - d.y
+                      if (Math.abs(dx) + Math.abs(dy) > 3) d.moved = true
+                      setView((v) => ({ ...v, x: d.vx + dx, y: d.vy + dy }))
+                      return
+                    }
+                    setHover(hit(e)?.id ?? null)
+                  }}
+                  onMouseUp={(e) => {
+                    const d = dragRef.current
+                    dragRef.current = null
+                    // A drag that happened to end on a node is not a click on it.
+                    if (d && !d.moved) {
+                      const h = hit(e)
+                      if (h && h.id !== centre) {
+                        // Glide the node you picked into the middle first. The draw
+                        // transform is translate(W/2 + x, H/2 + y) · scale(z) ·
+                        // translate(-CX, -CY), so a world point lands at the middle
+                        // when x = -z (wx - CX).
+                        const W = canvasRef.current?.clientWidth ?? 0
+                        if (W) {
+                          glideTo({
+                            x: -view.z * (h.x - (W * WORLD) / 2),
+                            y: -view.z * (h.y - (FRAME_H * WORLD) / 2),
+                          }, 420)
+                        }
+                        setQuery(h.id)
+                        setTimeout(() => load(h.id), 300)
+                      }
+                    }
+                  }}
+                  onMouseLeave={() => { dragRef.current = null; setHover(null) }}
+                  onWheel={(e) => {
+                    e.preventDefault()
+                    setView((v) => ({ ...v, z: Math.max(0.35, Math.min(3, v.z * (e.deltaY < 0 ? 1.1 : 1 / 1.1))) }))
+                  }}
+                />
 
-            {demo && (
-              <section className="rounded-xl border"
-                       style={{ borderColor: 'rgba(168,85,247,.35)',
-                                background: 'rgba(168,85,247,.05)' }}>
-                <div className="grid gap-px md:grid-cols-[1.15fr_1fr]"
-                     style={{ background: 'rgba(168,85,247,.18)' }}>
+                {counts && (
+                  <span className="dash-mini" style={{ position: 'absolute', left: 18, top: 16, cursor: 'default',
+                                                       background: 'rgba(27,25,23,.88)', color: '#F2EFE9',
+                                                       borderColor: 'rgba(214,209,201,.22)' }}>
+                    {counts.nodes_returned} accounts · {counts.edges_returned} transfers
+                    {counts.truncated ? ` (top ${counts.edges_returned} of ${counts.edges_in_ball})` : ''}
+                  </span>
+                )}
+                <div style={{ position: 'absolute', right: 16, top: 14, display: 'grid', gap: 8 }}>
+                  {[['+', 'Zoom in', () => zoomBy(1.35)], ['−', 'Zoom out', () => zoomBy(1 / 1.35)],
+                    ['⟲', 'Recentre', () => glideTo({ x: 0, y: 0, z: 1 }, 460)]].map(([t, label, fn]) => (
+                    <button key={label} type="button" aria-label={label} title={label} onClick={fn}
+                            style={{ width: 42, height: 42, borderRadius: 99, cursor: 'pointer', fontSize: 17,
+                                     border: '1px solid rgba(214,209,201,.22)', color: '#F2EFE9',
+                                     background: 'rgba(27,25,23,.88)' }}>{t}</button>
+                  ))}
+                </div>
 
-                  {/* ── Invent an account ───────────────────────────────────── */}
-                  <div className="p-4" style={{ display: 'grid', gap: 12,
-                                                background: 'rgb(var(--ds-surface))',
-                                                alignContent: 'start' }}>
-                    <div>
-                      <p className="ds-mono text-[14px] uppercase tracking-wider"
-                         style={{ color: 'rgb(var(--ds-faint))' }}>
-                        Invent an account
-                      </p>
-                      <p className="mt-1 text-[15px] leading-relaxed"
-                         style={{ color: 'rgb(var(--ds-muted))' }}>
-                        Change the sender and score again.
-                      </p>
+                {/* What the pointer is on, without leaving the map. */}
+                {hoverScreen && hoverPoint && (
+                  <div style={{
+                    position: 'absolute', pointerEvents: 'none', zIndex: 2,
+                    left: Math.min(Math.max(hoverScreen.x + 22, 8), Math.max(8, canvasW - 230)),
+                    top: Math.min(Math.max(hoverScreen.y - 46, 8), FRAME_H - 130),
+                    width: 214, padding: '11px 14px', borderRadius: 16,
+                    background: 'rgba(27,25,23,.95)', border: '1px solid rgba(214,209,201,.22)', color: '#F2EFE9',
+                  }}>
+                    <div className="ds-mono" style={{ fontSize: 12 }}>{hoverPoint.id}</div>
+                    <div style={{ fontSize: 12, color: '#A39C92', marginTop: 3 }}>
+                      {ROLE[roleOf(hoverPoint.node)].label} · {hoverPoint.node.in_degree ?? 0} in, {hoverPoint.node.out_degree ?? 0} out
                     </div>
-
-                    <div className="grid gap-2 sm:grid-cols-3">
-                      {[['New account', newAccount, setNewAccount],
-                        ['Received from', from, setFrom],
-                        ['Amount', amount, setAmount]].map(([label, value, set]) => (
-                        <label key={label} style={{ display: 'grid', gap: 3 }}>
-                          <span className="ds-mono text-[13px] uppercase tracking-wider"
-                                style={{ color: 'rgb(var(--ds-faint))' }}>{label}</span>
-                          <Input value={value} onChange={(e) => set(e.target.value)} />
-                        </label>
-                      ))}
-                    </div>
-                    <Button size="sm" onClick={scoreInvented} loading={scoring}
-                            disabled={!newAccount.trim() || !from.trim()}>
-                      Score and place it in the graph
-                    </Button>
-
-                    {/* Why it was not added, said where the button is. Nothing
-                        reaches the graph until these transactions describe a
-                        ledger that could exist. */}
-                    {addError && <Alert tone="error">{addError}</Alert>}
-
-                    {runs.length > 0 && (() => {
-                      const top = Math.max(...runs.map((r) => r.score), 0.0001)
-                      const spread = new Set(runs.map((r) => r.score)).size
-                      return (
-                        <div style={{ display: 'grid', gap: 8 }}>
-                          <div className="flex items-baseline gap-2">
-                            <span className="numeric text-[38px] leading-none"
-                                  style={{ color: '#c084fc' }}>
-                              {runs[0].score.toFixed(4)}
-                            </span>
-                            <span className="text-[14px]" style={{ color: 'rgb(var(--ds-faint))' }}>
-                              raw · from {runs[0].accounts.toLocaleString()} accounts
-                            </span>
-                          </div>
-
-                          {/* The comparison, drawn. A panel at the back of the room
-                              reads bar lengths; it does not read four decimals. */}
-                          <div style={{ display: 'grid', gap: 4 }}>
-                            {runs.map((r, i) => (
-                              <div key={r.at} className="flex items-center gap-2">
-                                <span className="numeric w-[110px] shrink-0 truncate text-[14px]"
-                                      title={r.from}
-                                      style={{ color: 'rgb(var(--ds-muted))' }}>{r.from}</span>
-                                <span className="h-[6px] flex-1 rounded"
-                                      style={{ background: 'rgb(var(--ds-line))' }}>
-                                  <span className="block h-full rounded"
-                                        style={{ width: `${Math.max(2, (r.score / top) * 100)}%`,
-                                                 background: i === 0 ? '#c084fc'
-                                                   : 'rgba(168,85,247,.45)' }} />
-                                </span>
-                                <span className="numeric w-[62px] shrink-0 text-right text-[14px]"
-                                      style={{ color: 'rgb(var(--ds-ink))' }}>
-                                  {r.score.toFixed(4)}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-
-                          {runs.length > 1 && (
-                            <p className="text-[14px]"
-                               style={{ color: spread > 1 ? '#c084fc' : 'rgb(var(--ds-muted))' }}>
-                              {spread > 1
-                                ? `${spread} different scores across ${runs.length} runs — only the sender changed.`
-                                : 'Same score so far. Try a different sender.'}
-                            </p>
-                          )}
-                        </div>
-                      )
-                    })()}
-                  </div>
-
-                  {/* ── A file, through this model alone ────────────────────── */}
-                  <div className="p-4" style={{ display: 'grid', gap: 10,
-                                                background: 'rgb(var(--ds-surface))',
-                                                alignContent: 'start' }}>
-                    <div>
-                      <p className="ds-mono text-[14px] uppercase tracking-wider"
-                         style={{ color: 'rgb(var(--ds-faint))' }}>
-                        Or score a file
-                      </p>
-                      <p className="mt-1 text-[15px] leading-relaxed"
-                         style={{ color: 'rgb(var(--ds-muted))' }}>
-                        This model only. No fusion.
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <input ref={fileRef} type="file" accept=".csv,text/csv"
-                             onChange={onDemoFile} className="hidden" />
-                      <Button size="sm" variant="secondary" loading={csvBusy}
-                              onClick={() => fileRef.current?.click()}>
-                        Upload a CSV
-                      </Button>
-                      {csv && (
-                        <span className="numeric text-[14px]" style={{ color: 'rgb(var(--ds-muted))' }}>
-                          {csv.counts.precomputed} looked up · {csv.counts.inductive} new
-                          · {csv.counts.unscored} not scoreable
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Why the file was refused, said where the button is. */}
-                    {csvError && <Alert tone="error">{csvError}</Alert>}
-
-                    {/* Scored, but with something the reader should know. */}
-                    {csv?.notes?.length > 0 && (
-                      <p className="text-[14px] leading-relaxed"
-                         style={{ color: 'rgb(var(--ds-sev-medium))' }}>
-                        {csv.notes.join(' ')}
-                      </p>
-                    )}
-
-                    {/* Scored at the model's own decision threshold, as it
-                        publishes it. This read 0.39 — the critical band, more
-                        than twice the line the model actually decides on —
-                        which understated recall on every demo file. */}
-                    {csv && (
-                      <Validation rows={csv.rows}
-                                  threshold={csv.bands?.high ?? 0.183}
-                                  scoreOf={(r) => r.score} />
-                    )}
-
-                    {csv && (
-                      <div style={{ overflow: 'auto', maxHeight: 210 }}>
-                        <table className="w-full text-[14px]" style={{ borderCollapse: 'collapse' }}>
-                          <thead className="sticky top-0"
-                                 style={{ background: 'rgb(var(--ds-surface))' }}>
-                            <tr style={{ color: 'rgb(var(--ds-faint))' }}>
-                              {['To', 'Score', 'How'].map((h) => (
-                                <th key={h}
-                                    className="ds-mono px-2 py-1 text-left text-[13px] uppercase tracking-wider"
-                                    style={{ borderBottom: '1px solid rgb(var(--ds-line))' }}>{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {csv.rows.map((r) => (
-                              <tr key={r.row}>
-                                <td className="numeric px-2 py-1"
-                                    style={{ color: 'rgb(var(--ds-ink))' }}>{r.nameDest}</td>
-                                <td className="numeric px-2 py-1"
-                                    style={{ color: r.score == null ? 'rgb(var(--ds-faint))'
-                                      : 'rgb(var(--ds-ink))' }}>
-                                  {r.score == null ? '—' : r.score.toFixed(4)}
-                                </td>
-                                <td className="px-2 py-1" style={{
-                                  color: r.source === 'inductive' ? '#c084fc'
-                                    : 'rgb(var(--ds-muted))' }}>
-                                  {r.source === 'precomputed' ? 'in the graph'
-                                    : r.source === 'inductive' ? 'new · from neighbours'
-                                      : 'not scoreable'}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                    {typeof hoverPoint.node.score === 'number' && (
+                      <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4,
+                                    color: hoverPoint.node.score >= riskLine ? '#FF6B5C' : '#FFB454' }}>
+                        {Math.round(hoverPoint.node.score * 100)}% mule{level(hoverPoint.node.score)?.[0] !== 'BELOW THE LINE'
+                          ? ` · ${level(hoverPoint.node.score)[0]}` : ''}
                       </div>
                     )}
                   </div>
-                </div>
+                )}
 
-                {/* The caveat belongs with the numbers, but not above them. */}
-                <p className="px-4 py-2 text-[14px] leading-relaxed"
-                   style={{ color: 'rgb(var(--ds-faint))',
-                            borderTop: '1px solid rgba(168,85,247,.18)' }}>
-                  Raw model output, not calibrated. Runs are comparable with each other.
-                </p>
-              </section>
-            )}
+                {!graph && !loading && (
+                  <p style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', margin: 0,
+                              color: '#A39C92', fontSize: 14, pointerEvents: 'none' }}>
+                    Nothing loaded. Search an account, or pick one of the largest networks.
+                  </p>
+                )}
 
-            {trail.length > 1 && (
-              <p className="text-[15px]" style={{ color: 'rgb(var(--ds-faint))' }}>
-                {trail.map((a, i) => (
-                  <span key={`${a}-${i}`}>
-                    {i > 0 && ' → '}
-                    <button onClick={() => load(a, hops, false)}
-                            className="underline decoration-dotted underline-offset-2">
-                      {a}
-                    </button>
+                {/* The key, on the map like a map's. */}
+                <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '34px 18px 14px', display: 'flex',
+                              flexWrap: 'wrap', gap: 14, alignItems: 'center', fontSize: 12, color: '#A39C92',
+                              pointerEvents: 'none',
+                              background: 'linear-gradient(to bottom, rgba(18,17,16,0), rgba(18,17,16,.9) 55%)' }}>
+                  {['risky', 'collector', 'pays', 'bridge', 'invented'].map((k) => (
+                    <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ width: 9, height: 9, borderRadius: 99, background: `rgb(${ROLE[k].rgb})` }} />
+                      {ROLE[k].label}
+                    </span>
+                  ))}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <svg width="16" height="16" aria-hidden="true">
+                      <circle cx="8" cy="8" r="6" fill="none" stroke="rgba(255,255,255,.12)" strokeWidth="2.5" />
+                      <path d="M8,2 A6,6 0 0 1 13.7,9.8" stroke="#FFB454" strokeWidth="2.5" fill="none" />
+                    </svg>
+                    arc = score
                   </span>
-                ))}
-              </p>
-            )}
-
-            <div
-              ref={frameRef}
-              tabIndex={0}
-              className="relative overflow-hidden rounded-xl border outline-none"
-              style={{ borderColor: 'rgb(var(--ds-line))',
-                       background: 'rgb(var(--ds-surface))' }}
-            >
-              <canvas
-                ref={canvasRef}
-                style={{ display: 'block', width: '100%', height: FRAME_H,
-                         cursor: dragRef.current ? 'grabbing'
-                               : hover ? 'pointer' : 'grab' }}
-                onMouseDown={(e) => {
-                  frameRef.current?.focus()
-                  dragRef.current = { x: e.clientX, y: e.clientY,
-                                      vx: view.x, vy: view.y, moved: false }
-                }}
-                onMouseMove={(e) => {
-                  const d = dragRef.current
-                  if (d) {
-                    const dx = e.clientX - d.x
-                    const dy = e.clientY - d.y
-                    if (Math.abs(dx) + Math.abs(dy) > 3) d.moved = true
-                    setView((v) => ({ ...v, x: d.vx + dx, y: d.vy + dy }))
-                    return
-                  }
-                  setHover(hit(e)?.id ?? null)
-                }}
-                onMouseUp={(e) => {
-                  const d = dragRef.current
-                  dragRef.current = null
-                  // A drag that happened to end on a node is not a click on it.
-                  if (d && !d.moved) {
-                    const h = hit(e)
-                    if (h && h.id !== centre) {
-                      // Glide the node you picked into the middle first, so
-                      // the new network arrives where you were already
-                      // looking rather than somewhere else entirely.
-                      // The draw transform is
-                      //   translate(W/2 + x, H/2 + y) · scale(z) · translate(-W/2, -H/2)
-                      // so a world point lands at the middle when
-                      //   x = -z (wx - W/2).  Solved, not guessed at.
-                      const W = canvasRef.current?.clientWidth ?? 0
-                      if (W) {
-                        glideTo({
-                          x: -view.z * (h.x - W / 2),
-                          y: -view.z * (h.y - FRAME_H / 2),
-                        }, 420)
-                      }
-                      setQuery(h.id)
-                      setTimeout(() => load(h.id), 300)
-                    }
-                  }
-                }}
-                onMouseLeave={() => { dragRef.current = null; setHover(null) }}
-                onWheel={(e) => {
-                  e.preventDefault()
-                  setView((v) => ({
-                    ...v,
-                    z: Math.max(0.35, Math.min(3, v.z * (e.deltaY < 0 ? 1.1 : 1 / 1.1))),
-                  }))
-                }}
-              />
-              <p className="pointer-events-none absolute bottom-2 right-3 text-[14px]"
-                 style={{ color: 'rgb(var(--ds-faint))' }}>
-                arrow keys move · +/− zoom · 0 recentres · drag to pan
-              </p>
-              {!graph && !loading && (
-                <p className="pb-6 text-center text-xs" style={{ color: 'rgb(var(--ds-faint))' }}>
-                  Nothing loaded. Search an account above.
-                </p>
-              )}
+                  <span className="ds-mono" style={{ marginLeft: 'auto', color: '#857E75' }}>
+                    drag · scroll · 0 recentres
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {counts && (
-              <p className="text-[15px]" style={{ color: 'rgb(var(--ds-muted))' }}>
-                {counts.nodes_returned} accounts, {counts.edges_returned} transfers
-                {counts.truncated
-                  ? ` — ${counts.edges_in_ball} exist here, showing the ${counts.edges_returned}
-                      the model weighted most heavily`
-                  : ''}
-                . Blue collects from two or more accounts, green only pays out,
-                violet does both, and amber scores above the medium band. Size
-                follows how many accounts touch it. Click any account to move
-                there.
+            <aside style={{ display: 'grid', gap: 14, alignContent: 'start' }}>
+              <section className={card} style={{ padding: 22 }}>
+                <div className="ds-section-label">{hover ? 'Pointing at' : 'Selected account'}</div>
+                {focusNode ? (
+                  <>
+                    <div className="ds-mono" style={{ fontSize: 17, marginTop: 8, wordBreak: 'break-all' }}>{focusNode.id}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 16 }}>
+                      {typeof focusNode.score === 'number' && (
+                        <div style={{ width: 86, height: 86, borderRadius: 99, flex: '0 0 auto', display: 'grid', placeItems: 'center',
+                                      background: `conic-gradient(${focusLevel?.[1]} 0 ${Math.max(1, focusNode.score * 100)}%, rgb(var(--ds-surface-3)) 0 100%)` }}>
+                          <div style={{ width: 70, height: 70, borderRadius: 99, display: 'grid', placeItems: 'center',
+                                        background: 'rgb(var(--dash-card-top))', textAlign: 'center' }}>
+                            <div>
+                              <div style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-.03em' }}>
+                                {Math.round(focusNode.score * 100)}%
+                              </div>
+                              <div style={{ fontSize: 9, letterSpacing: '.1em', color: 'rgb(var(--ds-faint))' }}>MULE</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      <div style={{ minWidth: 0 }}>
+                        {focusLevel && (
+                          <span className="ds-badge" style={{ color: focusLevel[1], borderColor: 'transparent',
+                                                              background: `color-mix(in srgb, ${focusLevel[1]} 16%, transparent)` }}>
+                            <span style={{ width: 7, height: 7, borderRadius: 99, background: focusLevel[1] }} />
+                            {focusLevel[0]}
+                          </span>
+                        )}
+                        <div style={{ fontSize: 15, fontWeight: 600, marginTop: 10 }}>{ROLE[roleOf(focusNode)].label}</div>
+                        <div style={{ fontSize: 13, color: 'rgb(var(--ds-muted))' }}>
+                          {focusNode.is_centre ? 'The account you searched'
+                            : (focusNode.in_degree ?? 0) >= 2 ? `Collects from ${focusNode.in_degree} accounts`
+                              : 'Click it on the map to move there'}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ marginTop: 14, fontSize: 14 }}>
+                      {[['Role', ROLE[roleOf(focusNode)].label],
+                        ['In / out', `${focusNode.in_degree ?? 0} / ${focusNode.out_degree ?? 0}`, true],
+                        ['Active', firstStep == null ? '-'
+                          : firstStep === lastStep ? `step ${firstStep} only` : `steps ${firstStep} to ${lastStep}`, true],
+                        ['Threshold', riskLine.toFixed(4), true]].map(([k, v, mono]) => (
+                        <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0',
+                                              borderTop: '1px solid rgb(var(--ds-line))' }}>
+                          <span style={{ color: 'rgb(var(--ds-muted))' }}>{k}</span>
+                          <span className={mono ? 'ds-mono' : undefined}>{v}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+                      <button type="button" className="ds-btn ds-btn-primary" style={{ flex: 1 }}
+                              disabled={focusNode.is_centre && !canPull2}
+                              onClick={() => {
+                                if (focusNode.is_centre) { setHops(2); load(centre, 2, false) }
+                                else { setQuery(focusNode.id); load(focusNode.id) }
+                              }}>
+                        {focusNode.is_centre ? (canPull2 ? 'Pull 2 hops' : 'All loaded') : 'Pull neighbours'}
+                      </button>
+                      <Link to={`/analyzer?q=${encodeURIComponent(focusNode.id)}`} className="ds-btn">Analyze</Link>
+                    </div>
+                  </>
+                ) : (
+                  <p style={{ fontSize: 14, color: 'rgb(var(--ds-muted))', marginTop: 10 }}>
+                    Search an account to see it here. Point at any account on the map to read it.
+                  </p>
+                )}
+              </section>
+
+              {focusEdges.length > 0 && (
+                <section className={card} style={{ padding: 22 }}>
+                  <div className="ds-section-label" style={{ marginBottom: 12 }}>Transfers that mattered</div>
+                  <div style={{ display: 'grid', gap: 14 }}>
+                    {focusEdges.map((e, i) => {
+                      const w = (e.attention ?? 0) / maxAttention
+                      const other = e.source === focusNode.id ? e.target : e.source
+                      return (
+                        <div key={`${e.source}-${e.target}-${i}`}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 13 }}>
+                            <span className="ds-mono" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {e.source === focusNode.id ? `→ ${other}` : `${other} →`}
+                            </span>
+                            <span className="ds-mono" style={{ color: 'rgb(var(--ds-muted))' }}>
+                              {(e.attention ?? 0).toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="ds-progress" style={{ marginTop: 7 }}>
+                            <span style={{ width: `${Math.max(3, w * 100)}%`,
+                                           background: 'linear-gradient(90deg, rgb(179,166,245), rgb(255,107,92))' }} />
+                          </div>
+                          {(typeof e.amount === 'number' || e.step != null) && (
+                            <div style={{ fontSize: 12, color: 'rgb(var(--ds-muted))', marginTop: 5 }}>
+                              {typeof e.amount === 'number' ? e.amount.toLocaleString(undefined, { maximumFractionDigits: 2 }) : ''}
+                              {typeof e.amount === 'number' && e.step != null ? ' · ' : ''}
+                              {e.step != null ? `step ${e.step}` : ''}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </section>
+              )}
+            </aside>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 18 }}>
+            {/* ── What if: an account the graph has never seen ─────────── */}
+            <section className={card} style={{ padding: 22, display: 'grid', gap: 12, alignContent: 'start' }}>
+              <div>
+                <h2 className="dash-h dash-h-sm">What if</h2>
+                <p style={{ fontSize: 14, color: 'rgb(var(--ds-muted))', margin: '4px 0 0' }}>
+                  Score an account the graph has never seen.
+                </p>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {[['New account', newAccount, setNewAccount],
+                  ['Received from', from, setFrom],
+                  ['Amount', amount, setAmount]].map(([label, value, set]) => (
+                  <label key={label} style={{ display: 'grid', gap: 4 }}>
+                    <span style={{ fontSize: 12, color: 'rgb(var(--ds-muted))' }}>{label}</span>
+                    <Input value={value} onChange={(e) => set(e.target.value)} className="ds-mono" />
+                  </label>
+                ))}
+                <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                  <Button onClick={scoreInvented} loading={scoring} className="w-full"
+                          disabled={!newAccount.trim() || !from.trim()}>
+                    Score it
+                  </Button>
+                </div>
+              </div>
+              {addError && <Alert tone="error">{addError}</Alert>}
+              {runs.length > 0 && (() => {
+                const top = Math.max(...runs.map((r) => r.score), 0.0001)
+                const spread = new Set(runs.map((r) => r.score)).size
+                return (
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 56 }}
+                         aria-label={`Last ${runs.length} runs`}>
+                      {[...runs].reverse().map((r, i, all) => (
+                        <span key={r.at} title={`${r.from} · ${r.score.toFixed(4)}`} style={{
+                          flex: 1, borderRadius: '6px 6px 2px 2px', height: `${Math.max(6, (r.score / top) * 100)}%`,
+                          background: i === all.length - 1 ? 'rgb(var(--dash-line))' : 'rgb(var(--dash-line) / .45)' }} />
+                      ))}
+                    </div>
+                    <p style={{ fontSize: 13, margin: 0, color: 'rgb(var(--ds-muted))' }}>
+                      Latest <b className="ds-mono" style={{ color: 'rgb(var(--ds-ink))' }}>{runs[0].score.toFixed(4)}</b>
+                      {' '}from {runs[0].accounts.toLocaleString()} accounts.{' '}
+                      {runs.length > 1 && (spread > 1
+                        ? `${spread} different scores in ${runs.length} runs, only the sender changed.`
+                        : 'Same score so far. Try a different sender.')}
+                    </p>
+                  </div>
+                )
+              })()}
+              <p style={{ fontSize: 12, color: 'rgb(var(--ds-faint))', margin: 0 }}>
+                Raw scores. Compare runs with each other. The new account appears on the map.
               </p>
-            )}
+            </section>
+
+            {/* ── A file, through this model alone ─────────────────────── */}
+            <section className={card} style={{ padding: 22, display: 'grid', gap: 10, alignContent: 'start' }}>
+              <div>
+                <h2 className="dash-h dash-h-sm">Score a file</h2>
+                <p style={{ fontSize: 14, color: 'rgb(var(--ds-muted))', margin: '4px 0 0' }}>
+                  CSV of accounts, checked before scoring. This model only.
+                </p>
+              </div>
+              <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onDemoFile} className="hidden" />
+              <button type="button" onClick={() => fileRef.current?.click()} disabled={csvBusy}
+                      style={{ border: '1.5px dashed rgb(var(--ds-line))', borderRadius: 20, padding: '26px 16px',
+                               background: 'transparent', color: 'rgb(var(--ds-muted))', cursor: 'pointer', fontSize: 14 }}>
+                {csvBusy ? 'Scoring…' : <>Drop a CSV or <b style={{ color: 'rgb(var(--dash-line-ink))' }}>browse</b></>}
+              </button>
+              {csv && (
+                <span className="ds-mono" style={{ fontSize: 12, color: 'rgb(var(--ds-muted))' }}>
+                  {csv.counts.precomputed} looked up · {csv.counts.inductive} new · {csv.counts.unscored} not scoreable
+                </span>
+              )}
+              {csvError && <Alert tone="error">{csvError}</Alert>}
+              {csv?.notes?.length > 0 && (
+                <p style={{ fontSize: 13, lineHeight: 1.5, color: 'rgb(var(--ds-sev-medium))', margin: 0 }}>
+                  {csv.notes.join(' ')}
+                </p>
+              )}
+              {/* Scored at the model's own decision threshold, as it publishes it. */}
+              {csv && (
+                <Validation rows={csv.rows} threshold={csv.bands?.high ?? 0.183} scoreOf={(r) => r.score} />
+              )}
+              {csv && (
+                <div style={{ overflow: 'auto', maxHeight: 210 }}>
+                  <table className="ds-table">
+                    <thead><tr>{['To', 'Score', 'How'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
+                    <tbody>
+                      {csv.rows.map((r) => (
+                        <tr key={r.row}>
+                          <td className="ds-mono">{r.nameDest}</td>
+                          <td className="ds-mono" style={{ color: r.score == null ? 'rgb(var(--ds-faint))' : undefined }}>
+                            {r.score == null ? '-' : r.score.toFixed(4)}
+                          </td>
+                          <td style={{ color: r.source === 'inductive' ? 'rgb(196,132,252)' : 'rgb(var(--ds-muted))' }}>
+                            {r.source === 'precomputed' ? 'in the graph'
+                              : r.source === 'inductive' ? 'new · from neighbours' : 'not scoreable'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+
+            {/* ── The detector's own held-out numbers ──────────────────── */}
+            <section className={card} style={{ padding: 22 }}>
+              <div className="dash-head" style={{ marginBottom: 14 }}>
+                <h2 className="dash-h dash-h-sm">Model card</h2>
+                <span className="ds-mono" style={{ fontSize: 12, color: 'rgb(var(--ds-faint))' }}>held-out window</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px 10px' }}>
+                {[['Precision', perf?.precision], ['Recall', perf?.recall], ['F1', perf?.f1],
+                  ['AUROC', perf?.auroc], ['PR-AUC', perf?.pr_auc ?? perf?.average_precision],
+                  ['Flags at', model?.risk_bands?.high, true]].map(([k, v, accent]) => (
+                  <div key={k}>
+                    <div style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-.03em',
+                                  color: accent ? 'rgb(var(--dash-line-ink))' : undefined }}>
+                      {v == null ? '-' : Number(v).toFixed(accent ? 4 : 3)}
+                    </div>
+                    <div style={{ fontSize: 13, color: 'rgb(var(--ds-muted))' }}>{k}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
         </>
       )}
 
-      <div style={{ marginTop: 14 }}>
-        <GraphModelPanel />
-      </div>
+      {/* The full detail behind the card, for whoever wants it. */}
+      <details className={card} style={{ padding: '16px 22px' }}>
+        <summary style={{ cursor: 'pointer', fontSize: 15, fontWeight: 600 }}>Model details and runtime</summary>
+        <div style={{ display: 'grid', gap: 14, marginTop: 14 }}>
+          <DetectorRuntime detector="graph" model="Edge-Enhanced GraphSAGE" />
+          <GraphModelPanel />
+        </div>
+      </details>
 
       {isAdmin && settings && (
-        <div className="mt-6 rounded-xl border p-4"
-             style={{ borderColor: 'rgb(var(--ds-line))' }}>
-          <p className="text-[17px] font-semibold" style={{ color: 'rgb(var(--ds-ink))' }}>
-            Explorer availability
-          </p>
-          <p className="mt-1 text-[15px] leading-relaxed" style={{ color: 'rgb(var(--ds-muted))' }}>
-            Switch off to keep the network detector free for the pipeline.
+        <section className={card} style={{ padding: 22 }}>
+          <h2 className="dash-h dash-h-sm">Explorer availability</h2>
+          <p style={{ fontSize: 14, color: 'rgb(var(--ds-muted))', margin: '4px 0 0' }}>
+            Switch off to free the detector for live screening.
           </p>
           <div className="mt-3 flex items-center gap-3">
             <Button
@@ -1109,14 +1308,21 @@ export default function GraphExplorer() {
             >
               {settings.enabled ? 'Switch off' : 'Switch on'}
             </Button>
-            <span className="text-[15px]" style={{ color: 'rgb(var(--ds-faint))' }}>
+            <span style={{ fontSize: 14, color: 'rgb(var(--ds-faint))' }}>
               Currently {settings.enabled ? 'on' : 'off'} · up to {settings.max_hops} hop
               {settings.max_hops === 1 ? '' : 's'}, {settings.max_edges} transfers
             </span>
           </div>
-        </div>
+        </section>
       )}
       </div>
     </ConsoleShell>
   )
+}
+
+function compactNum(v) {
+  const n = Number(v)
+  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`
+  if (n >= 1e4) return `${(n / 1e3).toFixed(1)}k`
+  return n.toLocaleString()
 }

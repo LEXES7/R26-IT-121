@@ -23,10 +23,10 @@ const FEATURE_LABEL = {
 }
 
 const fmtAmount = (n) =>
-  typeof n === 'number' ? n.toLocaleString(undefined, { maximumFractionDigits: 0 }) : '—'
+  typeof n === 'number' ? n.toLocaleString(undefined, { maximumFractionDigits: 0 }) : '-'
 
 const fmtVal = (key, v) => {
-  if (v === undefined || v === null) return '—'
+  if (v === undefined || v === null) return '-'
   if (key === 'amount') return fmtAmount(v)
   if (key === 'dest_was_empty') return v ? 'yes' : 'no'
   if (typeof v === 'number') return v.toFixed(3)
@@ -65,7 +65,7 @@ export default function TemporalEvidence({ evidence }) {
     <Card className="p-5 sm:p-6">
       <CardHeader
         title="Sequential evidence"
-        description="The 32-transaction window fraud_attention scored — not generated text."
+        description="The 32 payments the model read, straight from the model."
         action={
           <div className="flex items-center gap-2">
             {modelVersion && <Badge tone="neutral">{modelVersion}</Badge>}
@@ -98,8 +98,7 @@ export default function TemporalEvidence({ evidence }) {
         <div className="mt-6">
           <SectionLabel>Triggering predecessor</SectionLabel>
           <p className="mt-1 text-xs text-slate-400">
-            The prior transaction fraud_attention weighted most heavily when scoring the
-            current one — excluded from being its own predecessor by construction.
+            The earlier payment that mattered most to this score.
           </p>
 
           <div className="mt-3 rounded-xl border border-subtle bg-surface p-4">

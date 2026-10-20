@@ -21,10 +21,10 @@ import { Panel } from '../components/ConsoleShell'
  */
 
 const EXAMPLES = [
-  'Is there a fraud ring around C1697378157?',
+  'Show me the suspicious network around C1674473954.',
   'Are all three detection models reachable right now?',
   'Show me the most recent CRITICAL cases.',
-  'Have we analysed account C1697378157 before?',
+  'Have we analysed account C1674473954 before?',
 ]
 
 export default function Assistant() {
@@ -119,9 +119,8 @@ export default function Assistant() {
 
       {!caps.llm_configured && (
         <Alert tone="warning" title="Running without a language model" className="mt-4">
-          Tools still execute and return real data, but answers are raw results rather
-          than written explanations. Configure a Gemini key or an Ollama endpoint for
-          full answers.
+          You get raw results instead of written answers. Add a Gemini key or an
+          Ollama endpoint for full answers.
         </Alert>
       )}
 
@@ -133,7 +132,7 @@ export default function Assistant() {
       {messages.length === 0 ? (
         <div className="flex min-h-[52vh] flex-col items-center justify-center">
           <h1 className="text-center text-[34px] tracking-tight"
-              style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+              style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif" }}>
             How can I help you?
           </h1>
           <Composer {...composer} className="mt-8 w-full max-w-2xl" />
@@ -251,14 +250,14 @@ function Turn({ message }) {
 
         {message.truncated && (
           <p className="mt-2 text-[15px] text-amber-400">
-            Stopped at the configured step limit — the answer may be partial.
+            Stopped at the step limit, so the answer may be partial.
           </p>
         )}
 
         {message.steps?.length > 0 && (
           <details className="mt-3 border-t border-subtle pt-2">
             <summary className="cursor-pointer text-[15px] text-slate-400 hover:text-slate-200">
-              {message.steps.length} tool call{message.steps.length > 1 ? 's' : ''} — show evidence
+              Show evidence ({message.steps.length} tool call{message.steps.length > 1 ? 's' : ''})
             </summary>
             <div className="mt-2 space-y-2">
               {message.steps.map((s, i) => (

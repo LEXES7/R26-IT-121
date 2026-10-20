@@ -2,24 +2,26 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { analyse, type AnalyzeResponse } from "../api/analyze";
 import { NetworkError } from "../api/client";
 import { SAMPLES, type Sample } from "../data/samples";
 import { account, money } from "../lib/format";
-import { accent, bg, mono, radius, risk, space, text } from "../theme/tokens";
-import { statusBarInset } from "../theme/layout";
+import { accent, bg, mono, radius, risk, space, statusBar, text, themed } from "../theme/tokens";
+import { NavBar } from "../components/ios";
 import { Card, Fact, Label, Note } from "../components/ui";
 
 type Props = {
   onResult: (result: AnalyzeResponse, sample: Sample) => void;
+  onBack: () => void;
+  backLabel?: string;
 };
 
 /**
@@ -34,7 +36,7 @@ type Props = {
  * balance unchanged, say — and a model asked about an impossible transaction
  * gives an answer that means nothing.
  */
-export default function AnalyzeScreen({ onResult }: Props) {
+export default function AnalyzeScreen({ onResult, onBack, backLabel = "Back" }: Props) {
   const [selected, setSelected] = useState<Sample>(SAMPLES[0]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,8 +61,9 @@ export default function AnalyzeScreen({ onResult }: Props) {
   const t = selected.transaction;
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <StatusBar barStyle="light-content" backgroundColor={bg.canvas} />
+    <SafeAreaView edges={["top"]} style={styles.screen}>
+      <StatusBar barStyle={statusBar()} backgroundColor={bg.canvas} />
+      <NavBar back={{ label: backLabel, onPress: onBack }} />
       <ScrollView contentContainerStyle={styles.content}>
         <View>
           <Text style={styles.title}>Screen a transaction</Text>
@@ -153,8 +156,8 @@ export default function AnalyzeScreen({ onResult }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: bg.canvas, paddingTop: statusBarInset },
+const styles = themed(() => ({
+  screen: { flex: 1, backgroundColor: bg.canvas },
   content: { padding: space.lg, gap: space.lg, paddingBottom: space.xxl },
 
   title: { color: text.primary, fontSize: 26, fontWeight: "700", letterSpacing: -0.5 },
@@ -197,4 +200,4 @@ const styles = StyleSheet.create({
   buttonPressed: { opacity: 0.75 },
   buttonText: { color: text.primary, fontSize: 15, fontWeight: "600" },
   busyRow: { flexDirection: "row", alignItems: "center", gap: space.sm },
-});
+}));

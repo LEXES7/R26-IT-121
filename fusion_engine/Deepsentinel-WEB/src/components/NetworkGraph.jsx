@@ -318,8 +318,8 @@ export default function NetworkGraph({ evidence, height = 420 }) {
           here would make the one dominant element look like another panel. */}
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
         <p className="text-xs text-slate-500">
-          Money flows toward the account in the middle. Each ring out is one
-          step further away, and thicker lines counted for more.
+          Money flows to the middle. Each ring is one step further out, and thicker
+          lines mattered more.
         </p>
         <div className="ml-auto flex items-center gap-3">
           <span className="numeric text-[15px] text-slate-500">
@@ -603,19 +603,18 @@ export default function NetworkGraph({ evidence, height = 420 }) {
               <Fact label="active steps"
                     value={detail.first_seen_step === detail.last_seen_step
                       ? detail.first_seen_step
-                      : `${detail.first_seen_step}–${detail.last_seen_step}`} />
+                      : `${detail.first_seen_step} to ${detail.last_seen_step}`} />
             </dl>
             {detail.first_seen_step === detail.last_seen_step && detail.out_degree > 0 && (
               <p className="mt-2.5 text-[15px] leading-relaxed text-slate-500">
-                Active in a single step only — the pattern of an account created to
-                make one transfer.
+                Active only once, like an account made for one transfer.
               </p>
             )}
           </>
         ) : (
           <p className="text-xs text-slate-500">
-            Point at an account to see only its connections, or click to keep it selected.
-            {steps.length > 1 && ' Press Replay to watch the transfers in order.'}
+            Point at an account to see its links. Click to keep it selected.
+            {steps.length > 1 && ' Press Replay to watch the transfers.'}
           </p>
         )}
       </div>
@@ -627,7 +626,7 @@ function Fact({ label, value }) {
   return (
     <div>
       <dt className="eyebrow text-slate-500">{label}</dt>
-      <dd className="numeric mt-1 text-sm text-slate-200">{value ?? '—'}</dd>
+      <dd className="numeric mt-1 text-sm text-slate-200">{value ?? '-'}</dd>
     </div>
   )
 }

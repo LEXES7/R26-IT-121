@@ -32,7 +32,7 @@ export default function GraphModelPanel() {
   const rt = m.runtime ?? {}
   const bands = m.risk_bands ?? {}
   const perf = m.performance
-  const n = (v) => (v == null ? '—' : Number(v).toLocaleString())
+  const n = (v) => (v == null ? '-' : Number(v).toLocaleString())
 
   return (
     <section className="rounded-xl border p-5"
@@ -43,9 +43,9 @@ export default function GraphModelPanel() {
         {[
           ['Accounts', n(m.num_nodes), 'in the served graph'],
           ['Transfers', n(m.num_edges), 'between them'],
-          ['Parameters', n(rt.model?.parameters), `${rt.model?.k_hop ?? 2} hops · ${rt.model?.in_dim ?? '—'} features`],
+          ['Parameters', n(rt.model?.parameters), `${rt.model?.k_hop ?? 2} hops · ${rt.model?.in_dim ?? '-'} features`],
           ['Forward passes', n(rt.model?.inferences), rt.serving_mode === 'live_inference'
-            ? 'weights loaded, scoring live' : 'answering from precomputed scores'],
+            ? 'scoring live' : 'using saved scores'],
         ].map(([k, v, note]) => (
           <div key={k} className="min-w-0">
             <p className="ds-mono text-[11px] uppercase tracking-[.13em]"
@@ -63,21 +63,21 @@ export default function GraphModelPanel() {
                                        paddingTop: 20 }}>
           <p className="ds-mono text-[11px] uppercase tracking-[.13em]"
              style={{ color: 'rgb(var(--ds-faint))' }}>
-            On the held-out window · steps {perf.window?.from_step}–{perf.window?.to_step}
+            On the held-out window · steps {perf.window?.from_step} to {perf.window?.to_step}
           </p>
           <div className="mt-3 grid gap-5 sm:grid-cols-3 lg:grid-cols-5">
             {[
-              ['Precision', perf.metrics?.precision, 'of those it flags, this share are mules'],
-              ['Recall', perf.metrics?.recall, 'of the mules present, this share are found'],
+              ['Precision', perf.metrics?.precision, 'flagged accounts that are mules'],
+              ['Recall', perf.metrics?.recall, 'mules that were found'],
               ['F1', perf.metrics?.f1, 'the balance of the two'],
-              ['AUROC', perf.metrics?.auroc, 'how well it ranks mules above the rest'],
+              ['AUROC', perf.metrics?.auroc, 'how well it ranks mules first'],
               ['Accuracy', perf.metrics?.accuracy, 'see the note below'],
             ].map(([k, v, note]) => (
               <div key={k} className="min-w-0">
                 <p className="ds-mono text-[11px] uppercase tracking-[.13em]"
                    style={{ color: 'rgb(var(--ds-faint))' }}>{k}</p>
                 <p className="numeric mt-1 text-[24px] leading-none">
-                  {v != null ? Number(v).toFixed(3) : '—'}
+                  {v != null ? Number(v).toFixed(3) : '-'}
                 </p>
                 <p className="mt-1 text-[13px] leading-snug"
                    style={{ color: 'rgb(var(--ds-muted))' }}>{note}</p>
@@ -97,10 +97,10 @@ export default function GraphModelPanel() {
 
           <p className="mt-3 text-[13px] leading-relaxed"
              style={{ color: 'rgb(var(--ds-sev-high))' }}>
-            Accuracy flatters here — flagging nothing would score{' '}
+            Accuracy misleads here: flagging nothing would score{' '}
             {perf.actual_mules && perf.evaluated_accounts
-              ? (1 - perf.actual_mules / perf.evaluated_accounts).toFixed(3) : '—'}.
-            Precision and recall are the figures that mean something.
+              ? (1 - perf.actual_mules / perf.evaluated_accounts).toFixed(3) : '-'}.
+            Precision and recall matter more.
           </p>
         </div>
       )}
@@ -109,12 +109,12 @@ export default function GraphModelPanel() {
       <div className="mt-6 grid gap-5 sm:grid-cols-3"
            style={{ borderTop: '1px solid rgb(var(--ds-line))', paddingTop: 20 }}>
         {[
-          ['Flags at', bands.high != null ? Number(bands.high).toFixed(4) : '—',
+          ['Flags at', bands.high != null ? Number(bands.high).toFixed(4) : '-',
             'the tuned decision threshold'],
-          ['Critical at', bands.critical != null ? Number(bands.critical).toFixed(4) : '—',
-            'the extreme tail of scored accounts'],
+          ['Critical at', bands.critical != null ? Number(bands.critical).toFixed(4) : '-',
+            'the top tail of scores'],
           ['Validation F1', meta.val_f1_at_tuned_threshold != null
-            ? Number(meta.val_f1_at_tuned_threshold).toFixed(3) : '—',
+            ? Number(meta.val_f1_at_tuned_threshold).toFixed(3) : '-',
             'what the threshold was chosen on'],
         ].map(([k, v, note]) => (
           <div key={k} className="min-w-0">
@@ -129,9 +129,9 @@ export default function GraphModelPanel() {
       <dl className="mt-6 grid gap-2 text-[14px]"
           style={{ borderTop: '1px solid rgb(var(--ds-line))', paddingTop: 18 }}>
         {[
-          ['Protocol', meta.protocol ?? '—'],
-          ['Calibration', meta.calibration ?? '—'],
-          ['Graph version', m.graph_version ?? '—'],
+          ['Protocol', meta.protocol ?? '-'],
+          ['Calibration', meta.calibration ?? '-'],
+          ['Graph version', m.graph_version ?? '-'],
           ['Edge attention', meta.has_edge_attention ? 'on' : 'off'],
         ].map(([k, v]) => (
           <div key={k} className="flex flex-wrap justify-between gap-x-6">
@@ -142,10 +142,8 @@ export default function GraphModelPanel() {
       </dl>
 
       <p className="mt-4 text-[13px] leading-relaxed" style={{ color: 'rgb(var(--ds-faint))' }}>
-        Trained and evaluated on separate time windows, so nothing above was
-        measured on data the model had already learned from. The F1 is the
-        validation figure the threshold was chosen on — it is not a test score,
-        and is shown as what it is.
+        Tested on a later time window than it was trained on. The F1 is the
+        validation score used to pick the threshold, not a test score.
       </p>
     </section>
   )

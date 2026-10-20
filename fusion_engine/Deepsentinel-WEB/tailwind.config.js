@@ -94,7 +94,7 @@ export default {
       },
 
       fontFamily: {
-        display: ["'Instrument Serif'", 'Georgia', 'serif'],
+        display: ["'Plus Jakarta Sans'", 'Inter', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },

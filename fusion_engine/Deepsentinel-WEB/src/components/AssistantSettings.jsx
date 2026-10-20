@@ -13,7 +13,7 @@ import { Alert, Card, CardHeader, Skeleton, Toggle } from './ui'
 const ROLES = [
   { key: 'admin', label: 'Administrators' },
   { key: 'risk_manager', label: 'Risk managers', hint: 'Professional package' },
-  { key: 'analyst', label: 'Analysts', hint: 'Base package — off by default' },
+  { key: 'analyst', label: 'Analysts', hint: 'Base package, off by default' },
 ]
 
 export default function AssistantSettings() {

@@ -7,7 +7,7 @@ import {
   segments,
   type ReportSection,
 } from "../lib/forensicReport";
-import { accent, bg, radius, riskColour, space, text } from "../theme/tokens";
+import { accent, bg, radius, riskColour, space, text, themed } from "../theme/tokens";
 import { Fact, Label, Note } from "./ui";
 
 /**
@@ -23,9 +23,9 @@ import { Fact, Label, Note } from "./ui";
 
 /** The three verdicts the engine's prompt allows, and what each one looks like. */
 const VERDICT = {
-  escalate: { label: "Escalate", tone: riskColour("CRITICAL") },
-  review: { label: "Standard review", tone: riskColour("MEDIUM") },
-  dismiss: { label: "Dismiss with monitoring", tone: riskColour("LOW") },
+  escalate: { label: "Escalate", level: "CRITICAL" },
+  review: { label: "Standard review", level: "MEDIUM" },
+  dismiss: { label: "Dismiss with monitoring", level: "LOW" },
 } as const;
 
 /**
@@ -58,10 +58,9 @@ export default function ForensicReport({ report }: { report: string }) {
   return (
     <View>
       <Note>
-        Written by a language model from the scores and the retrieved typology.
-        Every figure it quotes is the detectors' — the model was given them, not
-        asked to produce them — but the wording around them is generated, and is
-        evidence of nothing on its own.
+        Written by a language model from the scores and the matched laundering
+        method. The numbers come from the detectors; the wording is generated,
+        so check it against them.
       </Note>
 
       {headers.length > 0 && (
@@ -92,8 +91,8 @@ export default function ForensicReport({ report }: { report: string }) {
             )}
 
             {verdict && (
-              <View style={[styles.verdict, { borderColor: VERDICT[verdict].tone }]}>
-                <Text style={[styles.verdictText, { color: VERDICT[verdict].tone }]}>
+              <View style={[styles.verdict, { borderColor: riskColour(VERDICT[verdict].level) }]}>
+                <Text style={[styles.verdictText, { color: riskColour(VERDICT[verdict].level) }]}>
                   {VERDICT[verdict].label}
                 </Text>
               </View>
@@ -118,7 +117,7 @@ export default function ForensicReport({ report }: { report: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   headerBlock: {
     marginTop: space.md,
     paddingBottom: space.sm,
@@ -173,4 +172,4 @@ const styles = StyleSheet.create({
     marginBottom: space.xs,
   },
   verdictText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5 },
-});
+}));

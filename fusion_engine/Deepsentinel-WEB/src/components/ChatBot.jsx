@@ -20,9 +20,8 @@ const GREETING = {
   role: 'assistant',
   at: Date.now(),
   content:
-    "Ask me about DeepSentinel — the architecture, the GraphSAGE results and how " +
-    'they were measured, the API contract, or the dataset. I answer only from the ' +
-    "project's documentation and show you where each answer came from.",
+    'Ask me about DeepSentinel: how it works, the results or the dataset. '
+    + 'I answer from the project documents and show my sources.',
   sources: [],
 }
 

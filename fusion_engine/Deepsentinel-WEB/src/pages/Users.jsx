@@ -150,7 +150,7 @@ export default function Users() {
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-10 sm:px-6">
       <PageHeader
         title="Users"
-        description="Who can sign in, and what each of them is allowed to do."
+        description="Who can sign in, and what they can do."
         action={
           <Button onClick={() => setShowForm((v) => !v)} variant={showForm ? 'secondary' : 'primary'}>
             {showForm ? 'Cancel' : '+ Add user'}
@@ -248,7 +248,7 @@ export default function Users() {
             ))}
           </div>
         ) : users.length === 0 ? (
-          <EmptyState icon="—" title="No users yet" description="Add the first account above." />
+          <EmptyState icon="-" title="No users yet" description="Add the first account above." />
         ) : (
           <div className="divide-y divide-white/[0.05]">
             {users.map((u) => {

@@ -107,7 +107,7 @@ export default function FusionBatch() {
                     <td className="numeric px-2 py-1.5"
                         style={{ color: 'rgb(var(--ds-faint))' }}>{i + 1}</td>
                     <td className="numeric px-2 py-1.5"
-                        style={{ color: 'rgb(var(--ds-muted))' }}>{r.name_dest ?? r.nameDest ?? '—'}</td>
+                        style={{ color: 'rgb(var(--ds-muted))' }}>{r.name_dest ?? r.nameDest ?? '-'}</td>
                     {['graph_score', 'behavioral_score', 'temporal_score'].map((k) => (
                       <td key={k} className="numeric px-2 py-1.5"
                           style={{ color: r[k] == null ? 'rgb(var(--ds-faint))'
@@ -117,7 +117,7 @@ export default function FusionBatch() {
                     ))}
                     <td className="ds-mono px-2 py-1.5">
                       {Object.keys(c).length === 0 ? (
-                        <span style={{ color: 'rgb(var(--ds-faint))' }}>—</span>
+                        <span style={{ color: 'rgb(var(--ds-faint))' }}>-</span>
                       ) : ['graph', 'behavioural', 'temporal'].map((k, n) => (
                         <span key={k}
                               style={{ color: r.driver === k ? 'rgb(var(--ds-sev-high))'

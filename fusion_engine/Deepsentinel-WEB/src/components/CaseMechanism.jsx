@@ -45,7 +45,7 @@ function MechanismPanel({ lens, status, children }) {
       <div className="mt-4 min-h-[5rem]">{children}</div>
 
       <p className="hair-t mt-4 pt-2.5 text-[14px] leading-relaxed text-slate-600">
-        <span className="text-slate-500">Blind to</span> — {lens.blind}
+        <span className="text-slate-500">Blind to:</span> {lens.blind}
       </p>
     </div>
   )
@@ -109,8 +109,7 @@ function BehaviouralMechanism({ evidence }) {
         })}
       </div>
       <p className="mt-2 text-[14px] leading-relaxed text-slate-600">
-        One model per transaction type, each with its own threshold — a score is
-        only ever compared against transactions of its own kind.
+        One model and threshold per transaction type.
       </p>
 
       {/* where the score fell against that model's own line */}
@@ -167,14 +166,13 @@ function BehaviouralMechanism({ evidence }) {
 
       {d.out_of_training_distribution && (
         <p className="mt-2 text-[14px] leading-relaxed text-risk-medium">
-          This transaction type was not in any stratum's training data. The score
-          is extrapolation and should carry little weight.
+          The model was not trained on this type, so treat the score with caution.
         </p>
       )}
       {d.is_control_stratum && (
         <p className="mt-2 text-[14px] leading-relaxed text-slate-500">
-          PAYMENT is carried as a false-positive control rather than a detector —
-          a high score here is a finding about the model, not the transaction.
+          PAYMENT is a control group, so a high score here says more about the model
+          than the payment.
         </p>
       )}
     </div>
@@ -259,8 +257,7 @@ function GraphMechanism({ evidence }) {
         ))}
       </div>
       <p className="mt-2 text-[14px] leading-relaxed text-slate-600">
-        One ring is one hop of message passing — ring 1 paid the destination
-        directly, ring 2 paid ring 1.
+        Ring 1 paid the destination directly. Ring 2 paid ring 1.
       </p>
 
       {/* where the attention actually went */}
@@ -315,8 +312,7 @@ function TemporalMechanism({ evidence }) {
   if (!evidence) {
     return (
       <Absent>
-        When this detector ships it will show the {WINDOW}-transaction window
-        ending here, with the one earlier transaction it weighted most heavily.
+        The timing detector did not run for this case.
       </Absent>
     )
   }

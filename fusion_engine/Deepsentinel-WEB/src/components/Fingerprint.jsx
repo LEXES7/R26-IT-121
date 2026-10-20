@@ -25,7 +25,7 @@ function pct(share) {
 
 /** Feature values span log-amounts, ratios and 0/1 flags, so no shared format works. */
 function num(v) {
-  if (v == null) return '—'
+  if (v == null) return '-'
   const a = Math.abs(v)
   if (a === 0) return '0'
   if (a >= 100000 || a < 0.001) return v.toExponential(1)

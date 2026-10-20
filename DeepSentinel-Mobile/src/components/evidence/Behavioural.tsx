@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import type { BehaviouralEvidence, Share } from "../../api/analyses";
 import { readable, score } from "../../lib/format";
-import { bg, modality, mono, risk, space, text } from "../../theme/tokens";
+import { bg, modality, mono, risk, space, text, themed } from "../../theme/tokens";
 import { Fact, Label, Note, ScoreBar, ShareRow } from "../ui";
 
 /**
@@ -90,19 +90,19 @@ export default function Behavioural({ evidence }: { evidence: BehaviouralEvidenc
       ))}
 
       <Signal
-        title="Signal 1 — reconstruction error"
+        title="Signal 1: what did not fit"
         subtitle="Which input features the model failed to rebuild"
         dominant={fp.signal_1_reconstruction_error?.dominant_feature_signal}
         shares={fp.signal_1_reconstruction_error?.shares}
       />
       <Signal
-        title="Signal 2 — KL divergence"
+        title="Signal 2: hidden drift"
         subtitle="Which latent dimensions departed from the prior"
         dominant={fp.signal_2_kl_divergence?.dominant_dimension_signal}
         shares={fp.signal_2_kl_divergence?.shares}
       />
       <Signal
-        title="Signal 3 — latent density"
+        title="Signal 3: isolation"
         subtitle="Where the transaction sits relative to normal traffic"
         dominant={fp.signal_3_latent_density?.dominant_dimension_signal}
         shares={fp.signal_3_latent_density?.shares}
@@ -113,8 +113,8 @@ export default function Behavioural({ evidence }: { evidence: BehaviouralEvidenc
         {typ.typology_label && typ.typology_label !== "UNASSIGNED" ? (
           <>
             <Text style={styles.typology}>{typ.typology_label}</Text>
-            <Fact label="Cluster" value={`#${typ.cluster_id} · ${typ.cluster_size ?? "—"} members`} />
-            <Fact label="FATF" value={typ.fatf_hint ?? "—"} />
+            <Fact label="Cluster" value={`#${typ.cluster_id} · ${typ.cluster_size ?? "-"} members`} />
+            <Fact label="FATF" value={typ.fatf_hint ?? "-"} />
             <Fact label="Fraud purity" value={score(typ.cluster_fraud_purity, 3)} />
           </>
         ) : (
@@ -131,15 +131,15 @@ export default function Behavioural({ evidence }: { evidence: BehaviouralEvidenc
 
       <View style={styles.block}>
         <Label>Model</Label>
-        <Fact label="Stratum" value={d.stratum ?? evidence.transaction_type ?? "—"} />
-        <Fact label="Feature set" value={evidence.feature_set ?? "—"} monospace />
-        <Fact label="Bundle" value={meta.bundle ?? "—"} monospace />
-        <Fact label="Calibration" value={d.calibration_method ?? "—"} />
-        <Fact label="Operating point" value={d.operating_point ?? "—"} />
-        <Fact label="Version" value={evidence.model_version ?? "—"} monospace />
+        <Fact label="Stratum" value={d.stratum ?? evidence.transaction_type ?? "-"} />
+        <Fact label="Feature set" value={evidence.feature_set ?? "-"} monospace />
+        <Fact label="Bundle" value={meta.bundle ?? "-"} monospace />
+        <Fact label="Calibration" value={d.calibration_method ?? "-"} />
+        <Fact label="Operating point" value={d.operating_point ?? "-"} />
+        <Fact label="Version" value={evidence.model_version ?? "-"} monospace />
         <Fact
           label="Inference"
-          value={meta.inference_latency_ms != null ? `${meta.inference_latency_ms} ms` : "—"}
+          value={meta.inference_latency_ms != null ? `${meta.inference_latency_ms} ms` : "-"}
         />
       </View>
     </View>
@@ -165,7 +165,7 @@ function Signal({
       {shares.slice(0, 5).map((s, i) => (
         <ShareRow
           key={`${s.feature ?? s.dimension ?? i}`}
-          name={readable(s.feature ?? s.dimension ?? "—")}
+          name={readable(s.feature ?? s.dimension ?? "-")}
           value={s.share}
           colour={modality.behavioral}
         />
@@ -175,7 +175,7 @@ function Signal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => ({
   caveat: {
     borderWidth: 1,
     borderColor: risk.MEDIUM,
@@ -229,4 +229,4 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: space.sm,
   },
-});
+}));
