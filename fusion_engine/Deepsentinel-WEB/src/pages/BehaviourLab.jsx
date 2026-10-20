@@ -46,6 +46,11 @@ const STACK = { padding: 22, display: 'grid', gridTemplateColumns: 'minmax(0, 1f
 
 const fixed = (v, n) => (typeof v === 'number' ? v.toFixed(n) : '-')
 
+// A chip's label. A long id is shortened from the middle, because its end is
+// the part that tells one row from the next: cut to its first 12 characters,
+// DEMO-FULL-0529 to 0532 all read DEMO-FULL-05.
+const shortId = (id) => (id.length > 16 ? `${id.slice(0, 6)}…${id.slice(-8)}` : id)
+
 export default function BehaviourLab() {
   const [pick, setPick] = useState(0)
   const [source, setSource] = useState('fixed')
@@ -78,7 +83,7 @@ export default function BehaviourLab() {
             const t = one?.transaction ?? one
             if (!t?.nameOrig) return null
             return {
-              ref: r.transaction_id?.slice(0, 12) ?? t.nameOrig,
+              ref: shortId(r.transaction_id ?? t.nameOrig),
               note: `${t.type} · ${Number(t.amount).toLocaleString()}`
                 + (r.label_is_fraud === true ? ' · labelled fraud'
                   : r.label_is_fraud === false ? ' · labelled clean' : ''),
@@ -172,10 +177,46 @@ export function BehaviourView({
       {error && <Alert tone="error">{error}</Alert>}
 
       <div className="dash-chips">
+        {/* The switch comes first so it stays put. The chips after it change
+            with the source, three known cases or four screened payments, and
+            placed after them it moved every time it was used. */}
+        <span className="dash-chip" role="group" aria-label="Which payments" style={{ padding: 4, gap: 2 }}>
+          {[['fixed', 'Known cases'], ['live', 'Latest screened']].map(([k, label]) => {
+            const on = source === k
+            const off = k === 'live' && !liveCount
+            // aria-disabled rather than disabled, so the reason still shows on hover.
+            return (
+              <button key={k} type="button" aria-pressed={on} aria-disabled={off}
+                      onClick={() => { if (!off) onSource(k) }}
+                      title={off ? 'Nothing screened yet. Start the monitor and run the Query Runner.' : undefined}
+                      style={{ border: 0, borderRadius: 12, padding: '8px 14px', fontSize: 13,
+                               display: 'inline-flex', alignItems: 'center', gap: 8,
+                               fontWeight: on ? 600 : 500, opacity: off ? 0.45 : 1,
+                               cursor: off ? 'not-allowed' : 'pointer',
+                               background: on ? 'rgb(var(--dash-mint))' : 'transparent',
+                               color: on ? 'rgb(var(--dash-on-mint))' : 'rgb(var(--ds-muted))' }}>
+                {label}
+                {k === 'live' && liveCount > 0 && (
+                  <span style={{ minWidth: 20, height: 20, padding: '0 6px', borderRadius: 99, fontSize: 12,
+                                 fontWeight: 600, display: 'inline-grid', placeItems: 'center',
+                                 background: on ? 'rgb(var(--dash-on-mint) / .14)' : 'rgb(var(--ds-line))' }}>
+                    {liveCount}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </span>
+        {/* Keeps the switch's highlight from running into the chosen chip's. */}
+        <span aria-hidden="true" style={{ width: 1, height: 28, margin: '0 4px', background: 'rgb(var(--ds-line))' }} />
+
         {presets.map((p, i) => {
           const on = i === pick
+          // Keyed by the whole id. Four chips sharing one key made React leave
+          // three of them behind on every switch back to the known cases.
           return (
-            <button key={p.ref} type="button" className="dash-chip" aria-pressed={on} onClick={() => onPick(i)}
+            <button key={p.txn?.transaction_id ?? p.ref} title={p.txn?.transaction_id} type="button"
+                    className="dash-chip" aria-pressed={on} onClick={() => onPick(i)}
                     style={{ font: 'inherit', cursor: 'pointer',
                              ...(on ? { background: 'rgb(var(--dash-mint))', borderColor: 'transparent' } : {}) }}>
               <b className="ds-mono" style={{ fontSize: 14, ...(on ? { color: 'rgb(var(--dash-on-mint))' } : {}) }}>
@@ -185,29 +226,17 @@ export function BehaviourView({
             </button>
           )
         })}
-        <span className="dash-chip" role="group" aria-label="Which payments" style={{ padding: 4, gap: 2 }}>
-          {[['fixed', 'Known cases'], ['live', 'Latest screened']].map(([k, label]) => {
-            const on = source === k
-            const off = k === 'live' && !liveCount
-            return (
-              <button key={k} type="button" aria-pressed={on} disabled={off} onClick={() => onSource(k)}
-                      style={{ border: 0, borderRadius: 12, padding: '8px 14px', fontSize: 13,
-                               fontWeight: on ? 600 : 500, opacity: off ? 0.45 : 1,
-                               cursor: off ? 'not-allowed' : 'pointer',
-                               background: on ? 'rgb(var(--dash-mint))' : 'transparent',
-                               color: on ? 'rgb(var(--dash-on-mint))' : 'rgb(var(--ds-muted))' }}>
-                {label}{k === 'live' && liveCount ? ` (${liveCount})` : ''}
-              </button>
-            )
-          })}
+
+        {/* What is loaded, not something to pick, so it keeps to the right. */}
+        <span style={{ marginLeft: 'auto', display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+          {runtime?.model?.models != null && (
+            <span className="dash-chip"><b>{runtime.model.models}</b> models</span>
+          )}
+          {runtime?.model?.parameters != null && (
+            <span className="dash-chip"><b>{Number(runtime.model.parameters).toLocaleString()}</b> parameters</span>
+          )}
+          {typologies > 0 && <span className="dash-chip"><b>{typologies}</b> typologies</span>}
         </span>
-        {runtime?.model?.models != null && (
-          <span className="dash-chip"><b>{runtime.model.models}</b> models</span>
-        )}
-        {runtime?.model?.parameters != null && (
-          <span className="dash-chip"><b>{Number(runtime.model.parameters).toLocaleString()}</b> parameters</span>
-        )}
-        {typologies > 0 && <span className="dash-chip"><b>{typologies}</b> typologies</span>}
       </div>
 
       <div className="ds-mono" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontSize: 13,
