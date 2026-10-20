@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { scoreOneDetector } from '../services/api'
-import { parseCsv, refOf, labelOf } from '../lib/csv'
+import { parseCsv, refOf, labelOf, downloadCsv, resultsName } from '../lib/csv'
 import { Alert, Button } from './ui'
 import TypologyChart from './TypologyChart'
 import ClusterPlot from './ClusterPlot'
@@ -179,6 +179,17 @@ export default function BatchScore() {
                   onClick={() => fileRef.current?.click()}>
             {busy ? `Scoring ${done} of ${total}` : 'Choose a CSV'}
           </Button>
+          {result && !busy && (
+            <Button size="sm" variant="secondary" onClick={() => downloadCsv(
+              resultsName(result.file, 'behaviour'), result.all, [
+                ['transaction', (s) => s.ref], ['type', (s) => s.type], ['amount', (s) => s.amount],
+                ['isFraud', (s) => s.label], ['behavioural_score', (s) => s.score],
+                ['verdict', (s) => (!s.answered ? 'no answer' : s.flagged ? 'flagged' : 'cleared')],
+                ['typology', (s) => (s.flagged ? s.typology : '')], ['cluster_fraud_purity', (s) => (s.flagged ? s.purity : '')],
+              ])}>
+              Download results
+            </Button>
+          )}
           {(result || feed.length > 0) && !busy && (
             <Button size="sm" variant="ghost" onClick={clear}>Clear</Button>
           )}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { scoreOneDetector } from '../services/api'
-import { parseCsv, refOf, labelOf } from '../lib/csv'
+import { parseCsv, refOf, labelOf, downloadCsv, resultsName } from '../lib/csv'
 import { Alert, Button } from './ui'
 
 /**
@@ -162,6 +162,18 @@ export default function BatchScoreTemporal() {
                   onClick={() => fileRef.current?.click()}>
             {busy ? `Scoring ${done} of ${total}` : 'Choose a CSV'}
           </Button>
+          {result && !busy && (
+            <Button size="sm" variant="secondary" onClick={() => downloadCsv(
+              resultsName(result.file, 'timing'), result.all, [
+                ['transaction', (s) => s.ref], ['isFraud', (s) => s.label],
+                ['temporal_score', (s) => s.score],
+                ['status', (s) => (s.answered ? 'scored' : 'filling the window')],
+                ['triggered_by_rows_back', (s) => s.offset], ['predecessor_signal', (s) => s.signal],
+                ['summary', (s) => s.summary],
+              ])}>
+              Download results
+            </Button>
+          )}
           {(result || feed.length > 0) && !busy && (
             <Button size="sm" variant="ghost" onClick={clear}>Clear</Button>
           )}
