@@ -210,6 +210,25 @@ def test_warming_up_then_classifies_real_model():
         assert predecessor["composite_id"] != body["transaction_ref"]["composite_id"]
         assert predecessor["offset_from_current"] < 0
 
+        # The whole attention row comes back, and the named predecessor is
+        # its largest entry outside the current slot.
+        attn = predecessor["window_attention"]
+        assert len(attn) == state.WINDOW_SIZE
+        assert len(predecessor["window_types"]) == state.WINDOW_SIZE
+        top = max(range(state.WINDOW_SIZE - 1), key=lambda i: attn[i])
+        assert top - (state.WINDOW_SIZE - 1) == predecessor["offset_from_current"]
+
         health = client.get("/health").json()
         assert health["buffer_filled"] == state.WINDOW_SIZE
         assert health["warming_up"] is False
+
+
+def test_health_publishes_uptime_and_architecture():
+    """Uptime is wall-clock since start, not model load time."""
+    h = state.TSTCNService().health()
+    assert isinstance(h["service_uptime_seconds"], float)
+    assert "model" in h
+
+
+def test_health_architecture_survives_missing_outputs(tmp_path):
+    assert state.TSTCNService(artifact_dir=tmp_path).health()["model"] is None

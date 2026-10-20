@@ -116,7 +116,12 @@ class Calibrator:
         b = self.risk_bands
         if p >= b["critical"]:
             return "CRITICAL"
-        if p >= b["high"]:
+        # HIGH is the flag boundary, so it is read from the threshold itself
+        # rather than from the stored band. _bands rounds to six places, which
+        # put the band up to 2.3e-7 above the threshold, and isotonic is nearly
+        # flat there: rows just past the threshold were flagged yet labelled
+        # MEDIUM (TRANSFER raw 1.73 to 1.87, CASH_OUT 3.67 to 7.02).
+        if p >= self.calibrated_threshold:
             return "HIGH"
         if p >= b["medium"]:
             return "MEDIUM"

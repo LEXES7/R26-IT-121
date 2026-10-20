@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { scoreOneDetector } from '../services/api'
 import { parseCsv, refOf, labelOf, downloadCsv, resultsName } from '../lib/csv'
 import { Alert, Button } from './ui'
+import Validation from './Validation'
 
 /**
  * Score a whole file through the timing model alone.
@@ -42,9 +43,20 @@ function drop() {
   try { localStorage.removeItem(STORE) } catch { /* nothing to do */ }
 }
 
-const BUCKETS = [[1, 4], [5, 8], [9, 16], [17, 24], [25, 32]]
+// The window holds this payment and the 31 before it, so 31 is the furthest back.
+const BUCKETS = [[1, 4], [5, 8], [9, 16], [17, 24], [25, 31]]
+// The served Best-F1 operating point, for when the runtime has not said.
+const LINE = 0.4545
+// What the detector needs on every row. A file without them is checked here,
+// before anything is sent: otherwise each row comes back rejected, and the
+// panel used to report all of them as filling the window.
+const REQUIRED = ['nameOrig', 'step', 'type', 'amount', 'oldbalanceOrg',
+  'newbalanceOrig', 'oldbalanceDest', 'newbalanceDest']
+// Rejected this many times in a row from the start, the file is wrong, not
+// the rows, and sending the rest would only repeat the answer.
+const GIVE_UP = 5
 
-export default function BatchScoreTemporal() {
+export default function BatchScoreTemporal({ threshold = LINE }) {
   const fileRef = useRef(null)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(0)
@@ -52,6 +64,10 @@ export default function BatchScoreTemporal() {
   const [feed, setFeed] = useState([])
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  // Leaving the page ends the run. Without this the loop carried on in the
+  // background, feeding rows into the shared window with nobody to show them to.
+  const aliveRef = useRef(true)
+  useEffect(() => () => { aliveRef.current = false }, [])
 
   // A run from a previous visit, if there was one.
   useEffect(() => {
@@ -74,14 +90,25 @@ export default function BatchScoreTemporal() {
     try {
       const rows = parseCsv(await f.text()).slice(0, CAP)
       if (!rows.length) throw new Error('No rows in that file.')
+      const missing = REQUIRED.filter((k) => !(k in rows[0]))
+      if (missing.length) {
+        throw new Error('temporal_score' in rows[0]
+          ? 'That is a results file downloaded from this page, not transactions. Choose the original CSV.'
+          : `That file is missing ${missing.join(', ')}, which the model needs on every row.`)
+      }
       setTotal(rows.length)
 
       const scored = []
+      aliveRef.current = true
       for (let i = 0; i < rows.length; i += 1) {
+        if (!aliveRef.current) return
         let r = null
+        let failed = null
         try {
           r = await scoreOneDetector('temporal', rows[i])
-        } catch { /* recorded below as unanswered */ }
+        } catch (err) {
+          failed = err?.userMessage ?? err?.response?.data?.detail ?? err?.message ?? 'Rejected'
+        }
         const ev = r?.evidence ?? {}
         const pred = ev.triggering_predecessor ?? {}
         const row = {
@@ -89,6 +116,10 @@ export default function BatchScoreTemporal() {
           label: labelOf(rows[i]),
           score: r?.score ?? null,
           answered: Boolean(r) && r.available !== false,
+          // Filling is the detector saying it has no window yet; failed is the
+          // request itself being refused, which is a different thing to fix.
+          status: failed ? 'failed' : r?.available === false ? 'filling' : 'scored',
+          error: failed,
           offset: pred.offset_from_current != null
             ? Math.abs(pred.offset_from_current) : null,
           signal: pred.predecessor_signal ?? null,
@@ -99,6 +130,9 @@ export default function BatchScoreTemporal() {
         // heavier the further it gets.
         setFeed((prev) => [row, ...prev].slice(0, FEED_MAX))
         setDone(i + 1)
+        if (i + 1 === GIVE_UP && scored.every((s) => s.status === 'failed')) {
+          throw new Error(`The first ${GIVE_UP} rows were all refused, so the rest were not sent: ${failed}`)
+        }
       }
 
       const answered = scored.filter((s) => s.answered)
@@ -115,7 +149,8 @@ export default function BatchScoreTemporal() {
         file: f.name,
         at: Date.now(),
         rows: scored.length,
-        warming: scored.length - answered.length,
+        warming: scored.filter((s) => s.status === 'filling').length,
+        failed: scored.filter((s) => s.status === 'failed').length,
         answered: answered.length,
         labelled: scored.filter((s) => s.label !== null).length,
         actualFraud: scored.filter((s) => s.label === 1).length,
@@ -167,7 +202,9 @@ export default function BatchScoreTemporal() {
               resultsName(result.file, 'timing'), result.all, [
                 ['transaction', (s) => s.ref], ['isFraud', (s) => s.label],
                 ['temporal_score', (s) => s.score],
-                ['status', (s) => (s.answered ? 'scored' : 'filling the window')],
+                ['flagged', (s) => (s.score == null ? '' : s.score >= threshold ? 'yes' : 'no')],
+                ['status', (s) => (s.status === 'failed' ? `failed: ${s.error}`
+                  : s.answered ? 'scored' : 'filling the window')],
                 ['triggered_by_rows_back', (s) => s.offset], ['predecessor_signal', (s) => s.signal],
                 ['summary', (s) => s.summary],
               ])}>
@@ -179,7 +216,7 @@ export default function BatchScoreTemporal() {
           )}
           <span className="text-[13px]" style={{ color: 'rgb(var(--ds-muted))' }}>
             One row at a time, in file order, because order matters to this model.
-            First{' '}{CAP} rows; nothing is saved.
+            First{' '}{CAP} rows. This detector alone; nothing goes to the platform.
           </span>
         </div>
 
@@ -211,11 +248,13 @@ export default function BatchScoreTemporal() {
                     className="numeric flex items-baseline gap-3 px-2.5 py-[3px] text-[13px]"
                     style={{ borderTop: i ? '1px solid rgb(var(--ds-line))' : 'none' }}>
                   <span className="w-[86px] shrink-0 truncate"
+                        title={s.error ?? undefined}
                         style={{
-                          color: !s.answered ? 'rgb(var(--ds-warn))'
-                            : 'rgb(var(--ds-faint))',
+                          color: s.status === 'failed' ? 'rgb(var(--ds-sev-critical))'
+                            : !s.answered ? 'rgb(var(--ds-warn))'
+                              : 'rgb(var(--ds-faint))',
                         }}>
-                    {!s.answered ? 'filling' : 'scored'}
+                    {s.status === 'failed' ? 'failed' : !s.answered ? 'filling' : 'scored'}
                   </span>
                   <span className="min-w-0 flex-1 truncate"
                         style={{ color: 'rgb(var(--ds-ink))' }}>
@@ -245,6 +284,7 @@ export default function BatchScoreTemporal() {
                 ['rows sent', result.rows],
                 ['scored', result.answered],
                 ['filling the window', result.warming],
+                ...(result.failed ? [['failed', result.failed]] : []),
                 ['labelled fraud in file', result.labelled ? result.actualFraud : '-'],
               ].map(([k, v]) => (
                 <div key={k}>
@@ -287,12 +327,16 @@ export default function BatchScoreTemporal() {
               )}
               <p className="mt-2 text-[12px] leading-relaxed"
                  style={{ color: 'rgb(var(--ds-faint))' }}>
-                Transactions back, within the thirty-two the model holds. A model
+                Transactions back, within the 31 before each one that the model holds. A model
                 that only read the row immediately before would pile up at the
                 top; anything further down is the attention mechanism reaching
                 into the window.
               </p>
             </div>
+
+            {/* Scored at the model's own operating point, as it publishes it. */}
+            <Validation rows={result.all.filter((s) => s.answered)} threshold={threshold}
+                        scoreOf={(s) => s.score} labelOf={(s) => s.label} />
 
             {top.length > 0 && (
               <div>
@@ -317,7 +361,7 @@ export default function BatchScoreTemporal() {
                         {s.label === 1 && (
                           <span style={{ color: 'rgb(var(--ds-sev-critical))' }}> · fraud</span>
                         )}
-                        {s.label === 0 && (
+                        {s.label === 0 && s.score >= threshold && (
                           <span style={{ color: 'rgb(var(--ds-warn))' }}> · false alarm</span>
                         )}
                       </span>

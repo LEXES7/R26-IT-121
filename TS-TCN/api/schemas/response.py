@@ -3,7 +3,7 @@ Appendix C). Field names here are read verbatim by the fusion engine's
 adapter (DeepSentinel/backend/adapters/upstream.py::call_temporal_api) — do
 not rename without updating both sides.
 """
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -38,6 +38,10 @@ class TriggeringPredecessor(BaseModel):
     offset_from_current: int
     features: Dict[str, float | str]
     predecessor_signal: str
+    # Additive: the full fraud_attention row over the window, oldest slot
+    # first (the last slot is the current transaction), and each slot's type.
+    window_attention: Optional[List[float]] = None
+    window_types: Optional[List[str]] = None
 
 
 class ClassifyResponse(BaseModel):
