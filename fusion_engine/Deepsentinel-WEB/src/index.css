@@ -2458,6 +2458,9 @@ html.theme-transition * {
 .ds-icon-btn { width: 40px; height: 40px; border-radius: 99px; background: rgb(var(--dash-card-top)); }
 .ds-icon-btn:hover { color: rgb(var(--ds-ink)); border-color: rgb(var(--dash-line) / 0.7); }
 .ds button.rounded-lg { border-radius: 99px; }
+/* A left-aligned button is a card that wraps onto several lines, and a pill's
+   round ends would cut its text off. */
+.ds button.rounded-lg.text-left { border-radius: 18px; }
 
 .ds-badge { padding: 3px 10px; font-weight: 600; }
 .ds-progress { height: 8px; }

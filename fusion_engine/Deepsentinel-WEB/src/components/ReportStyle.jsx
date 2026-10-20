@@ -117,21 +117,21 @@ export default function ReportStyle() {
                 key={s.name}
                 onClick={() => setShowing(s.name)}
                 className={cx(
-                  'rounded-lg border p-3 text-left transition-colors',
+                  'rounded-lg border px-4 py-3.5 text-left transition-colors',
                   active
                     ? 'border-accent-400/60 bg-accent-400/5'
                     : 'border-slate-800 hover:border-slate-700',
                 )}
               >
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-medium text-slate-100">{s.label}</span>
+                  <span className="text-[15px] font-semibold text-slate-100">{s.label}</span>
                   {inUse && (
-                    <span className="numeric shrink-0 text-[14px] uppercase tracking-wider text-accent-400">
+                    <span className="numeric shrink-0 text-[12px] uppercase tracking-wider text-accent-400">
                       in use
                     </span>
                   )}
                 </div>
-                <p className="mt-1 text-[15px] leading-relaxed text-slate-500">{s.blurb}</p>
+                <p className="mt-1 text-[13px] leading-relaxed text-slate-500">{s.blurb}</p>
                 {canManageAlerts && !inUse && (
                   <span
                     role="button"
@@ -142,7 +142,7 @@ export default function ReportStyle() {
                         e.preventDefault(); e.stopPropagation(); if (!busy) pick(s.name)
                       }
                     }}
-                    className="mt-2 inline-block text-[15px] text-slate-300 underline
+                    className="mt-2 inline-block text-[13px] font-medium text-slate-300 underline
                                decoration-slate-600 underline-offset-2 hover:text-slate-100"
                   >
                     {busy ? 'Applying…' : 'Use this one'}
