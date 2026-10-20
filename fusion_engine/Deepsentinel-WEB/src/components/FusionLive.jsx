@@ -14,11 +14,15 @@ import { streamMonitor, getFusionModel } from '../services/api'
  * server used — a second implementation here would eventually disagree with
  * the first, and then the page would be lying about the model it describes.
  */
-export default function FusionLive() {
+export default function FusionLive({ onRow, selected }) {
   const [rows, setRows] = useState([])
   const [live, setLive] = useState(false)
   const [weights, setWeights] = useState(null)
   const stop = useRef(null)
+  // The page above follows whichever verdict this panel reports. Held in a
+  // ref so the stream, opened once, always calls the current handler.
+  const report = useRef(onRow)
+  report.current = onRow
 
   useEffect(() => {
     getFusionModel().then((m) => setWeights(m)).catch(() => {})
@@ -36,11 +40,17 @@ export default function FusionLive() {
           const past = (e?.events ?? [])
             .filter((x) => x?.type === 'fused' || x?.contributions)
             .slice(-8).reverse()
-          if (past.length) setRows(past.map((x) => ({ ...(x.data ?? x), at: Date.now() })))
+          if (past.length) {
+            const backlog = past.map((x) => ({ ...(x.data ?? x), at: Date.now() }))
+            setRows(backlog)
+            report.current?.(backlog[0], 'latest')
+          }
           return
         }
         if (kind !== 'fused' || !e?.transaction_id) return
-        setRows((prev) => [{ ...e, at: Date.now() }, ...prev].slice(0, 8))
+        const row = { ...e, at: Date.now() }
+        setRows((prev) => [row, ...prev].slice(0, 8))
+        report.current?.(row, 'latest')
       },
       onError: () => setLive(false),
     })
@@ -83,8 +93,16 @@ export default function FusionLive() {
             const sum = Object.values(c).reduce((a, b) => a + b, 0)
             return (
               <div key={`${r.transaction_id}-${r.at}`}
-                   className="rounded-lg border p-3"
-                   style={{ borderColor: 'rgb(var(--ds-line))',
+                   role="button" tabIndex={0}
+                   aria-pressed={selected === `${r.transaction_id}-${r.at}`}
+                   title="Show this verdict above"
+                   onClick={() => onRow?.(r, 'pin')}
+                   onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onRow?.(r, 'pin') } }}
+                   className="cursor-pointer rounded-lg border p-3"
+                   style={{ borderColor: selected === `${r.transaction_id}-${r.at}`
+                              ? 'rgb(var(--ds-accent))' : 'rgb(var(--ds-line))',
+                            boxShadow: selected === `${r.transaction_id}-${r.at}`
+                              ? 'inset 0 0 0 1px rgb(var(--ds-accent))' : undefined,
                             background: 'rgb(var(--ds-surface-2))' }}>
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="numeric truncate text-[13px]"

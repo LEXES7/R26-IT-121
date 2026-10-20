@@ -10,6 +10,7 @@ import ConsoleShell from '../components/ConsoleShell'
 import DetectorRuntime from '../components/DetectorRuntime'
 import GraphModelPanel from '../components/GraphModelPanel'
 import Validation from '../components/Validation'
+import NetworkLive from '../components/NetworkLive'
 
 /**
  * Walk the payment graph one account at a time.
@@ -166,6 +167,17 @@ export default function GraphExplorer() {
   const [amount, setAmount] = useState('404394.04')
   const [runs, setRuns] = useState([])
   const [scoring, setScoring] = useState(false)
+  // "What if" accounts exist only in this browser: the server scores one for a
+  // single request and keeps nothing. Remembered here for the session, so the
+  // account can be searched, clicked and read back like any other on the page
+  // instead of sending the server a name it has never heard of.
+  const [invented, setInvented] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem('ds.whatif') || '{}') } catch { return {} }
+  })
+  const [selected, setSelected] = useState(null)
+  useEffect(() => {
+    try { sessionStorage.setItem('ds.whatif', JSON.stringify(invented)) } catch { /* private mode */ }
+  }, [invented])
   // Where the viewer is looking. Kept in a ref as well as state: the draw
   // effect reads it every frame, and a drag would otherwise re-run the force
   // layout on every mouse move.
@@ -217,6 +229,7 @@ export default function GraphExplorer() {
     if (!account) return
     setLoading(true)
     setError(null)
+    setSelected(null)
     try {
       const d = await getNeighbourhood(account, { scope, hops: h })
       setGraph(d)
@@ -244,6 +257,36 @@ export default function GraphExplorer() {
    * real accounts, connected to the one it transacted with. Nothing is written
    * anywhere: the node exists in this response and in this canvas.
    */
+  const showInvented = useCallback(async (rec) => {
+    const d = await getNeighbourhood(rec.from, { scope, hops })
+    setGraph({
+      ...d,
+      nodes: [...d.nodes.filter((n) => n.id !== rec.id),
+              { id: rec.id, score: rec.score, in_degree: 1, out_degree: 0, invented: true }],
+      edges: [...d.edges, { source: rec.from, target: rec.id, attention: 0, amount: rec.amount, step: 705 }],
+    })
+    setCentre(rec.from)
+    setSelected(rec.id)
+    setView({ x: 0, y: 0, z: 1 })
+  }, [scope, hops])
+
+  // Search, the trail and clicks on the map all come through here, so a
+  // "What if" account is found wherever a real one would be.
+  const find = useCallback(async (account, h, remember) => {
+    const rec = invented[account]
+    if (!rec) return load(account, h, remember)
+    setLoading(true)
+    setError(null)
+    try {
+      await showInvented(rec)
+    } catch (err) {
+      setError(err?.userMessage ?? `Could not load ${rec.from}, the account it received from.`)
+    } finally {
+      setLoading(false)
+    }
+    return undefined
+  }, [invented, load, showInvented])
+
   const scoreInvented = useCallback(async () => {
     const account = newAccount.trim()
     const neighbour = from.trim()
@@ -275,25 +318,26 @@ export default function GraphExplorer() {
                            accounts: r.provenance.neighbourhood_accounts,
                            at: Date.now() }, ...prev].slice(0, 8))
 
+      // Kept with everything the server said about it, so the inspector can
+      // show what the score was built from and search can bring it back.
+      const rec = {
+        id: account, from: neighbour, amount: value, score: r.raw_score,
+        accounts: r.provenance?.neighbourhood_accounts ?? null,
+        features: r.features ?? {}, neighbours: r.neighbours ?? [], at: Date.now(),
+      }
+      setInvented((m) => ({ ...m, [account]: rec }))
+
       // Draw it into its neighbour's network. The layout places it by its
       // connections like every other node, which is the point — nothing
       // positions it specially, it lands next to what it is attached to.
-      const d = await getNeighbourhood(neighbour, { scope, hops })
-      setGraph({
-        ...d,
-        nodes: [...d.nodes,
-                { id: account, score: r.raw_score, in_degree: 1, out_degree: 0,
-                  invented: true }],
-        edges: [...d.edges, { source: neighbour, target: account, attention: 0 }],
-      })
-      setCentre(neighbour)
-      setView({ x: 0, y: 0, z: 1 })
+      await showInvented(rec)
+      setQuery(account)
     } catch (err) {
       setAddError(err?.userMessage ?? 'The relational model did not answer.')
     } finally {
       setScoring(false)
     }
-  }, [newAccount, from, amount, scope, hops])
+  }, [newAccount, from, amount, showInvented])
 
   const onDemoFile = useCallback(async (e) => {
     const f = e.target.files?.[0]
@@ -770,7 +814,7 @@ export default function GraphExplorer() {
 
   // The account the inspector describes: whatever the pointer is on, else the
   // searched one.
-  const focusId = hover ?? centre
+  const focusId = hover ?? selected ?? centre
   const focusNode = graph?.nodes?.find((n) => n.id === focusId) ?? null
   const focusEdges = graph && focusNode
     ? graph.edges
@@ -833,7 +877,7 @@ export default function GraphExplorer() {
           it drops what was loaded. */}
       <div className="dash-chips">
         {!off && expanded && (
-          <form onSubmit={(e) => { e.preventDefault(); load(query.trim()) }}
+          <form onSubmit={(e) => { e.preventDefault(); find(query.trim()) }}
                 className="dash-chip dash-search" role="search" style={{ width: 340, paddingRight: 6 }}>
             <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
                  strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
@@ -909,7 +953,7 @@ export default function GraphExplorer() {
                 {trail.map((a, i) => (
                   <span key={`${a}-${i}`}>
                     {i > 0 && ' → '}
-                    <button onClick={() => load(a, hops, false)} className="ds-mono"
+                    <button onClick={() => find(a, hops, false)} className="ds-mono"
                             style={{ background: 'none', border: 0, color: 'inherit', cursor: 'pointer',
                                      textDecoration: 'underline dotted', textUnderlineOffset: 3 }}>
                       {a}
@@ -962,7 +1006,8 @@ export default function GraphExplorer() {
                           }, 420)
                         }
                         setQuery(h.id)
-                        setTimeout(() => load(h.id), 300)
+                        if (invented[h.id]) setSelected(h.id)
+                        else setTimeout(() => load(h.id), 300)
                       }
                     }
                   }}
@@ -1049,7 +1094,10 @@ export default function GraphExplorer() {
             <aside style={{ display: 'grid', gap: 14, alignContent: 'start' }}>
               <section className={card} style={{ padding: 22 }}>
                 <div className="ds-section-label">{hover ? 'Pointing at' : 'Selected account'}</div>
-                {focusNode ? (
+                {focusNode?.invented ? (
+                  <InventedFacts node={focusNode} rec={invented[focusNode.id]}
+                                 onSender={(a) => { setQuery(a); load(a) }} />
+                ) : focusNode ? (
                   <>
                     <div className="ds-mono" style={{ fontSize: 17, marginTop: 8, wordBreak: 'break-all' }}>{focusNode.id}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 16 }}>
@@ -1202,7 +1250,8 @@ export default function GraphExplorer() {
                 )
               })()}
               <p style={{ fontSize: 12, color: 'rgb(var(--ds-faint))', margin: 0 }}>
-                Raw scores. Compare runs with each other. The new account appears on the map.
+                Raw scores. Compare runs with each other. The new account appears on the map in purple; search
+                its name to bring it back. It is kept in this browser only and never added to the graph.
               </p>
             </section>
 
@@ -1282,6 +1331,16 @@ export default function GraphExplorer() {
         </>
       )}
 
+      {!off && (
+        <NetworkLive threshold={riskLine}
+                     onOpen={(a) => {
+                       if (!expanded) setExpanded(true)
+                       setQuery(a)
+                       find(a)
+                       setTimeout(() => frameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 250)
+                     }} />
+      )}
+
       {/* The full detail behind the card, for whoever wants it. */}
       <details className={card} style={{ padding: '16px 22px' }}>
         <summary style={{ cursor: 'pointer', fontSize: 15, fontWeight: 600 }}>Model details and runtime</summary>
@@ -1317,6 +1376,82 @@ export default function GraphExplorer() {
       )}
       </div>
     </ConsoleShell>
+  )
+}
+
+/* What the inspector shows for a "What if" account: everything the server said
+ * when it scored it, since there is no history to read from the graph. */
+function InventedFacts({ node, rec, onSender }) {
+  const purple = 'rgb(196,132,252)'
+  const muted = 'rgb(var(--ds-muted))'
+  const score = Number(node.score ?? rec?.score ?? 0)
+  const features = Object.entries(rec?.features ?? {})
+  return (
+    <>
+      <div className="ds-mono" style={{ fontSize: 17, marginTop: 8, wordBreak: 'break-all' }}>{node.id}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 16 }}>
+        <div style={{ width: 86, height: 86, borderRadius: 99, flex: '0 0 auto', display: 'grid', placeItems: 'center',
+                      background: `conic-gradient(${purple} 0 ${Math.max(1, score * 100)}%, rgb(var(--ds-surface-3)) 0 100%)` }}>
+          <div style={{ width: 70, height: 70, borderRadius: 99, display: 'grid', placeItems: 'center',
+                        background: 'rgb(var(--dash-card-top))', textAlign: 'center' }}>
+            <div>
+              <div style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-.03em' }}>{Math.round(score * 100)}%</div>
+              <div style={{ fontSize: 9, letterSpacing: '.1em', color: 'rgb(var(--ds-faint))' }}>RAW</div>
+            </div>
+          </div>
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <span className="ds-badge" style={{ color: purple, borderColor: 'transparent',
+                                              background: 'color-mix(in srgb, rgb(196,132,252) 16%, transparent)' }}>
+            Added in demo
+          </span>
+          <div style={{ fontSize: 13, color: muted, marginTop: 10 }}>
+            Scored from its neighbours. Not saved, not in the graph.
+          </div>
+        </div>
+      </div>
+      <div style={{ marginTop: 14, fontSize: 14 }}>
+        {[['Received from', rec?.from ?? '-', true],
+          ['Amount', rec?.amount != null ? Number(rec.amount).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '-', true],
+          ['Raw score', score.toFixed(4), true],
+          ['Scored from', rec?.accounts != null ? `${Number(rec.accounts).toLocaleString()} accounts` : '-']].map(([k, v, mono]) => (
+          <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '9px 0',
+                                borderTop: '1px solid rgb(var(--ds-line))' }}>
+            <span style={{ color: muted }}>{k}</span>
+            <span className={mono ? 'ds-mono' : undefined} style={{ wordBreak: 'break-all', textAlign: 'right' }}>{v}</span>
+          </div>
+        ))}
+      </div>
+      {features.length > 0 && (
+        <details style={{ marginTop: 10 }}>
+          <summary style={{ cursor: 'pointer', fontSize: 14 }}>The 12 numbers it was scored on</summary>
+          <div style={{ display: 'grid', gap: 4, marginTop: 8 }}>
+            {features.map(([k, v]) => (
+              <div key={k} className="ds-mono" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}>
+                <span style={{ color: muted }}>{k}</span><span>{Number(v).toFixed(4)}</span>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+      {rec?.neighbours?.length > 0 && (
+        <div style={{ marginTop: 10, fontSize: 13 }}>
+          <div style={{ color: muted, marginBottom: 4 }}>Its neighbour, scored the same way</div>
+          {rec.neighbours.map((n) => (
+            <div key={n.account} className="ds-mono" style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+              <span>{n.account}</span><span>{Number(n.raw_score).toFixed(4)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {rec?.from && (
+        <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+          <button type="button" className="ds-btn ds-btn-primary" style={{ flex: 1 }} onClick={() => onSender(rec.from)}>
+            Open the sender
+          </button>
+        </div>
+      )}
+    </>
   )
 }
 
