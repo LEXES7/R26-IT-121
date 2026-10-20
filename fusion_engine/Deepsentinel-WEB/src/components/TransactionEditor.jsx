@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 /**
  * Change the transaction and watch the model change its mind.
  *
@@ -17,11 +19,21 @@
  * closing balance of 500,000 can produce a row that could not occur, and the
  * model would be answering about arithmetic that never happens in the data it
  * was fitted on.
+ *
+ * For the same reason the amount stops at the balance and the balance at the
+ * amount. Past that point the origin cannot fall below zero, so the ledger
+ * stops reconciling, and in PaySim that is the ordinary case: of the transfers
+ * up to step 595, 96% of legitimate ones send more than the balance shows and
+ * 97% of fraudulent ones drain it exactly. One step past the balance, the
+ * model calls a payment that empties the account normal.
  */
 
 const money = (n) => Math.round(n).toLocaleString()
 
-function Slider({ label, value, onChange, max, hint }) {
+// Headroom above whichever of the two is larger.
+const span = (amount, balance) => Math.max(amount, balance, 1) * 2.2
+
+function Slider({ label, value, onChange, min = 0, max, hint }) {
   return (
     <div style={{ display: 'grid', gap: 5 }}>
       <div className="flex items-baseline justify-between gap-3">
@@ -33,10 +45,10 @@ function Slider({ label, value, onChange, max, hint }) {
       </div>
       <input
         type="range"
-        min={0}
+        min={min}
         max={max}
-        step={Math.max(1, Math.round(max / 1000))}
-        value={Math.min(value, max)}
+        step={Math.max((max - min) / 1000, 0.01)}
+        value={Math.min(Math.max(value, min), max)}
         onChange={(e) => onChange(Number(e.target.value))}
         className="ds-range"
         aria-label={label}
@@ -48,14 +60,27 @@ function Slider({ label, value, onChange, max, hint }) {
   )
 }
 
-export default function TransactionEditor({ txn, onChange, onReset, dirty }) {
+// `bare` drops the frame and the heading, for a card that already has both.
+export default function TransactionEditor({ txn, onChange, onReset, dirty, bare = false }) {
   const amount = Number(txn.amount) || 0
   const balance = Number(txn.oldbalanceOrg) || 0
   const ratio = balance > 0 ? amount / balance : null
 
-  // Headroom above whichever is larger, so a slider never pins at its own end
-  // the moment you reach the value that came from the preset.
-  const ceiling = Math.max(amount, balance, 1) * 2.2
+  // The track is sized once per row, from the row as it was picked. Sized from
+  // the values being edited, its end moved away from the pointer during a drag.
+  const id = txn.transaction_id ?? txn.nameOrig
+  const [frame, setFrame] = useState(() => ({ id, ceiling: span(amount, balance) }))
+  if (frame.id !== id) setFrame({ id, ceiling: span(amount, balance) })
+  const { ceiling } = frame
+
+  // An account with no balance has nothing to stop at, which is its own
+  // ordinary case in PaySim and is labelled below rather than prevented.
+  const amountMax = balance > 0 ? balance : ceiling
+
+  // Evenly spaced positions land on round figures whenever the span is round,
+  // and F12_round_amount reads a round figure as structuring. So the amount
+  // keeps the cents of the one it replaces, as PaySim's amounts have them.
+  const cents = Math.round((amount % 1) * 100) / 100
 
   const set = (patch) => {
     const next = { ...txn, ...patch }
@@ -66,15 +91,20 @@ export default function TransactionEditor({ txn, onChange, onReset, dirty }) {
     onChange(next)
   }
 
-  const drained = ratio != null && ratio >= 0.995
+  // Only a row picked as it came can be over: the sliders keep it within.
+  const over = ratio != null && ratio > 1
+  const drained = ratio != null && ratio >= 0.995 && !over
 
   return (
-    <div className="rounded-lg border p-4" style={{ borderColor: 'rgb(var(--ds-line))' }}>
+    <div className={bare ? undefined : 'rounded-lg border p-4'}
+         style={bare ? undefined : { borderColor: 'rgb(var(--ds-line))' }}>
       <div className="mb-3 flex items-baseline justify-between gap-3">
-        <h3 className="ds-mono text-[14px] uppercase tracking-wider"
-            style={{ color: 'rgb(var(--ds-faint))' }}>
-          Change the transaction
-        </h3>
+        {!bare && (
+          <h3 className="ds-mono text-[14px] uppercase tracking-wider"
+              style={{ color: 'rgb(var(--ds-faint))' }}>
+            Change the transaction
+          </h3>
+        )}
         {dirty && (
           <button onClick={onReset} className="text-[13px] underline underline-offset-2"
                   style={{ color: 'rgb(var(--ds-muted))' }}>
@@ -84,10 +114,10 @@ export default function TransactionEditor({ txn, onChange, onReset, dirty }) {
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Slider label="Amount" value={amount} max={ceiling}
-                onChange={(v) => set({ amount: v })} />
-        <Slider label="Balance before" value={balance} max={ceiling}
-                onChange={(v) => set({ oldbalanceOrg: v })} />
+        <Slider label="Amount" value={amount} max={amountMax}
+                onChange={(v) => set({ amount: Math.min(Math.floor(v) + cents, amountMax) })} />
+        <Slider label="Balance before" value={balance} min={amount} max={ceiling}
+                onChange={(v) => set({ oldbalanceOrg: Math.max(Math.round(v * 100) / 100, amount) })} />
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
@@ -123,8 +153,9 @@ export default function TransactionEditor({ txn, onChange, onReset, dirty }) {
         </span>
         <span className="text-[13px]" style={{ color: 'rgb(var(--ds-muted))' }}>
           {ratio == null ? 'the account had no balance to draw on'
-            : drained ? 'the account is emptied'
-              : `${money(Math.max(0, balance - amount))} left afterwards`}
+            : over ? 'more than the account held'
+              : drained ? 'the account is emptied'
+                : `${money(Math.max(0, balance - amount))} left afterwards`}
         </span>
       </div>
     </div>

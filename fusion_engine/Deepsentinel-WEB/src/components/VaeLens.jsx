@@ -39,7 +39,9 @@ const CSS = `
   @media (prefers-reduced-motion: reduce) { .vae-flow { animation: none; } }
 `
 
-export default function VaeLens({ fingerprint = {} }) {
+// `halo` is the colour drawn behind the latent labels so they read over the
+// lines; it should match whatever the lens sits on.
+export default function VaeLens({ fingerprint = {}, halo = 'rgb(var(--ds-surface))' }) {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '')
   const [hover, setHover] = useState(null)
 
@@ -166,7 +168,7 @@ export default function VaeLens({ fingerprint = {} }) {
                       fill={`rgb(var(--ds-signal) / ${(0.14 + 0.86 * a).toFixed(3)})`} />
               {/* The halo masks the lines behind the label, so it reads over them. */}
               <text x={X_Z + 26} y={y + 4} fontSize="11.5" className="ds-mono"
-                    stroke="rgb(var(--ds-surface))" strokeWidth="6" strokeLinejoin="round"
+                    stroke={halo} strokeWidth="6" strokeLinejoin="round"
                     style={{ paintOrder: 'stroke' }}
                     fill={a >= 0.15 ? 'rgb(var(--ds-ink))' : 'rgb(var(--ds-faint))'}>
                 {d.dimension}{a >= 0.08 ? `  ${pct(d.share)}` : ''}
