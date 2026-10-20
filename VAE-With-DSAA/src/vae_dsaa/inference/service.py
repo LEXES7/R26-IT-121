@@ -17,6 +17,8 @@ Per stratum it holds:
 from __future__ import annotations
 
 import hashlib
+import json
+import math
 import time
 from pathlib import Path
 
@@ -145,6 +147,53 @@ class BehavioralPredictor:
         self.scored = 0
         self.latency_ms_total = 0.0
         self._parameters: int | None = None
+        self.performance = self._load_performance()
+
+    # ---------------------------------------------------------- performance
+    def _load_performance(self) -> dict:
+        """Held-out results per stratum, read from the reports the export wrote.
+
+        Read rather than restated, so the console's model card shows exactly
+        the numbers the evaluation produced. The partition is the test window,
+        step > 595, at the F1-optimal operating point chosen on validation. A
+        stratum without a report is left out, not shown as zero, and NaN
+        becomes None because the JSON response refuses NaN.
+
+        Each bundle carries a byte-for-byte copy of its report as
+        evaluation.json (scripts/export_evaluations.py), and that copy is read
+        first: the serving image ships the bundles and leaves reports/ out.
+        """
+        def clean(v):
+            return None if isinstance(v, float) and not math.isfinite(v) else v
+
+        def report(s: str) -> dict | None:
+            for path in (self.bundles[s].path / "evaluation.json",
+                         self.root / "reports" / "v4"
+                         / f"{self.protocol}__{self.feature_set}__{s}.json"):
+                try:
+                    return json.loads(path.read_text())
+                except (OSError, ValueError):
+                    continue
+            return None
+
+        out = {}
+        for s in self.bundles:
+            r = report(s)
+            if r is None:
+                continue
+            op = r.get("operating_point_f1_optimal") or {}
+            out[s] = {k: clean(v) for k, v in {
+                "rows": r.get("n_rows"),
+                "frauds": r.get("n_fraud"),
+                "precision": op.get("precision"),
+                "recall": op.get("recall"),
+                "f1": op.get("f1"),
+                "auc_roc": r.get("auc_roc"),
+                "auc_pr": r.get("auc_pr_average_precision"),
+                "threshold": op.get("threshold"),
+                "flag_rate": op.get("flag_rate"),
+            }.items()}
+        return out
 
     # ---------------------------------------------------------------- route
     @staticmethod
@@ -320,6 +369,10 @@ class BehavioralPredictor:
                 }
                 for s, b in self.bundles.items()
             },
+
+            # Held-out results per stratum (test window, step > 595), for the
+            # console's model card. Additive, like `model` above.
+            "performance": self.performance,
         }
 
 

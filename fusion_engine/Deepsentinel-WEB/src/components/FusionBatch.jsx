@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import { analyzeBatch } from '../services/api'
 import { Alert, Button } from './ui'
 import Validation from './Validation'
+import { downloadCsv, resultsName } from '../lib/csv'
 
 /**
  * A file through the whole pipeline, with each verdict's working shown.
@@ -22,11 +23,12 @@ export default function FusionBatch() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [done, setDone] = useState(null)
+  const [fileName, setFileName] = useState(null)
 
   const onFile = useCallback((e) => {
     const f = e.target.files?.[0]
     if (!f) return
-    setRows([]); setDone(null); setError(null); setBusy(true)
+    setRows([]); setDone(null); setError(null); setBusy(true); setFileName(f.name)
 
     stopRef.current = analyzeBatch(f, {
       onEvent: (name, d) => {
@@ -54,6 +56,20 @@ export default function FusionBatch() {
         <div className="flex items-center gap-2">
           <input ref={fileRef} type="file" accept=".csv,text/csv"
                  onChange={onFile} className="hidden" />
+          {!busy && rows.length > 0 && (
+            <Button size="sm" variant="secondary" onClick={() => downloadCsv(
+              resultsName(fileName, 'fusion'), rows, [
+                ['transaction', (r) => r.transaction_id], ['to', (r) => r.name_dest ?? r.nameDest],
+                ['isFraud', (r) => r.label],
+                ['graph_score', (r) => r.graph_score], ['behavioural_score', (r) => r.behavioral_score],
+                ['temporal_score', (r) => r.temporal_score],
+                ['term_network', (r) => r.contributions?.graph], ['term_behaviour', (r) => r.contributions?.behavioural],
+                ['term_timing', (r) => r.contributions?.temporal], ['driver', (r) => r.driver],
+                ['fused_score', (r) => r.score], ['classification', (r) => r.classification],
+              ])}>
+              Download results
+            </Button>
+          )}
           {busy ? (
             <Button size="sm" variant="secondary" onClick={stop}>Stop</Button>
           ) : (
