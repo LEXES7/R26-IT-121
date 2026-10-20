@@ -101,6 +101,11 @@ def test_health_reports_loaded_strata(client):
     assert r.json()["strata_loaded"] == ["CASH_OUT", "GLOBAL", "PAYMENT", "TRANSFER"]
 
 
+def test_health_reports_uptime(client):
+    """The console's runtime card reads uptime here, not the startup time."""
+    assert client.get("/health").json()["service_uptime_seconds"] >= 0
+
+
 def test_classify_returns_200(client):
     assert client.post("/api/v1/behavioral/classify", json=make_tx()).status_code == 200
 

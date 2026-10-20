@@ -9,14 +9,14 @@
  * predecessor, and neither has an opinion about what the transaction *should*
  * have looked like.
  *
- * `FingerprintStrip` draws the vector itself. The share of each feature and
- * each latent dimension, in one row per signal, is the object that gets
- * clustered into typologies — so the shape of the row is the thing, not the
- * name of whichever entry happens to be largest.
+ * `FingerprintStrip` draws the vector itself, one row per signal. The first two
+ * rows side by side are the object that gets clustered into typologies (the
+ * third, latent density, is evidence and is left out of it), so the shape of
+ * the rows is the thing, not the name of whichever entry happens to be largest.
  */
 
 /** Share formatted the way it is read: a percentage, or "<0.1%" rather than 0.0%. */
-function pct(share) {
+export function pct(share) {
   const v = (share ?? 0) * 100
   if (v === 0) return '0%'
   if (v < 0.1) return '<0.1%'
@@ -24,7 +24,7 @@ function pct(share) {
 }
 
 /** Feature values span log-amounts, ratios and 0/1 flags, so no shared format works. */
-function num(v) {
+export function num(v) {
   if (v == null) return '-'
   const a = Math.abs(v)
   if (a === 0) return '0'
@@ -34,7 +34,7 @@ function num(v) {
   return v.toFixed(4)
 }
 
-const strip = (s) => s.replace(/^F\d+_/, '').replace(/_/g, ' ')
+export const strip = (s) => s.replace(/^F\d+_/, '').replace(/_/g, ' ')
 
 export function ExpectationGap({ shares = [] }) {
   if (!shares.length) return null
@@ -105,7 +105,7 @@ function Row({ label, shares, keyName, tone }) {
   for (const s of sorted) { acc += s.share ?? 0; carry += 1; if (acc >= 0.9) break }
 
   return (
-    <div style={{ display: 'grid', gap: 5 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 5 }}>
       <div className="flex items-baseline justify-between gap-3">
         <span className="ds-mono text-[12px] uppercase tracking-wider"
               style={{ color: 'rgb(var(--ds-faint))' }}>{label}</span>
@@ -121,7 +121,7 @@ function Row({ label, shares, keyName, tone }) {
             <div
               key={s[keyName]}
               title={`${s[keyName]} · ${pct(s.share)}`}
-              className="h-7 flex-1 rounded-[3px]"
+              className="h-7 min-w-0 flex-1 rounded-[3px]"
               style={{
                 background: `rgb(var(${tone}) / ${(0.10 + v * 0.90).toFixed(3)})`,
                 outline: '1px solid rgb(var(--ds-line))',
@@ -135,7 +135,7 @@ function Row({ label, shares, keyName, tone }) {
       <div className="flex gap-[3px]">
         {shares.map((s) => (
           <span key={s[keyName]}
-                className="ds-mono flex-1 truncate text-center text-[9.5px]"
+                className="ds-mono min-w-0 flex-1 truncate text-center text-[9.5px]"
                 style={{ color: 'rgb(var(--ds-faint))' }}>
             {String(s[keyName]).replace(/^F\d+_/, '').replace(/^dim_/, '')}
           </span>
@@ -152,7 +152,9 @@ export function FingerprintStrip({ fingerprint = {} }) {
   if (!s1 && !s2 && !s3) return null
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    // minmax(0, 1fr) lets the rows narrow to a card and truncate their labels
+    // rather than holding out at the width of the labels written in full.
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 16 }}>
       <Row label="Signal 1 · per input feature" shares={s1}
            keyName="feature" tone="--ds-accent" />
       <Row label="Signal 2 · per latent dimension (KL)" shares={s2}

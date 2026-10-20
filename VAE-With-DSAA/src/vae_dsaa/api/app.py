@@ -186,7 +186,12 @@ def create_app(predictor: BehavioralPredictor | None = None) -> FastAPI:
             return JSONResponse(status_code=503,
                                 content={"status": "loading",
                                          "model_version": MODEL_VERSION})
-        return JSONResponse(content=p.health())
+        # The console's runtime card reads uptime from /health. Without it the
+        # card falls back to startup_seconds and reports "serving for 0s".
+        return JSONResponse(content={
+            **p.health(),
+            "service_uptime_seconds": round(time.time() - START_TS, 1),
+        })
 
     @app.get("/api/v1/behavioral/runtime")
     def runtime() -> dict:
