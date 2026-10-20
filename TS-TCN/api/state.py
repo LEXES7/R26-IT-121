@@ -59,6 +59,28 @@ WINDOW_SIZE = 32
 THRESHOLD = 0.4545
 
 
+def _load_architecture(artifact_dir: Path) -> Optional[dict]:
+    """The architecture as the Stage 4 build wrote it, for /health to publish.
+
+    Read once at start-up. Plain json on purpose — /health must answer
+    without TensorFlow and without artefacts, so a missing file means a
+    missing section, never a failed health check.
+    """
+    try:
+        a = json.loads((artifact_dir / "stage4_tcn" / "stage4_metadata.json").read_text())["architecture"]
+    except Exception:                                   # noqa: BLE001
+        return None
+    return {
+        "parameters": a.get("total_parameters"),
+        "blocks": a.get("tcn_blocks"),
+        "dilations": a.get("dilations"),
+        "filters": a.get("filters_per_block"),
+        "kernel_size": a.get("kernel_size"),
+        "receptive_field": a.get("receptive_field"),
+        "features": (a.get("input_shape") or [None, None])[1],
+    }
+
+
 class WarmingUp(Exception):
     """Buffer has fewer than WINDOW_SIZE transactions since service start."""
 
@@ -133,6 +155,11 @@ class TSTCNService:
         self.load_error: Optional[str] = None
         self.scored = 0
         self.latency_ms_total = 0.0
+        # Wall-clock start, so /health can say how long it has been serving.
+        # startup_seconds is how long the model took to load, which is not
+        # the same thing and was being shown as if it were.
+        self.started_at = time.time()
+        self.architecture = _load_architecture(artifact_dir)
 
     @property
     def loaded(self) -> bool:
@@ -214,9 +241,11 @@ class TSTCNService:
             "warming_up": self.buffer_size() < WINDOW_SIZE,
             "threshold": THRESHOLD,
             "startup_seconds": round(self.startup_seconds, 2) if self.startup_seconds is not None else None,
+            "service_uptime_seconds": round(time.time() - self.started_at, 1),
             "transactions_scored": self.scored,
             "mean_latency_ms": (round(self.latency_ms_total / self.scored, 2)
                                 if self.scored else None),
+            "model": self.architecture,
             **({"load_error": self.load_error} if self.load_error else {}),
         }
 
@@ -287,6 +316,12 @@ class TSTCNService:
                 "type_risk": float(predecessor["raw"]["type_risk_weight"]),
             },
             "predecessor_signal": _predecessor_signal(predecessor["raw"]),
+            # The whole attention row, oldest slot first, with each slot's
+            # type, so a reader can see how sharply the model picked the one
+            # above rather than being told only the winner. Carried inside
+            # this block because the fusion engine forwards it whole.
+            "window_attention": [round(float(a), 4) for a in attn],
+            "window_types": [str(e["raw"]["type"]) for e in window],
         }
 
         elapsed_ms = (time.perf_counter() - started) * 1000
