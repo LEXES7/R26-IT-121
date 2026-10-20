@@ -16,7 +16,7 @@
  */
 
 /** Share formatted the way it is read: a percentage, or "<0.1%" rather than 0.0%. */
-function pct(share) {
+export function pct(share) {
   const v = (share ?? 0) * 100
   if (v === 0) return '0%'
   if (v < 0.1) return '<0.1%'
@@ -24,7 +24,7 @@ function pct(share) {
 }
 
 /** Feature values span log-amounts, ratios and 0/1 flags, so no shared format works. */
-function num(v) {
+export function num(v) {
   if (v == null) return '-'
   const a = Math.abs(v)
   if (a === 0) return '0'
@@ -34,7 +34,7 @@ function num(v) {
   return v.toFixed(4)
 }
 
-const strip = (s) => s.replace(/^F\d+_/, '').replace(/_/g, ' ')
+export const strip = (s) => s.replace(/^F\d+_/, '').replace(/_/g, ' ')
 
 export function ExpectationGap({ shares = [] }) {
   if (!shares.length) return null

@@ -2,6 +2,7 @@ import DetectorLab, { Bar, Stat } from '../components/DetectorLab'
 import { ExpectationGap, FingerprintStrip } from '../components/Fingerprint'
 import TypologyPanel from '../components/TypologyPanel'
 import BatchScore from '../components/BatchScore'
+import VaeLens from '../components/VaeLens'
 
 /**
  * What the behavioural model saw, and which part of it was wrong.
@@ -75,6 +76,19 @@ export default function BehaviourLab() {
 
             {hasShares && (
               <>
+              {/* The trip through the model, lit where it strained. The
+                  surface fill is what the label halos are drawn in. */}
+              <section style={{ display: 'grid', gap: 10 }}>
+                <h3 className="ds-mono text-[14px] uppercase tracking-wider"
+                    style={{ color: 'rgb(var(--ds-faint))' }}>
+                  Inside the model
+                </h3>
+                <div className="rounded-lg border p-4"
+                     style={{ borderColor: 'rgb(var(--ds-line))', background: 'rgb(var(--ds-surface))' }}>
+                  <VaeLens fingerprint={fp} />
+                </div>
+              </section>
+
               {/* What it expected against what arrived. The one view that
                   belongs to a reconstruction model and to nothing else here. */}
               <section style={{ display: 'grid', gap: 10 }}>
