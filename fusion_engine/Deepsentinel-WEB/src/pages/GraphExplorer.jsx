@@ -11,6 +11,7 @@ import DetectorRuntime from '../components/DetectorRuntime'
 import GraphModelPanel from '../components/GraphModelPanel'
 import Validation from '../components/Validation'
 import NetworkLive from '../components/NetworkLive'
+import { downloadCsv, resultsName } from '../lib/csv'
 
 /**
  * Walk the payment graph one account at a time.
@@ -344,7 +345,7 @@ export default function GraphExplorer() {
     if (!f) return
     setCsvBusy(true); setCsvError(null)
     try {
-      setCsv(await demoScoreCsv(f))
+      setCsv({ ...(await demoScoreCsv(f)), file: f.name })
     } catch (err) {
       setCsvError(err?.userMessage ?? 'That file could not be scored.')
       setCsv(null)
@@ -1269,6 +1270,21 @@ export default function GraphExplorer() {
                                background: 'transparent', color: 'rgb(var(--ds-muted))', cursor: 'pointer', fontSize: 14 }}>
                 {csvBusy ? 'Scoring…' : <>Drop a CSV or <b style={{ color: 'rgb(var(--dash-line-ink))' }}>browse</b></>}
               </button>
+              {csv && (
+                <button type="button" className="ds-btn" onClick={() => {
+                  const line = csv.bands?.high ?? riskLine
+                  downloadCsv(resultsName(csv.file, 'network'), csv.rows, [
+                    ['row', (r) => r.row], ['transaction', (r) => r.transaction_id], ['from', (r) => r.nameOrig],
+                    ['to', (r) => r.nameDest], ['isFraud', (r) => r.isFraud], ['graph_score', (r) => r.score],
+                    ['flagged', (r) => (r.score == null ? '' : r.score >= line ? 'yes' : 'no')],
+                    ['how', (r) => (r.source === 'precomputed' ? 'in the graph'
+                      : r.source === 'inductive' ? 'new, from neighbours' : 'not scoreable')],
+                    ['note', (r) => r.note],
+                  ])
+                }}>
+                  Download results
+                </button>
+              )}
               {csv && (
                 <span className="ds-mono" style={{ fontSize: 12, color: 'rgb(var(--ds-muted))' }}>
                   {csv.counts.precomputed} looked up · {csv.counts.inductive} new · {csv.counts.unscored} not scoreable
