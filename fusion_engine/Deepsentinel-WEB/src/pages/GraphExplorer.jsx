@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  getGraphSettings, setGraphSettings, getNeighbourhood,
+  getGraphSettings, setGraphSettings, getNeighbourhood, getGraphModel,
   demoScoreAccount, demoScoreCsv,
 } from '../services/api'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Alert, Button, Input, cx } from '../components/ui'
 import ConsoleShell from '../components/ConsoleShell'
@@ -54,13 +55,14 @@ const BUSY = [
 // layout was only ever using ~36% of the height. So the frame can be shorter
 // without crowding anything, and the page stops needing a scroll to see the
 // caption under it.
-const FRAME_H = 480
+const FRAME_H = 560
 // The layout runs on a world larger than the frame, so there is somewhere to
 // move to. Packing 90 accounts into 620px makes a dense blob; spreading them
 // over twice that and letting the viewer travel makes the structure legible.
 const WORLD = 2.1
 
-// The score at which an account is drawn as high risk on the map.
+// The score at which an account is drawn as high risk, until the detector
+// reports its own alert line; then that line is used everywhere on the page.
 const RISKY = 0.09
 
 // What an account is in this network, by how money moves through it. Kept in
@@ -72,8 +74,8 @@ const ROLE = {
   collector: { rgb: '125,180,255', label: 'Collects from 2+' },
   pays: { rgb: '190,244,228', label: 'Only pays' },
 }
-const roleOf = (n) => (n.invented ? 'invented'
-  : (n.score ?? 0) >= RISKY ? 'risky'
+const roleFor = (n, line = RISKY) => (n.invented ? 'invented'
+  : (n.score ?? 0) >= line ? 'risky'
     : (n.in_degree ?? 0) > 0 && (n.out_degree ?? 0) > 0 ? 'bridge'
       : (n.in_degree ?? 0) >= 2 ? 'collector' : 'pays')
 
@@ -89,6 +91,16 @@ export default function GraphExplorer() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [hover, setHover] = useState(null)
+  // What the detector reports about itself: size, latency, alert lines and
+  // held-out scores. Read once; the header chips and the model card use it.
+  const [model, setModel] = useState(null)
+  const loadModel = useCallback(() => {
+    getGraphModel().then(setModel).catch(() => setModel(null))
+  }, [])
+  useEffect(() => { loadModel() }, [loadModel])
+  const riskLine = Number(model?.risk_bands?.high ?? RISKY)
+  const criticalLine = model?.risk_bands?.critical != null ? Number(model.risk_bands.critical) : null
+  const roleOf = (n) => roleFor(n, riskLine)
 
   // Closed until asked for. The explorer is the one screen that makes the
   // network detector do real work, and a page that quietly loads a few hundred
@@ -134,13 +146,12 @@ export default function GraphExplorer() {
 
   useEffect(() => () => cancelAnimationFrame(tweenRef.current), [])
 
-  // ── Demo mode ──────────────────────────────────────────────────────────
+  // ── What if and Score a file ───────────────────────────────────────────
   // Folded into this page rather than living on its own, because the point of
   // the demo is the picture: an account that did not exist gets scored, and
   // then appears in the graph attached to whoever it transacted with. Split
   // across two pages that story needs a tab change in the middle of the
   // sentence.
-  const [demo, setDemo] = useState(false)
   const [csv, setCsv] = useState(null)
   const [csvBusy, setCsvBusy] = useState(false)
   // Kept separate from the page-level error, which renders at the very top:
@@ -312,7 +323,6 @@ export default function GraphExplorer() {
         setError(null)
         setCsv(null)
         setRuns([])
-        setDemo(false)
         setView({ x: 0, y: 0, z: 1 })
       }
       return !was
@@ -583,7 +593,7 @@ export default function GraphExplorer() {
     nodes.forEach((n) => {
       const collector = (n.in_degree ?? 0) >= 2
       if (!collector && !n.is_centre) return
-      const rgb = n.is_centre || (n.score ?? 0) >= RISKY ? '255,107,92' : '125,180,255'
+      const rgb = n.is_centre || (n.score ?? 0) >= riskLine ? '255,107,92' : '125,180,255'
       const rad = 46 + Math.sqrt(n.in_degree ?? 1) * 24
       const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, rad)
       g.addColorStop(0, `rgba(${rgb},${0.2 * fade(n.id)})`)
@@ -645,7 +655,7 @@ export default function GraphExplorer() {
         ctx.lineWidth = 2.2
         ctx.strokeStyle = `rgba(255,255,255,${0.1 * f})`
         ctx.beginPath(); ctx.arc(n.x, n.y, ra, 0, Math.PI * 2); ctx.stroke()
-        ctx.strokeStyle = n.score >= RISKY ? `rgba(255,107,92,${f})` : `rgba(255,180,84,${f})`
+        ctx.strokeStyle = n.score >= riskLine ? `rgba(255,107,92,${f})` : `rgba(255,180,84,${f})`
         ctx.beginPath()
         ctx.arc(n.x, n.y, ra, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, Math.max(0.02, n.score)))
         ctx.stroke()
@@ -673,7 +683,7 @@ export default function GraphExplorer() {
     })
     ctx.font = '12px "JetBrains Mono", ui-monospace, monospace'
     nodes.forEach((n) => {
-      const risky = (n.score ?? 0) >= RISKY
+      const risky = (n.score ?? 0) >= riskLine
       if (!n.is_centre && !risky && !n.invented && n.id !== hover) return
       if (fade(n.id) < 1) return
       const r = sizeOf(n)
@@ -690,7 +700,7 @@ export default function GraphExplorer() {
 
     // Minimap: the whole neighbourhood, and the part of it in view.
     if (nodes.length > 1) {
-      const MW = 120, MH = 80, mx = W - MW - 14, my = H - MH - 14
+      const MW = 120, MH = 80, mx = W - MW - 70, my = 14
       const xs = nodes.map((n) => n.x), ys = nodes.map((n) => n.y)
       const x0 = Math.min(...xs) - 30, x1 = Math.max(...xs) + 30
       const y0 = Math.min(...ys) - 30, y1 = Math.max(...ys) + 30
@@ -722,7 +732,7 @@ export default function GraphExplorer() {
       ctx.strokeRect(ax, ay, bx - ax, by - ay)
       ctx.restore()
     }
-  }, [graph, hover, layout, view])
+  }, [graph, hover, layout, view, riskLine])  // eslint-disable-line react-hooks/exhaustive-deps
 
   // Screen point back to world point — the inverse of the transform the draw
   // applies. Without this, hit-testing is correct only at zoom 1 with no pan,
@@ -777,21 +787,64 @@ export default function GraphExplorer() {
   const zoomBy = (k) => glideTo({ z: Math.max(0.35, Math.min(3, viewRef.current.z * k)) }, 320)
   const card = 'dash-card'
 
+  // The inspector's facts, all read from the loaded neighbourhood.
+  const focusSteps = focusNode
+    ? (graph?.edges ?? [])
+      .filter((e) => (e.source === focusNode.id || e.target === focusNode.id) && e.step != null)
+      .map((e) => Number(e.step))
+    : []
+  const firstStep = focusSteps.length ? Math.min(...focusSteps) : null
+  const lastStep = focusSteps.length ? Math.max(...focusSteps) : null
+  const level = (v) => (typeof v !== 'number' ? null
+    : criticalLine != null && v >= criticalLine ? ['CRITICAL', 'rgb(var(--ds-sev-critical))']
+      : v >= riskLine ? ['HIGH', 'rgb(var(--ds-sev-high))']
+        : ['BELOW THE LINE', 'rgb(var(--ds-sev-low))'])
+  const focusLevel = focusNode ? level(focusNode.score) : null
+  const latency = model?.runtime?.model?.mean_latency_ms
+  const perf = model?.performance?.metrics
+  const canPull2 = hops === 1 && !(settings?.max_hops < 2)
+
   return (
     <ConsoleShell
       eyebrow="Detector · Network"
       title={<>The payment graph. <em>Who paid whom.</em></>}
       subtitle="Search an account to see the network around it."
+      actions={
+        <>
+          <span className="dash-chip" style={{ height: 40 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 99,
+                           background: model ? 'rgb(var(--ds-sev-low))' : 'rgb(var(--ds-faint))' }} />
+            <b style={{ fontSize: 14 }}>{model ? 'Serving' : 'Checking'}</b>
+            {latency != null && <span>{Number(latency).toFixed(0)} ms</span>}
+          </span>
+          <button className="ds-btn" onClick={() => { loadModel(); if (centre) load(centre, hops, false) }}>
+            Refresh
+          </button>
+        </>
+      }
     >
       {error && <Alert tone="error">{error}</Alert>}
 
       <div className="dash" style={{ gap: 18 }}>
-      <DetectorRuntime detector="graph" model="Edge-Enhanced GraphSAGE" />
-
-      {/* One switch, before anything else: the explorer is the only screen
-          here that puts real load on the network detector, so it loads
-          nothing until it is opened, and closing it drops what was loaded. */}
+      {/* The explorer is the only screen here that puts real load on the
+          network detector, so it loads nothing until it is opened, and closing
+          it drops what was loaded. */}
       <div className="dash-chips">
+        {!off && expanded && (
+          <form onSubmit={(e) => { e.preventDefault(); load(query.trim()) }}
+                className="dash-chip dash-search" role="search" style={{ width: 340, paddingRight: 6 }}>
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+                 strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+              <path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm10 2-4.35-4.35" />
+            </svg>
+            <input value={query} onChange={(e) => setQuery(e.target.value)}
+                   placeholder="Account, e.g. C1166671647" aria-label="Account" className="ds-mono" />
+            <button type="submit" className="ds-btn ds-btn-primary" disabled={loading || !query.trim()}
+                    style={{ minHeight: 36, padding: '6px 16px' }}>
+              {loading ? 'Loading…' : 'Find'}
+            </button>
+          </form>
+        )}
         <span className="dash-chip" style={{ gap: 12 }}>
           <button
             type="button"
@@ -801,7 +854,7 @@ export default function GraphExplorer() {
             disabled={off}
             onClick={toggleExplorer}
             style={{
-              width: 44, height: 24, borderRadius: 999, padding: 3,
+              width: 44, height: 24, borderRadius: 999, padding: 3, border: 0,
               display: 'flex', alignItems: 'center',
               justifyContent: expanded ? 'flex-end' : 'flex-start',
               background: expanded ? 'rgb(var(--dash-line))' : 'rgb(var(--ds-line))',
@@ -815,43 +868,28 @@ export default function GraphExplorer() {
           <b style={{ fontSize: 14 }}>
             {off ? 'Switched off by an administrator' : expanded ? 'Explorer open' : 'Explorer closed'}
           </b>
-          <span>{off ? 'Reserved for live screening.' : expanded ? '' : 'Open it to load.'}</span>
+          {!expanded && <span>{off ? 'Reserved for live screening.' : 'Open it to load.'}</span>}
         </span>
-
         {!off && expanded && (
-          <>
-            <form onSubmit={(e) => { e.preventDefault(); load(query.trim()) }}
-                  className="dash-chip dash-search" role="search" style={{ width: 340, paddingRight: 6 }}>
-              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
-                   strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
-                <path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm10 2-4.35-4.35" />
-              </svg>
-              <input value={query} onChange={(e) => setQuery(e.target.value)}
-                     placeholder="Account, e.g. C1166671647" aria-label="Account"
-                     className="ds-mono" />
-              <button type="submit" className="ds-btn ds-btn-primary" disabled={loading || !query.trim()}
-                      style={{ minHeight: 36, padding: '6px 16px' }}>
-                {loading ? 'Loading…' : 'Find'}
+          <span className="dash-chip" role="group" aria-label="Hops" style={{ padding: 4, gap: 2 }}>
+            {[1, 2].map((h) => (
+              <button key={h} type="button" aria-pressed={hops === h}
+                      disabled={h === 2 && settings?.max_hops < 2}
+                      onClick={() => { setHops(h); if (centre) load(centre, h, false) }}
+                      style={{ border: 0, cursor: 'pointer', borderRadius: 12, padding: '8px 14px', fontSize: 13,
+                               fontWeight: hops === h ? 600 : 500,
+                               background: hops === h ? 'rgb(var(--dash-mint))' : 'transparent',
+                               color: hops === h ? 'rgb(var(--dash-on-mint))' : 'rgb(var(--ds-muted))' }}>
+                {h} hop{h === 1 ? '' : 's'}
               </button>
-            </form>
-            <span className="dash-chip" role="group" aria-label="Hops" style={{ padding: 4, gap: 2 }}>
-              {[1, 2].map((h) => (
-                <button key={h} type="button" aria-pressed={hops === h}
-                        disabled={h === 2 && settings?.max_hops < 2}
-                        onClick={() => { setHops(h); if (centre) load(centre, h, false) }}
-                        style={{ border: 0, cursor: 'pointer', borderRadius: 12, padding: '8px 14px', fontSize: 13,
-                                 fontWeight: hops === h ? 600 : 500,
-                                 background: hops === h ? 'rgb(var(--dash-mint))' : 'transparent',
-                                 color: hops === h ? 'rgb(var(--dash-on-mint))' : 'rgb(var(--ds-muted))' }}>
-                  {h} hop{h === 1 ? '' : 's'}
-                </button>
-              ))}
-            </span>
-            <button type="button" className={`ds-btn ${demo ? 'ds-btn-primary' : ''}`}
-                    onClick={() => setDemo((v) => !v)}>
-              {demo ? 'Demo mode is on' : 'Demo mode'}
-            </button>
-          </>
+            ))}
+          </span>
+        )}
+        {model?.num_nodes != null && (
+          <span className="dash-chip"><b>{compactNum(model.num_nodes)}</b> accounts</span>
+        )}
+        {model?.num_edges != null && (
+          <span className="dash-chip"><b>{compactNum(model.num_edges)}</b> transfers</span>
         )}
       </div>
 
@@ -880,23 +918,17 @@ export default function GraphExplorer() {
             )}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 340px', gap: 18,
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 360px', gap: 18,
                         alignItems: 'start' }} className="ds-split">
             <div className={card} style={{ overflow: 'hidden', padding: 0 }}>
-              <div
-                ref={frameRef}
-                tabIndex={0}
-                className="relative outline-none"
-              >
+              <div ref={frameRef} tabIndex={0} className="relative outline-none">
                 <canvas
                   ref={canvasRef}
                   style={{ display: 'block', width: '100%', height: FRAME_H,
-                           cursor: dragRef.current ? 'grabbing'
-                                 : hover ? 'pointer' : 'grab' }}
+                           cursor: dragRef.current ? 'grabbing' : hover ? 'pointer' : 'grab' }}
                   onMouseDown={(e) => {
                     frameRef.current?.focus()
-                    dragRef.current = { x: e.clientX, y: e.clientY,
-                                        vx: view.x, vy: view.y, moved: false }
+                    dragRef.current = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, moved: false }
                   }}
                   onMouseMove={(e) => {
                     const d = dragRef.current
@@ -916,12 +948,10 @@ export default function GraphExplorer() {
                     if (d && !d.moved) {
                       const h = hit(e)
                       if (h && h.id !== centre) {
-                        // Glide the node you picked into the middle first, so
-                        // the new network arrives where you were already looking.
-                        // The draw transform is
-                        //   translate(W/2 + x, H/2 + y) · scale(z) · translate(-CX, -CY)
-                        // so a world point lands at the middle when
-                        //   x = -z (wx - CX).
+                        // Glide the node you picked into the middle first. The draw
+                        // transform is translate(W/2 + x, H/2 + y) · scale(z) ·
+                        // translate(-CX, -CY), so a world point lands at the middle
+                        // when x = -z (wx - CX).
                         const W = canvasRef.current?.clientWidth ?? 0
                         if (W) {
                           glideTo({
@@ -937,27 +967,25 @@ export default function GraphExplorer() {
                   onMouseLeave={() => { dragRef.current = null; setHover(null) }}
                   onWheel={(e) => {
                     e.preventDefault()
-                    setView((v) => ({
-                      ...v,
-                      z: Math.max(0.35, Math.min(3, v.z * (e.deltaY < 0 ? 1.1 : 1 / 1.1))),
-                    }))
+                    setView((v) => ({ ...v, z: Math.max(0.35, Math.min(3, v.z * (e.deltaY < 0 ? 1.1 : 1 / 1.1))) }))
                   }}
                 />
 
                 {counts && (
-                  <span className="dash-mini" style={{ position: 'absolute', left: 16, top: 14, cursor: 'default',
-                                                       background: 'rgba(27,25,23,.85)', color: '#F2EFE9' }}>
+                  <span className="dash-mini" style={{ position: 'absolute', left: 18, top: 16, cursor: 'default',
+                                                       background: 'rgba(27,25,23,.88)', color: '#F2EFE9',
+                                                       borderColor: 'rgba(214,209,201,.22)' }}>
                     {counts.nodes_returned} accounts · {counts.edges_returned} transfers
                     {counts.truncated ? ` (top ${counts.edges_returned} of ${counts.edges_in_ball})` : ''}
                   </span>
                 )}
-                <div style={{ position: 'absolute', right: 14, top: 14, display: 'grid', gap: 8 }}>
+                <div style={{ position: 'absolute', right: 16, top: 14, display: 'grid', gap: 8 }}>
                   {[['+', 'Zoom in', () => zoomBy(1.35)], ['−', 'Zoom out', () => zoomBy(1 / 1.35)],
                     ['⟲', 'Recentre', () => glideTo({ x: 0, y: 0, z: 1 }, 460)]].map(([t, label, fn]) => (
                     <button key={label} type="button" aria-label={label} title={label} onClick={fn}
-                            style={{ width: 40, height: 40, borderRadius: 99, cursor: 'pointer', fontSize: 17,
+                            style={{ width: 42, height: 42, borderRadius: 99, cursor: 'pointer', fontSize: 17,
                                      border: '1px solid rgba(214,209,201,.22)', color: '#F2EFE9',
-                                     background: 'rgba(27,25,23,.85)' }}>{t}</button>
+                                     background: 'rgba(27,25,23,.88)' }}>{t}</button>
                   ))}
                 </div>
 
@@ -965,10 +993,10 @@ export default function GraphExplorer() {
                 {hoverScreen && hoverPoint && (
                   <div style={{
                     position: 'absolute', pointerEvents: 'none', zIndex: 2,
-                    left: Math.min(Math.max(hoverScreen.x + 18, 8), Math.max(8, canvasW - 230)),
-                    top: Math.min(Math.max(hoverScreen.y - 46, 8), FRAME_H - 96),
+                    left: Math.min(Math.max(hoverScreen.x + 22, 8), Math.max(8, canvasW - 230)),
+                    top: Math.min(Math.max(hoverScreen.y - 46, 8), FRAME_H - 130),
                     width: 214, padding: '11px 14px', borderRadius: 16,
-                    background: 'rgba(27,25,23,.94)', border: '1px solid rgba(214,209,201,.22)', color: '#F2EFE9',
+                    background: 'rgba(27,25,23,.95)', border: '1px solid rgba(214,209,201,.22)', color: '#F2EFE9',
                   }}>
                     <div className="ds-mono" style={{ fontSize: 12 }}>{hoverPoint.id}</div>
                     <div style={{ fontSize: 12, color: '#A39C92', marginTop: 3 }}>
@@ -976,8 +1004,9 @@ export default function GraphExplorer() {
                     </div>
                     {typeof hoverPoint.node.score === 'number' && (
                       <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4,
-                                    color: hoverPoint.node.score >= RISKY ? '#FF6B5C' : '#FFB454' }}>
-                        score {hoverPoint.node.score.toFixed(4)}
+                                    color: hoverPoint.node.score >= riskLine ? '#FF6B5C' : '#FFB454' }}>
+                        {Math.round(hoverPoint.node.score * 100)}% mule{level(hoverPoint.node.score)?.[0] !== 'BELOW THE LINE'
+                          ? ` · ${level(hoverPoint.node.score)[0]}` : ''}
                       </div>
                     )}
                   </div>
@@ -989,19 +1018,29 @@ export default function GraphExplorer() {
                     Nothing loaded. Search an account, or pick one of the largest networks.
                   </p>
                 )}
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center', padding: '12px 18px',
-                            fontSize: 12, color: 'rgb(var(--ds-muted))', borderTop: '1px solid rgb(var(--ds-line))' }}>
-                {['risky', 'collector', 'pays', 'bridge', 'invented'].map((k) => (
-                  <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ width: 9, height: 9, borderRadius: 99, background: `rgb(${ROLE[k].rgb})` }} />
-                    {ROLE[k].label}
+
+                {/* The key, on the map like a map's. */}
+                <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '34px 18px 14px', display: 'flex',
+                              flexWrap: 'wrap', gap: 14, alignItems: 'center', fontSize: 12, color: '#A39C92',
+                              pointerEvents: 'none',
+                              background: 'linear-gradient(to bottom, rgba(18,17,16,0), rgba(18,17,16,.9) 55%)' }}>
+                  {['risky', 'collector', 'pays', 'bridge', 'invented'].map((k) => (
+                    <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ width: 9, height: 9, borderRadius: 99, background: `rgb(${ROLE[k].rgb})` }} />
+                      {ROLE[k].label}
+                    </span>
+                  ))}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <svg width="16" height="16" aria-hidden="true">
+                      <circle cx="8" cy="8" r="6" fill="none" stroke="rgba(255,255,255,.12)" strokeWidth="2.5" />
+                      <path d="M8,2 A6,6 0 0 1 13.7,9.8" stroke="#FFB454" strokeWidth="2.5" fill="none" />
+                    </svg>
+                    arc = score
                   </span>
-                ))}
-                <span>arc = score · warm line = weighted most</span>
-                <span className="ds-mono" style={{ marginLeft: 'auto', color: 'rgb(var(--ds-faint))' }}>
-                  arrows move · +/− zoom · 0 recentres · drag to pan
-                </span>
+                  <span className="ds-mono" style={{ marginLeft: 'auto', color: '#857E75' }}>
+                    drag · scroll · 0 recentres
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -1010,45 +1049,62 @@ export default function GraphExplorer() {
                 <div className="ds-section-label">{hover ? 'Pointing at' : 'Selected account'}</div>
                 {focusNode ? (
                   <>
-                    <div className="ds-mono" style={{ fontSize: 16, marginTop: 8, wordBreak: 'break-all' }}>{focusNode.id}</div>
+                    <div className="ds-mono" style={{ fontSize: 17, marginTop: 8, wordBreak: 'break-all' }}>{focusNode.id}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 16 }}>
                       {typeof focusNode.score === 'number' && (
-                        <div style={{ width: 84, height: 84, borderRadius: 99, flex: '0 0 auto', display: 'grid', placeItems: 'center',
-                                      background: `conic-gradient(${focusNode.score >= RISKY ? '#FF6B5C' : '#FFB454'} 0 ${Math.max(1, focusNode.score * 100)}%, rgb(var(--ds-surface-3)) 0 100%)` }}>
-                          <div style={{ width: 68, height: 68, borderRadius: 99, display: 'grid', placeItems: 'center',
+                        <div style={{ width: 86, height: 86, borderRadius: 99, flex: '0 0 auto', display: 'grid', placeItems: 'center',
+                                      background: `conic-gradient(${focusLevel?.[1]} 0 ${Math.max(1, focusNode.score * 100)}%, rgb(var(--ds-surface-3)) 0 100%)` }}>
+                          <div style={{ width: 70, height: 70, borderRadius: 99, display: 'grid', placeItems: 'center',
                                         background: 'rgb(var(--dash-card-top))', textAlign: 'center' }}>
                             <div>
-                              <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.03em' }}>{focusNode.score.toFixed(3)}</div>
-                              <div style={{ fontSize: 9, letterSpacing: '.1em', color: 'rgb(var(--ds-faint))' }}>SCORE</div>
+                              <div style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-.03em' }}>
+                                {Math.round(focusNode.score * 100)}%
+                              </div>
+                              <div style={{ fontSize: 9, letterSpacing: '.1em', color: 'rgb(var(--ds-faint))' }}>MULE</div>
                             </div>
                           </div>
                         </div>
                       )}
-                      <div>
-                        <span className="ds-badge" style={{ color: `rgb(${ROLE[roleOf(focusNode)].rgb})`,
-                                                            borderColor: `rgba(${ROLE[roleOf(focusNode)].rgb},.4)` }}>
-                          {ROLE[roleOf(focusNode)].label}
-                        </span>
-                        <div style={{ fontSize: 14, color: 'rgb(var(--ds-muted))', marginTop: 8 }}>
-                          {focusNode.is_centre ? 'The account you searched' : 'Click it on the map to move there'}
+                      <div style={{ minWidth: 0 }}>
+                        {focusLevel && (
+                          <span className="ds-badge" style={{ color: focusLevel[1], borderColor: 'transparent',
+                                                              background: `color-mix(in srgb, ${focusLevel[1]} 16%, transparent)` }}>
+                            <span style={{ width: 7, height: 7, borderRadius: 99, background: focusLevel[1] }} />
+                            {focusLevel[0]}
+                          </span>
+                        )}
+                        <div style={{ fontSize: 15, fontWeight: 600, marginTop: 10 }}>{ROLE[roleOf(focusNode)].label}</div>
+                        <div style={{ fontSize: 13, color: 'rgb(var(--ds-muted))' }}>
+                          {focusNode.is_centre ? 'The account you searched'
+                            : (focusNode.in_degree ?? 0) >= 2 ? `Collects from ${focusNode.in_degree} accounts`
+                              : 'Click it on the map to move there'}
                         </div>
                       </div>
                     </div>
                     <div style={{ marginTop: 14, fontSize: 14 }}>
-                      {[['Receives from', `${focusNode.in_degree ?? 0} account${focusNode.in_degree === 1 ? '' : 's'}`],
-                        ['Pays', `${focusNode.out_degree ?? 0} account${focusNode.out_degree === 1 ? '' : 's'}`]].map(([k, v]) => (
+                      {[['Role', ROLE[roleOf(focusNode)].label],
+                        ['In / out', `${focusNode.in_degree ?? 0} / ${focusNode.out_degree ?? 0}`, true],
+                        ['Active', firstStep == null ? '-'
+                          : firstStep === lastStep ? `step ${firstStep} only` : `steps ${firstStep} to ${lastStep}`, true],
+                        ['Threshold', riskLine.toFixed(4), true]].map(([k, v, mono]) => (
                         <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0',
                                               borderTop: '1px solid rgb(var(--ds-line))' }}>
-                          <span style={{ color: 'rgb(var(--ds-muted))' }}>{k}</span><span>{v}</span>
+                          <span style={{ color: 'rgb(var(--ds-muted))' }}>{k}</span>
+                          <span className={mono ? 'ds-mono' : undefined}>{v}</span>
                         </div>
                       ))}
                     </div>
-                    {!focusNode.is_centre && (
-                      <button type="button" className="ds-btn ds-btn-primary" style={{ width: '100%', marginTop: 12 }}
-                              onClick={() => { setQuery(focusNode.id); load(focusNode.id) }}>
-                        Move to this account
+                    <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+                      <button type="button" className="ds-btn ds-btn-primary" style={{ flex: 1 }}
+                              disabled={focusNode.is_centre && !canPull2}
+                              onClick={() => {
+                                if (focusNode.is_centre) { setHops(2); load(centre, 2, false) }
+                                else { setQuery(focusNode.id); load(focusNode.id) }
+                              }}>
+                        {focusNode.is_centre ? (canPull2 ? 'Pull 2 hops' : 'All loaded') : 'Pull neighbours'}
                       </button>
-                    )}
+                      <Link to={`/analyzer?q=${encodeURIComponent(focusNode.id)}`} className="ds-btn">Analyze</Link>
+                    </div>
                   </>
                 ) : (
                   <p style={{ fontSize: 14, color: 'rgb(var(--ds-muted))', marginTop: 10 }}>
@@ -1063,11 +1119,12 @@ export default function GraphExplorer() {
                   <div style={{ display: 'grid', gap: 14 }}>
                     {focusEdges.map((e, i) => {
                       const w = (e.attention ?? 0) / maxAttention
+                      const other = e.source === focusNode.id ? e.target : e.source
                       return (
                         <div key={`${e.source}-${e.target}-${i}`}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 12 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 13 }}>
                             <span className="ds-mono" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {e.source} → {e.target}
+                              {e.source === focusNode.id ? `→ ${other}` : `${other} →`}
                             </span>
                             <span className="ds-mono" style={{ color: 'rgb(var(--ds-muted))' }}>
                               {(e.attention ?? 0).toFixed(2)}
@@ -1093,142 +1150,144 @@ export default function GraphExplorer() {
             </aside>
           </div>
 
-          {demo && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 18 }}>
-              {/* ── What if: an account the graph has never seen ─────────── */}
-              <section className={card} style={{ padding: 22, display: 'grid', gap: 12, alignContent: 'start' }}>
-                <div>
-                  <h2 className="dash-h dash-h-sm">What if</h2>
-                  <p style={{ fontSize: 14, color: 'rgb(var(--ds-muted))', margin: '4px 0 0' }}>
-                    Score an account the graph has never seen. Change the sender and score again.
-                  </p>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  {[['New account', newAccount, setNewAccount],
-                    ['Received from', from, setFrom],
-                    ['Amount', amount, setAmount]].map(([label, value, set]) => (
-                    <label key={label} style={{ display: 'grid', gap: 4 }}>
-                      <span style={{ fontSize: 12, color: 'rgb(var(--ds-muted))' }}>{label}</span>
-                      <Input value={value} onChange={(e) => set(e.target.value)} />
-                    </label>
-                  ))}
-                </div>
-                <Button size="sm" onClick={scoreInvented} loading={scoring}
-                        disabled={!newAccount.trim() || !from.trim()}>
-                  Score and place it in the graph
-                </Button>
-                {addError && <Alert tone="error">{addError}</Alert>}
-
-                {runs.length > 0 && (() => {
-                  const top = Math.max(...runs.map((r) => r.score), 0.0001)
-                  const spread = new Set(runs.map((r) => r.score)).size
-                  return (
-                    <div style={{ display: 'grid', gap: 8 }}>
-                      <div className="flex items-baseline gap-2">
-                        <span style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.04em',
-                                       color: 'rgb(var(--dash-line-ink))' }}>
-                          {runs[0].score.toFixed(4)}
-                        </span>
-                        <span style={{ fontSize: 13, color: 'rgb(var(--ds-faint))' }}>
-                          raw · from {runs[0].accounts.toLocaleString()} accounts
-                        </span>
-                      </div>
-                      <div style={{ display: 'grid', gap: 5 }}>
-                        {runs.map((r, i) => (
-                          <div key={r.at} className="flex items-center gap-2">
-                            <span className="ds-mono w-[110px] shrink-0 truncate" title={r.from}
-                                  style={{ fontSize: 12, color: 'rgb(var(--ds-muted))' }}>{r.from}</span>
-                            <span className="ds-progress flex-1">
-                              <span style={{ width: `${Math.max(2, (r.score / top) * 100)}%`,
-                                             background: i === 0 ? 'rgb(var(--dash-line))' : 'rgb(var(--dash-line) / .45)' }} />
-                            </span>
-                            <span className="ds-mono w-[62px] shrink-0 text-right" style={{ fontSize: 12 }}>
-                              {r.score.toFixed(4)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      {runs.length > 1 && (
-                        <p style={{ fontSize: 13, margin: 0,
-                                    color: spread > 1 ? 'rgb(var(--dash-line-ink))' : 'rgb(var(--ds-muted))' }}>
-                          {spread > 1
-                            ? `${spread} different scores in ${runs.length} runs, with only the sender changed.`
-                            : 'Same score so far. Try a different sender.'}
-                        </p>
-                      )}
-                    </div>
-                  )
-                })()}
-                <p style={{ fontSize: 12, color: 'rgb(var(--ds-faint))', margin: 0 }}>
-                  Raw scores. Compare runs with each other.
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 18 }}>
+            {/* ── What if: an account the graph has never seen ─────────── */}
+            <section className={card} style={{ padding: 22, display: 'grid', gap: 12, alignContent: 'start' }}>
+              <div>
+                <h2 className="dash-h dash-h-sm">What if</h2>
+                <p style={{ fontSize: 14, color: 'rgb(var(--ds-muted))', margin: '4px 0 0' }}>
+                  Score an account the graph has never seen.
                 </p>
-              </section>
-
-              {/* ── A file, through this model alone ─────────────────────── */}
-              <section className={card} style={{ padding: 22, display: 'grid', gap: 10, alignContent: 'start' }}>
-                <div>
-                  <h2 className="dash-h dash-h-sm">Score a file</h2>
-                  <p style={{ fontSize: 14, color: 'rgb(var(--ds-muted))', margin: '4px 0 0' }}>
-                    This model only. No fusion.
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <input ref={fileRef} type="file" accept=".csv,text/csv"
-                         onChange={onDemoFile} className="hidden" />
-                  <Button size="sm" variant="secondary" loading={csvBusy}
-                          onClick={() => fileRef.current?.click()}>
-                    Upload a CSV
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {[['New account', newAccount, setNewAccount],
+                  ['Received from', from, setFrom],
+                  ['Amount', amount, setAmount]].map(([label, value, set]) => (
+                  <label key={label} style={{ display: 'grid', gap: 4 }}>
+                    <span style={{ fontSize: 12, color: 'rgb(var(--ds-muted))' }}>{label}</span>
+                    <Input value={value} onChange={(e) => set(e.target.value)} className="ds-mono" />
+                  </label>
+                ))}
+                <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                  <Button onClick={scoreInvented} loading={scoring} className="w-full"
+                          disabled={!newAccount.trim() || !from.trim()}>
+                    Score it
                   </Button>
-                  {csv && (
-                    <span className="ds-mono" style={{ fontSize: 12, color: 'rgb(var(--ds-muted))' }}>
-                      {csv.counts.precomputed} looked up · {csv.counts.inductive} new
-                      · {csv.counts.unscored} not scoreable
-                    </span>
-                  )}
                 </div>
-                {csvError && <Alert tone="error">{csvError}</Alert>}
-                {csv?.notes?.length > 0 && (
-                  <p style={{ fontSize: 13, lineHeight: 1.5, color: 'rgb(var(--ds-sev-medium))', margin: 0 }}>
-                    {csv.notes.join(' ')}
-                  </p>
-                )}
-                {/* Scored at the model's own decision threshold, as it publishes it. */}
-                {csv && (
-                  <Validation rows={csv.rows}
-                              threshold={csv.bands?.high ?? 0.183}
-                              scoreOf={(r) => r.score} />
-                )}
-                {csv && (
-                  <div style={{ overflow: 'auto', maxHeight: 210 }}>
-                    <table className="ds-table">
-                      <thead>
-                        <tr>{['To', 'Score', 'How'].map((h) => <th key={h}>{h}</th>)}</tr>
-                      </thead>
-                      <tbody>
-                        {csv.rows.map((r) => (
-                          <tr key={r.row}>
-                            <td className="ds-mono">{r.nameDest}</td>
-                            <td className="ds-mono" style={{ color: r.score == null ? 'rgb(var(--ds-faint))' : undefined }}>
-                              {r.score == null ? '-' : r.score.toFixed(4)}
-                            </td>
-                            <td style={{ color: r.source === 'inductive' ? 'rgb(196,132,252)' : 'rgb(var(--ds-muted))' }}>
-                              {r.source === 'precomputed' ? 'in the graph'
-                                : r.source === 'inductive' ? 'new · from neighbours'
-                                  : 'not scoreable'}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+              </div>
+              {addError && <Alert tone="error">{addError}</Alert>}
+              {runs.length > 0 && (() => {
+                const top = Math.max(...runs.map((r) => r.score), 0.0001)
+                const spread = new Set(runs.map((r) => r.score)).size
+                return (
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 56 }}
+                         aria-label={`Last ${runs.length} runs`}>
+                      {[...runs].reverse().map((r, i, all) => (
+                        <span key={r.at} title={`${r.from} · ${r.score.toFixed(4)}`} style={{
+                          flex: 1, borderRadius: '6px 6px 2px 2px', height: `${Math.max(6, (r.score / top) * 100)}%`,
+                          background: i === all.length - 1 ? 'rgb(var(--dash-line))' : 'rgb(var(--dash-line) / .45)' }} />
+                      ))}
+                    </div>
+                    <p style={{ fontSize: 13, margin: 0, color: 'rgb(var(--ds-muted))' }}>
+                      Latest <b className="ds-mono" style={{ color: 'rgb(var(--ds-ink))' }}>{runs[0].score.toFixed(4)}</b>
+                      {' '}from {runs[0].accounts.toLocaleString()} accounts.{' '}
+                      {runs.length > 1 && (spread > 1
+                        ? `${spread} different scores in ${runs.length} runs, only the sender changed.`
+                        : 'Same score so far. Try a different sender.')}
+                    </p>
                   </div>
-                )}
-              </section>
-            </div>
-          )}
+                )
+              })()}
+              <p style={{ fontSize: 12, color: 'rgb(var(--ds-faint))', margin: 0 }}>
+                Raw scores. Compare runs with each other. The new account appears on the map.
+              </p>
+            </section>
+
+            {/* ── A file, through this model alone ─────────────────────── */}
+            <section className={card} style={{ padding: 22, display: 'grid', gap: 10, alignContent: 'start' }}>
+              <div>
+                <h2 className="dash-h dash-h-sm">Score a file</h2>
+                <p style={{ fontSize: 14, color: 'rgb(var(--ds-muted))', margin: '4px 0 0' }}>
+                  CSV of accounts, checked before scoring. This model only.
+                </p>
+              </div>
+              <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onDemoFile} className="hidden" />
+              <button type="button" onClick={() => fileRef.current?.click()} disabled={csvBusy}
+                      style={{ border: '1.5px dashed rgb(var(--ds-line))', borderRadius: 20, padding: '26px 16px',
+                               background: 'transparent', color: 'rgb(var(--ds-muted))', cursor: 'pointer', fontSize: 14 }}>
+                {csvBusy ? 'Scoring…' : <>Drop a CSV or <b style={{ color: 'rgb(var(--dash-line-ink))' }}>browse</b></>}
+              </button>
+              {csv && (
+                <span className="ds-mono" style={{ fontSize: 12, color: 'rgb(var(--ds-muted))' }}>
+                  {csv.counts.precomputed} looked up · {csv.counts.inductive} new · {csv.counts.unscored} not scoreable
+                </span>
+              )}
+              {csvError && <Alert tone="error">{csvError}</Alert>}
+              {csv?.notes?.length > 0 && (
+                <p style={{ fontSize: 13, lineHeight: 1.5, color: 'rgb(var(--ds-sev-medium))', margin: 0 }}>
+                  {csv.notes.join(' ')}
+                </p>
+              )}
+              {/* Scored at the model's own decision threshold, as it publishes it. */}
+              {csv && (
+                <Validation rows={csv.rows} threshold={csv.bands?.high ?? 0.183} scoreOf={(r) => r.score} />
+              )}
+              {csv && (
+                <div style={{ overflow: 'auto', maxHeight: 210 }}>
+                  <table className="ds-table">
+                    <thead><tr>{['To', 'Score', 'How'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
+                    <tbody>
+                      {csv.rows.map((r) => (
+                        <tr key={r.row}>
+                          <td className="ds-mono">{r.nameDest}</td>
+                          <td className="ds-mono" style={{ color: r.score == null ? 'rgb(var(--ds-faint))' : undefined }}>
+                            {r.score == null ? '-' : r.score.toFixed(4)}
+                          </td>
+                          <td style={{ color: r.source === 'inductive' ? 'rgb(196,132,252)' : 'rgb(var(--ds-muted))' }}>
+                            {r.source === 'precomputed' ? 'in the graph'
+                              : r.source === 'inductive' ? 'new · from neighbours' : 'not scoreable'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+
+            {/* ── The detector's own held-out numbers ──────────────────── */}
+            <section className={card} style={{ padding: 22 }}>
+              <div className="dash-head" style={{ marginBottom: 14 }}>
+                <h2 className="dash-h dash-h-sm">Model card</h2>
+                <span className="ds-mono" style={{ fontSize: 12, color: 'rgb(var(--ds-faint))' }}>held-out window</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px 10px' }}>
+                {[['Precision', perf?.precision], ['Recall', perf?.recall], ['F1', perf?.f1],
+                  ['AUROC', perf?.auroc], ['PR-AUC', perf?.pr_auc ?? perf?.average_precision],
+                  ['Flags at', model?.risk_bands?.high, true]].map(([k, v, accent]) => (
+                  <div key={k}>
+                    <div style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-.03em',
+                                  color: accent ? 'rgb(var(--dash-line-ink))' : undefined }}>
+                      {v == null ? '-' : Number(v).toFixed(accent ? 4 : 3)}
+                    </div>
+                    <div style={{ fontSize: 13, color: 'rgb(var(--ds-muted))' }}>{k}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
         </>
       )}
 
-      <GraphModelPanel />
+      {/* The full detail behind the card, for whoever wants it. */}
+      <details className={card} style={{ padding: '16px 22px' }}>
+        <summary style={{ cursor: 'pointer', fontSize: 15, fontWeight: 600 }}>Model details and runtime</summary>
+        <div style={{ display: 'grid', gap: 14, marginTop: 14 }}>
+          <DetectorRuntime detector="graph" model="Edge-Enhanced GraphSAGE" />
+          <GraphModelPanel />
+        </div>
+      </details>
 
       {isAdmin && settings && (
         <section className={card} style={{ padding: 22 }}>
@@ -1257,4 +1316,11 @@ export default function GraphExplorer() {
       </div>
     </ConsoleShell>
   )
+}
+
+function compactNum(v) {
+  const n = Number(v)
+  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`
+  if (n >= 1e4) return `${(n / 1e3).toFixed(1)}k`
+  return n.toLocaleString()
 }
