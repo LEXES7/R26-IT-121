@@ -54,7 +54,7 @@ const logit = (p) => {
 }
 
 /** The fused score on a half dial, with the alert bands as coloured zones. */
-function Gauge({ value, bands }) {
+export function Gauge({ value, bands }) {
   const cx = 200, cy = 190, r = 150
   const pt = (v, rr = r) => {
     const a = Math.PI * (1 - v)

@@ -139,7 +139,7 @@ function Shell() {
             {/* Case work. Not an administrator's: on a deployment that role is
                 the client's IT department, and financial-crime cases are not
                 theirs to read. Hidden from their navigation and refused here. */}
-            <Route path="/analyzer" element={<ProtectedRoute capability="canRunAnalysis"><Console><Analyzer /></Console></ProtectedRoute>} />
+            <Route path="/analyzer" element={<ProtectedRoute capability="canRunAnalysis"><Analyzer /></ProtectedRoute>} />
             <Route path="/cases" element={<ProtectedRoute capability="canViewCases"><Console><Cases /></Console></ProtectedRoute>} />
             {/* Addressable so a case can be sent to a colleague. Still gated. */}
             <Route path="/cases/:caseRef" element={<ProtectedRoute capability="canViewCases"><Cases /></ProtectedRoute>} />
@@ -195,14 +195,14 @@ function Shell() {
  * The shell lives here rather than inside each page so there is one place that
  * decides what the signed-in application looks like. Dashboard is the
  * exception — its title states how many cases are waiting, which only it
- * knows — so it renders its own shell and is not wrapped again.
+ * knows — so it renders its own shell and is not wrapped again. The Analyzer
+ * does the same, because its header carries the run's own actions.
  */
 // The breadcrumb has to name the group the sidebar files the page under, or
 // the two disagree in front of the reader. Thresholds and Detectors moved when
 // the console split in two; these followed them.
 const CONSOLE_PAGES = {
   '/monitor':   ['Workspace / Observe', 'Live monitor', 'Every payment, checked as it arrives.'],
-  '/analyzer':  ['Workspace / Observe', 'Analyzer', 'Check one payment.'],
   '/cases':     ['Workspace / Investigate', 'Cases', 'What was caught and your decisions.'],
   '/thresholds':['Workspace / Configure', 'Thresholds', 'Set when a score becomes an alert.'],
   '/batch':     ['Workspace / Investigate', 'Batch upload', 'Score a file of payments.'],
